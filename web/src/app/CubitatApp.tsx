@@ -24,6 +24,10 @@ import { PropertyMap } from '../modules/maps/components/PropertyMap'
 import { SearchBar } from '../modules/search/components/SearchBar'
 import type { SearchFilters } from '../modules/search/types'
 import { formatPrice } from '../shared/lib/formatPrice'
+import { Button } from '../shared/ui/button'
+import { Card, CardContent } from '../shared/ui/card'
+import { Input } from '../shared/ui/input'
+import { Textarea } from '../shared/ui/textarea'
 
 const initialFilters: SearchFilters = {
   query: '',
@@ -85,20 +89,23 @@ export function CubitatApp() {
           <a href="#blog">Blog</a>
         </nav>
         <div className="header-actions">
-          <button
+          <Button
             className="publish-button"
             type="button"
+            size="lg"
             onClick={() => scrollTo('publicar')}
           >
             Publicar gratis
-          </button>
-          <button
+          </Button>
+          <Button
             className="login-button"
             type="button"
+            variant="outline"
+            size="lg"
             onClick={() => scrollTo('login')}
           >
             Ingresar
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -200,14 +207,14 @@ function PropertyDetail({ property }: { property: Property }) {
         <div className="detail-heading">
           <a href="#resultados">Regresar a la busqueda</a>
           <div className="detail-actions">
-            <button type="button">
+            <Button type="button" variant="outline">
               <Heart size={18} />
               Guardar
-            </button>
-            <button type="button">
+            </Button>
+            <Button type="button" variant="outline">
               <Share2 size={18} />
               Compartir
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -242,10 +249,12 @@ function PropertyDetail({ property }: { property: Property }) {
               ))}
             </div>
 
-            <div className="detail-block">
+            <Card className="detail-block">
+              <CardContent className="p-0">
               <h3>Descripcion</h3>
               <p>{property.description}</p>
-            </div>
+              </CardContent>
+            </Card>
 
             <div className="feature-grid">
               <Feature icon={<BedDouble />} label="Recamaras" value={property.bedrooms} />
@@ -254,30 +263,34 @@ function PropertyDetail({ property }: { property: Property }) {
               <Feature icon={<Ruler />} label="Area construida" value={`${property.areaM2} m2`} />
             </div>
 
-            <div className="detail-block">
+            <Card className="detail-block">
+              <CardContent className="p-0">
               <h3>Amenidades y servicios</h3>
               <div className="amenity-list">
                 {property.amenities.map((amenity) => (
                   <span key={amenity}>{amenity}</span>
                 ))}
               </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <aside className="contact-card">
+          <Card className="contact-card">
+            <CardContent className="grid gap-3 p-0">
             <p className="eyebrow">Contacta al anunciante</p>
             <h3>Envia tus datos</h3>
-            <textarea
+            <Textarea
               readOnly
               value={`Hola, estoy interesado en ${property.title}. Favor de enviarme informacion adicional.`}
             />
-            <input readOnly value="Nombre completo" />
-            <input readOnly value="Telefono o WhatsApp" />
-            <button type="button">
+            <Input readOnly value="Nombre completo" />
+            <Input readOnly value="Telefono o WhatsApp" />
+            <Button type="button">
               <Phone size={18} />
               Contactar y ver telefono
-            </button>
-          </aside>
+            </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
@@ -397,10 +410,10 @@ function PublishSection() {
         </p>
       </div>
       <form className="publish-form">
-        <input readOnly value="Tipo de operacion" />
-        <input readOnly value="Provincia o municipio" />
-        <input readOnly value="Precio estimado" />
-        <button type="button">Comenzar publicacion</button>
+        <Input readOnly value="Tipo de operacion" />
+        <Input readOnly value="Provincia o municipio" />
+        <Input readOnly value="Precio estimado" />
+        <Button type="button">Comenzar publicacion</Button>
       </form>
     </section>
   )
@@ -413,12 +426,12 @@ function LoginSection() {
         <p className="eyebrow">Cuenta Cubitat</p>
         <h2>Acceso para propietarios, compradores y administradores</h2>
       </div>
-      <div className="login-card">
-        <input readOnly value="Correo electronico" />
-        <input readOnly value="Contrasena" />
-        <button type="button">Ingresar</button>
+      <Card className="login-card">
+        <Input readOnly value="Correo electronico" />
+        <Input readOnly value="Contrasena" />
+        <Button type="button">Ingresar</Button>
         <a href="#publicar">Crear cuenta para publicar</a>
-      </div>
+      </Card>
     </section>
   )
 }

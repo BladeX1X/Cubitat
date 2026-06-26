@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react'
 import { Bath, BedDouble, Car, MapPin, Ruler } from 'lucide-react'
 import { formatPrice } from '../../../shared/lib/formatPrice'
+import { Badge } from '../../../shared/ui/badge'
+import { Button } from '../../../shared/ui/button'
 import type { Property } from '../types'
 
 type PropertyCardProps = {
@@ -30,7 +32,7 @@ export function PropertyCard({
         }
       >
         {property.badge ? (
-          <span className="property-badge">{property.badge}</span>
+          <Badge className="property-badge">{property.badge}</Badge>
         ) : null}
       </span>
       <span className="property-info">
@@ -66,8 +68,12 @@ export function PropertyCard({
           </span>
         </span>
         <span className="property-actions">
-          <span>Contactar</span>
-          <span>Consultar</span>
+          <Button asChild size="sm">
+            <span>Contactar</span>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <span>Consultar</span>
+          </Button>
         </span>
       </span>
     </button>

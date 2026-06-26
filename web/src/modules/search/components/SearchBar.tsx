@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { Search } from 'lucide-react'
+import { Button } from '../../../shared/ui/button'
 import type { SearchFilters } from '../types'
 
 type SearchBarProps = {
@@ -38,34 +39,38 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
   return (
     <form className="hero-search" onSubmit={handleSubmit}>
       <div className="operation-tabs" aria-label="Tipo de operacion">
-        <button
+        <Button
           className={filters.operation === 'alquiler' ? 'is-active' : ''}
           type="button"
+          variant="ghost"
           onClick={() => updateFilter('operation', 'alquiler')}
         >
           Rentar
-        </button>
-        <button
+        </Button>
+        <Button
           className={filters.operation === 'venta' ? 'is-active' : ''}
           type="button"
+          variant="ghost"
           onClick={() => updateFilter('operation', 'venta')}
         >
           Comprar
-        </button>
-        <button
+        </Button>
+        <Button
           className={filters.operation === 'permuta' ? 'is-active' : ''}
           type="button"
+          variant="ghost"
           onClick={() => updateFilter('operation', 'permuta')}
         >
           Permuta
-        </button>
-        <button
+        </Button>
+        <Button
           className={filters.operation === 'rent-to-own' ? 'is-active' : ''}
           type="button"
+          variant="ghost"
           onClick={() => updateFilter('operation', 'rent-to-own')}
         >
           Rent-to-own
-        </button>
+        </Button>
       </div>
 
       <div className="search-fields">
@@ -92,14 +97,19 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
             onChange={handleQuery}
           />
         </label>
-        <button className="search-submit" type="submit" aria-label="Buscar">
+        <Button className="search-submit" type="submit" aria-label="Buscar">
           <Search size={26} strokeWidth={2.2} />
-        </button>
+        </Button>
       </div>
 
-      <button className="clear-search" type="button" onClick={onClear}>
+      <Button
+        className="clear-search"
+        type="button"
+        variant="ghost"
+        onClick={onClear}
+      >
         Limpiar busqueda
-      </button>
+      </Button>
     </form>
   )
 }
