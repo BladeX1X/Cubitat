@@ -1,6 +1,7 @@
+import type { CSSProperties } from 'react'
+import { Bath, BedDouble, Car, MapPin, Ruler } from 'lucide-react'
 import { formatPrice } from '../../../shared/lib/formatPrice'
 import type { Property } from '../types'
-import type { CSSProperties } from 'react'
 
 type PropertyCardProps = {
   property: Property
@@ -22,17 +23,46 @@ export function PropertyCard({
       <span
         className="property-photo"
         style={{ '--cover-tone': property.coverTone } as CSSProperties}
-      />
+      >
+        {property.badge ? (
+          <span className="property-badge">{property.badge}</span>
+        ) : null}
+      </span>
       <span className="property-info">
+        <span className="property-kind">
+          {property.propertyType} · {property.operation}
+        </span>
         <span className="property-title">{property.title}</span>
         <span className="property-meta">
-          {property.propertyType} · {property.bedrooms} hab. ·{' '}
-          {property.bathrooms} bano · {property.areaM2} m2
+          <MapPin size={14} />
+          {property.location}
         </span>
         <span className="property-price">
           {property.operation === 'permuta'
             ? 'Permuta'
             : formatPrice(property.priceUsd)}
+        </span>
+        <span className="property-specs">
+          <span>
+            <BedDouble size={15} />
+            {property.bedrooms}
+          </span>
+          <span>
+            <Bath size={15} />
+            {property.bathrooms}
+          </span>
+          <span>
+            <Car size={15} />
+            {property.parking}
+          </span>
+          <span>
+            <Ruler size={15} />
+            {property.areaM2} m2
+          </span>
+        </span>
+        <span className="property-actions">
+          <span>Contactar</span>
+          <span>Consultar</span>
         </span>
       </span>
     </button>
