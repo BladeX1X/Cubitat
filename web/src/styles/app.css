@@ -282,15 +282,15 @@ textarea:focus-visible {
 
 .search-fields {
   display: grid;
-  grid-template-columns: minmax(260px, 312px) minmax(420px, 1fr);
+  grid-template-columns: minmax(240px, 282px) minmax(390px, 1fr);
   align-items: stretch;
-  gap: 20px;
+  gap: 18px;
   margin-top: 14px;
   overflow: visible;
 }
 
 .search-fields label {
-  min-height: 86px;
+  min-height: 72px;
   display: grid;
   align-content: center;
   gap: 6px;
@@ -318,7 +318,7 @@ textarea:focus-visible {
 }
 
 .location-search-input {
-  height: 54px;
+  height: 48px;
   border: 0 !important;
   border-radius: 12px;
   outline: 0;
@@ -356,10 +356,10 @@ textarea:focus-visible {
 }
 
 .property-type-trigger {
-  height: 84px;
+  height: 72px;
   justify-content: space-between;
   overflow: hidden;
-  padding: 0 0 0 30px;
+  padding: 0 0 0 26px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: #fff;
@@ -416,13 +416,13 @@ textarea:focus-visible {
 
 .location-search-pill {
   min-width: 0;
-  min-height: 86px;
+  min-height: 72px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 68px;
+  grid-template-columns: minmax(0, 1fr) 58px;
   align-items: center;
-  gap: 14px;
-  padding: 0 14px 0 24px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  gap: 12px;
+  padding: 0 12px 0 24px;
+  border: 0;
   border-radius: var(--radius);
   background: #fff;
   box-shadow: var(--shadow-lg);
@@ -498,8 +498,8 @@ textarea:focus-visible {
 }
 
 .search-submit {
-  width: 58px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
   align-self: center;
   justify-self: center;
   border: 0;
@@ -1325,7 +1325,7 @@ h2 {
   }
 
   .search-submit {
-    width: 58px;
+    width: 48px;
     margin: 0;
   }
 
@@ -1418,16 +1418,16 @@ h2 {
 
   .property-type-trigger,
   .location-search-pill {
-    min-height: 72px;
+    min-height: 66px;
   }
 
   .property-type-trigger {
-    height: 70px;
-    padding-left: 22px;
+    height: 66px;
+    padding-left: 20px;
   }
 
   .location-search-pill {
-    grid-template-columns: minmax(0, 1fr) 58px;
+    grid-template-columns: minmax(0, 1fr) 48px;
     gap: 10px;
     padding: 0 10px 0 18px;
   }
