@@ -137,8 +137,8 @@ export function CubitatApp() {
           </div>
 
           <p className="results-summary">
-            Explora viviendas de ejemplo con filtros, mapa open source y flujo
-            de contacto listo para conectar con Supabase.
+            Encuentra viviendas por zona, compara precios y contacta al
+            anunciante desde una busqueda clara y rapida.
           </p>
 
           {selectedProperty ? (
@@ -230,7 +230,12 @@ function PropertyDetail({ property }: { property: Property }) {
                 <span
                   key={item}
                   className="gallery-tile"
-                  style={{ '--cover-tone': property.coverTone } as CSSProperties}
+                  style={
+                    {
+                      '--cover-tone': property.coverTone,
+                      '--cover-image': `url("${property.coverImage}")`,
+                    } as CSSProperties
+                  }
                 >
                   {item === 0 ? 'Ver galeria' : `+${item + 6}`}
                 </span>
@@ -332,13 +337,14 @@ function ServicesSection() {
         <p className="eyebrow">Servicios</p>
         <h2>Herramientas para comprar, vender y comparar mejor</h2>
         <p>
-          Cubitat puede crecer desde el MVP hacia valuacion, precios por zona y
-          lectura del mercado sin depender de portales externos.
+          Cubitat puede crecer hacia valuacion, precios por zona y lectura del
+          mercado con datos propios y una experiencia pensada para compradores
+          reales.
         </p>
       </div>
       <div className="solution-grid">
         <Solution icon={<TrendingUp />} title="Avaluo estimado" text="Referencia rapida para publicar con un precio razonable." />
-        <Solution icon={<Map />} title="Mapa de precios" text="Exploracion por zona con mapa open source y datos propios." />
+        <Solution icon={<Map />} title="Mapa de precios" text="Exploracion por zona con referencias claras y datos propios." />
         <Solution icon={<ShieldCheck />} title="Centro de confianza" text="Verificacion progresiva para reducir fraudes." />
       </div>
     </section>
@@ -350,7 +356,7 @@ function ProductsSection() {
     <section className="content-section" id="productos">
       <div className="section-heading">
         <p className="eyebrow">Nuestros productos</p>
-        <h2>Monetizacion preparada para fases futuras</h2>
+        <h2>Productos listos para hacer crecer el portal</h2>
       </div>
       <div className="product-row">
         <Solution icon={<Sparkles />} title="Destacados" text="Mas visibilidad para publicaciones prioritarias." />
@@ -386,8 +392,8 @@ function PublishSection() {
         <p className="eyebrow">Vender o rentar</p>
         <h2>Publica una propiedad en minutos</h2>
         <p>
-          El flujo de Fase 1 debe capturar fotos, ubicacion aproximada, precio,
-          operacion, descripcion y datos de contacto para revision.
+          Captura fotos, ubicacion aproximada, precio, descripcion y datos de
+          contacto para que cada anuncio llegue completo a revision.
         </p>
       </div>
       <form className="publish-form">
@@ -447,7 +453,7 @@ function SiteFooter() {
   return (
     <footer className="site-footer">
       <strong>Cubitat</strong>
-      <span>Portal inmobiliario para Cuba · MVP Fase 1</span>
+      <span>Portal inmobiliario para Cuba</span>
     </footer>
   )
 }

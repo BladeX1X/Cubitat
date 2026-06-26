@@ -22,7 +22,12 @@ export function PropertyCard({
     >
       <span
         className="property-photo"
-        style={{ '--cover-tone': property.coverTone } as CSSProperties}
+        style={
+          {
+            '--cover-tone': property.coverTone,
+            '--cover-image': `url("${property.coverImage}")`,
+          } as CSSProperties
+        }
       >
         {property.badge ? (
           <span className="property-badge">{property.badge}</span>

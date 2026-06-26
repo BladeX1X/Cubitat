@@ -132,16 +132,16 @@ export function MapLibreAdapter({
     <div className="map-card map-card--maplibre">
       <div className="map-card-header map-card-header--floating">
         <div>
-          <p className="eyebrow">Modulo de mapas</p>
-          <h2>Mapa open source</h2>
+          <p className="eyebrow">Explora por zona</p>
+          <h2>Mapa de propiedades</h2>
         </div>
-        <span className="map-mode">MapLibre</span>
+        <span className="map-mode">En vivo</span>
       </div>
 
       <div
         ref={containerRef}
         className="maplibre-canvas"
-        aria-label="Mapa open source de propiedades"
+        aria-label="Mapa de propiedades"
       />
     </div>
   )

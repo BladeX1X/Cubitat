@@ -22,6 +22,7 @@ export type Property = {
   badge?: 'destacado' | 'exclusivo' | 'nuevo'
   status: PropertyStatus
   coverTone: string
+  coverImage: string
   mapPoint: {
     x: number
     y: number

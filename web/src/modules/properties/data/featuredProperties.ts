@@ -20,6 +20,8 @@ export const featuredProperties: Property[] = [
     badge: 'destacado',
     status: 'published',
     coverTone: '#c5d7ea',
+    coverImage:
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 388, y: 238 },
     coordinates: { latitude: 23.1353, longitude: -82.3955 },
   },
@@ -42,6 +44,8 @@ export const featuredProperties: Property[] = [
     badge: 'exclusivo',
     status: 'published',
     coverTone: '#e7c9a9',
+    coverImage:
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 427, y: 267 },
     coordinates: { latitude: 23.1088, longitude: -82.4413 },
   },
@@ -63,6 +67,8 @@ export const featuredProperties: Property[] = [
     amenities: ['Patio', 'Portal', 'Agua instalada'],
     status: 'published',
     coverTone: '#dcc3df',
+    coverImage:
+      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 214, y: 288 },
     coordinates: { latitude: 22.8136, longitude: -82.7637 },
   },
@@ -84,6 +90,8 @@ export const featuredProperties: Property[] = [
     badge: 'nuevo',
     status: 'published',
     coverTone: '#c8d1ef',
+    coverImage:
+      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 555, y: 318 },
     coordinates: { latitude: 22.1456, longitude: -80.4364 },
   },
@@ -105,6 +113,8 @@ export const featuredProperties: Property[] = [
     amenities: ['Cerca de escuela', 'Buena iluminacion', 'Zona tranquila'],
     status: 'published',
     coverTone: '#dbd7bd',
+    coverImage:
+      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 599, y: 294 },
     coordinates: { latitude: 22.4069, longitude: -79.9649 },
   },
@@ -126,6 +136,8 @@ export const featuredProperties: Property[] = [
     amenities: ['Patio', 'Garaje', 'Habitaciones amplias'],
     status: 'published',
     coverTone: '#e4b9b3',
+    coverImage:
+      'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 727, y: 354 },
     coordinates: { latitude: 21.3808, longitude: -77.9169 },
   },
@@ -147,6 +159,8 @@ export const featuredProperties: Property[] = [
     amenities: ['Alquiler mensual', 'Cerca de comercio', 'Ventilacion natural'],
     status: 'published',
     coverTone: '#bcd0e0',
+    coverImage:
+      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 913, y: 389 },
     coordinates: { latitude: 20.0169, longitude: -75.8302 },
   },
@@ -168,6 +182,8 @@ export const featuredProperties: Property[] = [
     amenities: ['Terraza', 'Portal', 'Garaje'],
     status: 'published',
     coverTone: '#cabfe7',
+    coverImage:
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
     mapPoint: { x: 879, y: 414 },
     coordinates: { latitude: 20.8872, longitude: -76.2631 },
   },
