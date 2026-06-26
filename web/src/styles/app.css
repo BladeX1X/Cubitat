@@ -314,7 +314,8 @@ textarea:focus-visible {
 }
 
 .search-fields input,
-.search-fields select {
+.search-fields select,
+.property-type-trigger {
   width: 100%;
   border: 0;
   outline: 0;
@@ -322,6 +323,43 @@ textarea:focus-visible {
   background: transparent;
   font-size: 20px;
   font-weight: 700;
+  box-shadow: none;
+}
+
+.property-type-trigger {
+  height: auto;
+  justify-content: space-between;
+  padding: 0;
+  border-radius: 0;
+}
+
+[data-slot="select-content"] {
+  z-index: 80;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+[data-slot="select-content"] [data-radix-select-viewport] {
+  padding: 6px;
+}
+
+[data-slot="select-item"] {
+  min-height: 38px;
+  padding: 8px 34px 8px 12px;
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+[data-slot="select-item"]:focus {
+  background: var(--blue-soft);
+  color: var(--green-dark);
 }
 
 .search-submit {

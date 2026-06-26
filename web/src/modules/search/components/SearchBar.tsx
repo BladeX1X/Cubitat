@@ -1,6 +1,13 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../shared/ui/select'
 import type { SearchFilters } from '../types'
 
 type SearchBarProps = {
@@ -19,13 +26,6 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
 
   function handleQuery(event: ChangeEvent<HTMLInputElement>) {
     updateFilter('query', event.target.value)
-  }
-
-  function handlePropertyType(event: ChangeEvent<HTMLSelectElement>) {
-    updateFilter(
-      'propertyType',
-      event.target.value as SearchFilters['propertyType'],
-    )
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -76,16 +76,25 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
       <div className="search-fields">
         <label className="property-type-field">
           <span>Tipo</span>
-          <select
-            aria-label="Tipo de inmueble"
+          <Select
             value={filters.propertyType}
-            onChange={handlePropertyType}
+            onValueChange={(value) =>
+              updateFilter('propertyType', value as SearchFilters['propertyType'])
+            }
           >
-            <option value="all">Departamentos</option>
-            <option value="casa">Casas</option>
-            <option value="apartamento">Apartamentos</option>
-            <option value="terreno">Terrenos</option>
-          </select>
+            <SelectTrigger
+              className="property-type-trigger"
+              aria-label="Tipo de inmueble"
+            >
+              <SelectValue placeholder="Tipo de inmueble" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Departamentos</SelectItem>
+              <SelectItem value="casa">Casas</SelectItem>
+              <SelectItem value="apartamento">Apartamentos</SelectItem>
+              <SelectItem value="terreno">Terrenos</SelectItem>
+            </SelectContent>
+          </Select>
         </label>
         <label className="location-field">
           <span>Ubicacion</span>
