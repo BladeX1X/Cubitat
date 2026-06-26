@@ -46,22 +46,54 @@ export function CubitatApp() {
 
   return (
     <main className="app-shell">
-      <header className="topbar">
+      <header className="site-header">
         <a className="brand" href="/" aria-label="Cubitat inicio">
-          <span className="brand-mark">C</span>
+          <span className="brand-mark">c</span>
           <span>Cubitat</span>
         </a>
-        <SearchBar
-          filters={filters}
-          onChange={setFilters}
-          onClear={handleClearFilters}
-        />
-        <button className="publish-button" type="button">
-          Publicar
-        </button>
+        <nav className="primary-nav" aria-label="Navegacion principal">
+          <a href="#resultados">Comprar</a>
+          <a href="#resultados">Rentar</a>
+          <a href="#publicar">Vender</a>
+          <a href="#servicios">Servicios</a>
+          <a href="#productos">Nuestros productos</a>
+          <a href="#blog">Blog</a>
+        </nav>
+        <div className="header-actions">
+          <button className="publish-button" type="button">
+            Publicar gratis
+          </button>
+          <button className="login-button" type="button">
+            Ingresar
+          </button>
+        </div>
       </header>
 
-      <section className="workspace">
+      <section className="hero">
+        <div className="hero-orbit hero-orbit-one" />
+        <div className="hero-orbit hero-orbit-two" />
+        <div className="hero-content">
+          <p className="hero-kicker">Cubitat inmobiliaria</p>
+          <h1>
+            Buscalo en Cubitat.
+            <span>El portal de propiedades para Cuba.</span>
+          </h1>
+          <SearchBar
+            filters={filters}
+            onChange={setFilters}
+            onClear={handleClearFilters}
+          />
+        </div>
+        <a className="scroll-cue" href="#resultados" aria-label="Ver resultados">
+          <span />
+        </a>
+      </section>
+
+      <section
+        className="workspace"
+        id="resultados"
+        aria-label="Resultados y mapa"
+      >
         <aside className="results-panel" aria-label="Resultados de propiedades">
           <div className="results-heading">
             <div>
