@@ -124,9 +124,6 @@ export function CubitatApp() {
             onClear={handleClearFilters}
           />
         </div>
-        <a className="scroll-cue" href="#resultados" aria-label="Ver resultados">
-          <span />
-        </a>
       </section>
 
       <section
