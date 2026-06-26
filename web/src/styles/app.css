@@ -313,7 +313,6 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
-.search-fields input,
 .search-fields select,
 .property-type-trigger {
   width: 100%;
@@ -324,6 +323,26 @@ textarea:focus-visible {
   font-size: 20px;
   font-weight: 700;
   box-shadow: none;
+}
+
+.location-search-input {
+  height: 54px;
+  border: 0;
+  border-radius: 12px;
+  color: #475b57;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.location-search-input::placeholder {
+  color: #6f7674;
+  opacity: 1;
+}
+
+.location-search-input:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 139, 105, 0.14);
 }
 
 .property-type-field {
@@ -1379,7 +1398,7 @@ h2 {
     padding: 0 18px;
   }
 
-  .search-fields input,
+  .location-search-input,
   .search-fields select {
     font-size: 18px;
   }

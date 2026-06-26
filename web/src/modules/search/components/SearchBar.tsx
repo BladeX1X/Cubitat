@@ -1,6 +1,7 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
+import { Input } from '../../../shared/ui/input'
 import {
   Select,
   SelectContent,
@@ -109,7 +110,8 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
         </label>
         <label className="location-field">
           <span>Ubicacion</span>
-          <input
+          <Input
+            className="location-search-input"
             aria-label="Buscar propiedades"
             placeholder="Donde quieres buscar?"
             type="search"
