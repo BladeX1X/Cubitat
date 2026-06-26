@@ -5,6 +5,7 @@ import { cn } from '../lib/utils'
 type SelectContextValue = {
   value: string
   open: boolean
+  mounted: boolean
   setOpen: (open: boolean) => void
   onValueChange: (value: string) => void
 }
@@ -29,7 +30,19 @@ type SelectProps = {
 
 export function Select({ value, onValueChange, children }: SelectProps) {
   const [open, setOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
   const rootRef = React.useRef<HTMLDivElement | null>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true)
+      return undefined
+    }
+
+    const closeTimer = window.setTimeout(() => setMounted(false), 170)
+
+    return () => window.clearTimeout(closeTimer)
+  }, [open])
 
   React.useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -54,7 +67,9 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   }, [])
 
   return (
-    <SelectContext.Provider value={{ value, open, setOpen, onValueChange }}>
+    <SelectContext.Provider
+      value={{ value, open, mounted, setOpen, onValueChange }}
+    >
       <div ref={rootRef} data-slot="select" className="relative">
         {children}
       </div>
@@ -72,6 +87,7 @@ export function SelectTrigger({
   return (
     <button
       data-slot="select-trigger"
+      data-state={open ? 'open' : 'closed'}
       type="button"
       aria-haspopup="listbox"
       aria-expanded={open}
@@ -83,7 +99,11 @@ export function SelectTrigger({
       {...props}
     >
       {children}
-      <ChevronDown className={cn('size-4 opacity-60 transition-transform', open && 'rotate-180')} />
+      <span data-slot="select-trigger-icon">
+        <ChevronDown
+          className={cn('size-4 opacity-60 transition-transform', open && 'rotate-180')}
+        />
+      </span>
     </button>
   )
 }
@@ -106,13 +126,14 @@ export function SelectContent({
   className,
   children,
 }: React.ComponentProps<'div'>) {
-  const { open } = useSelectContext()
+  const { open, mounted } = useSelectContext()
 
-  if (!open) return null
+  if (!mounted) return null
 
   return (
     <div
       data-slot="select-content"
+      data-state={open ? 'open' : 'closed'}
       role="listbox"
       className={cn(
         'absolute top-full left-0 mt-2 w-full overflow-hidden rounded-md border border-neutral-200 bg-white p-1 text-neutral-950 shadow-md',
@@ -132,6 +153,7 @@ export function SelectItem({
 }: React.ComponentProps<'button'> & { value: string }) {
   const { value: selectedValue, onValueChange, setOpen } = useSelectContext()
   const isSelected = selectedValue === value
+  const isDisabled = props.disabled
 
   return (
     <button
@@ -141,9 +163,11 @@ export function SelectItem({
       type="button"
       className={cn(
         'flex min-h-9 w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left text-sm font-semibold outline-none transition-colors hover:bg-emerald-50 focus:bg-emerald-50 aria-selected:bg-emerald-50 aria-selected:text-emerald-900',
+        isDisabled && 'cursor-default opacity-70 hover:bg-white focus:bg-white',
         className,
       )}
       onClick={() => {
+        if (isDisabled) return
         onValueChange(value)
         setOpen(false)
       }}

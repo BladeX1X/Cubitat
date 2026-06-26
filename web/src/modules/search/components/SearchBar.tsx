@@ -19,7 +19,7 @@ type SearchBarProps = {
 const propertyTypeLabels: Record<SearchFilters['propertyType'], string> = {
   all: 'Departamentos',
   casa: 'Casas',
-  apartamento: 'Apartamentos',
+  apartamento: 'Departamentos',
   terreno: 'Terrenos',
 }
 
@@ -98,9 +98,11 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Departamentos</SelectItem>
+              <SelectItem value="placeholder" disabled>
+                Seleccione tipo de propiedad
+              </SelectItem>
               <SelectItem value="casa">Casas</SelectItem>
-              <SelectItem value="apartamento">Apartamentos</SelectItem>
+              <SelectItem value="apartamento">Departamentos</SelectItem>
               <SelectItem value="terreno">Terrenos</SelectItem>
             </SelectContent>
           </Select>
