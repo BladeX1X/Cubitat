@@ -6,7 +6,7 @@ Aplicacion web de Cubitat construida con React + Vite + TypeScript.
 
 - PWA mobile-first.
 - Arquitectura modular.
-- Mapa desacoplado por adaptadores.
+- Mapa open source desacoplado por adaptadores.
 - Datos mock iniciales listos para migrar a Supabase.
 - Experiencia de busqueda tipo portal inmobiliario.
 
@@ -36,3 +36,5 @@ src/
 ```
 
 El resto de la aplicacion usa `PropertyMap`; el proveedor real del mapa queda encapsulado en `modules/maps/adapters`.
+
+Proveedor actual: `MapLibre GL JS` con tiles de `OpenFreeMap`. Si luego se decide autohospedar mapas o cambiar de proveedor, el cambio debe quedar contenido dentro del modulo `modules/maps`.

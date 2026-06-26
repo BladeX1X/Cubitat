@@ -253,6 +253,7 @@ h2 {
 }
 
 .map-card {
+  position: relative;
   min-height: calc(100vh - 108px);
   padding: 18px;
   border: 1px solid var(--line);
@@ -261,6 +262,58 @@ h2 {
     radial-gradient(circle at 18% 14%, rgba(17, 100, 216, 0.08), transparent 30%),
     linear-gradient(180deg, #fbfdff, #edf2f7);
   box-shadow: var(--shadow);
+}
+
+.map-card--maplibre {
+  min-height: calc(100vh - 108px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.map-loading-state {
+  display: grid;
+  align-content: center;
+  min-height: calc(100vh - 108px);
+}
+
+.map-card-header--floating {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 76px;
+  z-index: 2;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.maplibre-canvas {
+  width: 100%;
+  min-height: calc(100vh - 108px);
+  height: 100%;
+}
+
+.maplibre-property-marker {
+  min-width: 78px;
+  height: 34px;
+  padding: 0 12px;
+  border: 2px solid var(--blue);
+  border-radius: 999px;
+  color: var(--blue);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.2);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.maplibre-property-marker.is-selected {
+  color: #fff;
+  background: var(--blue);
+  border-color: var(--blue-strong);
 }
 
 .map-card-header {

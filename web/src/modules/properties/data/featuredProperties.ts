@@ -14,6 +14,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#c5d7ea',
     mapPoint: { x: 388, y: 238 },
+    coordinates: { latitude: 23.1353, longitude: -82.3955 },
   },
   {
     id: 'hab-playa-002',
@@ -28,6 +29,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#e7c9a9',
     mapPoint: { x: 427, y: 267 },
+    coordinates: { latitude: 23.1088, longitude: -82.4413 },
   },
   {
     id: 'artemisa-003',
@@ -42,6 +44,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#dcc3df',
     mapPoint: { x: 214, y: 288 },
+    coordinates: { latitude: 22.8136, longitude: -82.7637 },
   },
   {
     id: 'cienfuegos-004',
@@ -55,6 +58,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#c8d1ef',
     mapPoint: { x: 555, y: 318 },
+    coordinates: { latitude: 22.1456, longitude: -80.4364 },
   },
   {
     id: 'santa-clara-005',
@@ -69,6 +73,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#dbd7bd',
     mapPoint: { x: 599, y: 294 },
+    coordinates: { latitude: 22.4069, longitude: -79.9649 },
   },
   {
     id: 'camaguey-006',
@@ -83,6 +88,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#e4b9b3',
     mapPoint: { x: 727, y: 354 },
+    coordinates: { latitude: 21.3808, longitude: -77.9169 },
   },
   {
     id: 'santiago-007',
@@ -97,6 +103,7 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#bcd0e0',
     mapPoint: { x: 913, y: 389 },
+    coordinates: { latitude: 20.0169, longitude: -75.8302 },
   },
   {
     id: 'holguin-008',
@@ -111,5 +118,6 @@ export const featuredProperties: Property[] = [
     status: 'published',
     coverTone: '#cabfe7',
     mapPoint: { x: 879, y: 414 },
+    coordinates: { latitude: 20.8872, longitude: -76.2631 },
   },
 ]

@@ -20,4 +20,8 @@ export type Property = {
     x: number
     y: number
   }
+  coordinates: {
+    latitude: number
+    longitude: number
+  }
 }
