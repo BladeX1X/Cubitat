@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 type SelectContextValue = {
@@ -140,7 +140,7 @@ export function SelectItem({
       aria-selected={isSelected}
       type="button"
       className={cn(
-        'flex min-h-9 w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left text-sm font-semibold outline-none transition-colors hover:bg-emerald-50 focus:bg-emerald-50',
+        'flex min-h-9 w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left text-sm font-semibold outline-none transition-colors hover:bg-emerald-50 focus:bg-emerald-50 aria-selected:bg-emerald-50 aria-selected:text-emerald-900',
         className,
       )}
       onClick={() => {
@@ -150,7 +150,6 @@ export function SelectItem({
       {...props}
     >
       <span>{children}</span>
-      {isSelected ? <Check className="size-4 text-emerald-700" /> : null}
     </button>
   )
 }
