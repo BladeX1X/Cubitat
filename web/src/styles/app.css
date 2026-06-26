@@ -856,6 +856,313 @@ h2 {
   background: #fff;
 }
 
+.card-lab-section {
+  padding: clamp(54px, 7vw, 92px) clamp(18px, 6vw, 96px);
+  border-top: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, #f7faf9, #eef6f3 58%, #fff);
+}
+
+.card-lab-heading {
+  max-width: 1220px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 26px;
+}
+
+.card-lab-heading h2 {
+  max-width: 660px;
+  margin: 0;
+  font-size: clamp(30px, 3.2vw, 44px);
+  line-height: 1.02;
+}
+
+.card-lab-heading p {
+  max-width: 390px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.card-lab-grid {
+  max-width: 1220px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 auto;
+}
+
+.card-lab-option {
+  overflow: hidden;
+  border-color: rgba(0, 139, 105, 0.14);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-lab-content {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.card-lab-label {
+  width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: var(--green-dark);
+  background: var(--blue-soft);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.demo-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.demo-card-body {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+}
+
+.demo-card h3,
+.demo-card strong,
+.demo-card p {
+  margin: 0;
+}
+
+.demo-card h3,
+.demo-card strong {
+  color: var(--ink);
+}
+
+.demo-card p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.demo-card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.demo-card-row strong,
+.demo-premium-footer strong {
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.demo-market-photo,
+.demo-list-photo,
+.demo-premium-photo,
+.demo-compact-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(5, 13, 12, 0.03), rgba(5, 13, 12, 0.36)),
+    var(--cover-image) center / cover,
+    var(--cover-tone);
+}
+
+.demo-market-photo {
+  min-height: 250px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.demo-save-button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(5, 18, 16, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.demo-photo-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green-dark), var(--accent));
+  text-transform: uppercase;
+}
+
+.demo-spec-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.demo-spec-row span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #36514c;
+  background: #eef4f2;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.demo-card-list {
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  padding: 10px;
+  gap: 14px;
+}
+
+.demo-list-photo {
+  min-height: 194px;
+}
+
+.demo-operation-pill,
+.demo-premium-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.demo-operation-pill {
+  padding: 6px 9px;
+  color: var(--green-dark);
+  background: var(--blue-soft);
+  text-transform: capitalize;
+}
+
+.demo-wide-action {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--green-dark);
+  font-weight: 900;
+}
+
+.demo-wide-action:hover {
+  color: #fff;
+  background: var(--green-dark);
+}
+
+.demo-card-premium {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  min-height: 270px;
+  color: #fff;
+  background: #06241f;
+}
+
+.demo-premium-photo {
+  min-height: 270px;
+  border-radius: 0;
+}
+
+.demo-premium-tag {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 8px 10px;
+  color: #fff;
+  background: rgba(0, 107, 93, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.demo-premium-body {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: 22px;
+}
+
+.demo-premium-body > span {
+  color: #94e0cf;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.demo-premium-body h3 {
+  color: #fff;
+  font-size: 25px;
+  line-height: 1.05;
+}
+
+.demo-premium-body p {
+  display: block;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.demo-premium-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.demo-premium-footer strong {
+  color: #fff;
+}
+
+.demo-card-compact {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px;
+}
+
+.demo-compact-photo {
+  min-height: 132px;
+}
+
+.demo-card-compact h3 {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.demo-compact-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.demo-compact-line span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
 .map-panel {
   min-width: 0;
   padding: 22px;
@@ -1768,8 +2075,23 @@ h2 {
   .solution-grid,
   .product-row,
   .blog-grid,
+  .card-lab-grid,
   .feature-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card-lab-heading {
+    display: grid;
+  }
+
+  .demo-card-list,
+  .demo-card-premium {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-list-photo,
+  .demo-premium-photo {
+    min-height: 230px;
   }
 
   .results-panel {
@@ -1897,8 +2219,38 @@ h2 {
   .solution-grid,
   .product-row,
   .blog-grid,
+  .card-lab-grid,
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .card-lab-section {
+    padding: 42px 16px;
+  }
+
+  .card-lab-content {
+    padding: 14px;
+  }
+
+  .demo-card-list,
+  .demo-card-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-market-photo,
+  .demo-list-photo,
+  .demo-premium-photo,
+  .demo-compact-photo {
+    min-height: 220px;
+  }
+
+  .demo-premium-body {
+    padding: 18px;
+  }
+
+  .demo-premium-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .gallery-tile:first-child,
