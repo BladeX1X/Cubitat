@@ -108,20 +108,21 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
             </SelectContent>
           </Select>
         </label>
-        <label className="location-field">
-          <span>Ubicacion</span>
-          <Input
-            className="location-search-input"
-            aria-label="Buscar propiedades"
-            placeholder="Donde quieres buscar?"
-            type="search"
-            value={filters.query}
-            onChange={handleQuery}
-          />
-        </label>
-        <Button className="search-submit" type="submit" aria-label="Buscar">
-          <Search size={26} strokeWidth={2.2} />
-        </Button>
+        <div className="location-search-pill">
+          <label className="location-field">
+            <Input
+              className="location-search-input"
+              aria-label="Buscar propiedades"
+              placeholder="Donde quieres buscar?"
+              type="search"
+              value={filters.query}
+              onChange={handleQuery}
+            />
+          </label>
+          <Button className="search-submit" type="submit" aria-label="Buscar">
+            <Search size={26} strokeWidth={2.2} />
+          </Button>
+        </div>
       </div>
 
       <Button
