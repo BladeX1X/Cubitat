@@ -16,6 +16,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react'
+import { LoginModal } from '../modules/auth/components/LoginModal'
 import { PropertyCard } from '../modules/properties/components/PropertyCard'
 import { featuredProperties } from '../modules/properties/data/featuredProperties'
 import type { Property } from '../modules/properties/types'
@@ -39,6 +40,7 @@ const initialFilters: SearchFilters = {
 export function CubitatApp() {
   const [filters, setFilters] = useState<SearchFilters>(initialFilters)
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>()
+  const [isLoginOpen, setIsLoginOpen] = useState(false)
 
   const visibleProperties = useMemo(
     () => filterProperties(featuredProperties, filters),
@@ -102,7 +104,7 @@ export function CubitatApp() {
             type="button"
             variant="outline"
             size="lg"
-            onClick={() => scrollTo('login')}
+            onClick={() => setIsLoginOpen(true)}
           >
             Ingresar
           </Button>
@@ -182,7 +184,7 @@ export function CubitatApp() {
       <ServicesSection />
       <ProductsSection />
       <PublishSection />
-      <LoginSection />
+      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
       <BlogSection />
       <SiteFooter />
     </main>
@@ -412,23 +414,6 @@ function PublishSection() {
         <Input readOnly value="Precio estimado" />
         <Button type="button">Comenzar publicacion</Button>
       </form>
-    </section>
-  )
-}
-
-function LoginSection() {
-  return (
-    <section className="login-section" id="login">
-      <div>
-        <p className="eyebrow">Cuenta Cubitat</p>
-        <h2>Acceso para propietarios, compradores y administradores</h2>
-      </div>
-      <Card className="login-card">
-        <Input readOnly value="Correo electronico" />
-        <Input readOnly value="Contrasena" />
-        <Button type="button">Ingresar</Button>
-        <a href="#publicar">Crear cuenta para publicar</a>
-      </Card>
     </section>
   )
 }
