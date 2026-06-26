@@ -3,6 +3,8 @@ import {
   Bath,
   BedDouble,
   Car,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   MapPin,
   MessageCircle,
@@ -70,6 +72,20 @@ function VisualMarketplaceCard({ property }: { property: Property }) {
   return (
     <article className="demo-card demo-card-market">
       <PropertyImage property={property} className="demo-market-photo">
+        <button
+          className="demo-photo-arrow demo-photo-arrow-left"
+          type="button"
+          aria-label="Imagen anterior"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          className="demo-photo-arrow demo-photo-arrow-right"
+          type="button"
+          aria-label="Imagen siguiente"
+        >
+          <ChevronRight size={18} />
+        </button>
         <button className="demo-save-button" type="button" aria-label="Guardar">
           <Heart size={17} />
         </button>
@@ -85,6 +101,10 @@ function VisualMarketplaceCard({ property }: { property: Property }) {
           {property.location}
         </p>
         <SpecRow property={property} />
+        <Button className="demo-market-contact" type="button" size="sm">
+          <MessageCircle size={15} />
+          Contactar
+        </Button>
       </div>
     </article>
   )

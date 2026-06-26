@@ -999,6 +999,37 @@ h2 {
   backdrop-filter: blur(8px);
 }
 
+.demo-photo-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(5, 18, 16, 0.46);
+  box-shadow: 0 10px 24px rgba(5, 15, 13, 0.22);
+  backdrop-filter: blur(8px);
+  transform: translateY(-50%);
+}
+
+.demo-photo-arrow:hover,
+.demo-save-button:hover {
+  color: var(--green-dark);
+  background: #fff;
+}
+
+.demo-photo-arrow-left {
+  left: 12px;
+}
+
+.demo-photo-arrow-right {
+  right: 12px;
+}
+
 .demo-photo-badge {
   position: absolute;
   top: 12px;
@@ -1025,6 +1056,22 @@ h2 {
   background: #eef4f2;
   font-size: 12px;
   font-weight: 850;
+}
+
+.demo-market-contact {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--green-dark);
+  font-weight: 900;
+}
+
+.demo-market-contact:hover {
+  color: #fff;
+  background: var(--green-dark);
 }
 
 .demo-card-list {

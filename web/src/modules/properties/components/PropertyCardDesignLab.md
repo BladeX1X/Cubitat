@@ -30,10 +30,13 @@ Inspirada en patrones de marketplace visual:
 
 - Foto grande arriba.
 - Corazon para guardar.
+- Flechas laterales sobre la imagen para futura galeria/carrusel.
 - Precio y titulo en bloque inferior.
 - Specs como chips.
+- Boton `Contactar` como CTA principal.
 
 Conviene si Cubitat quiere sentirse mas visual y facil de navegar en movil.
+Esta es la direccion preferida actualmente.
 
 ### B. Lista comparativa
 
@@ -86,6 +89,8 @@ Clases en `app.css`:
 - `.card-lab-option`
 - `.demo-card`
 - `.demo-card-market`
+- `.demo-photo-arrow`
+- `.demo-market-contact`
 - `.demo-card-list`
 - `.demo-card-premium`
 - `.demo-card-compact`
@@ -110,5 +115,6 @@ Patrones usados como referencia conceptual:
 ## Pendientes
 
 - Elegir una propuesta final y migrarla a `PropertyCard`.
+- Si se adopta la propuesta A, conectar flechas a una galeria real cuando `Property` incluya multiples imagenes.
 - Decidir si se mantiene esta demo en desarrollo solamente o se oculta antes de produccion.
 - Si se agregan mas variantes, mantener maximo 4-6 para no dispersar decisiones.
