@@ -16,6 +16,13 @@ type SearchBarProps = {
   onClear: () => void
 }
 
+const propertyTypeLabels: Record<SearchFilters['propertyType'], string> = {
+  all: 'Departamentos',
+  casa: 'Casas',
+  apartamento: 'Apartamentos',
+  terreno: 'Terrenos',
+}
+
 export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
   function updateFilter<Key extends keyof SearchFilters>(
     key: Key,
@@ -86,7 +93,9 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
               className="property-type-trigger"
               aria-label="Tipo de inmueble"
             >
-              <SelectValue placeholder="Tipo de inmueble" />
+              <SelectValue placeholder="Tipo de inmueble">
+                {propertyTypeLabels[filters.propertyType]}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Departamentos</SelectItem>
