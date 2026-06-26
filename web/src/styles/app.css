@@ -224,7 +224,7 @@ textarea:focus-visible {
   position: relative;
   z-index: 1;
   width: min(1120px, 100%);
-  transform: translateY(-28px);
+  transform: translateY(-48px);
 }
 
 .hero-kicker {
