@@ -2,7 +2,7 @@
 
 ## Responsabilidad
 
-`PropertyCard` renderiza una propiedad dentro del listado de resultados. La tarjeta debe permitir escanear rapido precio, tipo de inmueble, operacion, ubicacion, caracteristicas principales y acciones de contacto/detalle.
+`PropertyCard` renderiza una propiedad dentro del listado de resultados. La tarjeta oficial usa el diseno elegido tipo marketplace: imagen superior, datos escaneables y un CTA claro de contacto.
 
 ## Ubicacion
 
@@ -20,44 +20,28 @@ type PropertyCardProps = {
 }
 ```
 
-### Props
-
-- `property`: datos completos de la propiedad.
-- `isSelected`: activa el estado visual seleccionado cuando la propiedad esta elegida en el mapa/listado.
-- `onSelect`: callback para seleccionar la propiedad y sincronizar listado, mapa y detalle.
-
 ## Estructura Visual
 
-La tarjeta usa una composicion de dos columnas en desktop:
-
-- Imagen de portada:
+- Imagen de portada grande:
   - Usa `property.coverImage` y `property.coverTone`.
-  - Muestra badge editorial cuando existe (`destacado`, `exclusivo`, `nuevo`).
-  - Muestra chip de operacion (`Venta`, `Alquiler`, `Permuta`, `Rent-to-own`).
-  - Incluye boton visual para guardar con icono de corazon.
-
+  - Muestra badge editorial cuando existe.
+  - Incluye flechas laterales preparadas para una futura galeria.
+  - Incluye boton visual de guardar con icono de corazon.
 - Informacion:
-  - Precio principal.
-  - Tipo de inmueble.
-  - Titulo.
-  - Ubicacion.
-  - Caracteristicas: habitaciones, banos, estacionamiento y area.
-  - Dos amenidades principales.
-  - Acciones: `Contactar` y `Ver detalle`.
-
-En movil la tarjeta pasa a una sola columna, con la imagen arriba y el contenido debajo.
+  - Titulo y precio en la primera linea.
+  - Ubicacion con icono.
+  - Caracteristicas principales: habitaciones, banos, estacionamiento y area.
+  - Boton `Contactar` a ancho completo.
 
 ## Decisiones de Implementacion
 
 - Se usa `<article>` como contenedor semantico de la propiedad.
 - El article actua como elemento seleccionable con `role="button"`, `tabIndex={0}` y soporte de teclado con `Enter`/`Space`.
 - Los botones internos usan `event.stopPropagation()` para evitar seleccionar la tarjeta accidentalmente.
-- Los controles de accion usan el componente compartido `Button`.
-- Los badges usan el componente compartido `Badge`.
-- El precio se calcula con `formatPrice`; alquiler agrega `/ mes`; permuta muestra `Permuta`.
-- Los labels de operacion y tipo se normalizan desde mapas internos (`operationLabels`, `propertyTypeLabels`).
-- Solo se muestran las primeras dos amenidades para mantener densidad visual controlada.
-- Se evitan botones anidados dentro de botones, deuda que tenia la version anterior.
+- El boton `Contactar` usa el componente compartido `Button`.
+- El badge usa el componente compartido `Badge`.
+- El precio se calcula en `getPriceLabel`; alquiler agrega `/ mes` y permuta muestra `Permuta`.
+- Las flechas de imagen todavia no cambian galeria; quedan como affordance visual para cuando exista multi-imagen.
 
 ## Estilos Principales
 
@@ -65,21 +49,19 @@ Clases principales en `app.css`:
 
 - `.property-card`
 - `.property-photo`
-- `.property-photo-top`
 - `.property-badge`
-- `.property-operation`
+- `.property-photo-arrow`
+- `.property-photo-arrow-left`
+- `.property-photo-arrow-right`
 - `.property-save`
 - `.property-info`
 - `.property-heading-row`
 - `.property-price`
-- `.property-type`
 - `.property-title`
 - `.property-meta`
 - `.property-specs`
-- `.property-amenities`
 - `.property-actions`
 - `.property-contact-action`
-- `.property-detail-action`
 
 ## Estados Visuales
 
@@ -87,41 +69,37 @@ Clases principales en `app.css`:
   - Eleva la tarjeta.
   - Cambia borde a verde suave.
   - Aumenta sombra.
-
 - Seleccionado:
   - Usa borde `var(--blue)`.
   - Agrega anillo suave para relacionarlo con mapa/detalle.
-
 - Movil:
-  - `grid-template-columns: 1fr`.
-  - Imagen ocupa todo el ancho disponible.
-  - Specs y acciones se mantienen como chips legibles.
+  - Mantiene una sola columna.
+  - Imagen arriba y CTA abajo.
 
 ## Accesibilidad
 
 - La tarjeta tiene `aria-label` con el titulo de la propiedad.
 - La seleccion funciona con click, `Enter` y `Space`.
-- El boton de guardar tiene `aria-label`.
-- Los grupos de caracteristicas y amenidades usan `aria-label`.
+- Guardar y flechas tienen `aria-label`.
+- El grupo de caracteristicas usa `aria-label`.
 
-Pendientes recomendados:
+## Pendientes Recomendados
 
 - Convertir `Guardar` en accion real cuando exista autenticacion/favoritos.
 - Definir si `Contactar` abre WhatsApp, modal o formulario.
-- Si se agrega routing, `Ver detalle` deberia navegar a una URL limpia de propiedad.
+- Conectar las flechas a una galeria real cuando el modelo tenga varias imagenes.
+- Si se agrega routing, la seleccion de tarjeta puede navegar a una URL limpia de propiedad.
 
 ## Verificacion
 
-Al redisenar la tarjeta se verifico:
+Cada cambio visual importante debe verificarse con:
 
 - `npm run build`
 - `npm run lint`
-- Render desktop en `1365x768`.
-- Render movil en `390x844`.
-- Medidas de primera tarjeta y foto en ambos viewports.
+- Captura desktop.
+- Captura movil cuando el cambio afecta layout.
 
 ## Notas de Mantenimiento
 
 - Si se agregan nuevos datos de propiedad, actualizar `Property` y esta documentacion.
-- Si se cambia el comportamiento de acciones, documentar aqui el flujo.
 - Mantener la tarjeta escaneable: no mostrar demasiadas amenidades ni texto largo dentro del listado.

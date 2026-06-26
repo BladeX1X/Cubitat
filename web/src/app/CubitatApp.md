@@ -2,7 +2,7 @@
 
 ## Responsabilidad
 
-`CubitatApp` es el orquestador principal de la interfaz de Cubitat. Ensambla el hero, busqueda, listado, mapa, detalle, secciones comerciales, login y demos visuales de componentes.
+`CubitatApp` es el orquestador principal de la interfaz de Cubitat. Ensambla el hero, busqueda, listado, mapa, detalle, secciones comerciales y login.
 
 ## Ubicacion
 
@@ -12,8 +12,7 @@
 ## Modulos Integrados
 
 - `SearchBar`: filtros del hero.
-- `PropertyCard`: tarjeta activa del listado de resultados.
-- `PropertyCardDesignLab`: galeria de propuestas visuales para nuevas tarjetas.
+- `PropertyCard`: tarjeta oficial del listado de resultados.
 - `PropertyMap`: mapa desacoplado mediante adapter.
 - `LoginModal`: modal visual de inicio de sesion.
 - Secciones locales: detalle, ubicaciones, servicios, productos, publicacion, blog y footer.
@@ -37,14 +36,13 @@ const [isLoginOpen, setIsLoginOpen] = useState(false)
 3. `visibleProperties` se calcula con `filterProperties`.
 4. Las propiedades visibles se muestran en lista y mapa.
 5. Seleccionar una propiedad actualiza detalle y mapa.
-6. La demo `PropertyCardDesignLab` permite comparar propuestas visuales de tarjetas.
-7. El boton `Ingresar` abre `LoginModal`.
+6. El boton `Ingresar` abre `LoginModal`.
 
 ## Decisiones de Implementacion
 
 - La app mantiene estado local simple para el MVP.
 - El filtrado se deriva con `useMemo`.
-- La demo de tarjetas usa `featuredProperties`, sin tocar la tarjeta principal.
+- El laboratorio de tarjetas se elimino despues de elegir la variante oficial.
 - El mapa esta desacoplado de la UI de resultados mediante props y callbacks.
 - El login esta fuera del flujo de scroll y se renderiza como modal.
 
@@ -52,7 +50,6 @@ const [isLoginOpen, setIsLoginOpen] = useState(false)
 
 - Separar secciones locales largas en modulos propios si siguen creciendo.
 - Conectar Supabase para autenticacion, propiedades y contactos.
-- Decidir si `PropertyCardDesignLab` se queda solo en desarrollo o se oculta antes de produccion.
 - Agregar routing cuando existan paginas reales de detalle y publicacion.
 
 ## Verificacion

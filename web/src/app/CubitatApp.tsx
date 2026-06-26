@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 import { LoginModal } from '../modules/auth/components/LoginModal'
 import { PropertyCard } from '../modules/properties/components/PropertyCard'
-import { PropertyCardDesignLab } from '../modules/properties/components/PropertyCardDesignLab'
 import { featuredProperties } from '../modules/properties/data/featuredProperties'
 import type { Property } from '../modules/properties/types'
 import { filterProperties } from '../modules/properties/services/filterProperties'
@@ -174,8 +173,6 @@ export function CubitatApp() {
           />
         </section>
       </section>
-
-      <PropertyCardDesignLab properties={featuredProperties} />
 
       {selectedProperty ? (
         <PropertyDetail property={selectedProperty} />

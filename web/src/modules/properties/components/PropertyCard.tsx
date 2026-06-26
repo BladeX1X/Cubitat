@@ -1,9 +1,10 @@
 import type { CSSProperties } from 'react'
 import {
-  ArrowRight,
   Bath,
   BedDouble,
   Car,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   MapPin,
   MessageCircle,
@@ -20,33 +21,16 @@ type PropertyCardProps = {
   onSelect: (propertyId: string) => void
 }
 
-const operationLabels: Record<Property['operation'], string> = {
-  venta: 'Venta',
-  alquiler: 'Alquiler',
-  permuta: 'Permuta',
-  'rent-to-own': 'Rent-to-own',
-}
-
-const propertyTypeLabels: Record<Property['propertyType'], string> = {
-  casa: 'Casa',
-  apartamento: 'Apartamento',
-  terreno: 'Terreno',
-}
-
 export function PropertyCard({
   property,
   isSelected,
   onSelect,
 }: PropertyCardProps) {
-  const operationLabel = operationLabels[property.operation]
-  const propertyTypeLabel = propertyTypeLabels[property.propertyType]
-  const amenityPreview = property.amenities.slice(0, 2)
-  const priceLabel =
-    property.operation === 'permuta'
-      ? 'Permuta'
-      : property.operation === 'alquiler'
-        ? `${formatPrice(property.priceUsd)} / mes`
-        : formatPrice(property.priceUsd)
+  const priceLabel = getPriceLabel(property)
+
+  function selectProperty() {
+    onSelect(property.id)
+  }
 
   return (
     <article
@@ -54,11 +38,11 @@ export function PropertyCard({
       role="button"
       tabIndex={0}
       aria-label={`Ver ${property.title}`}
-      onClick={() => onSelect(property.id)}
+      onClick={selectProperty}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          onSelect(property.id)
+          selectProperty()
         }
       }}
     >
@@ -71,12 +55,25 @@ export function PropertyCard({
           } as CSSProperties
         }
       >
-        <div className="property-photo-top">
-          {property.badge ? (
-            <Badge className="property-badge">{property.badge}</Badge>
-          ) : null}
-          <span className="property-operation">{operationLabel}</span>
-        </div>
+        {property.badge ? (
+          <Badge className="property-badge">{property.badge}</Badge>
+        ) : null}
+        <button
+          className="property-photo-arrow property-photo-arrow-left"
+          type="button"
+          aria-label="Imagen anterior"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          className="property-photo-arrow property-photo-arrow-right"
+          type="button"
+          aria-label="Imagen siguiente"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ChevronRight size={18} />
+        </button>
         <button
           className="property-save"
           type="button"
@@ -89,11 +86,9 @@ export function PropertyCard({
 
       <div className="property-info">
         <div className="property-heading-row">
+          <h3 className="property-title">{property.title}</h3>
           <span className="property-price">{priceLabel}</span>
-          <span className="property-type">{propertyTypeLabel}</span>
         </div>
-
-        <h3 className="property-title">{property.title}</h3>
 
         <span className="property-meta">
           <MapPin size={14} />
@@ -119,12 +114,6 @@ export function PropertyCard({
           </span>
         </div>
 
-        <div className="property-amenities" aria-label="Amenidades">
-          {amenityPreview.map((amenity) => (
-            <span key={amenity}>{amenity}</span>
-          ))}
-        </div>
-
         <div className="property-actions">
           <Button
             className="property-contact-action"
@@ -135,21 +124,20 @@ export function PropertyCard({
             <MessageCircle size={15} />
             Contactar
           </Button>
-          <Button
-            className="property-detail-action"
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={(event) => {
-              event.stopPropagation()
-              onSelect(property.id)
-            }}
-          >
-            Ver detalle
-            <ArrowRight size={15} />
-          </Button>
         </div>
       </div>
     </article>
   )
+}
+
+function getPriceLabel(property: Property) {
+  if (property.operation === 'permuta') {
+    return 'Permuta'
+  }
+
+  if (property.operation === 'alquiler') {
+    return `${formatPrice(property.priceUsd)} / mes`
+  }
+
+  return formatPrice(property.priceUsd)
 }
