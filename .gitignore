@@ -1,0 +1,16 @@
+.agents/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+
+# Local env files
+.env
+.env.*
+!.env.example
