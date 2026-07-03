@@ -147,7 +147,7 @@ Siguiente refactor recomendado:
 ## Actualización móvil 2026-07-02
 
 - `CubitatApp` ahora controla `isMobileMenuOpen` para abrir/cerrar el menú móvil del header.
-- En móvil se muestra una capa específica: `mobile-header-actions`, `mobile-verify-strip`, `mobile-menu-panel` y `mobile-bottom-nav`.
+- En móvil se muestra una capa específica: `mobile-header-actions`, `mobile-menu-panel` y `mobile-bottom-nav`.
 - La navegación móvil cierra el panel antes de cambiar de vista para evitar que el menú quede encima de la pantalla siguiente.
 - La barra inferior móvil navega a `Inicio`, `Favoritos`, `Vender` y `Cuenta`.
 - Esta solución es temporal dentro de `CubitatApp`; cuando se extraiga el layout, mover estas piezas a `components/layout/Header.tsx` y `components/layout/MobileBottomNav.tsx`.
