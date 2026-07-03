@@ -19,6 +19,7 @@ import { AuthCallbackPage } from '../pages/auth/AuthCallbackPage'
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
+import { initAnalytics, trackPageView } from '../shared/lib/analytics'
 
 const initialFilters: SearchFilters = {
   query: '',
@@ -124,6 +125,14 @@ export function CubitatApp() {
     }
     return undefined
   })
+
+  useEffect(() => {
+    initAnalytics()
+  }, [])
+
+  useEffect(() => {
+    trackPageView()
+  }, [pageMode, selectedPropertyId])
 
   // Manage authentication state
   useEffect(() => {
