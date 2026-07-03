@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Building2, Heart, Home, Menu, UserRound, X } from 'lucide-react'
+import { Building2, Heart, Home, Menu, Search, UserRound, X } from 'lucide-react'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
@@ -443,7 +443,7 @@ export function CubitatApp() {
   */
 
   return (
-    <main className={`app-shell ${pageMode === 'results' ? 'is-results-page' : ''}`}>
+    <main className={`app-shell ${pageMode === 'results' ? 'is-results-page' : ''} ${pageMode === 'detail' ? 'is-detail-page' : ''}`}>
       <header className="site-header relative z-[100]">
         <a
           className="brand"
@@ -486,6 +486,15 @@ export function CubitatApp() {
             Vender
           </a>
         </nav>
+        <button
+          type="button"
+          className="mobile-header-search"
+          onClick={navigateResults}
+          aria-label="Buscar propiedades"
+        >
+          <span>Busca por zona o dirección</span>
+          <Search size={15} />
+        </button>
         <div className="header-actions">
           <Button
             className="publish-button"
@@ -578,7 +587,7 @@ export function CubitatApp() {
         </aside>
       )}
 
-      <Suspense fallback={<PageLoadingState />}>
+      <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
         {loading && pageMode !== 'home' && pageMode !== 'results' && <PageLoadingState />}
 
         {error && pageMode !== 'home' && (
@@ -726,7 +735,37 @@ export function CubitatApp() {
   )
 }
 
-function PageLoadingState() {
+function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
+  if (pageMode === 'results') {
+    return (
+      <section className="workspace-catalog results-loading-shell" aria-label="Cargando resultados">
+        <div className="results-toolbar-full results-loading-toolbar" />
+        <div className="catalog-container">
+          <div className="results-heading results-loading-heading">
+            <div>
+              <div className="loading-line loading-line-eyebrow" />
+              <div className="loading-line loading-line-title" />
+            </div>
+            <div className="loading-pill" />
+          </div>
+          <div className="loading-line loading-line-summary" />
+          <div className="property-catalog-grid">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div className="property-card property-card-loading" key={index}>
+                <div className="property-photo" />
+                <div className="property-info">
+                  <div className="loading-line loading-line-price" />
+                  <div className="loading-line loading-line-card-title" />
+                  <div className="loading-line loading-line-card-meta" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
       <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />

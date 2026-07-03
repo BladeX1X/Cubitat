@@ -28,6 +28,13 @@ export function HomePage({
   return (
     <>
       <section className="hero">
+        <img
+          className="hero-media"
+          src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2400&q=82"
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+        />
         <div className="hero-orbit hero-orbit-one" />
         <div className="hero-orbit hero-orbit-two" />
         <div className="hero-content">
@@ -190,5 +197,4 @@ function Solution({
     </article>
   )
 }
-
 

@@ -5,6 +5,7 @@ import {
   Car,
   Heart,
   MapPin,
+  MessageCircle,
   Phone,
   Ruler,
   Share2,
@@ -69,22 +70,26 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
     setTimeout(() => setCopied(false), 2000)
   }
 
+  function scrollToContact() {
+    document.getElementById('contactar-anunciante')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <section className="detail-section" id="detalle">
       <div className="detail-shell max-w-7xl mx-auto px-4 py-3 md:py-5">
         
         {/* Navegacion y Acciones Superiores */}
         <div className="detail-heading flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div className="flex flex-col gap-1.5">
+          <div className="detail-nav flex flex-col gap-1.5">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-700 transition-colors duration-200"
+              className="detail-back inline-flex w-fit items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-700 transition-colors duration-200"
             >
               <ChevronLeft size={16} />
               Regresar a la búsqueda
             </button>
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-neutral-500">
+            <div className="detail-breadcrumbs flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-neutral-500">
               <span className="hover:text-emerald-800 cursor-pointer" onClick={() => {
                 onChangeFilters({ query: '', operations: [], propertyType: 'all', zoneId: 'all' })
                 onBack()
@@ -165,33 +170,40 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
             <Button
               type="button"
               variant="outline"
+              aria-label={saved ? 'Quitar de guardados' : 'Guardar propiedad'}
               onClick={() => toggleSave(property.id)}
-              className={`flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
+              className={`detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
             >
               <Heart size={14} className={saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'} />
-              {saved ? 'Guardado' : 'Guardar'}
+              <span className="detail-action-label">{saved ? 'Guardado' : 'Guardar'}</span>
             </Button>
             <Button
               type="button"
               variant="outline"
+              aria-label="Compartir propiedad"
               onClick={handleShare}
-              className="flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors duration-200"
+              className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors duration-200"
             >
               <Share2 size={14} className="text-neutral-500" />
-              {copied ? 'Copiado' : 'Compartir'}
+              <span className="detail-action-label">{copied ? 'Copiado' : 'Compartir'}</span>
             </Button>
           </div>
         </div>
+
+        <button type="button" className="mobile-verify-strip">
+          Verificar cuenta
+          <span aria-hidden="true">▼</span>
+        </button>
 
         {/* Estructura Principal en 2 Columnas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Columna Izquierda: Informacion de Inmueble (Col-span 2) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="detail-main-column lg:col-span-2 space-y-6">
             
             {/* Cabecera del Inmueble */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
+            <div className="detail-hero-copy">
+              <div className="detail-badges flex items-center gap-2 mb-2">
                 <span className="text-[10px] tracking-wider uppercase font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded">
                   {property.propertyType}
                 </span>
@@ -199,11 +211,11 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
                   {property.operation}
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-neutral-900 leading-tight mb-2">
+              <h1 className="detail-title text-2xl md:text-3xl font-extrabold text-neutral-900 leading-tight mb-2">
                 {property.title}
               </h1>
               
-              <div className="flex items-center gap-3 mb-4 text-xs font-bold text-neutral-400">
+              <div className="detail-meta flex items-center gap-3 mb-4 text-xs font-bold text-neutral-400">
                 {null}
                 {property.ageYears && (
                   <>
@@ -213,11 +225,11 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
                 )}
               </div>
 
-              <p className="flex items-center gap-2 text-sm text-neutral-500 mb-4">
+              <p className="detail-location-line flex items-center gap-2 text-sm text-neutral-500 mb-4">
                 <MapPin size={16} className="text-[#035f53] shrink-0" />
                 {property.location}
               </p>
-              <p className="text-3xl font-black text-[#035f53]">
+              <p className="detail-price-line text-3xl font-black text-[#035f53]">
                 {property.operation === 'permuta'
                   ? 'Permuta'
                   : `${formatPrice(property.priceUsd)} USD`}
@@ -295,7 +307,7 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
       </div>
 
       {/* Mapa de Ubicación */}
-      <div className="max-w-7xl mx-auto px-4 mt-8">
+      <div className="detail-map-section max-w-7xl mx-auto px-4 mt-8">
         <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-neutral-100 flex items-center gap-3">
             <div className="p-2 bg-[#035f53]/10 rounded-lg">
@@ -321,8 +333,21 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
       </div>
 
       {/* Propiedades Similares */}
-      <div className="max-w-7xl mx-auto px-4 pb-12 mt-8">
+      <div className="detail-similar-section max-w-7xl mx-auto px-4 pb-12 mt-8">
         <SimilarProperties currentProperty={property} />
+      </div>
+
+      <div className="mobile-detail-cta" aria-label="Acciones de contacto">
+        <button type="button" className="mobile-detail-cta-icon" onClick={scrollToContact} aria-label="Llamar o ver telefono">
+          <Phone size={16} />
+        </button>
+        <button type="button" className="mobile-detail-cta-secondary" onClick={scrollToContact}>
+          Contactar
+        </button>
+        <button type="button" className="mobile-detail-cta-primary" onClick={scrollToContact}>
+          <MessageCircle size={16} />
+          Consultar
+        </button>
       </div>
     </section>
   )
@@ -336,7 +361,7 @@ function ImageGallery({ property }: { property: Property }) {
   const images = getPropertyGalleryImages(property.coverImage, property.images)
 
   return (
-    <div className="space-y-4">
+    <div className="detail-gallery space-y-4">
       {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
       <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100">
         
@@ -368,9 +393,9 @@ function ImageGallery({ property }: { property: Property }) {
       </div>
 
       {/* Slider movil */}
-      <div className="block md:hidden space-y-2">
+      <div className="mobile-detail-gallery block md:hidden space-y-2">
         <div
-          className="w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md"
+          className="mobile-detail-gallery-main relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md"
           style={
             {
               backgroundColor: property.coverTone || '#f3f4f6',
@@ -379,14 +404,18 @@ function ImageGallery({ property }: { property: Property }) {
               backgroundPosition: 'center',
             } as CSSProperties
           }
-        />
-        <div className="flex gap-2 overflow-x-auto py-1 scrollbar-none">
+        >
+          <button type="button" className="mobile-gallery-button" onClick={() => setIsOpenModal(true)}>
+            Ver Galería
+          </button>
+        </div>
+        <div className="mobile-detail-gallery-thumbs flex gap-2 overflow-x-auto py-1 scrollbar-none">
           {images.map((img, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setActiveImage(img)}
-              className={`relative w-16 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+              className={`mobile-detail-gallery-thumb relative w-16 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
                 activeImage === img ? 'border-[#035f53] scale-95' : 'border-transparent opacity-75'
               }`}
             >
@@ -449,7 +478,7 @@ function ContactCard({ property }: { property: Property }) {
   }
 
   return (
-    <Card className="border border-neutral-100 rounded-2xl shadow-xl p-6 sticky top-6 bg-white">
+    <Card id="contactar-anunciante" className="border border-neutral-100 rounded-2xl shadow-xl p-6 sticky top-6 bg-white">
       <CardContent className="p-0 space-y-5">
         <div>
           <h3 className="text-lg font-bold text-neutral-900 mb-1">
