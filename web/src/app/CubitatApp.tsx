@@ -588,7 +588,6 @@ export function CubitatApp() {
       )}
 
       <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
-        {loading && pageMode !== 'home' && pageMode !== 'results' && <PageLoadingState />}
 
         {error && pageMode !== 'home' && (
           <div className="max-w-md mx-auto my-12 p-4 bg-red-50 border border-red-200 rounded-xl text-center space-y-2">
@@ -767,7 +766,7 @@ function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+    <div className="flex flex-col items-center justify-center py-20 min-h-[700px] text-center space-y-3">
       <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
       <p className="text-xs font-bold text-neutral-500">Cargando las mejores propiedades en Cuba...</p>
     </div>
