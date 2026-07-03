@@ -15,7 +15,9 @@
     "audit:lighthouse": "npx --yes unlighthouse@latest --config-file unlighthouse.config.js",
     "audit:lighthouse:ci": "npx --yes unlighthouse@latest --config-file unlighthouse.config.js --ci",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "deploy": "wrangler deploy",
+    "cf:deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.5",
@@ -52,6 +54,7 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.0",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "wrangler": "^4.107.0"
   }
 }
