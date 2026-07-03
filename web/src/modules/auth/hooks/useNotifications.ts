@@ -36,6 +36,9 @@ export function useNotifications() {
       return
     }
 
+    let isMounted = true
+    setLoading(true)
+
     async function loadNotifications() {
       try {
         const { data, error } = await supabase
@@ -45,19 +48,20 @@ export function useNotifications() {
           .order('created_at', { ascending: false })
 
         if (error) throw error
-        if (data) setNotifications(data)
+        if (data && isMounted) setNotifications(data)
       } catch (err) {
         console.error('Error loading notifications:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
     loadNotifications()
 
-    // Subscribe to realtime changes
+    // Each mounted menu needs its own channel. Reusing a channel name can crash
+    // Supabase Realtime when React mounts desktop and mobile menus together.
     const channel = supabase
-      .channel('notifications-changes')
+      .channel(`notifications-changes-${userId}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
@@ -79,6 +83,7 @@ export function useNotifications() {
       .subscribe()
 
     return () => {
+      isMounted = false
       supabase.removeChannel(channel)
     }
   }, [userId])

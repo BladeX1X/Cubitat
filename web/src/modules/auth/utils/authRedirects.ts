@@ -4,6 +4,12 @@ type AuthRedirectPath =
   | '/recuperar-contrasena'
 
 export function getAuthRedirectUrl(path: AuthRedirectPath) {
+  const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim()
+
+  if (publicSiteUrl) {
+    return `${publicSiteUrl.replace(/\/$/, '')}${path}`
+  }
+
   if (typeof window === 'undefined') {
     return path
   }

@@ -687,6 +687,7 @@ h2 {
 }
 
 .property-photo {
+  position: relative;
   height: 200px;
   min-height: 200px;
   border-radius: var(--radius) var(--radius) 0 0;
@@ -694,7 +695,6 @@ h2 {
     linear-gradient(180deg, rgba(5, 13, 12, 0.02), rgba(5, 13, 12, 0.42)),
     var(--cover-image) center / cover,
     var(--cover-tone);
-  position: relative;
   overflow: hidden;
 }
 
@@ -743,6 +743,49 @@ h2 {
 .property-save:hover {
   background: rgba(8, 24, 22, 0.6);
   transform: scale(1.05);
+}
+
+.property-photo-arrow {
+  position: absolute;
+  top: 50% !important;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(8, 24, 22, 0.48);
+  box-shadow: 0 8px 18px rgba(5, 13, 12, 0.22);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.96);
+  transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+
+.property-card:hover .property-photo-arrow,
+.property-card:focus-within .property-photo-arrow {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.property-photo-arrow:hover {
+  background: rgba(8, 24, 22, 0.68);
+}
+
+.property-photo-arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.property-photo-arrow-left {
+  left: 12px !important;
+}
+
+.property-photo-arrow-right {
+  right: 12px !important;
 }
 
 .property-info {
@@ -1964,10 +2007,17 @@ h2 {
   }
 
   .login-close-btn {
-    top: 12px;
-    right: 12px;
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+    z-index: 110;
     width: 34px;
     height: 34px;
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #fff;
+    background: rgba(4, 74, 65, 0.72);
+    box-shadow: 0 10px 24px rgba(5, 13, 12, 0.18);
+    backdrop-filter: blur(8px);
   }
 
   .login-modal-heading {
