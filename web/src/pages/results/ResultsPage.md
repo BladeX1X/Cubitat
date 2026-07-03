@@ -68,6 +68,8 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 - `Relevancia` conserva el orden base recibido por la pagina.
 - Cambiar el ordenamiento reinicia la paginacion a la primera pagina.
 - El popover de ordenamiento se cierra al seleccionar una opcion para evitar que tape el grid.
+- En movil, `/resultados` usa un layout compacto inspirado en portales inmobiliarios: header mas bajo, filtros en una fila, sin resumen descriptivo y con tarjetas reducidas para que se vea mas contenido desde el primer viewport.
+- En movil, la bottom nav se oculta solo en `/resultados` para no tapar las tarjetas y maximizar el espacio de exploracion.
 
 ## Verificacion Esperada
 

@@ -127,7 +127,7 @@ export function FilterBar({
       aria-label="Filtros activos"
     >
       {/* 1. Selector de Lugares / Búsqueda */}
-      <div className="flex items-center border border-neutral-300 rounded-md px-3 py-1 bg-white min-w-[200px] max-w-[300px] h-10 shadow-sm focus-within:border-[#035f53] transition-colors relative">
+      <div className="filter-search-field flex items-center border border-neutral-300 rounded-md px-3 py-1 bg-white min-w-[200px] max-w-[300px] h-10 shadow-sm focus-within:border-[#035f53] transition-colors relative">
         <input
           type="text"
           placeholder="Buscar zona..."
@@ -153,7 +153,7 @@ export function FilterBar({
           <Button
             type="button"
             variant="outline"
-            className={`flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
+            className={`filter-control flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
               filters.operations.length > 0
                 ? 'border-[#035f53] text-[#035f53] bg-[#035f53]/5 hover:bg-[#035f53]/10'
                 : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
@@ -209,7 +209,7 @@ export function FilterBar({
           <Button
             type="button"
             variant="outline"
-            className={`flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
+            className={`filter-control flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
               filters.propertyType !== 'all'
                 ? 'border-[#035f53] text-[#035f53] bg-[#035f53]/5 hover:bg-[#035f53]/10'
                 : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
@@ -247,7 +247,7 @@ export function FilterBar({
             <Button
               type="button"
               variant="outline"
-              className={`flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
+              className={`filter-control flex items-center gap-2 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
                 filters.priceRange && filters.priceRange !== 'all'
                   ? 'border-[#035f53] text-[#035f53] bg-[#035f53]/5 hover:bg-[#035f53]/10'
                   : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
@@ -339,7 +339,7 @@ export function FilterBar({
           <Button
             type="button"
             variant="outline"
-            className="flex items-center gap-2 h-10 px-4 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 text-sm font-semibold transition-all"
+            className="filter-control filter-more-control flex items-center gap-2 h-10 px-4 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 text-sm font-semibold transition-all"
           >
             {activeFiltersCount > 0 ? (
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#035f53] text-white text-xs font-bold">

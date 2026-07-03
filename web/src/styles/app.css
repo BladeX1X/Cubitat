@@ -3198,6 +3198,209 @@ h2 {
     width: 100%;
     text-align: center;
   }
+
+  .app-shell.is-results-page {
+    padding-bottom: 0;
+  }
+
+  body:has(.app-shell.is-results-page) {
+    padding-bottom: 0;
+  }
+
+  .app-shell.is-results-page .site-header {
+    min-height: 50px;
+    padding: 8px 16px;
+  }
+
+  .app-shell.is-results-page .brand span:last-child {
+    display: none;
+  }
+
+  .app-shell.is-results-page .brand-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+  }
+
+  .app-shell.is-results-page .mobile-header-actions {
+    gap: 8px;
+  }
+
+  .app-shell.is-results-page .mobile-notification-button,
+  .app-shell.is-results-page .mobile-menu-button,
+  .app-shell.is-results-page .mobile-notifications .notification-trigger {
+    width: 30px;
+    height: 30px;
+  }
+
+  .app-shell.is-results-page .mobile-bottom-nav {
+    display: none;
+  }
+
+  .app-shell.is-results-page .workspace-catalog {
+    gap: 10px;
+    padding: 10px 12px 26px;
+  }
+
+  .app-shell.is-results-page .results-toolbar-full {
+    position: static;
+    display: grid;
+    grid-template-columns: 76px minmax(112px, 1fr) 78px 70px;
+    gap: 7px 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none;
+  }
+
+  .app-shell.is-results-page .filter-search-field {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 36px;
+    border-radius: 7px;
+    box-shadow: none;
+  }
+
+  .app-shell.is-results-page .filter-control {
+    height: 38px;
+    min-width: 0;
+    width: 100%;
+    padding-inline: 8px;
+    border-radius: 7px;
+    background: #fff !important;
+    font-size: 12.25px;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-results-page .filter-control span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-shell.is-results-page .filter-more-control {
+    justify-self: stretch;
+  }
+
+  .app-shell.is-results-page .catalog-container {
+    gap: 0;
+  }
+
+  .app-shell.is-results-page .results-heading {
+    align-items: center;
+    padding: 8px 0 0;
+  }
+
+  .app-shell.is-results-page .results-heading .eyebrow {
+    display: none;
+  }
+
+  .app-shell.is-results-page .results-heading h1 {
+    max-width: 235px;
+    font-size: 22px;
+    line-height: 1.08;
+  }
+
+  .app-shell.is-results-page .sort-button {
+    height: 36px;
+    padding-inline: 14px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .app-shell.is-results-page .results-summary {
+    display: none;
+  }
+
+  .app-shell.is-results-page .property-catalog-grid {
+    gap: 14px;
+    margin-top: 12px;
+  }
+
+  .app-shell.is-results-page .property-card {
+    min-height: 0;
+    border-radius: 7px;
+  }
+
+  .app-shell.is-results-page .property-photo {
+    height: 168px;
+    min-height: 168px;
+  }
+
+  .app-shell.is-results-page .property-badge {
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+
+  .app-shell.is-results-page .property-save {
+    top: 8px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .app-shell.is-results-page .property-photo-arrow {
+    width: 34px;
+    height: 34px;
+  }
+
+  .app-shell.is-results-page .property-photo-arrow-left {
+    left: 8px !important;
+  }
+
+  .app-shell.is-results-page .property-photo-arrow-right {
+    right: 54px !important;
+  }
+
+  .app-shell.is-results-page .property-info {
+    padding: 11px 12px 12px;
+  }
+
+  .app-shell.is-results-page .property-badges-row {
+    margin-bottom: 5px;
+  }
+
+  .app-shell.is-results-page .property-price-row {
+    margin-bottom: 3px;
+    font-size: 18px;
+  }
+
+  .app-shell.is-results-page .property-title {
+    height: auto;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.24;
+    -webkit-line-clamp: 1;
+  }
+
+  .app-shell.is-results-page .property-specs-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding-top: 8px;
+    margin-bottom: 8px;
+    font-size: 10.5px;
+  }
+
+  .app-shell.is-results-page .property-specs-grid .spec-item:nth-child(n + 5) {
+    display: none;
+  }
+
+  .app-shell.is-results-page .property-actions {
+    padding-top: 6px;
+  }
+
+  .app-shell.is-results-page .property-contact-btn,
+  .app-shell.is-results-page .property-whatsapp-btn {
+    height: 34px !important;
+    font-size: 11.5px !important;
+  }
 }
 
 @keyframes mobile-menu-in {
