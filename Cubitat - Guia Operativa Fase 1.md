@@ -1337,11 +1337,94 @@ Implementacion actual:
 - Variables:
   - `--font-sans`
   - `--font-display`
-- Import temporal desde Google Fonts con `display=swap`.
+  - Carga temporal desde Google Fonts en `web/index.html` con `preconnect` y `display=swap`.
 
 Nota de produccion:
 
-Si el cliente exige independencia total de servicios externos por el contexto de Cuba, antes de publicar se deben self-hostear las fuentes dentro de `web/public/fonts/` y reemplazar el `@import` remoto por `@font-face` local. Mientras tanto hay fallbacks del sistema para que la app siga funcionando si la fuente externa no carga.
+Si el cliente exige independencia total de servicios externos por el contexto de Cuba, antes de publicar se deben self-hostear las fuentes dentro de `web/public/fonts/` y reemplazar el stylesheet remoto por `@font-face` local. Mientras tanto hay fallbacks del sistema para que la app siga funcionando si la fuente externa no carga.
+
+### Optimizacion de Performance Inicial
+
+Fecha: 2026-07-03  
+Rama usada: `main` para la correccion ya publicada; luego se creo `dev` para pruebas futuras.
+
+Objetivo:
+
+- Mejorar carga inicial sin cambiar la apariencia visual del portal.
+- Reducir JavaScript inicial.
+- Mejorar descubrimiento de fuentes e imagenes criticas.
+- Mantener el mismo layout, colores, tipografia y composicion.
+
+Cambios aplicados:
+
+- `web/index.html`: se agregaron `preconnect` para Google Fonts, `fonts.gstatic.com` e `images.unsplash.com`.
+- `web/index.html`: se agrego `preload` de la imagen hero actual con `fetchpriority="high"`.
+- `web/src/styles/app.css`: se elimino el `@import` remoto de Google Fonts para evitar descubrimiento tardio desde CSS.
+- `web/src/pages/home/HomePage.tsx`: las imagenes de provincias usan `<img loading="lazy" decoding="async">` en lugar de `background-image`.
+- `web/src/modules/properties/components/PropertyCard.tsx`: las imagenes de propiedades usan `<img>` con `loading`, `decoding` y `fetchPriority` selectivo.
+- `web/src/pages/results/ResultsPage.tsx` y `web/src/pages/favorites/FavoritesPage.tsx`: solo las primeras 4 tarjetas priorizan imagen principal.
+- `web/src/app/CubitatApp.tsx`: se aplico `React.lazy` a paginas secundarias, resultados, modales de auth, menu de usuario y notificaciones.
+
+Resultado de build:
+
+- Antes de la optimizacion: bundle inicial `669.13 kB`.
+- Primera ronda: bundle inicial `570.68 kB`.
+- Segunda ronda: bundle inicial `446.77 kB`.
+- Reduccion acumulada: `222.36 kB`, aproximadamente `33.2%`.
+- `npm run build` paso correctamente despues de los cambios.
+
+Estado del ultimo informe Unlighthouse revisado desde `http://localhost:5678/`:
+
+- URLs auditadas: 29.
+- Performance promedio: `60.6/100`.
+- FCP promedio: `2.74 s`.
+- LCP promedio: `10.06 s`.
+- CLS promedio: `0.204`.
+- TBT promedio: `91 ms`.
+- Speed Index promedio: `7.60 s`.
+
+Lectura del informe:
+
+- La reduccion de JavaScript inicial fue significativa, pero el rendimiento sigue dominado por LCP alto.
+- Las paginas de resultados tienen CLS alto en varias combinaciones de filtros, especialmente con valores alrededor de `0.69` a `0.762`.
+- Hay outliers de Speed Index en home y resultados filtrados.
+- TBT esta razonable en promedio, aunque hay picos en algunas rutas.
+
+Proximos focos recomendados:
+
+- Reemplazar imagenes remotas de Unsplash por assets propios optimizados o CDN controlado.
+- Convertir hero a un elemento `<picture>`/`<img>` real si se quiere mayor control del LCP.
+- Reservar altura estable para listados, filtros y secciones de resultados para bajar CLS.
+- Revisar por que algunas rutas de resultados desplazan layout despues de cargar datos o fuentes.
+- Reducir o diferir recursos secundarios de resultados que no son visibles inicialmente.
+
+### Flujo de Ramas
+
+Estado actual:
+
+- `main`: rama estable y publicada en GitHub. Debe mantenerse lista para produccion.
+- `dev`: rama creada desde `main` para probar cambios sin afectar el codigo estable.
+
+Uso recomendado:
+
+```powershell
+git switch dev
+# implementar cambios experimentales
+npm run build
+git push origin dev
+```
+
+Cuando una prueba en `dev` quede validada:
+
+- Crear PR de `dev` hacia `main`, o hacer merge controlado si el equipo decide no usar PR.
+- Antes de integrar a `main`, ejecutar como minimo `npm run build`.
+- Para cambios de interfaz o performance, ejecutar tambien Unlighthouse cuando sea posible.
+
+Reglas:
+
+- No experimentar directamente en `main`.
+- No subir secretos ni reportes generados.
+- Mantener `main` como referencia estable para despliegues y demostraciones.
 
 ### Correo Transaccional con Resend y Supabase Auth
 

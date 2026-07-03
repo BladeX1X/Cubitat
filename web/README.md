@@ -19,6 +19,47 @@ npm run lint
 npm run preview
 ```
 
+## Flujo de ramas
+
+- La rama de trabajo para cambios de desarrollo es `dev`.
+- `main` queda como rama estable para codigo probado y listo para produccion.
+- Antes de subir, fusionar o publicar cambios en `main` en GitHub, hay que pedir confirmacion explicita del usuario.
+
+Flujo recomendado para pruebas:
+
+```bash
+git switch dev
+# hacer cambios y validar
+npm run build
+git push origin dev
+```
+
+Cuando una mejora este validada en `dev`, crear PR hacia `main` o pedir confirmacion explicita antes de fusionar/publicar en `main`.
+
+## Optimizaciones de performance aplicadas
+
+Cambios aplicados en el commit `perf: optimize initial web load`:
+
+- Se movio la carga de Google Fonts desde `@import` en CSS hacia `index.html` con `preconnect` y `display=swap`.
+- Se agrego `preconnect` para `images.unsplash.com` y `preload` para la imagen hero actual.
+- Las imagenes de tarjetas y provincias pasaron de `background-image` a `<img>` para habilitar `loading`, `decoding` y prioridad selectiva.
+- `ResultsPage`, paginas secundarias, modales de auth y menu de usuario cargan con `React.lazy`.
+- Solo las primeras 4 tarjetas visibles priorizan su imagen principal; el resto queda lazy.
+
+Resultado de build medido:
+
+- Bundle inicial antes: `669.13 kB`.
+- Bundle inicial despues: `446.77 kB`.
+- Reduccion aproximada: `222.36 kB` (`33.2%`).
+
+Estado del ultimo informe Unlighthouse revisado en `http://localhost:5678/`:
+
+- Performance promedio: `60.6/100` en 29 URLs.
+- Promedios: FCP `2.74 s`, LCP `10.06 s`, CLS `0.204`, TBT `91 ms`, Speed Index `7.60 s`.
+- Cuello de botella pendiente: LCP alto en todas las URLs.
+- Riesgo pendiente: CLS alto en varias paginas de resultados.
+- Siguiente foco recomendado: imagen/contenido LCP, estabilidad de layout en resultados y optimizacion de render inicial de listados.
+
 ## Estructura
 
 ```text
