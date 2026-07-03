@@ -467,6 +467,7 @@ export function CubitatApp() {
               onNavigateAccount={navigateAccount}
               onNavigateFavorites={navigateFavorites}
               onNavigateMyProperties={navigateMyProperties}
+              onSignOut={navigateHome}
             />
           ) : (
             <Button

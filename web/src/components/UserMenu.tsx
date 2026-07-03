@@ -16,6 +16,7 @@ interface UserMenuProps {
   onNavigateAccount?: () => void
   onNavigateFavorites?: () => void
   onNavigateMyProperties?: () => void
+  onSignOut?: () => void
 }
 
 export function NotificationsMenu({ className = '' }: { className?: string }) {
@@ -115,6 +116,7 @@ export function UserMenu({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onSignOut,
 }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -151,6 +153,7 @@ export function UserMenu({
 
   async function handleSignOut() {
     setIsOpen(false)
+    onSignOut?.()
     await supabase.auth.signOut()
   }
 
