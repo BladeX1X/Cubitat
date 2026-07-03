@@ -566,17 +566,17 @@ export function CubitatApp() {
               Ingresar o crear cuenta
             </button>
           )}
-          <nav className="mobile-menu-list" aria-label="Opciones de cuenta">
-            <button type="button" onClick={navigateAccount}>Mi cuenta</button>
-            <button type="button" onClick={navigateFavorites}>Favoritos</button>
-            <button type="button" onClick={navigateMyProperties}>Ver mis contenidos</button>
-            <button type="button" onClick={navigatePublish}>Vender</button>
-            {user && (
+          {user && (
+            <nav className="mobile-menu-list" aria-label="Opciones de cuenta">
+              <button type="button" onClick={navigateAccount}>Mi cuenta</button>
+              <button type="button" onClick={navigateFavorites}>Favoritos</button>
+              <button type="button" onClick={navigateMyProperties}>Ver mis contenidos</button>
+              <button type="button" onClick={navigatePublish}>Vender</button>
               <button className="mobile-menu-signout" type="button" onClick={handleMobileSignOut}>
                 Cerrar sesión
               </button>
-            )}
-          </nav>
+            </nav>
+          )}
           <Button className="mobile-menu-publish" type="button" onClick={navigatePublish}>
             Publicar gratis
           </Button>

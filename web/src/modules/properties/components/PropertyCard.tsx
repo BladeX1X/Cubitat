@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Bath,
   BedDouble,
@@ -15,6 +16,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from '../../../shared/ui/carousel'
 import { useSavedProperties } from '../hooks/useSavedProperties'
 import type { Property } from '../types'
@@ -35,6 +37,8 @@ export function PropertyCard({
 }: PropertyCardProps) {
   const priceLabel = getPriceLabel(property)
   const { isSaved, toggleSave } = useSavedProperties()
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   const saved = isSaved(property.id)
 
@@ -53,6 +57,23 @@ export function PropertyCard({
   const images = getPropertyGalleryImages(property.coverImage, property.images)
   const hasMultipleImages = images.length > 1
 
+  useEffect(() => {
+    if (!carouselApi) return
+
+    function updateSelectedImage() {
+      setActiveImageIndex(carouselApi?.selectedScrollSnap() ?? 0)
+    }
+
+    updateSelectedImage()
+    carouselApi.on('select', updateSelectedImage)
+    carouselApi.on('reInit', updateSelectedImage)
+
+    return () => {
+      carouselApi.off('select', updateSelectedImage)
+      carouselApi.off('reInit', updateSelectedImage)
+    }
+  }, [carouselApi])
+
   return (
     <article
       className={`property-card ${isSelected ? 'is-selected' : ''}`}
@@ -68,21 +89,32 @@ export function PropertyCard({
       }}
     >
       <div className="property-photo">
-        <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }}>
+        <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }} setApi={setCarouselApi}>
           <CarouselContent className="-ml-0 h-full">
-            {images.map((image, index) => (
+            {images.map((image, index) => {
+              const shouldRenderImage = index === 0 || index === activeImageIndex
+
+              return (
               <CarouselItem key={index} className="pl-0 h-full w-full">
-                <img
-                  className="property-photo-slide"
-                  src={image}
-                  alt=""
-                  loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}
-                  style={{ backgroundColor: property.coverTone }}
-                />
+                {shouldRenderImage ? (
+                  <img
+                    className="property-photo-slide"
+                    src={image}
+                    alt=""
+                    loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}
+                    style={{ backgroundColor: property.coverTone }}
+                  />
+                ) : (
+                  <div
+                    className="property-photo-slide property-photo-slide-placeholder"
+                    style={{ backgroundColor: property.coverTone }}
+                  />
+                )}
               </CarouselItem>
-            ))}
+              )
+            })}
           </CarouselContent>
           {hasMultipleImages && (
             <>
@@ -91,6 +123,25 @@ export function PropertyCard({
             </>
           )}
         </Carousel>
+        {hasMultipleImages && (
+          <div className="property-photo-dots" aria-label="Fotos de la propiedad">
+            {images.map((image, index) => (
+              <button
+                key={image}
+                type="button"
+                className={`property-photo-dot ${activeImageIndex === index ? 'is-active' : ''}`}
+                aria-label={`Ver foto ${index + 1}`}
+                aria-current={activeImageIndex === index ? 'true' : undefined}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  carouselApi?.scrollTo(index)
+                }}
+              >
+                <span />
+              </button>
+            ))}
+          </div>
+        )}
         {property.badge ? (
           <Badge className="property-badge">{property.badge}</Badge>
         ) : null}

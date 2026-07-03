@@ -222,7 +222,7 @@ export function ResultsPage({
 
         {/* Pagination Controls */}
         {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
+          <div className="results-pagination flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
             <Button
               variant="outline"
               size="sm"
@@ -237,7 +237,7 @@ export function ResultsPage({
               {getPageNumbers().map((pageNum, idx) => {
                 if (pageNum === '...') {
                   return (
-                    <span key={`dots-${idx}`} className="px-2 text-neutral-400 text-xs font-bold">
+                    <span key={`dots-${idx}`} className="px-2 text-neutral-500 text-xs font-bold">
                       ...
                     </span>
                   )
@@ -250,7 +250,7 @@ export function ResultsPage({
                     className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
                       isCurrent
                         ? 'bg-[#035f53] text-white shadow-md'
-                        : 'text-neutral-500 hover:bg-neutral-100 active:scale-95'
+                        : 'text-neutral-700 hover:bg-neutral-100 active:scale-95'
                     }`}
                   >
                     {pageNum}

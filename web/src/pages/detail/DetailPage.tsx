@@ -1,4 +1,4 @@
-﻿import { useState, type CSSProperties, type ReactNode } from 'react'
+﻿import { useRef, useState, type ReactNode, type UIEvent } from 'react'
 import {
   Bath,
   BedDouble,
@@ -351,9 +351,23 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
 /* Subcomponente: Galeria de Imagenes (Airbnb-style Collage layout) */
 function ImageGallery({ property }: { property: Property }) {
   const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
+  const [activeIndex, setActiveIndex] = useState(0)
   const [isOpenModal, setIsOpenModal] = useState(false)
+  const carouselRef = useRef<HTMLDivElement>(null)
 
   const images = getPropertyGalleryImages(property.coverImage, property.images)
+
+  function handleCarouselScroll(event: UIEvent<HTMLDivElement>) {
+    const { scrollLeft, clientWidth } = event.currentTarget
+    setActiveIndex(Math.round(scrollLeft / clientWidth))
+  }
+
+  function goToSlide(index: number) {
+    const carousel = carouselRef.current
+    if (!carousel) return
+
+    carousel.scrollTo({ left: index * carousel.clientWidth, behavior: 'smooth' })
+  }
 
   return (
     <div className="detail-gallery space-y-4">
@@ -390,34 +404,44 @@ function ImageGallery({ property }: { property: Property }) {
       {/* Slider movil */}
       <div className="mobile-detail-gallery block md:hidden space-y-2">
         <div
-          className="mobile-detail-gallery-main relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md"
-          style={
-            {
-              backgroundColor: property.coverTone || '#f3f4f6',
-              backgroundImage: `url("${activeImage || images[0]}")`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            } as CSSProperties
-          }
+          ref={carouselRef}
+          className="mobile-detail-gallery-track"
+          onScroll={handleCarouselScroll}
         >
-          <button type="button" className="mobile-gallery-button" onClick={() => setIsOpenModal(true)}>
-            Ver Galería
-          </button>
-        </div>
-        <div className="mobile-detail-gallery-thumbs flex gap-2 overflow-x-auto py-1 scrollbar-none">
           {images.map((img, idx) => (
             <button
-              key={idx}
+              key={img}
               type="button"
-              onClick={() => setActiveImage(img)}
-              className={`mobile-detail-gallery-thumb relative w-16 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
-                activeImage === img ? 'border-[#035f53] scale-95' : 'border-transparent opacity-75'
-              }`}
+              className="mobile-detail-gallery-slide"
+              onClick={() => {
+                setActiveImage(img)
+                setActiveIndex(idx)
+                setIsOpenModal(true)
+              }}
+              aria-label={`Abrir foto ${idx + 1} de ${images.length}`}
             >
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${img}")` }} />
+              <img src={img} alt={`Foto ${idx + 1} de la propiedad`} loading={idx === 0 ? 'eager' : 'lazy'} />
             </button>
           ))}
         </div>
+        {images.length > 1 && (
+          <div className="mobile-detail-gallery-dots" aria-label="Fotos de la propiedad">
+            {images.map((img, idx) => (
+              <button
+                key={img}
+                type="button"
+                onClick={() => goToSlide(idx)}
+                className={`mobile-detail-gallery-dot ${
+                  activeIndex === idx ? 'is-active' : ''
+                }`}
+                aria-label={`Ver foto ${idx + 1}`}
+                aria-current={activeIndex === idx ? 'true' : undefined}
+              >
+                <span />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal visor de pantalla completa */}
