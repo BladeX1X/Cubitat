@@ -1,26 +1,52 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { Building2, Heart, Home, Menu, UserRound, X } from 'lucide-react'
-import { LoginModal } from '../modules/auth/components/LoginModal'
-import { SavePromptModal } from '../modules/auth/components/SavePromptModal'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
-import { NotificationsMenu, UserMenu } from '../components/UserMenu'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
 import { normalizePropertyImages } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
 import { HomePage, PopularLocations } from '../pages/home/HomePage'
-import { ResultsPage } from '../pages/results/ResultsPage'
-import { DetailPage } from '../pages/detail/DetailPage'
-import { PublishPage } from '../pages/publish/PublishPage'
-import { MyPropertiesPage } from '../pages/my-properties/MyPropertiesPage'
-import { AccountPage } from '../pages/account/AccountPage'
-import { FavoritesPage } from '../pages/favorites/FavoritesPage'
-import { AuthCallbackPage } from '../pages/auth/AuthCallbackPage'
-import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
 import { initAnalytics, trackPageView } from '../shared/lib/analytics'
+
+const LoginModal = lazy(() =>
+  import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
+)
+const SavePromptModal = lazy(() =>
+  import('../modules/auth/components/SavePromptModal').then((module) => ({ default: module.SavePromptModal })),
+)
+const NotificationsMenu = lazy(() =>
+  import('../components/UserMenu').then((module) => ({ default: module.NotificationsMenu })),
+)
+const UserMenu = lazy(() =>
+  import('../components/UserMenu').then((module) => ({ default: module.UserMenu })),
+)
+const ResultsPage = lazy(() =>
+  import('../pages/results/ResultsPage').then((module) => ({ default: module.ResultsPage })),
+)
+const DetailPage = lazy(() =>
+  import('../pages/detail/DetailPage').then((module) => ({ default: module.DetailPage })),
+)
+const PublishPage = lazy(() =>
+  import('../pages/publish/PublishPage').then((module) => ({ default: module.PublishPage })),
+)
+const MyPropertiesPage = lazy(() =>
+  import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
+)
+const AccountPage = lazy(() =>
+  import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
+)
+const FavoritesPage = lazy(() =>
+  import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
+)
+const AuthCallbackPage = lazy(() =>
+  import('../pages/auth/AuthCallbackPage').then((module) => ({ default: module.AuthCallbackPage })),
+)
+const ResetPasswordPage = lazy(() =>
+  import('../pages/auth/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })),
+)
 
 const initialFilters: SearchFilters = {
   query: '',
@@ -470,13 +496,15 @@ export function CubitatApp() {
             Publicar gratis
           </Button>
           {user ? (
-            <UserMenu
-              user={user}
-              onNavigateAccount={navigateAccount}
-              onNavigateFavorites={navigateFavorites}
-              onNavigateMyProperties={navigateMyProperties}
-              onSignOut={navigateHome}
-            />
+            <Suspense fallback={null}>
+              <UserMenu
+                user={user}
+                onNavigateAccount={navigateAccount}
+                onNavigateFavorites={navigateFavorites}
+                onNavigateMyProperties={navigateMyProperties}
+                onSignOut={navigateHome}
+              />
+            </Suspense>
           ) : (
             <Button
               className="login-button"
@@ -490,7 +518,11 @@ export function CubitatApp() {
           )}
         </div>
         <div className="mobile-header-actions">
-          {user && <NotificationsMenu className="mobile-notifications" />}
+          {user && (
+            <Suspense fallback={null}>
+              <NotificationsMenu className="mobile-notifications" />
+            </Suspense>
+          )}
           <button
             className="mobile-menu-button"
             type="button"
@@ -546,128 +578,125 @@ export function CubitatApp() {
         </aside>
       )}
 
-      {loading && pageMode !== 'home' && pageMode !== 'results' && (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-          <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-bold text-neutral-500">Cargando las mejores propiedades en Cuba...</p>
-        </div>
-      )}
+      <Suspense fallback={<PageLoadingState />}>
+        {loading && pageMode !== 'home' && pageMode !== 'results' && <PageLoadingState />}
 
-      {error && pageMode !== 'home' && (
-        <div className="max-w-md mx-auto my-12 p-4 bg-red-50 border border-red-200 rounded-xl text-center space-y-2">
-          <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
-          <p className="text-[11px] text-red-500">{error}</p>
-          <Button 
-            className="mt-2 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs" 
-            onClick={() => window.location.reload()}
-          >
-            Reintentar
-          </Button>
-        </div>
-      )}
+        {error && pageMode !== 'home' && (
+          <div className="max-w-md mx-auto my-12 p-4 bg-red-50 border border-red-200 rounded-xl text-center space-y-2">
+            <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
+            <p className="text-[11px] text-red-500">{error}</p>
+            <Button 
+              className="mt-2 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs" 
+              onClick={() => window.location.reload()}
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
 
-      {pageMode === 'home' && (
-        <HomePage
-          filters={filters}
-          locationSuggestions={locationSuggestions}
-          onChangeFilters={setFilters}
-          onClearFilters={handleClearFilters}
-          onSubmitSearch={navigateResults}
-        />
-      )}
-
-      {!error && pageMode === 'results' && (
-        <>
-          <ResultsPage
+        {pageMode === 'home' && (
+          <HomePage
             filters={filters}
-            properties={visibleProperties}
-            selectedPropertyId={selectedPropertyId}
-            loading={loading}
-            onSelectProperty={handleSelectProperty}
+            locationSuggestions={locationSuggestions}
+            onChangeFilters={setFilters}
             onClearFilters={handleClearFilters}
+            onSubmitSearch={navigateResults}
+          />
+        )}
+
+        {!error && pageMode === 'results' && (
+          <>
+            <ResultsPage
+              filters={filters}
+              properties={visibleProperties}
+              selectedPropertyId={selectedPropertyId}
+              loading={loading}
+              onSelectProperty={handleSelectProperty}
+              onClearFilters={handleClearFilters}
+              onChangeFilters={setFilters}
+            />
+            <PopularLocations />
+          </>
+        )}
+
+        {!loading && !error && pageMode === 'detail' && selectedProperty && (
+          <DetailPage
+            property={selectedProperty}
+            onBack={handleBackToResults}
+            filters={filters}
             onChangeFilters={setFilters}
           />
-          <PopularLocations />
-        </>
-      )}
+        )}
 
-      {!loading && !error && pageMode === 'detail' && selectedProperty && (
-        <DetailPage
-          property={selectedProperty}
-          onBack={handleBackToResults}
-          filters={filters}
-          onChangeFilters={setFilters}
-        />
-      )}
+        {!loading && !error && pageMode === 'detail' && !selectedProperty && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <h2 className="text-xl font-bold text-neutral-800">Propiedad no encontrada</h2>
+            <p className="text-neutral-500 mt-2">El inmueble que buscas no existe o fue despublicado.</p>
+            <Button className="mt-4 bg-[#035f53] hover:bg-[#024a41] text-white rounded-full px-6" onClick={navigateHome}>Ir al inicio</Button>
+          </div>
+        )}
 
-      {!loading && !error && pageMode === 'detail' && !selectedProperty && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <h2 className="text-xl font-bold text-neutral-800">Propiedad no encontrada</h2>
-          <p className="text-neutral-500 mt-2">El inmueble que buscas no existe o fue despublicado.</p>
-          <Button className="mt-4 bg-[#035f53] hover:bg-[#024a41] text-white rounded-full px-6" onClick={navigateHome}>Ir al inicio</Button>
-        </div>
-      )}
+        {pageMode === 'publish' && (
+          <PublishPage
+            onBack={navigateHome}
+            onSubmitSuccess={() => {
+              setRefreshCounter((prev) => prev + 1)
+              navigateHome()
+            }}
+          />
+        )}
 
-      {pageMode === 'publish' && (
-        <PublishPage
-          onBack={navigateHome}
-          onSubmitSuccess={() => {
-            setRefreshCounter((prev) => prev + 1)
-            navigateHome()
-          }}
-        />
-      )}
+        {pageMode === 'edit' && editPropertyId && (
+          <PublishPage
+            editPropertyId={editPropertyId}
+            onBack={navigateMyProperties}
+            onSubmitSuccess={() => {
+              setRefreshCounter((prev) => prev + 1)
+              navigateMyProperties()
+            }}
+          />
+        )}
 
-      {pageMode === 'edit' && editPropertyId && (
-        <PublishPage
-          editPropertyId={editPropertyId}
-          onBack={navigateMyProperties}
-          onSubmitSuccess={() => {
-            setRefreshCounter((prev) => prev + 1)
-            navigateMyProperties()
-          }}
-        />
-      )}
+        {pageMode === 'my-properties' && (
+          <MyPropertiesPage
+            onBack={navigateHome}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+            onEditProperty={navigateEditProperty}
+            onNewProperty={navigatePublish}
+          />
+        )}
 
-      {pageMode === 'my-properties' && (
-        <MyPropertiesPage
-          onBack={navigateHome}
-          onNavigateAccount={navigateAccount}
-          onNavigateFavorites={navigateFavorites}
-          onNavigateMyProperties={navigateMyProperties}
-          onEditProperty={navigateEditProperty}
-          onNewProperty={navigatePublish}
-        />
-      )}
+        {pageMode === 'account' && user && (
+          <AccountPage
+            user={user}
+            onBack={navigateAccount}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+          />
+        )}
 
-      {pageMode === 'account' && user && (
-        <AccountPage
-          user={user}
-          onBack={navigateAccount}
-          onNavigateAccount={navigateAccount}
-          onNavigateFavorites={navigateFavorites}
-          onNavigateMyProperties={navigateMyProperties}
-        />
-      )}
+        {pageMode === 'favorites' && (
+          <FavoritesPage
+            properties={properties}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+            onSelectProperty={handleSelectProperty}
+            onGoResults={navigateResults}
+          />
+        )}
 
-      {pageMode === 'favorites' && (
-        <FavoritesPage
-          properties={properties}
-          onNavigateAccount={navigateAccount}
-          onNavigateFavorites={navigateFavorites}
-          onNavigateMyProperties={navigateMyProperties}
-          onSelectProperty={handleSelectProperty}
-          onGoResults={navigateResults}
-        />
-      )}
+        {pageMode === 'auth-callback' && (
+          <AuthCallbackPage onContinue={navigateHome} />
+        )}
 
-      {pageMode === 'auth-callback' && (
-        <AuthCallbackPage onContinue={navigateHome} />
-      )}
-
-      {pageMode === 'reset-password' && (
-        <ResetPasswordPage onDone={navigateLoginAfterPasswordReset} />
-      )}
+        {pageMode === 'reset-password' && (
+          <ResetPasswordPage onDone={navigateLoginAfterPasswordReset} />
+        )}
+      </Suspense>
 
       <nav className="mobile-bottom-nav" aria-label="Navegación móvil">
         <button className={pageMode === 'home' ? 'is-active' : ''} type="button" onClick={navigateHome}>
@@ -688,10 +717,21 @@ export function CubitatApp() {
         </button>
       </nav>
 
-      {isSavePromptOpen && <SavePromptModal onClose={closeSavePrompt} />}
-      {isLoginOpen && <LoginModal onClose={closeLogin} />}
+      <Suspense fallback={null}>
+        {isSavePromptOpen && <SavePromptModal onClose={closeSavePrompt} />}
+        {isLoginOpen && <LoginModal onClose={closeLogin} />}
+      </Suspense>
       <SiteFooter />
     </main>
+  )
+}
+
+function PageLoadingState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+      <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
+      <p className="text-xs font-bold text-neutral-500">Cargando las mejores propiedades en Cuba...</p>
+    </div>
   )
 }
 

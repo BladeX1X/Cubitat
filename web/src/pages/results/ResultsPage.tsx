@@ -208,12 +208,13 @@ export function ResultsPage({
           {loading ? (
             <PropertyCardSkeleton count={6} />
           ) : (
-            paginatedProperties.map((property) => (
+            paginatedProperties.map((property, index) => (
               <PropertyCard
                 key={property.id}
                 property={property}
                 isSelected={property.id === selectedPropertyId}
                 onSelect={onSelectProperty}
+                prioritizeImage={index < 4}
               />
             ))
           )}

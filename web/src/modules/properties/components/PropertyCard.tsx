@@ -1,4 +1,3 @@
-import { type CSSProperties } from 'react'
 import {
   Bath,
   BedDouble,
@@ -25,12 +24,14 @@ type PropertyCardProps = {
   property: Property
   isSelected: boolean
   onSelect: (propertyId: string) => void
+  prioritizeImage?: boolean
 }
 
 export function PropertyCard({
   property,
   isSelected,
   onSelect,
+  prioritizeImage = false,
 }: PropertyCardProps) {
   const priceLabel = getPriceLabel(property)
   const { isSaved, toggleSave } = useSavedProperties()
@@ -71,14 +72,14 @@ export function PropertyCard({
           <CarouselContent className="-ml-0 h-full">
             {images.map((image, index) => (
               <CarouselItem key={index} className="pl-0 h-full w-full">
-                <div
+                <img
                   className="property-photo-slide"
-                  style={
-                    {
-                      '--cover-tone': property.coverTone,
-                      '--cover-image': `url("${image}")`,
-                    } as CSSProperties
-                  }
+                  src={image}
+                  alt=""
+                  loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}
+                  style={{ backgroundColor: property.coverTone }}
                 />
               </CarouselItem>
             ))}

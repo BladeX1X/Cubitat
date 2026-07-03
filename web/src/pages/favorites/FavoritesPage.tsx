@@ -96,12 +96,13 @@ export function FavoritesPage({
               </div>
 
               <div className="property-catalog-grid">
-                {favoriteProperties.map((property) => (
+                {favoriteProperties.map((property, index) => (
                   <PropertyCard
                     key={property.id}
                     property={property}
                     isSelected={false}
                     onSelect={onSelectProperty}
+                    prioritizeImage={index < 4}
                   />
                 ))}
               </div>

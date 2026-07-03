@@ -93,9 +93,12 @@ export function PopularLocations() {
                 window.dispatchEvent(new Event('popstate'))
               }}
             >
-              <div
+              <img
                 className="location-card-image"
-                style={{ backgroundImage: `url(${image})` }}
+                src={image}
+                alt=""
+                loading="lazy"
+                decoding="async"
               />
               <div className="location-card-content">
                 <h3>{name}</h3>
@@ -187,6 +190,5 @@ function Solution({
     </article>
   )
 }
-
 
 
