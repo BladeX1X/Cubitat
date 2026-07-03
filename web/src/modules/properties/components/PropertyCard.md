@@ -44,6 +44,7 @@ type PropertyCardProps = {
 - El precio se calcula en `getPriceLabel`; alquiler agrega `/ mes` y permuta muestra `Permuta`.
 - Las flechas de imagen usan la galeria real de la propiedad (`property.images`) normalizada desde `src/modules/properties/utils/images.ts`.
 - El carrusel solo muestra flechas cuando hay mas de una imagen real distinta. Si `coverImage` e `images` contienen la misma URL repetida, se muestra una sola foto para evitar un carrusel que no cambia visualmente.
+- Desde 2026-07-03 las imagenes del carrusel se renderizan completas desde el inicio. No usar carga diferida por slide dentro de la tarjeta, porque Embla puede cambiar de slide antes de que el fondo se pinte y el usuario percibe que el carrusel no cambia.
 - En movil, las flechas de galeria permanecen visibles porque no se puede depender de `hover`.
 - En escritorio, las flechas pueden mantenerse discretas y aparecer con hover para reducir ruido visual.
 

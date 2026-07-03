@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties } from 'react'
+import { type CSSProperties } from 'react'
 import {
   Bath,
   BedDouble,
@@ -16,7 +16,6 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  type CarouselApi,
 } from '../../../shared/ui/carousel'
 import { useSavedProperties } from '../hooks/useSavedProperties'
 import type { Property } from '../types'
@@ -34,25 +33,9 @@ export function PropertyCard({
   onSelect,
 }: PropertyCardProps) {
   const priceLabel = getPriceLabel(property)
-  const [api, setApi] = useState<CarouselApi>()
-  const [loadedIndexes, setLoadedIndexes] = useState<number[]>([0])
   const { isSaved, toggleSave } = useSavedProperties()
 
   const saved = isSaved(property.id)
-
-  useEffect(() => {
-    if (!api) return
-    const handleSelect = () => {
-      const activeIdx = api.selectedScrollSnap()
-      setLoadedIndexes((prev) =>
-        prev.includes(activeIdx) ? prev : [...prev, activeIdx]
-      )
-    }
-    api.on('select', handleSelect)
-    return () => {
-      api.off('select', handleSelect)
-    }
-  }, [api])
 
   function selectProperty(event: React.MouseEvent | React.KeyboardEvent) {
     // Evitar que el clic en los botones de acción o en las flechas del carrusel dispare la selección
@@ -84,7 +67,7 @@ export function PropertyCard({
       }}
     >
       <div className="property-photo">
-        <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }} setApi={setApi}>
+        <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }}>
           <CarouselContent className="-ml-0 h-full">
             {images.map((image, index) => (
               <CarouselItem key={index} className="pl-0 h-full w-full">
@@ -93,7 +76,7 @@ export function PropertyCard({
                   style={
                     {
                       '--cover-tone': property.coverTone,
-                      '--cover-image': loadedIndexes.includes(index) ? `url("${image}")` : 'none',
+                      '--cover-image': `url("${image}")`,
                     } as CSSProperties
                   }
                 />
