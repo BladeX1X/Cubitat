@@ -313,7 +313,7 @@ export function AccountPage({
                     className="rounded-full h-10 px-5 text-sm font-bold"
                     onClick={onBack}
                   >
-                    Volver al inicio
+                    Volver a mi cuenta
                   </Button>
                 </div>
               </section>

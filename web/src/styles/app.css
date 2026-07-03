@@ -153,7 +153,6 @@ textarea:focus-visible {
 }
 
 .mobile-header-actions,
-.mobile-verify-strip,
 .mobile-menu-panel,
 .mobile-bottom-nav {
   display: none;
@@ -2903,22 +2902,9 @@ h2 {
     max-height: min(430px, calc(100svh - 150px));
   }
 
-  .mobile-verify-strip {
-    position: sticky;
-    top: 58px;
-    z-index: 110;
-    display: grid;
-    place-items: center;
-    min-height: 34px;
-    color: #fff;
-    background: var(--green);
-    font-size: 13px;
-    font-weight: 850;
-  }
-
   .mobile-menu-panel {
     position: fixed;
-    inset: 92px 0 0;
+    inset: 58px 0 0;
     z-index: 115;
     display: block;
     overflow-y: auto;
@@ -2990,6 +2976,11 @@ h2 {
     border-radius: 8px;
     color: var(--green-dark);
     font-weight: 800;
+  }
+
+  .mobile-menu-list .mobile-menu-signout {
+    color: #e54848;
+    font-weight: 760;
   }
 
   .mobile-menu-list {

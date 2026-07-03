@@ -164,3 +164,9 @@ Verificacion reciente (2026-07-01):
 - 16 provincias con fotos funcionales verificadas.
 - Slugs SEO y breadcrumbs clicables verificados.
 - Propiedades similares con prioridad por provincia verificadas.
+
+## Actualizacion panel y menu movil 2026-07-03
+
+- Se retiro el banner/franja de `Verificar cuenta` del header movil y del layout de cuenta.
+- El panel de cuenta ya no debe usar `navigateHome` para acciones internas de regreso. El boton de cuenta usa `navigateAccount`, de modo que vuelve al inicio del panel y no a la portada publica.
+- El menu movil autenticado incluye `Cerrar sesion`; al cerrar sesion vuelve a `/` sin abrir el modal de login.

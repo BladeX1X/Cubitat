@@ -329,6 +329,12 @@ export function CubitatApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function handleMobileSignOut() {
+    setIsMobileMenuOpen(false)
+    await supabase.auth.signOut()
+    navigateHome()
+  }
+
   function navigateEditProperty(propertyId: string) {
     setIsMobileMenuOpen(false)
     window.history.pushState(null, '', `/editar/${propertyId}`)
@@ -497,10 +503,6 @@ export function CubitatApp() {
         </div>
       </header>
 
-      <div className="mobile-verify-strip">
-        {user ? 'Verificar cuenta' : 'Cubitat para Cuba'}
-      </div>
-
       {isMobileMenuOpen && (
         <aside className="mobile-menu-panel" aria-label="Menú móvil">
           {user ? (
@@ -528,6 +530,11 @@ export function CubitatApp() {
             <button type="button" onClick={navigateFavorites}>Favoritos</button>
             <button type="button" onClick={navigateMyProperties}>Ver mis contenidos</button>
             <button type="button" onClick={navigatePublish}>Vender</button>
+            {user && (
+              <button className="mobile-menu-signout" type="button" onClick={handleMobileSignOut}>
+                Cerrar sesión
+              </button>
+            )}
           </nav>
           <Button className="mobile-menu-publish" type="button" onClick={navigatePublish}>
             Publicar gratis
@@ -636,7 +643,7 @@ export function CubitatApp() {
       {pageMode === 'account' && user && (
         <AccountPage
           user={user}
-          onBack={navigateHome}
+          onBack={navigateAccount}
           onNavigateAccount={navigateAccount}
           onNavigateFavorites={navigateFavorites}
           onNavigateMyProperties={navigateMyProperties}
