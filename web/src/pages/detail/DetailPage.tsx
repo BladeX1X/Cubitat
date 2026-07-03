@@ -190,11 +190,6 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
           </div>
         </div>
 
-        <button type="button" className="mobile-verify-strip">
-          Verificar cuenta
-          <span aria-hidden="true">▼</span>
-        </button>
-
         {/* Estructura Principal en 2 Columnas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
