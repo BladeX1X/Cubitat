@@ -20,6 +20,7 @@ import { useEffect } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import type { Property } from '../../modules/properties/types'
+import { getPropertyGalleryImages, normalizePropertyImages } from '../../modules/properties/utils/images'
 import { useSavedProperties } from '../../modules/properties/hooks/useSavedProperties'
 import { formatPrice } from '../../shared/lib/formatPrice'
 import { Button } from '../../shared/ui/button'
@@ -332,13 +333,7 @@ function ImageGallery({ property }: { property: Property }) {
   const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
   const [isOpenModal, setIsOpenModal] = useState(false)
 
-  const images = [
-    property.coverImage,
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&w=800&q=80',
-  ].filter(Boolean) as string[]
+  const images = getPropertyGalleryImages(property.coverImage, property.images)
 
   return (
     <div className="space-y-4">
@@ -598,6 +593,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
             coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 }
         }))

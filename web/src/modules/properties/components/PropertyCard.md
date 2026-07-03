@@ -23,9 +23,9 @@ type PropertyCardProps = {
 ## Estructura Visual
 
 - Imagen de portada grande:
-  - Usa `property.coverImage` y `property.coverTone`.
+  - Usa `property.coverImage`, `property.images` y `property.coverTone`.
   - Muestra badge editorial cuando existe.
-  - Incluye flechas laterales preparadas para una futura galeria.
+  - Incluye flechas laterales solo cuando existen varias imagenes reales.
   - Incluye boton visual de guardar con icono de corazon.
   - Las flechas y el boton de guardar deben conservar area tactil minima de `44x44 px`.
 - Informacion:
@@ -42,7 +42,8 @@ type PropertyCardProps = {
 - El boton `Contactar` usa el componente compartido `Button`.
 - El badge usa el componente compartido `Badge`.
 - El precio se calcula en `getPriceLabel`; alquiler agrega `/ mes` y permuta muestra `Permuta`.
-- Las flechas de imagen todavia no cambian galeria; quedan como affordance visual para cuando exista multi-imagen.
+- Las flechas de imagen usan la galeria real de la propiedad (`property.images`) normalizada desde `src/modules/properties/utils/images.ts`.
+- El carrusel solo muestra flechas cuando hay mas de una imagen real distinta. Si `coverImage` e `images` contienen la misma URL repetida, se muestra una sola foto para evitar un carrusel que no cambia visualmente.
 - En movil, las flechas de galeria permanecen visibles porque no se puede depender de `hover`.
 - En escritorio, las flechas pueden mantenerse discretas y aparecer con hover para reducir ruido visual.
 
@@ -91,7 +92,6 @@ Clases principales en `app.css`:
 
 - Convertir `Guardar` en accion real cuando exista autenticacion/favoritos.
 - Definir si `Contactar` abre WhatsApp, modal o formulario.
-- Conectar las flechas a una galeria real cuando el modelo tenga varias imagenes.
 - Si se agrega routing, la seleccion de tarjeta puede navegar a una URL limpia de propiedad.
 
 ## Verificacion

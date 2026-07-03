@@ -7,6 +7,7 @@ import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { NotificationsMenu, UserMenu } from '../components/UserMenu'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
+import { normalizePropertyImages } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
 import { HomePage, PopularLocations } from '../pages/home/HomePage'
 import { ResultsPage } from '../pages/results/ResultsPage'
@@ -192,6 +193,7 @@ export function CubitatApp() {
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
             coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 }
           }))

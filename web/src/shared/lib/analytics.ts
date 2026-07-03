@@ -14,14 +14,20 @@ export function initAnalytics() {
     return
   }
 
-  const script = document.createElement('script')
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
-  document.head.appendChild(script)
-
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag(...args: unknown[]) {
     window.dataLayer?.push(args)
+  }
+
+  const existingScript = document.querySelector(
+    `script[src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"]`,
+  )
+
+  if (!existingScript) {
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
+    document.head.appendChild(script)
   }
 
   window.gtag('js', new Date())
@@ -39,7 +45,7 @@ export function trackPageView(path = window.location.pathname + window.location.
 
   initAnalytics()
 
-  window.gtag?.('event', 'page_view', {
+  window.gtag?.('config', GA_MEASUREMENT_ID, {
     page_location: window.location.origin + path,
     page_path: path,
     page_title: document.title,

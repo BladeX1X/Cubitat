@@ -23,6 +23,7 @@ export type Property = {
   status: PropertyStatus
   coverTone: string
   coverImage: string
+  images?: string[]
   mapPoint: {
     x: number
     y: number

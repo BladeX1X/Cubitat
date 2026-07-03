@@ -20,6 +20,7 @@ import {
 } from '../../../shared/ui/carousel'
 import { useSavedProperties } from '../hooks/useSavedProperties'
 import type { Property } from '../types'
+import { getPropertyGalleryImages } from '../utils/images'
 
 type PropertyCardProps = {
   property: Property
@@ -65,15 +66,8 @@ export function PropertyCard({
     onSelect(property.id)
   }
 
-  const images = [
-    property.coverImage,
-    property.coverImage.includes('w=900')
-      ? property.coverImage.replace('w=900', 'w=901')
-      : `${property.coverImage}&w=901`,
-    property.coverImage.includes('w=900')
-      ? property.coverImage.replace('w=900', 'w=902')
-      : `${property.coverImage}&w=902`,
-  ]
+  const images = getPropertyGalleryImages(property.coverImage, property.images)
+  const hasMultipleImages = images.length > 1
 
   return (
     <article
@@ -90,7 +84,7 @@ export function PropertyCard({
       }}
     >
       <div className="property-photo">
-        <Carousel className="w-full h-full group" opts={{ loop: true }} setApi={setApi}>
+        <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }} setApi={setApi}>
           <CarouselContent className="-ml-0 h-full">
             {images.map((image, index) => (
               <CarouselItem key={index} className="pl-0 h-full w-full">
@@ -106,8 +100,12 @@ export function PropertyCard({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
+          {hasMultipleImages && (
+            <>
+              <CarouselPrevious />
+              <CarouselNext />
+            </>
+          )}
         </Carousel>
         {property.badge ? (
           <Badge className="property-badge">{property.badge}</Badge>
