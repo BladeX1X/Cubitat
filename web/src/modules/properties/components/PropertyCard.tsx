@@ -173,9 +173,9 @@ export function PropertyCard({
         <div className="property-price-row">{priceLabel}</div>
 
         {/* Row 3: Description/Title */}
-        <h3 className="property-title">
+        <h2 className="property-title">
           {property.title}
-        </h3>
+        </h2>
 
         {/* Row 4: Specs Grid */}
         <div className="property-specs-grid" aria-label="Características">

@@ -3493,14 +3493,14 @@ h2 {
     place-items: center;
     gap: 2px;
     border: 0;
-    color: #6b7c78;
+    color: #43534f;
     background: transparent;
     font-size: 11px;
     font-weight: 650;
   }
 
   .mobile-bottom-nav button.is-active {
-    color: var(--green);
+    color: var(--green-dark);
   }
 
   .hero {
