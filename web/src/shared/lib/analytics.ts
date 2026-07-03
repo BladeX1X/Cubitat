@@ -8,6 +8,7 @@ declare global {
 }
 
 let initialized = false
+let lastTrackedPath: string | null = null
 
 export function initAnalytics() {
   if (!GA_MEASUREMENT_ID || initialized || typeof window === 'undefined') {
@@ -15,8 +16,11 @@ export function initAnalytics() {
   }
 
   window.dataLayer = window.dataLayer || []
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer?.push(args)
+
+  if (!window.gtag) {
+    window.gtag = function gtag(...args: unknown[]) {
+      window.dataLayer?.push(args)
+    }
   }
 
   const existingScript = document.querySelector(
@@ -45,7 +49,14 @@ export function trackPageView(path = window.location.pathname + window.location.
 
   initAnalytics()
 
-  window.gtag?.('config', GA_MEASUREMENT_ID, {
+  if (lastTrackedPath === path) {
+    return
+  }
+
+  lastTrackedPath = path
+
+  window.gtag?.('event', 'page_view', {
+    send_to: GA_MEASUREMENT_ID,
     page_location: window.location.origin + path,
     page_path: path,
     page_title: document.title,
