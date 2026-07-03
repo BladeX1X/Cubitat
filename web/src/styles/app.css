@@ -1555,7 +1555,7 @@ h2 {
 
 .login-modal-copy span,
 .login-modal-heading span {
-  color: var(--accent);
+  color: #7a5516;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1667,7 +1667,7 @@ h2 {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 12px;
-  color: #899995;
+  color: #60716e;
   font-size: 13px;
   font-weight: 800;
 }
@@ -1798,7 +1798,7 @@ h2 {
 }
 
 .login-legal-copy {
-  color: #7c8c88;
+  color: #60716e;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -1822,6 +1822,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   gap: 16px;
+  min-height: 120px;
   padding: 28px clamp(18px, 6vw, 96px);
   color: #d7eee8;
   background: #06241f;
