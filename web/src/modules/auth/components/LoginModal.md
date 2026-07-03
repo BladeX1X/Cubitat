@@ -2,15 +2,13 @@
 
 ## Responsabilidad
 
-`LoginModal` muestra la experiencia visual de inicio de sesion de Cubitat como un modal sobre la pagina actual. Su objetivo en Fase 1 es ofrecer una entrada clara para usuarios que quieren publicar, guardar favoritos o administrar avisos.
+`LoginModal` muestra la experiencia visual de inicio de sesión de Cubitat como un modal sobre la página actual. Conecta la interfaz directamente con el servicio de autenticación de Supabase (Supabase Auth) para soportar tanto el inicio de sesión como la creación de cuentas en la nube en tiempo real.
 
-El componente todavia no ejecuta autenticacion real. La integracion prevista es Supabase Auth.
-
-## Ubicacion
+## Ubicación
 
 - Componente: `src/modules/auth/components/LoginModal.tsx`
 - Estilos: `src/styles/app.css`
-- Integracion: `src/app/CubitatApp.tsx`
+- Integración: `src/app/CubitatApp.tsx`
 
 ## API del Componente
 
@@ -22,108 +20,54 @@ type LoginModalProps = {
 
 ### Props
 
-- `onClose`: callback opcional para cerrar el modal. Se usa en el boton de cierre, en el backdrop y al presionar `Escape`.
+- `onClose`: Callback opcional para cerrar el modal. Se activa mediante el botón de cierre, el backdrop transparente o al presionar la tecla `Escape`.
 
 ## Estructura Visual
 
 El modal se compone de dos zonas principales:
 
-- Panel lateral de marca:
-  - Marca Cubitat.
-  - Mensaje de valor: gestion de propiedades.
-  - Mensajes de confianza: verificacion de usuario y perfil para vendedores/agentes.
-  - Fondo con `src/assets/hero.png` y overlay verde.
+- **Panel lateral de marca (Desktop):**
+  - Logotipo e identidad de Cubitat.
+  - Mensaje de valor e indicadores de confianza (verificación de usuario y roles de vendedor/agente).
+  - Fondo con overlay verde sobre `src/assets/hero.png`.
 
-- Panel de formulario:
-  - Titulo: `Iniciar sesion`.
-  - Botones visuales para Google y Facebook.
-  - Separador `o usa tu correo`.
-  - Campos de correo y contrasena usando el componente compartido `Input`.
-  - Opcion `Recordarme`.
-  - Enlace de recuperacion.
-  - CTA principal usando el componente compartido `Button`.
-  - Enlace para crear cuenta y texto legal.
+- **Panel de formulario interactivo:**
+  - Alternador de vistas: Soporta vistas de **Iniciar sesión** y **Crear cuenta**.
+  - Boton social Google: Activo mediante Supabase OAuth cuando el proveedor Google este configurado en Supabase.
+  - Boton social Facebook: Desactivado hasta crear app de Meta y activar el proveedor en Supabase.
+  - Mensajes de error en color rojo y confirmaciones en color verde.
+  - Formulario dinámico:
+    - **Registro:** Pide Nombre Completo, Tipo de Perfil (Comprador, Propietario, Gestor/Agente), Correo Electrónico y Contraseña.
+    - **Login:** Pide Correo Electrónico y Contraseña.
+    - Ojo interactivo para mostrar/ocultar caracteres de la contraseña.
 
-## Decisiones de Implementacion
+## Decisiones de Implementación y Base de Datos
 
-- Se usa `createPortal` para renderizar el modal en `document.body` y evitar problemas de stacking context dentro del layout principal.
-- Se usa estado `mounted` para evitar renderizar el portal antes de que exista `document.body`.
-- Se escucha la tecla `Escape` con `useEffect` para cerrar el modal de forma natural.
-- El backdrop es un boton transparente para permitir cierre por click fuera del panel.
-- La UI usa clases propias en `app.css`, no estilos inline ni clases Tailwind sueltas.
-- Los controles principales reutilizan `Button` e `Input` desde `shared/ui` para mantener consistencia con el resto del sistema visual.
-- Los iconos se toman de `lucide-react`, excepto los logotipos simples de Google/Facebook que estan embebidos como SVG por tratarse de marcas especificas.
-- El texto se mantiene en ASCII para evitar problemas de encoding en el repo.
+- **Supabase Auth:** Integrado mediante `supabase.auth.signInWithPassword`, `supabase.auth.signUp` y `supabase.auth.signInWithOAuth`.
+- **OAuth Google:** El boton Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })` y redirige a `/auth/callback?flow=oauth` para que el callback cierre sesion de OAuth directo al inicio sin mostrar pantalla de correo confirmado.
+- **Metadata en el Registro:** El flujo de registro envía `options.data` con el nombre completo y el rol del usuario (`buyer`, `seller` o `agent`).
+- **Trigger en Base de Datos (PostgreSQL):** Al crear una cuenta en la nube, el disparador automático `on_auth_user_created` captura el registro en `auth.users` y propaga los metadatos para inicializar automáticamente la ficha del usuario en la tabla pública `profiles` en la nube.
+- **Portales de React:** Se utiliza `createPortal` hacia `document.body` para garantizar que la superposición z-index funcione perfectamente sobre mapas y galerías.
+- **Accesibilidad:** Se mantiene el atributo `aria-modal="true"`, `role="dialog"` y el control de cierre mediante escape.
 
 ## Responsive
 
-Desktop:
+El diseño se adapta automáticamente:
+- **Desktop:** Dimensiones máximas de `930px` distribuidas en 2 columnas (Aside de marca a la izquierda, Formulario a la derecha).
+- **Tablet & Móvil:** Se oculta el panel lateral de marca para ahorrar espacio vertical. El formulario ocupa todo el ancho disponible y compacta márgenes e inputs.
 
-- Modal de hasta `930px` de ancho.
-- Dos columnas: panel lateral + formulario.
-- Altura maxima controlada por viewport.
-
-Tablet:
-
-- El modal pasa a una sola columna.
-- El panel lateral se compacta.
-- Se ocultan el parrafo descriptivo lateral y las etiquetas de confianza para reducir altura.
-
-Movil:
-
-- Padding reducido.
-- Botones sociales apilados.
-- Fila de `Recordarme` y recuperacion en columna.
-- Modal dentro del viewport sin desbordar visualmente.
-
-## Accesibilidad
-
-- El contenedor principal usa `role="dialog"` y `aria-modal="true"`.
-- El modal tiene `aria-label="Inicio de sesion"`.
-- El boton de cierre y el backdrop tienen labels accesibles.
-- El cierre por `Escape` esta implementado.
-
-Pendiente recomendado:
-
-- Gestionar focus trap dentro del modal.
-- Devolver el foco al boton `Ingresar` al cerrar.
-- Asociar labels a inputs con `htmlFor`/`id` si se endurece la accesibilidad del formulario.
-
-## Integracion Actual
-
-En `CubitatApp.tsx`:
-
-- Se agrego `isLoginOpen` como estado local.
-- El boton `Ingresar` abre el modal.
-- `LoginModal` se renderiza condicionalmente cuando `isLoginOpen` es `true`.
-- `onClose` cambia `isLoginOpen` a `false`.
-
-## Pendientes Funcionales
-
-Para conectar con Supabase Auth:
-
-- Implementar login con correo y contrasena.
-- Implementar registro de usuario.
-- Implementar recuperacion de contrasena.
-- Definir si Google/Facebook se activan en Fase 1 o quedan ocultos hasta tener OAuth listo.
-- Mostrar estados de carga y errores amigables.
-- Persistir sesion y redirigir al dashboard o publicacion segun el flujo.
-- Validar el formulario con React Hook Form + Zod cuando se integre la capa real.
-
-## Verificacion Realizada
-
-Al crear la version visual se verifico:
+## Verificación Realizada
 
 - `npm run build`
-- `npm run lint`
-- Render desktop en `1365x768`.
-- Render movil en `390x844`.
-- Modal centrado y sin desbordar.
-- CTA principal con texto blanco y sin borde.
-- Inputs renderizados mediante `shared/ui/Input`.
+- `npm run test:run`
+- Validación de inserción de perfiles en la base de datos de Supabase tras registrar un usuario de prueba en el frontend.
 
-## Notas de Mantenimiento
+## Flujos de Email y Recuperacion
 
-- Si se cambia la estructura visual del modal, actualizar este archivo.
-- Si se agregan nuevos props o eventos, actualizar la seccion `API del Componente`.
-- Si se conecta Supabase Auth, documentar servicios, estados de error y flujo de navegacion resultante.
+- **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. Esa pagina intercambia el `code` de Supabase por sesion cuando aplica y muestra el resultado de verificacion.
+- **Recuperacion de contrasena:** El boton `Olvide mi contrasena` usa `supabase.auth.resetPasswordForEmail` y redirige a `/recuperar-contrasena`.
+- **Privacidad en recuperacion:** El mensaje de recuperacion no confirma si el correo existe. Siempre debe decir: `Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.`
+- **Rate limit de Supabase:** Si Supabase devuelve `email rate limit exceeded`, el modal muestra un mensaje amable de limite temporal. El arreglo real es configurar SMTP propio con dominio verificado.
+- **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
+- **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.
+- **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.

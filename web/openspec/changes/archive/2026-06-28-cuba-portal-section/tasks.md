@@ -1,0 +1,3 @@
+- `[x]` Modificar `HomePage.tsx` para cambiar la cabecera, añadir la descripción y actualizar el arreglo de localizaciones a 8 ítems combinados en Cuba
+- `[x]` Modificar `src/styles/app.css` para aplicar el grid de 4 columnas y estilos para `.section-description`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

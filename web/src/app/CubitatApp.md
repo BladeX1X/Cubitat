@@ -2,7 +2,7 @@
 
 ## Responsabilidad
 
-`CubitatApp` es el orquestador principal de la interfaz de Cubitat. Ensambla el hero, busqueda, listado, mapa, detalle, secciones comerciales y login.
+`CubitatApp` es el orquestador principal de la interfaz de Cubitat. Coordina la navegacion temporal entre portada y resultados, mantiene el estado de busqueda y ensambla detalle, login y layout general.
 
 ## Ubicacion
 
@@ -12,10 +12,12 @@
 ## Modulos Integrados
 
 - `SearchBar`: filtros del hero.
+- `HomePage`: pagina principal con hero y secciones comerciales.
 - `PropertyCard`: tarjeta oficial del listado de resultados.
 - `PropertyMap`: mapa desacoplado mediante adapter.
 - `LoginModal`: modal visual de inicio de sesion.
-- Secciones locales: detalle, ubicaciones, servicios, productos, publicacion, blog y footer.
+- `UserMenu`: menu de cuenta para usuarios autenticados.
+- Secciones locales: resultados, detalle y footer.
 
 ## Estado Local
 
@@ -23,34 +25,45 @@
 const [filters, setFilters] = useState<SearchFilters>(initialFilters)
 const [selectedPropertyId, setSelectedPropertyId] = useState<string>()
 const [isLoginOpen, setIsLoginOpen] = useState(false)
+const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 ```
 
 - `filters`: controla busqueda y filtrado.
 - `selectedPropertyId`: sincroniza lista, mapa y detalle.
 - `isLoginOpen`: muestra u oculta `LoginModal`.
+- `pageMode`: alterna entre portada (`home`) y pagina de resultados (`results`) usando `history.pushState`.
 
 ## Flujo Actual
 
 1. El usuario entra al hero.
 2. `SearchBar` actualiza filtros.
 3. `visibleProperties` se calcula con `filterProperties`.
-4. Las propiedades visibles se muestran en lista y mapa.
-5. Seleccionar una propiedad actualiza detalle y mapa.
-6. El boton `Ingresar` abre `LoginModal`.
+4. Al enviar la busqueda, la app navega a `/resultados` sin recargar.
+5. Las propiedades visibles se muestran en una pagina dedicada con toolbar, banner y grid de tarjetas.
+6. Seleccionar una propiedad actualiza el detalle dentro de la pagina de resultados.
+7. El boton `Ingresar` abre `LoginModal`.
+8. Cuando hay sesion activa, el Header muestra campanita de notificaciones y `UserMenu`.
+9. `UserMenu` permite navegar a `Mi cuenta`, `Favoritos`, `Ver mis contenidos` y ejecutar `Cerrar sesion`.
 
 ## Decisiones de Implementacion
 
-- La app mantiene estado local simple para el MVP.
+- La app mantiene estado local simple para el MVP y usa navegacion interna ligera antes de incorporar React Router.
+- La portada se extrajo a `src/pages/home/HomePage.tsx` para que la pagina principal evolucione sin hacer crecer `CubitatApp`.
+- La portada se renderiza aunque Supabase este cargando o devuelva error. Esto protege la experiencia PWA/mobile-first: el usuario siempre debe poder abrir `/` y usar el buscador inicial.
 - El filtrado se deriva con `useMemo`.
 - El laboratorio de tarjetas se elimino despues de elegir la variante oficial.
-- El mapa esta desacoplado de la UI de resultados mediante props y callbacks.
+- La vista de resultados toma como referencia portales inmobiliarios de alto volumen: filtros compactos, contador, ordenamiento y grid de tarjetas.
+- El mapa queda desacoplado como modulo reemplazable para reincorporarlo en una vista dedicada o en un modo mapa/lista.
 - El login esta fuera del flujo de scroll y se renderiza como modal.
+- Las rutas privadas (`/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`) abren login y vuelven a portada si no hay usuario.
+- `Favoritos` reutiliza `saved_properties` y las tarjetas oficiales para no duplicar logica visual.
 
 ## Pendientes
 
 - Separar secciones locales largas en modulos propios si siguen creciendo.
-- Conectar Supabase para autenticacion, propiedades y contactos.
-- Agregar routing cuando existan paginas reales de detalle y publicacion.
+- Agregar routing formal con React Router cuando la complejidad lo justifique.
+- Extraer `Header` y `SiteFooter` a componentes de layout reutilizables.
+- Reactivar `navigateToSection` y `scrollTo` (actualmente comentadas) cuando se reimplementen las secciones Servicios y Productos en la portada.
 
 ## Verificacion
 
@@ -60,3 +73,94 @@ Cada cambio visual importante debe verificarse con:
 - `npm run lint`
 - Captura desktop.
 - Captura movil cuando el cambio afecta layout.
+
+
+## Plan de Paginas de Fase 1
+
+La aplicacion debe evolucionar de la demo actual hacia paginas separadas. Para el MVP minimo se necesitan 6 paginas: `Inicio`, `Resultados de busqueda`, `Detalle de propiedad`, `Publicar propiedad`, `Login / Registro` y `Panel de usuario`.
+
+Para una Fase 1 mas solida se contemplan tambien `Editar propiedad`, `Favoritos / Guardados`, `Contacto / Soporte` y `Terminos y privacidad`. La prioridad es terminar primero el flujo completo de buscar, ver detalle, publicar, revisar y contactar.
+
+## Componentes Reutilizables Base
+
+La Fase 1 debe mantenerse alrededor de 25-35 componentes reutilizables. Los mas importantes son:
+
+- Navegacion y estructura: `Header`, `Footer`, `PageLayout`, `SectionHeader`.
+- Busqueda: `SearchBar`, `OperationTabs`, `PropertyTypeSelect`, `LocationInput`, `FilterBar`, `FilterDropdown`, `PriceFilter`.
+- Propiedades: `PropertyCard`, `PropertyGrid`, `PropertyGallery`, `PropertyDetailHeader`, `PropertySpecs`, `ContactOwnerBox`.
+- Mapas: `PropertyMap`, `MapMarker`, `ClusterMarker`.
+- Publicacion: `PublishPropertyForm`, `ImageUploader`, `StepFormLayout`.
+- Autenticacion: `AuthModal`, `LoginForm`, `RegisterForm`.
+- Panel: `UserPropertyCard`, `StatusBadge`, `EmptyState`.
+- UI compartida: `Button`, `Input`, `Select`, `Modal`, `Toast`, `Badge`, `Pagination`, `Breadcrumbs`, `LoadingState`.
+
+El criterio es construir componentes pequenos, con responsabilidad clara, y evitar que una pagina se convierta en un archivo gigante. Cuando un bloque se reutilice en dos lugares o tenga estado propio, debe salir a componente.
+
+## Handoff para Otro Agente
+
+Estado actual (2026-07-01):
+
+- `CubitatApp.tsx` es el orquestador de estado, rutas SPA y layout global.
+- La portada vive en `src/pages/home/HomePage.tsx`.
+- Los resultados viven en `src/pages/results/ResultsPage.tsx` con paginacion de 16 items.
+- El detalle vive en `src/pages/detail/DetailPage.tsx` con slugs SEO, migas de pan clicables y recomendaciones de propiedades similares por provincia.
+- El formulario de publicacion vive en `src/pages/publish/PublishPage.tsx` (wizard de 8 pasos con autoguardado).
+- "Mis Propiedades" vive en `src/pages/my-properties/MyPropertiesPage.tsx`.
+- "Mi cuenta" vive en `src/pages/account/AccountPage.tsx`.
+- "Favoritos" vive en `src/pages/favorites/FavoritesPage.tsx`.
+- `Mi cuenta`, `Favoritos` y `Ver mis contenidos` comparten `src/pages/account/AccountLayout.tsx`; solo debe cambiar el contenido derecho.
+- La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
+- `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
+- La verificacion de cuenta usa 3 datos: nombre, email y celular verificado por WhatsApp (`profiles.phone_verified_at`).
+- El correo no se modifica desde `Mi cuenta`; la contrasena tampoco se gestiona en esa pantalla.
+- La navegacion usa `pageMode` y `window.history.pushState` (sin React Router).
+- Las rutas implementadas: `/`, `/resultados`, `/propiedad/:slug`, `/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`.
+- El Header solo muestra: `Comprar`, `Rentar`, `Vender`, `Publicar gratis`, campanita de notificaciones y menu de usuario.
+- El menu de usuario debe mantenerse como entrada principal a cuenta, favoritos, contenidos publicados y cierre de sesion.
+- Los enlaces de "Servicios" y "Nuestros productos" fueron eliminados del Header (secciones no implementadas aun).
+- Las funciones `navigateToSection` y `scrollTo` estan comentadas; reactivar cuando se reimplementen Servicios/Productos.
+- Supabase esta conectado para auth, propiedades (CRUD), storage de imagenes y RLS.
+- Los estados `loading` y `error` de Supabase no bloquean `HomePage`; solo afectan vistas dependientes de datos remotos.
+- Las operaciones de filtro (Venta/Renta/Permuta) son de seleccion exclusiva (no multi-select).
+
+Flujo de paginas:
+
+- `/` → `HomePage` (hero + 16 provincias)
+- `/resultados` → `ResultsPage` (filtros + grid 16 items/pagina)
+- `/propiedad/tipo-operacion-ubicacion-uuid` → `DetailPage` (slug SEO + breadcrumbs + similares)
+- `/publicar` → `PublishPage` (wizard 8 pasos)
+- `/editar/:id` → `PublishPage` en modo edicion
+- `/mis-propiedades` → `MyPropertiesPage`
+
+No hacer:
+
+- No mezclar resultados dentro de `HomePage`.
+- No reactivar Servicios/Productos sin implementar contenido real.
+- No borrar las funciones comentadas (`navigateToSection`, `scrollTo`); se necesitaran.
+- No acoplar la UI a un proveedor de mapas.
+
+Siguiente refactor recomendado:
+
+1. Implementar contenido real para las secciones Servicios y Productos.
+2. Crear `components/layout/Header.tsx` y `components/layout/SiteFooter.tsx`.
+
+## Actualización móvil 2026-07-02
+
+- `CubitatApp` ahora controla `isMobileMenuOpen` para abrir/cerrar el menú móvil del header.
+- En móvil se muestra una capa específica: `mobile-header-actions`, `mobile-verify-strip`, `mobile-menu-panel` y `mobile-bottom-nav`.
+- La navegación móvil cierra el panel antes de cambiar de vista para evitar que el menú quede encima de la pantalla siguiente.
+- La barra inferior móvil navega a `Inicio`, `Favoritos`, `Vender` y `Cuenta`.
+- Esta solución es temporal dentro de `CubitatApp`; cuando se extraiga el layout, mover estas piezas a `components/layout/Header.tsx` y `components/layout/MobileBottomNav.tsx`.
+3. Evaluar migracion a React Router si la cantidad de rutas crece.
+4. Configurar SMTP con Resend para confirmacion de email.
+5. Implementar sistema de notificaciones (campanita en header).
+6. Actualizar los `.md` correspondientes despues de cada cambio significativo.
+
+Verificacion reciente (2026-07-01):
+
+- `npm run build` paso exitosamente.
+- `npm run test:run` paso exitosamente despues de actualizar tests de `ResultsPage` y `FilterBar`.
+- Filtros de operacion exclusivos verificados en SearchBar y FilterBar.
+- 16 provincias con fotos funcionales verificadas.
+- Slugs SEO y breadcrumbs clicables verificados.
+- Propiedades similares con prioridad por provincia verificadas.

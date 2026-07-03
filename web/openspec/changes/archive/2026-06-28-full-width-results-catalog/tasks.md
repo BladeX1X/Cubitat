@@ -1,0 +1,4 @@
+- `[x]` Implementar el condicional de renderizado de resultados a ancho completo en `CubitatApp.tsx`
+- `[x]` Actualizar el componente `PropertyDetail` para recibir e invocar `onBack`
+- `[x]` Añadir reglas de estilos CSS para `.workspace-catalog` y `.property-catalog-grid` en `app.css`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

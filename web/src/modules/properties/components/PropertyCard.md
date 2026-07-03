@@ -27,6 +27,7 @@ type PropertyCardProps = {
   - Muestra badge editorial cuando existe.
   - Incluye flechas laterales preparadas para una futura galeria.
   - Incluye boton visual de guardar con icono de corazon.
+  - Las flechas y el boton de guardar deben conservar area tactil minima de `44x44 px`.
 - Informacion:
   - Titulo y precio en la primera linea.
   - Ubicacion con icono.
@@ -42,6 +43,8 @@ type PropertyCardProps = {
 - El badge usa el componente compartido `Badge`.
 - El precio se calcula en `getPriceLabel`; alquiler agrega `/ mes` y permuta muestra `Permuta`.
 - Las flechas de imagen todavia no cambian galeria; quedan como affordance visual para cuando exista multi-imagen.
+- En movil, las flechas de galeria permanecen visibles porque no se puede depender de `hover`.
+- En escritorio, las flechas pueden mantenerse discretas y aparecer con hover para reducir ruido visual.
 
 ## Estilos Principales
 
@@ -82,6 +85,7 @@ Clases principales en `app.css`:
 - La seleccion funciona con click, `Enter` y `Space`.
 - Guardar y flechas tienen `aria-label`.
 - El grupo de caracteristicas usa `aria-label`.
+- Guardar y flechas deben tener minimo `44x44 px` de area interactiva para usabilidad tactil.
 
 ## Pendientes Recomendados
 

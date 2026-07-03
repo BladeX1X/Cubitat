@@ -1,0 +1,2 @@
+- `[x]` Eliminar el componente `PublishSection` y su invocación en `HomePage.tsx`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

@@ -1,0 +1,2 @@
+- `[x]` Actualizar `SearchBar.tsx` aplicando las clases de utilidad correspondientes para alinear el estilo del dropdown con el del Select
+- `[x]` Archivar y validar el cambio con OpenSpec

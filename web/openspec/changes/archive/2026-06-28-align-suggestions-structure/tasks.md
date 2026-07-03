@@ -1,0 +1,3 @@
+- `[x]` Modificar `SearchBar.tsx` para agrupar el autocompletado en las dos secciones descritas y agregar la opción de geolocalización
+- `[x]` Agregar las nuevas reglas CSS en `src/styles/app.css` para formatear `.suggestion-section-header`, `.suggestion-divider`, `.suggestion-item` y `.geolocation-item`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

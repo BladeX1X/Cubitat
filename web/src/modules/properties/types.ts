@@ -1,4 +1,4 @@
-export type OperationType = 'venta' | 'alquiler' | 'permuta' | 'rent-to-own'
+export type OperationType = 'venta' | 'alquiler' | 'permuta'
 
 export type PropertyType = 'casa' | 'apartamento' | 'terreno'
 

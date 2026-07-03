@@ -1,0 +1,48 @@
+# Reglas del Proyecto Cubitat (Harness Guidelines)
+
+## Principios de Desarrollo
+
+### 📱 1. Mobile-First & Conexiones Lentas (Cuba Context)
+- Diseñar y desarrollar pensando primero en pantallas de teléfonos móviles.
+- Minimizar el uso de recursos pesados y priorizar la velocidad de carga.
+- Todas las imágenes subidas deben ser convertidas y comprimidas a WebP en el frontend antes de la carga (máximo 20 imágenes por publicación).
+- Utilizar `loading="lazy"` para la carga diferida de imágenes en tarjetas e interfaces del catálogo.
+
+### 📶 2. PWA & Soporte Offline
+- Mantener compatibilidad PWA activa (service worker registrado, manifest válido).
+- Garantizar que los recursos estáticos se guarden en caché (precaching).
+- Utilizar estrategias de caché dinámica (`runtimeCaching`) para almacenar las últimas consultas a Supabase y recursos multimedia, de modo que el usuario pueda navegar sin conexión por las propiedades que ya ha visitado.
+- Brindar persistencia local automática del formulario de publicación en `localStorage`/`IndexedDB` para evitar pérdidas ante caídas de conexión repentinas.
+
+### 🧩 3. Arquitectura Modular & Desacoplamiento
+- Ningún módulo en `src/modules/` debe depender de los detalles de implementación interna de otro.
+- Utilizar interfaces, tipos comunes y servicios para la comunicación.
+- Desacoplar el proveedor de mapas (MapLibre GL) mediante componentes reutilizables base.
+
+### 🎨 4. Biblioteca de Componentes UI (shadcn/ui)
+- Utilizar **siempre** [shadcn/ui](https://ui.shadcn.com/) como biblioteca base para la creación de componentes de interfaz.
+- Si no es factible utilizar shadcn/ui para un componente específico (ej. por requerir primitivas no cubiertas o comportamientos incompatibles con mobile-first/offline), detallar el porqué al usuario y proponer alternativas estructuradas antes de proceder.
+
+### 🧪 5. Desarrollo Guiado por Pruebas (TDD)
+- Escribir o actualizar pruebas unitarias/de integración (`.test.tsx` o `.test.ts`) con **Vitest** y `@testing-library/react` antes de realizar cambios lógicos.
+- Seguir el ciclo Red-Green-Refactor: primero el test fallido, luego el código mínimo, y finalmente la refactorización.
+
+### 🔄 6. Bucle de Auto-Corrección (Self-Correction Loop)
+- Correr `npm run test:run` y `npm run build` en la terminal obligatoriamente tras editar archivos de código.
+- Leer y procesar autónomamente los fallos de pruebas/tipado para corregirlos de inmediato sin presentar código inestable al usuario.
+
+## Comandos Útiles
+
+- Levantar entorno local: `npm run dev`
+- Ejecutar suite de pruebas: `npm run test` o `npm run test:run`
+- Analizar código estático (lint): `npm run lint`
+- Generar compilación: `npm run build`
+
+## 🐙 7. GitHub Workflow (Conventional Commits & Branches)
+- **Ramas:** `feature/<descriptivo>`, `bugfix/<descriptivo>`, `hotfix/<descriptivo>`. Commits a `main` bloqueados.
+- **Commits:** Mensajes formateados: `tipo(scope): descripción` (ej: `feat(search): agregar autocompletado`, `fix(price): corregir visualización`).
+- **PR Merge Checklist:** Sin conflictos, pruebas pasadas (`npm run test:run` y `npm run build`), sin claves secretas ni variables `.env` subidas.
+
+## 🎨 8. Directivas de Diseño y React (UI & React Best Practices)
+- **UI:** Usar espaciado Tailwind (`gap-4`, `p-4`), sombras controladas, esquinas `rounded-lg/xl`, iconos alineados (`flex items-center gap-2`), transiciones suaves en hovers (`transition-all`).
+- **React:** Minimizar estado (derivar variables), usar `useMemo/useCallback` para estabilidad referencial, tipar estrictamente sin usar `any`, modularizar componentes si superan las 150-200 líneas.

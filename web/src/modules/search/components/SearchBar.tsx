@@ -9,12 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../shared/ui/select'
-import type { SearchFilters } from '../types'
+import type { LocationSuggestion, SearchFilters } from '../types'
 
 type SearchBarProps = {
   filters: SearchFilters
+  locationSuggestions: LocationSuggestion[]
   onChange: (filters: SearchFilters) => void
   onClear: () => void
+  onSubmitSearch: () => void
 }
 
 const propertyTypeLabels: Record<SearchFilters['propertyType'], string> = {
@@ -24,7 +26,12 @@ const propertyTypeLabels: Record<SearchFilters['propertyType'], string> = {
   terreno: 'Terrenos',
 }
 
-export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
+export function SearchBar({
+  filters,
+  onChange,
+  onClear,
+  onSubmitSearch,
+}: SearchBarProps) {
   function updateFilter<Key extends keyof SearchFilters>(
     key: Key,
     value: SearchFilters[Key],
@@ -38,46 +45,44 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    document.getElementById('resultados')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+    onSubmitSearch()
   }
 
   return (
     <form className="hero-search" onSubmit={handleSubmit}>
-      <div className="operation-tabs" aria-label="Tipo de operacion">
+      <div className="operation-tabs" aria-label="Tipo de operación">
         <Button
-          className={filters.operation === 'alquiler' ? 'is-active' : ''}
+          className={filters.operations.includes('alquiler') ? 'is-active' : ''}
           type="button"
           variant="ghost"
-          onClick={() => updateFilter('operation', 'alquiler')}
+          onClick={() => {
+            const nextOps = filters.operations.includes('alquiler') ? [] : ['alquiler']
+            updateFilter('operations', nextOps as any)
+          }}
         >
           Rentar
         </Button>
         <Button
-          className={filters.operation === 'venta' ? 'is-active' : ''}
+          className={filters.operations.includes('venta') ? 'is-active' : ''}
           type="button"
           variant="ghost"
-          onClick={() => updateFilter('operation', 'venta')}
+          onClick={() => {
+            const nextOps = filters.operations.includes('venta') ? [] : ['venta']
+            updateFilter('operations', nextOps as any)
+          }}
         >
           Comprar
         </Button>
         <Button
-          className={filters.operation === 'permuta' ? 'is-active' : ''}
+          className={filters.operations.includes('permuta') ? 'is-active' : ''}
           type="button"
           variant="ghost"
-          onClick={() => updateFilter('operation', 'permuta')}
+          onClick={() => {
+            const nextOps = filters.operations.includes('permuta') ? [] : ['permuta']
+            updateFilter('operations', nextOps as any)
+          }}
         >
           Permuta
-        </Button>
-        <Button
-          className={filters.operation === 'rent-to-own' ? 'is-active' : ''}
-          type="button"
-          variant="ghost"
-          onClick={() => updateFilter('operation', 'rent-to-own')}
-        >
-          Rent-to-own
         </Button>
       </div>
 
@@ -113,14 +118,14 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
             <Input
               className="location-search-input"
               aria-label="Buscar propiedades"
-              placeholder="Donde quieres buscar?"
+              placeholder="¿Dónde quieres buscar?"
               type="search"
               value={filters.query}
               onChange={handleQuery}
             />
           </label>
           <Button className="search-submit" type="submit" aria-label="Buscar">
-            <Search size={26} strokeWidth={2.2} />
+            <Search size={20} strokeWidth={2.2} />
           </Button>
         </div>
       </div>
@@ -131,7 +136,7 @@ export function SearchBar({ filters, onChange, onClear }: SearchBarProps) {
         variant="ghost"
         onClick={onClear}
       >
-        Limpiar busqueda
+        Limpiar búsqueda
       </Button>
     </form>
   )

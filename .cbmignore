@@ -1,0 +1,31 @@
+# Codebase Memory MCP local indexing ignores.
+# Keep the graph focused on source, docs, config, and database schema.
+
+web/node_modules/
+web/dist/
+web/coverage/
+web/test-results/
+web/playwright-report/
+web/.agent/
+web/.claude/
+web/.playwright-cli/
+web/.vite/
+web/.turbo/
+web/.cache/
+web/scratch/
+web/temp_supa/
+
+.codebase-memory/
+*.log
+*.tmp
+*.zip
+*.7z
+*.rar
+*.mp4
+*.mov
+*.webm
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf

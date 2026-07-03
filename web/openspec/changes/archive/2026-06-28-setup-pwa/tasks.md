@@ -1,0 +1,4 @@
+- `[x]` Instalar la dependencia de `vite-plugin-pwa`
+- `[x]` Configurar `vite.config.ts` para integrar `VitePWA`
+- `[x]` Añadir metatags de PWA y iOS en `index.html`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

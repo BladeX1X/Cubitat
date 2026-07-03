@@ -1,0 +1,3 @@
+- `[x]` Definir la clase `.section-heading-centered` en `app.css` para centrar y colocar verticalmente el título y la descripción
+- `[x]` Actualizar `HomePage.tsx` para usar `.section-heading-centered` en lugar de `.section-heading` en la sección de Cuba
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

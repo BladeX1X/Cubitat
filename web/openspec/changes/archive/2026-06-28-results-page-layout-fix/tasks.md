@@ -1,0 +1,4 @@
+- `[x]` Envolver listado y filtros de resultados en `.results-sidebar` en `CubitatApp.tsx`
+- `[x]` Renderizar `<PropertyDetail />` como hijo secundario directo de `.workspace`
+- `[x]` Añadir estilos CSS de la barra de herramientas, chips de filtros y banner promocional en `app.css`
+- `[x]` Validar y archivar los cambios con el CLI de OpenSpec

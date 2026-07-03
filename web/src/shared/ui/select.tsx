@@ -115,9 +115,10 @@ export function SelectValue({
   placeholder?: string
   children?: React.ReactNode
 }) {
+  const hasContent = children !== undefined && children !== null && children !== ''
   return (
     <span data-slot="select-value" className="truncate">
-      {children ?? placeholder}
+      {hasContent ? children : placeholder}
     </span>
   )
 }

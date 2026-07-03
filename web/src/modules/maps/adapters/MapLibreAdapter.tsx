@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl, {
-  type LngLatBoundsLike,
-  type Marker,
   type StyleSpecification,
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import type { FeatureCollection, Point } from 'geojson'
 import { formatPrice } from '../../../shared/lib/formatPrice'
+import type { Property } from '../../properties/types'
 import type { MapAdapterProps } from '../types'
-
-const CUBA_BOUNDS: LngLatBoundsLike = [
-  [-85.2, 19.4],
-  [-73.8, 23.6],
-]
 
 const OPEN_SOURCE_STYLE =
   'https://tiles.openfreemap.org/styles/liberty'
+const PROPERTY_SOURCE_ID = 'cubitat-properties'
+const CLUSTER_LAYER_ID = 'property-clusters'
+const CLUSTER_COUNT_LAYER_ID = 'property-cluster-count'
+const PROPERTY_POINT_LAYER_ID = 'property-points'
+const PROPERTY_LABEL_LAYER_ID = 'property-labels'
 
 export function MapLibreAdapter({
   properties,
@@ -23,8 +23,22 @@ export function MapLibreAdapter({
 }: MapAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const markersRef = useRef<Marker[]>([])
+  const onSelectPropertyRef = useRef(onSelectProperty)
+  const sourceDataRef = useRef<FeatureCollection<Point>>(createPropertySourceData([], undefined))
   const [mapReady, setMapReady] = useState(false)
+
+  useEffect(() => {
+    onSelectPropertyRef.current = onSelectProperty
+  }, [onSelectProperty])
+
+  const sourceData = useMemo(
+    () => createPropertySourceData(properties, selectedPropertyId),
+    [properties, selectedPropertyId],
+  )
+
+  useEffect(() => {
+    sourceDataRef.current = sourceData
+  }, [sourceData])
 
   const bounds = useMemo(() => {
     const mapBounds = new maplibregl.LngLatBounds()
@@ -55,9 +69,8 @@ export function MapLibreAdapter({
         style,
         center: [-79.5, 21.8],
         zoom: 5.15,
-        minZoom: 4.4,
+        minZoom: 2,
         maxZoom: 15,
-        maxBounds: CUBA_BOUNDS,
         attributionControl: false,
       })
 
@@ -93,31 +106,165 @@ export function MapLibreAdapter({
     const map = mapRef.current
     if (!map || !mapReady) return
 
-    markersRef.current.forEach((marker) => marker.remove())
-    markersRef.current = properties.map((property) => {
-      const markerElement = document.createElement('button')
-      markerElement.type = 'button'
-      markerElement.className = `maplibre-property-marker ${
-        property.id === selectedPropertyId ? 'is-selected' : ''
-      }`
-      markerElement.textContent =
-        property.operation === 'permuta'
-          ? 'Permuta'
-          : formatPrice(property.priceUsd)
-      markerElement.addEventListener('click', () => {
-        onSelectProperty(property.id)
-      })
+    if (map.getSource(PROPERTY_SOURCE_ID)) return
 
-      return new maplibregl.Marker({
-        element: markerElement,
-        anchor: 'bottom',
-      })
-        .setLngLat([
-          property.coordinates.longitude,
-          property.coordinates.latitude,
-        ])
-        .addTo(map)
+    map.addSource(PROPERTY_SOURCE_ID, {
+      type: 'geojson',
+      data: sourceDataRef.current,
+        cluster: true,
+        clusterMaxZoom: 11,
+        clusterRadius: 54,
     })
+
+    map.addLayer({
+        id: CLUSTER_LAYER_ID,
+        type: 'circle',
+        source: PROPERTY_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#1164d8',
+            4,
+            '#0f8f68',
+            8,
+            '#ef7d32',
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            22,
+            4,
+            28,
+            8,
+            34,
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 3,
+        },
+    })
+
+    map.addLayer({
+        id: CLUSTER_COUNT_LAYER_ID,
+        type: 'symbol',
+        source: PROPERTY_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-size': 14,
+          'text-font': ['Noto Sans Regular'],
+        },
+        paint: {
+          'text-color': '#ffffff',
+        },
+    })
+
+    map.addLayer({
+        id: PROPERTY_POINT_LAYER_ID,
+        type: 'circle',
+        source: PROPERTY_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': [
+            'case',
+            ['boolean', ['get', 'isSelected'], false],
+            '#1164d8',
+            '#ffffff',
+          ],
+          'circle-radius': [
+            'case',
+            ['boolean', ['get', 'isSelected'], false],
+            12,
+            10,
+          ],
+          'circle-stroke-color': '#1164d8',
+          'circle-stroke-width': 2.5,
+        },
+    })
+
+    map.addLayer({
+        id: PROPERTY_LABEL_LAYER_ID,
+        type: 'symbol',
+        source: PROPERTY_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 11,
+          'text-font': ['Noto Sans Regular'],
+          'text-offset': [0, 1.8],
+          'text-anchor': 'top',
+        },
+        paint: {
+          'text-color': '#10233f',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2,
+        },
+    })
+
+    const handleClusterClick = async (event: maplibregl.MapMouseEvent) => {
+      const feature = map.queryRenderedFeatures(event.point, {
+        layers: [CLUSTER_LAYER_ID],
+      })[0]
+      const clusterId = feature?.properties?.cluster_id as number | undefined
+      if (clusterId === undefined) return
+
+      const source = map.getSource(PROPERTY_SOURCE_ID) as maplibregl.GeoJSONSource
+      const zoom = await source.getClusterExpansionZoom(clusterId)
+      map.easeTo({
+        center: (feature.geometry as Point).coordinates as [number, number],
+        zoom,
+      })
+    }
+
+    const handlePropertyClick = (event: maplibregl.MapMouseEvent) => {
+      const feature = map.queryRenderedFeatures(event.point, {
+        layers: [PROPERTY_POINT_LAYER_ID],
+      })[0]
+      const propertyId = feature?.properties?.id as string | undefined
+      if (propertyId) {
+        onSelectPropertyRef.current(propertyId)
+      }
+    }
+
+    const handleMouseEnter = () => {
+      map.getCanvas().style.cursor = 'pointer'
+    }
+
+    const handleMouseLeave = () => {
+      map.getCanvas().style.cursor = ''
+    }
+
+    map.on('click', CLUSTER_LAYER_ID, handleClusterClick)
+    map.on('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
+    map.on('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
+    map.on('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
+    map.on('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+    map.on('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
+
+    return () => {
+      map.off('click', CLUSTER_LAYER_ID, handleClusterClick)
+      map.off('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
+      map.off('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
+      map.off('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
+      map.off('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+      map.off('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
+    }
+  }, [mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+
+    const existingSource = map.getSource(PROPERTY_SOURCE_ID)
+    if (existingSource) {
+      ;(existingSource as maplibregl.GeoJSONSource).setData(sourceData)
+    }
+  }, [mapReady, sourceData])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
 
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, {
@@ -126,18 +273,10 @@ export function MapLibreAdapter({
         duration: 500,
       })
     }
-  }, [bounds, mapReady, onSelectProperty, properties, selectedPropertyId])
+  }, [bounds, mapReady])
 
   return (
     <div className="map-card map-card--maplibre">
-      <div className="map-card-header map-card-header--floating">
-        <div>
-          <p className="eyebrow">Explora por zona</p>
-          <h2>Mapa de propiedades</h2>
-        </div>
-        <span className="map-mode">En vivo</span>
-      </div>
-
       <div
         ref={containerRef}
         className="maplibre-canvas"
@@ -145,4 +284,32 @@ export function MapLibreAdapter({
       />
     </div>
   )
+}
+
+function createPropertySourceData(
+  properties: Property[],
+  selectedPropertyId?: string,
+): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: properties.map((property) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [
+          property.coordinates.longitude,
+          property.coordinates.latitude,
+        ],
+      },
+      properties: {
+        id: property.id,
+        title: property.title,
+        label:
+          property.operation === 'permuta'
+            ? 'Permuta'
+            : formatPrice(property.priceUsd),
+        isSelected: property.id === selectedPropertyId,
+      },
+    })),
+  }
 }

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   ArrowRight,
+  Eye,
   EyeOff,
   Lock,
   Mail,
@@ -11,32 +12,171 @@ import {
 } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
+import { supabase } from '../../../shared/lib/supabaseClient'
+import { getAuthRedirectUrl } from '../utils/authRedirects'
 
 type LoginModalProps = {
   onClose?: () => void
 }
 
 export function LoginModal({ onClose }: LoginModalProps) {
-  const [mounted, setMounted] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
+  
+  // Form states
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  async function handleGoogleSignIn() {
+    setLoading(true)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: getAuthRedirectUrl('/auth/callback?flow=oauth'),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+
+    if (error) {
+      setLoading(false)
+      setErrorMsg(error.message || 'No pudimos iniciar sesion con Google.')
+    }
+  }
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true)
+    setTimeout(() => {
+      onClose?.()
+    }, 400) // Match animation duration
+  }, [onClose])
 
   useEffect(() => {
-    setMounted(true)
+    // Lock scrolling on parent body
+    document.body.style.overflow = 'hidden'
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose?.()
+        handleClose()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [handleClose])
 
-  if (!mounted) return null
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    if (isResettingPassword) {
+      setLoading(true)
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
+        })
+        if (error) throw error
+        setSuccessMsg('Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.')
+      } catch (err: any) {
+        setErrorMsg(err?.message || 'No pudimos enviar el correo de recuperacion.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // Password validation rules
+    if (isRegistering) {
+      if (password.length < 8) {
+        setErrorMsg('La contraseña debe tener al menos 8 caracteres.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('Las contraseñas no coinciden.')
+        return
+      }
+    }
+
+    setLoading(true)
+
+    try {
+      if (isRegistering) {
+        // Sign Up with custom metadata trigger values
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
+            data: {
+              full_name: fullName,
+              role: 'buyer', // Default public profile role
+            }
+          }
+        })
+        if (error) throw error
+        setSuccessMsg('Cuenta creada. Revisa tu correo para confirmar el email antes de iniciar sesion.')
+        setConfirmPassword('')
+      } else {
+        // Sign In
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+        if (error) throw error
+        onClose?.()
+      }
+    } catch (err: any) {
+      console.error('Auth error:', err)
+      let msg = 'Ocurrió un error inesperado.'
+      if (err?.message && err.message !== '{}') {
+        msg = err.message
+      } else if (typeof err === 'string' && err !== '{}') {
+        msg = err
+      } else if (err?.error_description) {
+        msg = err.error_description
+      }
+      
+      // Translate common Supabase auth errors
+      if (msg.includes('User already registered')) {
+        msg = 'Este correo ya está registrado.'
+      } else if (msg.includes('Invalid login credentials')) {
+        msg = 'Correo o contraseña incorrectos.'
+      } else if (msg.includes('Email not confirmed')) {
+        msg = 'Por favor, confirma tu correo electronico para continuar.'
+      } else if (msg.toLowerCase().includes('email rate limit exceeded')) {
+        msg = 'Alcanzamos el limite temporal de correos de prueba. Intenta de nuevo mas tarde.'
+      } else if (msg.includes('Password should be at least')) {
+        msg = 'La contraseña es demasiado débil.'
+      }
+
+      setErrorMsg(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return createPortal(
-    <section
-      className="login-modal-overlay"
+    <div
+      className={`login-modal-overlay ${isClosing ? 'closing' : ''}`}
       id="login"
       aria-label="Inicio de sesion"
       role="dialog"
@@ -46,10 +186,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
         className="login-modal-backdrop"
         type="button"
         aria-label="Cerrar inicio de sesion"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
-      <div className="login-modal-shell">
+      <div className="login-modal-shell animate-in zoom-in-95 fade-in duration-300 ease-out">
         <aside className="login-modal-aside" aria-hidden="true">
           <div className="login-modal-brand">
             <span className="brand-mark">c</span>
@@ -78,7 +218,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         <div className="login-modal-card">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="login-close-btn"
             aria-label="Cerrar"
           >
@@ -87,18 +227,26 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
           <div className="login-modal-heading">
             <span>Bienvenido de vuelta</span>
-            <h2>Iniciar sesion</h2>
+            <h2>{isResettingPassword ? 'Recuperar contrasena' : isRegistering ? 'Crear cuenta' : 'Iniciar sesion'}</h2>
             <p>
-              Entra para publicar, guardar favoritos y administrar tus avisos.
+              {isRegistering 
+                ? 'Registrate para publicar propiedades y contactar dueños.' 
+                : 'Entra para publicar, guardar favoritos y administrar tus avisos.'}
             </p>
           </div>
 
           <div className="login-social-grid">
-            <Button className="login-social-btn" type="button" variant="outline">
+            <Button
+              className="login-social-btn"
+              type="button"
+              variant="outline"
+              disabled={loading || isResettingPassword}
+              onClick={handleGoogleSignIn}
+            >
               <GoogleIcon />
               Google
             </Button>
-            <Button className="login-social-btn" type="button" variant="outline">
+            <Button className="login-social-btn" type="button" variant="outline" disabled>
               <FacebookIcon />
               Facebook
             </Button>
@@ -108,60 +256,168 @@ export function LoginModal({ onClose }: LoginModalProps) {
             <span>o usa tu correo</span>
           </div>
 
-          <form className="login-form" onSubmit={(event) => event.preventDefault()}>
+          <form className="login-form" onSubmit={handleSubmit}>
+            {errorMsg && (
+              <div className="p-3 text-xs bg-red-50 border border-red-200 text-red-700 rounded-md">
+                {errorMsg}
+              </div>
+            )}
+            {successMsg && (
+              <div className="p-3 text-xs bg-green-50 border border-green-200 text-green-700 rounded-md">
+                {successMsg}
+              </div>
+            )}
+
+            {isRegistering && !isResettingPassword && (
+              <label className="login-input-group">
+                <span>Nombre completo</span>
+                <UserRound className="login-input-icon" size={18} />
+                <Input
+                  className="login-input"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Juan Perez"
+                />
+              </label>
+            )}
+
             <label className="login-input-group">
               <span>Correo electronico</span>
               <Mail className="login-input-icon" size={18} />
               <Input
                 className="login-input"
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="tucorreo@ejemplo.com"
                 autoComplete="email"
               />
             </label>
 
-            <label className="login-input-group">
-              <span>Contrasena</span>
-              <Lock className="login-input-icon" size={18} />
-              <Input
-                className="login-input"
-                type="password"
-                placeholder="********"
-                autoComplete="current-password"
-              />
-              <button
-                className="login-password-toggle"
-                type="button"
-                aria-label="Mostrar u ocultar contrasena"
-              >
-                <EyeOff size={18} />
-              </button>
-            </label>
-
-            <div className="login-form-row">
-              <label>
-                <input type="checkbox" />
-                Recordarme
+            {!isResettingPassword && (
+              <label className="login-input-group">
+                <span>Contrasena</span>
+                <Lock className="login-input-icon" size={18} />
+                <Input
+                  className="login-input"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********"
+                  autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                />
+                <button
+                  className="login-password-toggle"
+                  type="button"
+                  aria-label="Mostrar u ocultar contrasena"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
               </label>
-              <a href="#recuperar">Olvide mi contrasena</a>
-            </div>
+            )}
 
-            <Button className="login-submit-btn" type="submit" size="lg">
-              Iniciar sesion
-              <ArrowRight size={18} />
+            {isRegistering && !isResettingPassword && (
+              <label className="login-input-group">
+                <span>Confirmar contrasena</span>
+                <Lock className="login-input-icon" size={18} />
+                <Input
+                  className="login-input"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="********"
+                  autoComplete="new-password"
+                />
+                <button
+                  className="login-password-toggle"
+                  type="button"
+                  aria-label="Mostrar u ocultar contrasena de confirmacion"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
+              </label>
+            )}
+
+            {!isRegistering && !isResettingPassword && (
+              <div className="login-form-row">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" />
+                  Recordarme
+                </label>
+                <button
+                  type="button"
+                  className="login-link-button"
+                  onClick={() => {
+                    setIsResettingPassword(true)
+                    setErrorMsg(null)
+                    setSuccessMsg(null)
+                  }}
+                >
+                  Olvide mi contrasena
+                </button>
+              </div>
+            )}
+
+            <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
+              {loading ? (
+                <>Procesando...</>
+              ) : (
+                <>
+                  {isResettingPassword ? 'Enviar enlace' : isRegistering ? 'Crear cuenta' : 'Iniciar sesion'}
+                  <ArrowRight size={18} />
+                </>
+              )}
             </Button>
           </form>
 
+          {isResettingPassword && (
+            <p className="login-register-copy">
+              ¿Recordaste tu contrasena?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResettingPassword(false)
+                  setIsRegistering(false)
+                  setErrorMsg(null)
+                  setSuccessMsg(null)
+                }}
+                className="text-[#035f53] font-semibold hover:underline"
+              >
+                Iniciar sesion
+              </button>
+            </p>
+          )}
+
+          {!isResettingPassword && (
           <p className="login-register-copy">
-            No tienes cuenta? <a href="#registro">Crear cuenta gratis</a>
+            {isRegistering ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'} {' '}
+            <button 
+              type="button" 
+              onClick={() => {
+                setIsRegistering(!isRegistering)
+                setErrorMsg(null)
+                setSuccessMsg(null)
+              }}
+              className="text-[#035f53] font-semibold hover:underline"
+            >
+              {isRegistering ? 'Iniciar sesión' : 'Crear cuenta gratis'}
+            </button>
           </p>
+          )}
           <p className="login-legal-copy">
             Al continuar aceptas los <a href="#terminos">terminos</a> y el{' '}
             <a href="#privacidad">aviso de privacidad</a>.
           </p>
         </div>
       </div>
-    </section>,
+    </div>,
     document.body,
   )
 }

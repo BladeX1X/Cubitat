@@ -1,0 +1,3 @@
+- `[x]` Modificar `src/pages/home/HomePage.tsx` para implementar las tarjetas de provincia con imágenes de Unsplash
+- `[x]` Agregar las nuevas reglas CSS en `src/styles/app.css` para el layout y diseño de las tarjetas
+- `[x]` Ejecutar el comando para aplicar y validar los cambios
