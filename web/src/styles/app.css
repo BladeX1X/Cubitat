@@ -172,9 +172,9 @@ textarea:focus-visible {
 }
 
 .publish-button {
-  border: 1px solid var(--green);
+  border: 1px solid var(--green-dark);
   color: #fff;
-  background: var(--green);
+  background: var(--green-dark);
 }
 
 .publish-button:hover,

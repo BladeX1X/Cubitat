@@ -194,10 +194,10 @@ export function PropertyCard({
             <Car size={14} className="spec-icon" />
             {property.parking} Auto
           </span>
-          <span className="spec-item text-neutral-400 font-semibold">
+          <span className="spec-item text-neutral-600 font-semibold">
             Mascota
           </span>
-          <span className="spec-item text-neutral-400 font-semibold">
+          <span className="spec-item text-neutral-600 font-semibold">
             ...
           </span>
         </div>

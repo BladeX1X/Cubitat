@@ -210,7 +210,7 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
                 {property.title}
               </h1>
               
-              <div className="detail-meta flex items-center gap-3 mb-4 text-xs font-bold text-neutral-400">
+              <div className="detail-meta flex items-center gap-3 mb-4 text-xs font-bold text-neutral-600">
                 {null}
                 {property.ageYears && (
                   <>
@@ -236,9 +236,9 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
 
             {/* Ficha Técnica / Especificaciones */}
             <div className="bg-white border border-neutral-100 rounded-xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4">
+              <h2 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4">
                 Características básicas
-              </h3>
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Feature icon={<BedDouble size={20} className="text-[#035f53]" />} label="Recámaras" value={Math.floor(property.bedrooms)} />
                 <Feature icon={<Bath size={20} className="text-[#035f53]" />} label="Baños" value={Math.floor(property.bathrooms)} />
@@ -250,9 +250,9 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
             {/* Descripción */}
             <Card className="border border-neutral-100 rounded-xl shadow-sm overflow-hidden">
               <CardContent className="p-6 space-y-3">
-                <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-neutral-800 uppercase tracking-wider">
                   Descripción
-                </h3>
+                </h2>
                 <p className="text-neutral-600 text-sm md:text-base leading-relaxed whitespace-pre-line max-w-3xl">
                   {property.description}
                 </p>
@@ -263,9 +263,9 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
             {property.amenities && property.amenities.length > 0 && (
               <Card className="border border-neutral-100 rounded-xl shadow-sm overflow-hidden">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4">
+                  <h2 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4">
                     Amenidades y Servicios
-                  </h3>
+                  </h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {property.amenities.map((amenity) => (
                       <div key={amenity} className="flex items-center gap-2 text-sm text-neutral-600">
@@ -284,8 +284,8 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
                 <ShieldCheck size={24} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-neutral-800">Ubicación aproximada protegida</h4>
-                <p className="text-xs text-neutral-500 leading-normal mt-0.5">
+                <h2 className="text-sm font-bold text-neutral-800">Ubicación aproximada protegida</h2>
+                  <p className="text-xs text-neutral-600 leading-normal mt-0.5">
                   Por seguridad y privacidad del propietario, no mostramos la ubicación exacta. Al contactar al anunciante recibirás la información precisa y agendarás una visita controlada.
                 </p>
               </div>
@@ -309,8 +309,8 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
               <MapIcon size={18} className="text-[#035f53]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-neutral-900">Ubicación aproximada</h3>
-              <p className="text-[11px] text-neutral-500">{property.location}</p>
+              <h2 className="text-sm font-bold text-neutral-900">Ubicación aproximada</h2>
+              <p className="text-[11px] text-neutral-600">{property.location}</p>
             </div>
           </div>
           <div className="w-full h-[300px] md:h-[400px]">
@@ -500,10 +500,10 @@ function ContactCard({ property }: { property: Property }) {
     <Card id="contactar-anunciante" className="border border-neutral-100 rounded-2xl shadow-xl p-6 sticky top-6 bg-white">
       <CardContent className="p-0 space-y-5">
         <div>
-          <h3 className="text-lg font-bold text-neutral-900 mb-1">
+          <h2 className="text-lg font-bold text-neutral-900 mb-1">
             Contactar anunciante
-          </h3>
-          <p className="text-xs text-neutral-500 flex items-center gap-1.5">
+          </h2>
+              <p className="text-xs text-neutral-600 flex items-center gap-1.5">
             <Calendar size={13} />
             Publicado recientemente
           </p>
@@ -516,10 +516,11 @@ function ContactCard({ property }: { property: Property }) {
         ) : (
           <form onSubmit={handleContactSubmit} className="space-y-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+              <label htmlFor="contact-message" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Tu mensaje
               </label>
               <Textarea
+                id="contact-message"
                 required
                 defaultValue={`Hola, estoy interesado en "${property.title}" en ${property.location}. Quisiera recibir más detalles.`}
                 className="text-xs text-neutral-700 min-h-[90px]"
@@ -527,17 +528,17 @@ function ContactCard({ property }: { property: Property }) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+              <label htmlFor="contact-name" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Nombre completo
               </label>
-              <Input required placeholder="Escribe tu nombre" className="text-xs" />
+              <Input id="contact-name" required placeholder="Escribe tu nombre" className="text-xs" />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+              <label htmlFor="contact-phone" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Teléfono o WhatsApp
               </label>
-              <Input required type="tel" placeholder="+53 50000000" className="text-xs" />
+              <Input id="contact-phone" required type="tel" placeholder="+53 50000000" className="text-xs" />
             </div>
 
             <Button
@@ -552,7 +553,7 @@ function ContactCard({ property }: { property: Property }) {
       </CardContent>
 
       <div className="border-t border-neutral-100 mt-5 pt-4 text-center">
-        <button className="inline-flex items-center gap-1.5 text-[11px] font-bold text-neutral-400 hover:text-red-500 transition-colors">
+        <button className="inline-flex items-center gap-1.5 text-[11px] font-bold text-neutral-600 hover:text-red-500 transition-colors">
           <AlertTriangle size={14} />
           Reportar propiedad sospechosa
         </button>
@@ -577,7 +578,7 @@ function Feature({
       <strong className="text-sm font-extrabold text-neutral-800 leading-tight">
         {value}
       </strong>
-      <span className="text-[10px] font-semibold text-neutral-400 mt-0.5">
+      <span className="text-[10px] font-semibold text-neutral-600 mt-0.5">
         {label}
       </span>
     </div>
