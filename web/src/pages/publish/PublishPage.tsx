@@ -580,8 +580,6 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         const { error } = await supabase
           .from('properties')
           .insert(propertyPayload)
-          .select()
-          .single()
         dbError = error
       }
         
