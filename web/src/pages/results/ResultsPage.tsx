@@ -62,6 +62,21 @@ export function ResultsPage({
     setCurrentPage(1)
   }, [properties, sortBy])
 
+  // Preload first property image for faster LCP
+  useEffect(() => {
+    const firstImage = properties[0]?.coverImage
+    if (!firstImage) return
+
+    const link = document.createElement('link')
+    link.rel = 'preload'
+    link.as = 'image'
+    link.href = firstImage
+    link.fetchPriority = 'high'
+    document.head.appendChild(link)
+
+    return () => { link.remove() }
+  }, [properties])
+
   // Sticky toolbar detection using IntersectionObserver
   useEffect(() => {
     const sentinel = document.getElementById('sticky-sentinel')
