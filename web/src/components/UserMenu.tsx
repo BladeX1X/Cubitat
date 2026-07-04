@@ -5,6 +5,7 @@ import {
   Heart,
   Home,
   LogOut,
+  Shield,
   User as UserIcon,
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
@@ -13,9 +14,11 @@ import { useNotifications } from '../modules/auth/hooks/useNotifications'
 
 interface UserMenuProps {
   user: User
+  userRole?: string
   onNavigateAccount?: () => void
   onNavigateFavorites?: () => void
   onNavigateMyProperties?: () => void
+  onNavigateModerar?: () => void
   onSignOut?: () => void
 }
 
@@ -113,9 +116,11 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
 
 export function UserMenu({
   user,
+  userRole,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateModerar,
   onSignOut,
 }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -211,6 +216,16 @@ export function UserMenu({
                 <Home size={18} className="text-neutral-400" />
                 Ver mis contenidos
               </button>
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => handleNavigate(onNavigateModerar)}
+                  className="w-full text-left px-5 py-3 text-sm text-neutral-800 hover:bg-[#035f53]/5 hover:text-[#035f53] flex items-center gap-3 transition-colors"
+                  type="button"
+                >
+                  <Shield size={18} className="text-neutral-400" />
+                  Panel de moderación
+                </button>
+              )}
             </div>
 
             <div className="border-t border-neutral-100 py-1">

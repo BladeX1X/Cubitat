@@ -560,7 +560,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         area_m2: Number(formData.constructionSize) || Number(formData.landSize) || 0,
         age_years: formData.ageYears,
         amenities,
-        status: 'published',
+        status: 'pending_review',
         cover_image: uploadedImages.length > 0 ? uploadedImages[0] : null,
         images: uploadedImages,
         features,

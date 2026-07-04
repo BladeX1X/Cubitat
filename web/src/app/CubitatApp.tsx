@@ -47,6 +47,9 @@ const AuthCallbackPage = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import('../pages/auth/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })),
 )
+const AdminPage = lazy(() =>
+  import('../pages/moderar/AdminPage').then((module) => ({ default: module.AdminPage })),
+)
 
 const initialFilters: SearchFilters = {
   query: '',
@@ -70,7 +73,7 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
@@ -103,6 +106,9 @@ function getInitialPageMode(): PageMode {
   }
   if (path.startsWith('/recuperar-contrasena')) {
     return 'reset-password'
+  }
+  if (path.startsWith('/moderar')) {
+    return 'moderar'
   }
   return 'home'
 }
@@ -152,6 +158,7 @@ export function CubitatApp() {
     }
     return undefined
   })
+  const [userRole, setUserRole] = useState<string | undefined>()
 
   useEffect(() => {
     initAnalytics()
@@ -176,9 +183,25 @@ export function CubitatApp() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Fetch user role from profile
+  useEffect(() => {
+    if (!user) {
+      setUserRole(undefined)
+      return
+    }
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        setUserRole((data as any)?.role)
+      })
+  }, [user])
+
   // Guard protected routes from unauthenticated direct access
   useEffect(() => {
-    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit']
+    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar']
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
       openLogin()
       window.history.pushState(null, '', '/')
@@ -373,6 +396,18 @@ export function CubitatApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function navigateModerar() {
+    setIsMobileMenuOpen(false)
+    if (!user) {
+      openLogin()
+      return
+    }
+    window.history.pushState(null, '', '/moderar')
+    setPageMode('moderar')
+    setSelectedPropertyId(undefined)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   async function handleMobileSignOut() {
     setIsMobileMenuOpen(false)
     await supabase.auth.signOut()
@@ -526,9 +561,11 @@ export function CubitatApp() {
             <Suspense fallback={null}>
               <UserMenu
                 user={user}
+                userRole={userRole}
                 onNavigateAccount={navigateAccount}
                 onNavigateFavorites={navigateFavorites}
                 onNavigateMyProperties={navigateMyProperties}
+                onNavigateModerar={navigateModerar}
                 onSignOut={navigateHome}
               />
             </Suspense>
@@ -589,6 +626,9 @@ export function CubitatApp() {
               <button type="button" onClick={navigateAccount}>Mi cuenta</button>
               <button type="button" onClick={navigateFavorites}>Favoritos</button>
               <button type="button" onClick={navigateMyProperties}>Ver mis contenidos</button>
+              {userRole === 'admin' && (
+                <button type="button" onClick={navigateModerar}>Moderar</button>
+              )}
               <button type="button" onClick={navigatePublish}>Vender</button>
               <button className="mobile-menu-signout" type="button" onClick={handleMobileSignOut}>
                 Cerrar sesión
@@ -726,6 +766,11 @@ export function CubitatApp() {
         {pageMode === 'reset-password' && (
           <ResetPasswordPage onDone={navigateLoginAfterPasswordReset} />
         )}
+
+        {pageMode === 'moderar' && (
+          <AdminPage userRole={userRole} onNavigateHome={navigateHome} />
+        )}
+
         <SiteFooter />
       </Suspense>
 

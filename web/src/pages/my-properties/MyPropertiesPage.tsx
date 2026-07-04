@@ -22,7 +22,7 @@ type Property = {
   location: string
   price_usd: number
   cover_image: string | null
-  status: 'published' | 'pending' | 'paused'
+  status: 'published' | 'pending_review' | 'paused'
   created_at: string
   user_id: string
 }
@@ -67,8 +67,8 @@ const STATUS_CONFIG: Record<
     text: 'text-emerald-700',
     dot: 'bg-emerald-500',
   },
-  pending: {
-    label: 'Pendiente',
+  pending_review: {
+    label: 'Pendiente de revisión',
     bg: 'bg-amber-50',
     text: 'text-amber-700',
     dot: 'bg-amber-500',
