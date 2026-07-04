@@ -79,7 +79,6 @@ export function PropertyCard({
       className={`property-card ${isSelected ? 'is-selected' : ''}`}
       role="button"
       tabIndex={0}
-      aria-label={`Ver ${property.title}`}
       onClick={(e) => selectProperty(e)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
