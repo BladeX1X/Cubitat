@@ -704,6 +704,7 @@ export function CubitatApp() {
         {pageMode === 'reset-password' && (
           <ResetPasswordPage onDone={navigateLoginAfterPasswordReset} />
         )}
+        <SiteFooter />
       </Suspense>
 
       <nav className="mobile-bottom-nav" aria-label="Navegación móvil">
@@ -729,7 +730,6 @@ export function CubitatApp() {
         {isSavePromptOpen && <SavePromptModal onClose={closeSavePrompt} />}
         {isLoginOpen && <LoginModal onClose={closeLogin} />}
       </Suspense>
-      <SiteFooter />
     </main>
   )
 }
