@@ -1865,8 +1865,8 @@ async function compressToWebP(file: File): Promise<{ dataUrl: string; size: numb
           let width = img.width
           let height = img.height
           
-          const MAX_WIDTH = 1600
-          const MAX_HEIGHT = 1600
+          const MAX_WIDTH = 800
+          const MAX_HEIGHT = 800
           if (width > height) {
             if (width > MAX_WIDTH) {
               height *= MAX_WIDTH / width
@@ -1888,7 +1888,7 @@ async function compressToWebP(file: File): Promise<{ dataUrl: string; size: numb
           }
           ctx.drawImage(img, 0, 0, width, height)
           
-          const webpDataUrl = canvas.toDataURL('image/webp', 0.75)
+          const webpDataUrl = canvas.toDataURL('image/webp', 0.70)
           const approxSize = Math.round((webpDataUrl.length - 22) * 3 / 4)
           resolve({ dataUrl: webpDataUrl, size: approxSize })
         } catch (err) {
