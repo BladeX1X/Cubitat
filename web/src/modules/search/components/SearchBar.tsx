@@ -97,7 +97,6 @@ export function SearchBar({
           >
             <SelectTrigger
               className="property-type-trigger"
-              aria-label="Tipo de inmueble"
             >
               <SelectValue placeholder="Tipo de inmueble">
                 {propertyTypeLabels[filters.propertyType]}

@@ -448,7 +448,7 @@ export function CubitatApp() {
         <a
           className="brand"
           href="/"
-          aria-label="Cubitat inicio"
+          aria-label="c Cubitat"
           onClick={(event) => {
             event.preventDefault()
             navigateHome()
