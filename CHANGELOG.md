@@ -6,6 +6,7 @@
 
 | Commit | Mensaje |
 |--------|---------|
+| `bad7126` | feat: add admin panel and moderation flow |
 | `5910ad5` | fix: revert blocking inline script, use static preloads with media query |
 | `49eae92` | fix: improve mobile detail accessibility |
 | `e5a6271` | perf: preload first results image earlier |
@@ -16,6 +17,7 @@
 | `9f06a16` | fix: generate sitemap from published supabase properties |
 | `23ca8ee` | perf: reduce max image size to 800px and quality to 0.70 |
 | `a305a5e` | perf: reduce hero quality, preconnect supabase, preload first result image |
+
 
 ---
 
@@ -103,6 +105,25 @@
 - `web/wrangler.jsonc` - Rutas custom domain
 - `web/src/shared/lib/analytics.ts` - GA diferido
 - `web/src/modules/properties/utils/images.ts` - Parámetros de optimización Unsplash
+
+### Moderación y flujo de administración
+
+1. **DB migration: rol admin** - Se agregó `admin` al enum `user_role` y se crearon políticas RLS para que admins lean, actualicen y eliminen todas las propiedades.
+2. **PublishPage → pending_review** - Las propiedades nuevas/guardadas se publican como `pending_review` en vez de `published`.
+3. **AdminPage (`/moderar`)** - Nuevo panel de moderación que lista propiedades pendientes con botones Aprobar (→ published) y Rechazar (→ paused).
+4. **Ruteo protegido** - La ruta `/moderar` verifica que el usuario tenga role `admin`; si no, muestra pantalla de acceso restringido.
+5. **UserMenu + menú móvil** - Link a "Panel de moderación" aparece solo para usuarios con role `admin`, tanto en el menú desktop como en el menú móvil.
+6. **MyPropertiesPage** - Corregido tipo `'pending'` por `'pending_review'` y badge "Pendiente de revisión".
+
+### Archivos modificados/nuevos
+
+- `web/supabase/migrations/20260704000000_add_admin_role.sql` - Nuevo: agrega `admin` al enum
+- `web/supabase/migrations/20260704000001_add_admin_policies.sql` - Nuevo: RLS policies para admin
+- `web/src/pages/moderar/AdminPage.tsx` - Nuevo: panel de moderación
+- `web/src/pages/publish/PublishPage.tsx` - `'published'` → `'pending_review'`
+- `web/src/pages/my-properties/MyPropertiesPage.tsx` - Tipo corregido, badge actualizado
+- `web/src/app/CubitatApp.tsx` - Ruta `/moderar`, fetch de role, admin guard
+- `web/src/components/UserMenu.tsx` - Link condicional a panel de moderación
 
 ### Reportes generados (locales, no commitear)
 
