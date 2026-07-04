@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { createClient } from '@supabase/supabase-js'
 
 const SITE_URL = 'https://cubitathome.com'
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -45,36 +46,60 @@ function operationToSlug(operation) {
   return 'permuta'
 }
 
-function readFeaturedProperties() {
-  const sourcePath = resolve('src/modules/properties/data/featuredProperties.ts')
-  const source = readFileSync(sourcePath, 'utf8')
-  const blocks = source.match(/\{\s*id:[\s\S]*?\n\s*\}/g) ?? []
+function readEnv() {
+  try {
+    const env = readFileSync(resolve('.env'), 'utf8')
+    return Object.fromEntries(
+      env
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => {
+          const [key, ...valueParts] = line.split('=')
+          return [key, valueParts.join('=')]
+        }),
+    )
+  } catch {
+    return {}
+  }
+}
 
-  return blocks.flatMap((block) => {
-    const id = block.match(/id:\s*'([^']+)'/)?.[1]
-    const title = block.match(/title:\s*'([^']+)'/)?.[1]
-    const location = block.match(/location:\s*'([^']+)'/)?.[1]
-    const operation = block.match(/operation:\s*'([^']+)'/)?.[1]
-    const propertyType = block.match(/propertyType:\s*'([^']+)'/)?.[1]
-    const status = block.match(/status:\s*'([^']+)'/)?.[1]
+async function readPublishedProperties() {
+  const env = readEnv()
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
 
-    if (!id || !title || !location || !operation || !propertyType || status !== 'published') {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY for sitemap generation.')
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  const { data, error } = await supabase
+    .from('properties')
+    .select('id, location, operation, property_type, status')
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data ?? []).flatMap((property) => {
+    if (!property.id || !property.location || !property.operation || !property.property_type) {
       return []
     }
 
-    const typeSlug = propertyTypeToSlug(propertyType)
-    const operationSlug = operationToSlug(operation)
-    const locationSlug = slugify(location.split(',')[0] || location)
+    const typeSlug = propertyTypeToSlug(property.property_type)
+    const operationSlug = operationToSlug(property.operation)
+    const locationSlug = slugify(property.location || 'cuba') || 'cuba'
 
     return [{
-      path: `/propiedad/${typeSlug}-en-${operationSlug}-en-${locationSlug}-${id}`,
+      path: `/propiedad/${typeSlug}-en-${operationSlug}-en-${locationSlug}-${property.id}`,
       priority: '0.8',
       changefreq: 'weekly',
     }]
   })
 }
 
-const routes = [...staticRoutes, ...readFeaturedProperties()]
+const routes = [...staticRoutes, ...await readPublishedProperties()]
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
