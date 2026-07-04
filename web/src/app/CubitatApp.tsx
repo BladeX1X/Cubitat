@@ -627,6 +627,10 @@ export function CubitatApp() {
           </>
         )}
 
+        {pageMode === 'detail' && loading && (
+          <div className="min-h-screen" />
+        )}
+
         {!loading && !error && pageMode === 'detail' && selectedProperty && (
           <DetailPage
             property={selectedProperty}
@@ -637,7 +641,7 @@ export function CubitatApp() {
         )}
 
         {!loading && !error && pageMode === 'detail' && !selectedProperty && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-20 min-h-screen text-center">
             <h2 className="text-xl font-bold text-neutral-800">Propiedad no encontrada</h2>
             <p className="text-neutral-500 mt-2">El inmueble que buscas no existe o fue despublicado.</p>
             <Button className="mt-4 bg-[#035f53] hover:bg-[#024a41] text-white rounded-full px-6" onClick={navigateHome}>Ir al inicio</Button>
