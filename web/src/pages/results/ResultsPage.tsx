@@ -3,7 +3,6 @@ import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
 import { FilterBar } from '../../modules/search/components/FilterBar'
 import type { Property } from '../../modules/properties/types'
-import { optimizePropertyCardImage } from '../../modules/properties/utils/images'
 import type { SearchFilters } from '../../modules/search/types'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
@@ -62,21 +61,6 @@ export function ResultsPage({
   useEffect(() => {
     setCurrentPage(1)
   }, [properties, sortBy])
-
-  // Preload first property image for faster LCP
-  useEffect(() => {
-    const firstImage = properties[0]?.coverImage ? optimizePropertyCardImage(properties[0].coverImage) : undefined
-    if (!firstImage) return
-
-    const link = document.createElement('link')
-    link.rel = 'preload'
-    link.as = 'image'
-    link.href = firstImage
-    link.fetchPriority = 'high'
-    document.head.appendChild(link)
-
-    return () => { link.remove() }
-  }, [properties])
 
   // Sticky toolbar detection using IntersectionObserver
   useEffect(() => {

@@ -4,7 +4,7 @@ import { Building2, Heart, Home, Menu, Search, UserRound, X } from 'lucide-react
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
-import { normalizePropertyImages } from '../modules/properties/utils/images'
+import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
 import { HomePage, PopularLocations } from '../pages/home/HomePage'
 import { Button } from '../shared/ui/button'
@@ -240,6 +240,24 @@ export function CubitatApp() {
     () => filterProperties(properties, filters),
     [properties, filters],
   )
+
+  useEffect(() => {
+    if (pageMode !== 'results') return
+
+    const firstImage = visibleProperties[0]?.coverImage
+      ? optimizePropertyCardImage(visibleProperties[0].coverImage)
+      : undefined
+    if (!firstImage) return
+
+    const link = document.createElement('link')
+    link.rel = 'preload'
+    link.as = 'image'
+    link.href = firstImage
+    link.fetchPriority = 'high'
+    document.head.appendChild(link)
+
+    return () => { link.remove() }
+  }, [pageMode, visibleProperties])
 
   const selectedProperty = properties.find(
     (property) => property.id === selectedPropertyId,
