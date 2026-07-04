@@ -20,7 +20,7 @@ import {
 } from '../../../shared/ui/carousel'
 import { useSavedProperties } from '../hooks/useSavedProperties'
 import type { Property } from '../types'
-import { getPropertyGalleryImages } from '../utils/images'
+import { getPropertyGalleryImages, optimizePropertyCardImage } from '../utils/images'
 
 type PropertyCardProps = {
   property: Property
@@ -54,7 +54,7 @@ export function PropertyCard({
     onSelect(property.id)
   }
 
-  const images = getPropertyGalleryImages(property.coverImage, property.images)
+  const images = getPropertyGalleryImages(property.coverImage, property.images).map(optimizePropertyCardImage)
   const hasMultipleImages = images.length > 1
 
   useEffect(() => {

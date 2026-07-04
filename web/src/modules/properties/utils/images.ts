@@ -48,3 +48,17 @@ export function getPropertyGalleryImages(coverImage: string, images?: string[]):
     new Set([coverImage, ...(images ?? [])].map(normalizeImageCandidate).filter(Boolean) as string[]),
   )
 }
+
+export function optimizePropertyCardImage(image: string): string {
+  try {
+    const url = new URL(image)
+    if (url.hostname !== 'images.unsplash.com') return image
+    url.searchParams.set('auto', 'format')
+    url.searchParams.set('fit', 'crop')
+    url.searchParams.set('w', '500')
+    url.searchParams.set('q', '55')
+    return url.toString()
+  } catch {
+    return image
+  }
+}

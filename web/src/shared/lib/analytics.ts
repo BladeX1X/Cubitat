@@ -9,6 +9,36 @@ declare global {
 
 let initialized = false
 let lastTrackedPath: string | null = null
+let scriptScheduled = false
+
+function loadAnalyticsScript() {
+  const existingScript = document.querySelector(
+    `script[src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"]`,
+  )
+
+  if (existingScript) return
+
+  const script = document.createElement('script')
+  script.async = true
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
+  document.head.appendChild(script)
+}
+
+function scheduleAnalyticsScript() {
+  if (scriptScheduled) return
+  scriptScheduled = true
+
+  const scheduleIdle = () => {
+    setTimeout(loadAnalyticsScript, 8000)
+  }
+
+  if (document.readyState === 'complete') {
+    scheduleIdle()
+    return
+  }
+
+  window.addEventListener('load', scheduleIdle, { once: true })
+}
 
 export function initAnalytics() {
   if (!GA_MEASUREMENT_ID || initialized || typeof window === 'undefined') {
@@ -23,21 +53,12 @@ export function initAnalytics() {
     }
   }
 
-  const existingScript = document.querySelector(
-    `script[src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"]`,
-  )
-
-  if (!existingScript) {
-    const script = document.createElement('script')
-    script.async = true
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
-    document.head.appendChild(script)
-  }
-
   window.gtag('js', new Date())
   window.gtag('config', GA_MEASUREMENT_ID, {
     send_page_view: false,
   })
+
+  scheduleAnalyticsScript()
 
   initialized = true
 }
