@@ -154,7 +154,7 @@ export function DetailPage({
               <ChevronLeft size={16} />
               Regresar a la búsqueda
             </button>
-            <div className="detail-breadcrumbs flex flex-wrap items-center gap-1.5 text-xs font-semibold text-neutral-400">
+            <div className="detail-breadcrumbs flex flex-wrap items-center gap-1.5 text-sm font-medium text-neutral-500">
               <span className="hover:text-emerald-800 cursor-pointer" onClick={() => {
                 onChangeFilters({ query: '', operations: [], propertyType: 'all', zoneId: 'all' })
                 onBack()
@@ -330,30 +330,17 @@ export function DetailPage({
 
             {/* Media Viewer Section (Fotos / Mapa Tabs) */}
             <div id="media-viewer-section" className="media-viewer-container space-y-3">
-              <div className="media-tabs flex items-center gap-2 border-b border-neutral-100 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setMediaTab('photos')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
-                    mediaTab === 'photos'
-                      ? 'bg-[#035f53] text-white shadow-sm'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                  }`}
-                >
-                  Fotos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMediaTab('map')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
-                    mediaTab === 'map'
-                      ? 'bg-[#035f53] text-white shadow-sm'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                  }`}
-                >
-                  Mapa
-                </button>
-              </div>
+              {mediaTab === 'map' && (
+                <div className="media-tabs flex items-center gap-2 border-b border-neutral-100 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab('photos')}
+                    className="px-4 py-1.5 text-xs font-bold rounded-full bg-[#035f53] text-white shadow-sm transition-all duration-200 cursor-pointer hover:bg-[#024a41]"
+                  >
+                    Volver a Fotos
+                  </button>
+                </div>
+              )}
 
               <div className="media-tab-content min-h-[300px]">
                 {mediaTab === 'photos' ? (
