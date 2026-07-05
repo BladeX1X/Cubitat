@@ -42,6 +42,10 @@ type DetailPageProps = {
   onAdminDeleteProperty?: (propertyId: string) => void
 }
 
+function titleCase(str: string): string {
+  return str.toLowerCase().replace(/(?:^|\s)\S/g, (a) => a.toUpperCase())
+}
+
 export function DetailPage({
   property,
   onBack,
@@ -108,7 +112,7 @@ export function DetailPage({
               <ChevronLeft size={16} />
               Regresar a la búsqueda
             </button>
-            <div className="detail-breadcrumbs flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-neutral-500">
+            <div className="detail-breadcrumbs flex flex-wrap items-center gap-1.5 text-xs font-semibold text-neutral-400">
               <span className="hover:text-emerald-800 cursor-pointer" onClick={() => {
                 onChangeFilters({ query: '', operations: [], propertyType: 'all', zoneId: 'all' })
                 onBack()
@@ -126,7 +130,7 @@ export function DetailPage({
                       onBack()
                     }}
                   >
-                    {province}
+                    {titleCase(province)}
                   </span>
                 </>
               )}
@@ -141,7 +145,7 @@ export function DetailPage({
                       onBack()
                     }}
                   >
-                    {municipality}
+                    {titleCase(municipality)}
                   </span>
                 </>
               )}
@@ -156,7 +160,7 @@ export function DetailPage({
                       onBack()
                     }}
                   >
-                    {neighborhood}
+                    {titleCase(neighborhood)}
                   </span>
                 </>
               )}
@@ -270,7 +274,7 @@ export function DetailPage({
               <p className="detail-price-line text-3xl font-black text-[#035f53]">
                 {property.operation === 'permuta'
                   ? 'Permuta'
-                  : `${formatPrice(property.priceUsd)} USD`}
+                  : formatPrice(property.priceUsd)}
               </p>
             </div>
 
