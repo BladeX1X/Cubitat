@@ -341,12 +341,13 @@ export function CubitatApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function navigatePublish() {
+  function navigatePublish(loadDraft?: boolean) {
     if (!user) {
       openLogin()
       return
     }
-    window.history.pushState(null, '', '/publicar')
+    const path = loadDraft ? '/publicar?load_draft=true' : '/publicar'
+    window.history.pushState(null, '', path)
     setPageMode('publish')
     setEditPropertyId(undefined)
     setSelectedPropertyId(undefined)
@@ -679,7 +680,7 @@ export function CubitatApp() {
           <Heart size={17} />
           <span>Favoritos</span>
         </button>
-        <button className={pageMode === 'publish' ? 'is-active' : ''} type="button" onClick={navigatePublish}>
+        <button className={pageMode === 'publish' ? 'is-active' : ''} type="button" onClick={() => navigatePublish()}>
           <Building2 size={17} />
           <span>Vender</span>
         </button>

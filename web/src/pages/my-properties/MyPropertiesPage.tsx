@@ -34,7 +34,7 @@ export type MyPropertiesPageProps = {
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
   onEditProperty: (propertyId: string) => void
-  onNewProperty: () => void
+  onNewProperty: (loadDraft?: boolean) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -358,7 +358,7 @@ export function MyPropertiesPage({
               </p>
               <Button
                 className="rounded-full h-9 px-5 text-xs font-bold bg-[#035f53] hover:bg-[#024a41] text-white"
-                onClick={onNewProperty}
+                onClick={() => onNewProperty()}
               >
                 <Plus className="w-3.5 h-3.5" />
                 Nueva propiedad
@@ -370,14 +370,14 @@ export function MyPropertiesPage({
           {loading ? (
             <LoadingSpinner />
           ) : properties.length === 0 ? (
-            <EmptyState onPublish={onNewProperty} />
+            <EmptyState onPublish={() => onNewProperty()} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((property) => (
                 <PropertyCard
                   key={property.id}
                   property={property}
-                  onEdit={() => property.id === 'local_draft_id' ? onNewProperty() : onEditProperty(property.id)}
+                  onEdit={() => property.id === 'local_draft_id' ? onNewProperty(true) : onEditProperty(property.id)}
                   onDelete={() => handleDelete(property.id)}
                 />
               ))}

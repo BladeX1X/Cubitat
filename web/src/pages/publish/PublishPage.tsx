@@ -237,21 +237,22 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   const [submitted, setSubmitted] = useState(false)
   const [editLoading, setEditLoading] = useState(isEditMode)
 
-  const [hasDraftAvailable, setHasDraftAvailable] = useState<boolean>(false)
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
 
-  // 1. Detectar si existe un borrador guardado al montar el componente
+  // 1. Detectar e instalar borrador automáticamente si viene de la URL
   useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem('cubitat_publish_draft')
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft)
-        if (parsed && typeof parsed === 'object') {
-          setHasDraftAvailable(true)
+    if (typeof window !== 'undefined' && window.location.search.includes('load_draft=true')) {
+      try {
+        const savedDraft = localStorage.getItem('cubitat_publish_draft')
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft)
+          if (parsed && typeof parsed === 'object') {
+            setFormData((prev) => ({ ...prev, ...parsed }))
+          }
         }
+      } catch (err) {
+        console.error('Error al cargar borrador automático:', err)
       }
-    } catch (err) {
-      console.error('Error al verificar borrador en localStorage:', err)
     }
   }, [])
 
@@ -351,32 +352,6 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
     }
     loadProperty()
   }, [editPropertyId])
-
-  // Cargar borrador manualmente
-  function handleLoadDraft() {
-    try {
-      const savedDraft = localStorage.getItem('cubitat_publish_draft')
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft)
-        if (parsed && typeof parsed === 'object') {
-          setFormData({ ...initialFormState, ...parsed })
-          setHasDraftAvailable(false)
-        }
-      }
-    } catch (err) {
-      console.error('Error al cargar borrador:', err)
-    }
-  }
-
-  // Descartar borrador manualmente
-  function handleDiscardDraft() {
-    try {
-      localStorage.removeItem('cubitat_publish_draft')
-      setHasDraftAvailable(false)
-    } catch (err) {
-      console.error('Error al descartar borrador:', err)
-    }
-  }
 
   // Guardar borrador manualmente al pulsar el botón
   function handleSaveDraftManual() {
@@ -684,9 +659,6 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
                       formData={formData}
                       onChange={updateFormData}
                       onNext={nextStep}
-                      hasDraftAvailable={hasDraftAvailable}
-                      onLoadDraft={handleLoadDraft}
-                      onDiscardDraft={handleDiscardDraft}
                     />
                   )}
 
@@ -940,45 +912,15 @@ function StepAddress({
   formData,
   onChange,
   onNext,
-  hasDraftAvailable,
-  onLoadDraft,
-  onDiscardDraft,
 }: {
   formData: PublishFormData
   onChange: (updates: Partial<PublishFormData>) => void
   onNext: () => void
-  hasDraftAvailable: boolean
-  onLoadDraft: () => void
-  onDiscardDraft: () => void
 }) {
   const isNextDisabled = !formData.streetAddress || !formData.province || !formData.municipality
 
   return (
     <div className="space-y-5">
-      {hasDraftAvailable && (
-        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 animate-scaleUp">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-amber-800 block">Borrador detectado</span>
-            <span className="text-[11px] text-amber-700 block">Tienes datos guardados de un anuncio anterior. ¿Deseas recuperarlos?</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onDiscardDraft}
-              className="text-[10px] text-neutral-500 font-bold bg-white border border-neutral-200 rounded-full px-3 py-1.5 hover:bg-neutral-50 transition-colors"
-            >
-              Descartar
-            </button>
-            <button
-              type="button"
-              onClick={onLoadDraft}
-              className="text-[10px] text-white font-bold bg-amber-600 hover:bg-amber-700 rounded-full px-4 py-1.5 transition-colors"
-            >
-              Recuperar
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="publish-form-card-header">
         <span className="publish-step-bubble active text-[10px]">1</span>
