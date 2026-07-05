@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Building2, Heart, Home, Menu, Search, UserRound, X } from 'lucide-react'
+import { Building2, Heart, Home, UserRound } from 'lucide-react'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
@@ -10,18 +10,14 @@ import { HomePage, PopularLocations } from '../pages/home/HomePage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
 import { initAnalytics, trackPageView } from '../shared/lib/analytics'
+import { Header } from '../components/layout/Header'
+import { SiteFooter } from '../components/layout/SiteFooter'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
 )
 const SavePromptModal = lazy(() =>
   import('../modules/auth/components/SavePromptModal').then((module) => ({ default: module.SavePromptModal })),
-)
-const NotificationsMenu = lazy(() =>
-  import('../components/UserMenu').then((module) => ({ default: module.NotificationsMenu })),
-)
-const UserMenu = lazy(() =>
-  import('../components/UserMenu').then((module) => ({ default: module.UserMenu })),
 )
 const ResultsPage = lazy(() =>
   import('../pages/results/ResultsPage').then((module) => ({ default: module.ResultsPage })),
@@ -146,7 +142,6 @@ export function CubitatApp() {
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<SearchFilters>(getInitialFilters)
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>(getInitialSelectedPropertyId)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isLoginOpen, openLogin, closeLogin, isSavePromptOpen, closeSavePrompt } = useAuthModal()
   const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
   const [user, setUser] = useState<User | null>(null)
@@ -320,7 +315,6 @@ export function CubitatApp() {
   }, [filters, pageMode])
 
   function navigateHome() {
-    setIsMobileMenuOpen(false)
     window.history.pushState(null, '', '/')
     setPageMode('home')
     setSelectedPropertyId(undefined)
@@ -333,7 +327,6 @@ export function CubitatApp() {
   }
 
   function navigateResults() {
-    setIsMobileMenuOpen(false)
     const params = new URLSearchParams()
     if (filters.query) params.set('q', filters.query)
     if (filters.operations.length > 0) params.set('operacion', filters.operations.join(','))
@@ -349,7 +342,6 @@ export function CubitatApp() {
   }
 
   function navigatePublish() {
-    setIsMobileMenuOpen(false)
     if (!user) {
       openLogin()
       return
@@ -362,7 +354,6 @@ export function CubitatApp() {
   }
 
   function navigateMyProperties() {
-    setIsMobileMenuOpen(false)
     if (!user) {
       openLogin()
       return
@@ -374,7 +365,6 @@ export function CubitatApp() {
   }
 
   function navigateAccount() {
-    setIsMobileMenuOpen(false)
     if (!user) {
       openLogin()
       return
@@ -386,7 +376,6 @@ export function CubitatApp() {
   }
 
   function navigateFavorites() {
-    setIsMobileMenuOpen(false)
     if (!user) {
       openLogin()
       return
@@ -398,7 +387,6 @@ export function CubitatApp() {
   }
 
   function navigateModerar() {
-    setIsMobileMenuOpen(false)
     if (!user) {
       openLogin()
       return
@@ -409,14 +397,12 @@ export function CubitatApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function handleMobileSignOut() {
-    setIsMobileMenuOpen(false)
+  async function handleSignOut() {
     await supabase.auth.signOut()
     navigateHome()
   }
 
   function navigateEditProperty(propertyId: string) {
-    setIsMobileMenuOpen(false)
     window.history.pushState(null, '', `/editar/${propertyId}`)
     setEditPropertyId(propertyId)
     setPageMode('edit')
@@ -519,7 +505,6 @@ export function CubitatApp() {
 
   // Operation tab navigation in main header
   function handleOperationNavigation(op: 'venta' | 'alquiler' | 'permuta') {
-    setIsMobileMenuOpen(false)
     setFilters({ ...initialFilters, operations: [op] })
     setSelectedPropertyId(undefined)
     window.history.pushState(null, '', `/resultados?operacion=${op}`)
@@ -538,153 +523,20 @@ export function CubitatApp() {
 
   return (
     <main className={`app-shell ${pageMode === 'results' ? 'is-results-page' : ''} ${pageMode === 'detail' ? 'is-detail-page' : ''}`}>
-      <header className="site-header relative z-[100]">
-        <a
-          className="brand"
-          href="/"
-          aria-label="c Cubitat"
-          onClick={(event) => {
-            event.preventDefault()
-            navigateHome()
-          }}
-        >
-          <span className="brand-mark">c</span>
-          <span>Cubitat</span>
-        </a>
-        <nav className="primary-nav" aria-label="Navegacion principal">
-          <a
-            href="/resultados"
-            onClick={(event) => {
-              event.preventDefault()
-              handleOperationNavigation('venta')
-            }}
-          >
-            Comprar
-          </a>
-          <a
-            href="/resultados"
-            onClick={(event) => {
-              event.preventDefault()
-              handleOperationNavigation('alquiler')
-            }}
-          >
-            Rentar
-          </a>
-          <a
-            href="/publicar"
-            onClick={(event) => {
-              event.preventDefault()
-              navigatePublish()
-            }}
-          >
-            Vender
-          </a>
-        </nav>
-        <button
-          type="button"
-          className="mobile-header-search"
-          onClick={navigateResults}
-          aria-label="Buscar propiedades"
-        >
-          <span>Busca por zona o dirección</span>
-          <Search size={15} />
-        </button>
-        <div className="header-actions">
-          <Button
-            className="publish-button"
-            type="button"
-            size="lg"
-            onClick={navigatePublish}
-          >
-            Publicar gratis
-          </Button>
-          {user ? (
-            <Suspense fallback={null}>
-              <UserMenu
-                user={user}
-                userRole={userRole}
-                onNavigateAccount={navigateAccount}
-                onNavigateFavorites={navigateFavorites}
-                onNavigateMyProperties={navigateMyProperties}
-                onNavigateModerar={navigateModerar}
-                onSignOut={navigateHome}
-              />
-            </Suspense>
-          ) : (
-            <Button
-              className="login-button"
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={openLogin}
-            >
-              Ingresar
-            </Button>
-          )}
-        </div>
-        <div className="mobile-header-actions">
-          {user && (
-            <Suspense fallback={null}>
-              <NotificationsMenu className="mobile-notifications" />
-            </Suspense>
-          )}
-          <button
-            className="mobile-menu-button"
-            type="button"
-            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-            aria-expanded={isMobileMenuOpen}
-            onClick={() => setIsMobileMenuOpen((current) => !current)}
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={25} />}
-          </button>
-        </div>
-      </header>
-
-      {isMobileMenuOpen && (
-        <aside className="mobile-menu-panel" aria-label="Menú móvil">
-          {user ? (
-            <div className="mobile-menu-profile">
-              <span>{(user.user_metadata?.full_name || user.email || 'U').slice(0, 1).toUpperCase()}</span>
-              <div>
-                <strong>{user.user_metadata?.full_name || 'Usuario Cubitat'}</strong>
-                <p>{user.email}</p>
-              </div>
-            </div>
-          ) : (
-            <button
-              className="mobile-menu-login"
-              type="button"
-              onClick={() => {
-                setIsMobileMenuOpen(false)
-                openLogin()
-              }}
-            >
-              Ingresar o crear cuenta
-            </button>
-          )}
-          {user && (
-            <nav className="mobile-menu-list" aria-label="Opciones de cuenta">
-              <button type="button" onClick={navigateAccount}>Mi cuenta</button>
-              <button type="button" onClick={navigateFavorites}>Favoritos</button>
-              <button type="button" onClick={navigateMyProperties}>Ver mis contenidos</button>
-              {userRole === 'admin' && (
-                <button type="button" onClick={navigateModerar}>Moderar</button>
-              )}
-              <button type="button" onClick={navigatePublish}>Vender</button>
-              <button className="mobile-menu-signout" type="button" onClick={handleMobileSignOut}>
-                Cerrar sesión
-              </button>
-            </nav>
-          )}
-          <Button className="mobile-menu-publish" type="button" onClick={navigatePublish}>
-            Publicar gratis
-          </Button>
-          <nav className="mobile-menu-accordion" aria-label="Operaciones">
-            <button type="button" onClick={() => handleOperationNavigation('venta')}>Comprar</button>
-            <button type="button" onClick={() => handleOperationNavigation('alquiler')}>Rentar</button>
-          </nav>
-        </aside>
-      )}
+      <Header
+        user={user}
+        userRole={userRole}
+        navigateHome={navigateHome}
+        navigateAccount={navigateAccount}
+        navigateFavorites={navigateFavorites}
+        navigateMyProperties={navigateMyProperties}
+        navigateModerar={navigateModerar}
+        navigatePublish={navigatePublish}
+        navigateResults={navigateResults}
+        openLogin={openLogin}
+        handleOperationNavigation={handleOperationNavigation}
+        onSignOut={handleSignOut}
+      />
 
       <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
 
@@ -884,11 +736,4 @@ function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
   )
 }
 
-function SiteFooter() {
-  return (
-    <footer className="site-footer">
-      <strong>Cubitat</strong>
-      <span>Portal inmobiliario para Cuba</span>
-    </footer>
-  )
-}
+// SiteFooter is now imported from components/layout/SiteFooter
