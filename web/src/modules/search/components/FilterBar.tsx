@@ -129,6 +129,8 @@ export function FilterBar({
       {/* 1. Selector de Lugares / Búsqueda */}
       <div className="filter-search-field flex items-center border border-neutral-300 rounded-md px-3 py-1 bg-white min-w-[200px] max-w-[300px] h-10 shadow-sm focus-within:border-[#035f53] transition-colors relative">
         <input
+          id="filter-search-query"
+          name="filter-query"
           type="text"
           placeholder="Buscar zona..."
           className="w-full text-sm outline-none text-neutral-800 placeholder-neutral-400 pr-6"
@@ -298,6 +300,8 @@ export function FilterBar({
             <span className="text-xs font-bold text-neutral-500">Rango personalizado</span>
             <div className="flex items-center gap-2">
               <Input
+                id="custom-min-price"
+                name="min-price"
                 type="number"
                 placeholder="Mínimo"
                 className="h-8 text-xs w-full border border-neutral-300"
@@ -306,6 +310,8 @@ export function FilterBar({
               />
               <span className="text-neutral-400 text-xs">-</span>
               <Input
+                id="custom-max-price"
+                name="max-price"
                 type="number"
                 placeholder="Máximo"
                 className="h-8 text-xs w-full border border-neutral-300"

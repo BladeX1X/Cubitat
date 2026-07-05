@@ -115,6 +115,8 @@ export function SearchBar({
         <div className="location-search-pill">
           <label className="location-field">
             <Input
+              id="search-query"
+              name="query"
               className="location-search-input"
               aria-label="Buscar propiedades"
               placeholder="¿Dónde quieres buscar?"
