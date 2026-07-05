@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  Loader2,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -56,10 +57,44 @@ export function DetailPage({
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
   const [mediaTab, setMediaTab] = useState<'photos' | 'map'>('photos')
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDescription, setReportDescription] = useState('')
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportSuccess, setReportSuccess] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
   const { isSaved, toggleSave } = useSavedProperties()
   const isAdmin = userRole === 'admin'
   
   const saved = isSaved(property.id)
+
+  async function handleReportSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setReportLoading(true)
+    setReportError(null)
+
+    try {
+      const { error: insertError } = await supabase
+        .from('property_reports')
+        .insert({
+          property_id: property.id,
+          reason: reportReason,
+          description: reportDescription,
+          status: 'pending'
+        })
+
+      if (insertError) throw insertError
+
+      setReportSuccess(true)
+      setReportReason('')
+      setReportDescription('')
+    } catch (err: any) {
+      console.error('Error submitting report:', err)
+      setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
+    } finally {
+      setReportLoading(false)
+    }
+  }
 
   function handleScrollToMap() {
     setMediaTab('map')
@@ -384,6 +419,26 @@ export function DetailPage({
               </Card>
             )}
 
+            {/* Banner: Reportar propiedad sospechosa */}
+            <div className="bg-[#fdfaf2] border border-[#f5ebdb] rounded-2xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-800">
+                  Reporta una propiedad sospechosa
+                </h3>
+                <p className="text-xs text-neutral-600 mt-1">
+                  Si hay algo inusual en la propiedad, infórmanos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#fcead0] hover:bg-[#ebd5b8] text-xs font-bold text-neutral-700 transition-all duration-200 border-none cursor-pointer focus:outline-none shrink-0"
+              >
+                <AlertTriangle size={14} className="text-amber-600" />
+                Informar sobre un problema
+              </button>
+            </div>
+
             {/* Ubicación y Seguridad */}
             <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-100 flex flex-col md:flex-row gap-4 items-start md:items-center">
               <div className="p-3 bg-emerald-100 rounded-full text-emerald-800 shrink-0">
@@ -401,7 +456,7 @@ export function DetailPage({
 
           {/* Columna Derecha: Tarjeta de Contacto (Sticky) */}
           <div className="space-y-6">
-            <ContactCard property={property} />
+            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} />
           </div>
 
         </div>
@@ -426,6 +481,111 @@ export function DetailPage({
           Consultar
         </button>
       </div>
+
+      {isReportModalOpen && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsReportModalOpen(false) }}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp">
+            <button
+              onClick={() => setIsReportModalOpen(false)}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+              aria-label="Cerrar"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+              <AlertTriangle className="text-amber-500" size={18} />
+              Informar sobre un problema
+            </h3>
+
+            {reportSuccess ? (
+              <div className="space-y-4 text-center py-4">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-neutral-800">¡Reporte enviado con éxito!</h4>
+                  <p className="text-xs text-neutral-600 mt-1">
+                    Agradecemos tu ayuda para mantener seguro nuestro portal. Un moderador revisará los detalles a la brevedad.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => {
+                    setIsReportModalOpen(false)
+                    setReportSuccess(false)
+                  }}
+                  className="w-full bg-[#035f53] hover:bg-[#024a41] text-white rounded-full mt-2"
+                >
+                  Cerrar
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleReportSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
+                    Motivo del reporte
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full h-10 px-3 border border-neutral-200 rounded-lg text-xs bg-white focus:outline-none focus:border-emerald-500"
+                    required
+                  >
+                    <option value="">Selecciona un motivo</option>
+                    <option value="FRAUD">Fraude o estafa</option>
+                    <option value="INCORRECT_INFO">Información falsa o desactualizada</option>
+                    <option value="SPAM">Publicidad o duplicado (Spam)</option>
+                    <option value="OTHER">Otro motivo</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
+                    Detalles adicionales
+                  </label>
+                  <Textarea
+                    placeholder="Explica brevemente por qué consideras que esta propiedad tiene un problema..."
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    className="min-h-[80px] text-xs"
+                    required
+                  />
+                </div>
+
+                {reportError && (
+                  <p className="text-xs text-red-600 font-semibold">{reportError}</p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsReportModalOpen(false)}
+                    className="flex-1 rounded-full h-10 text-xs font-bold"
+                    disabled={reportLoading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-full h-10 text-xs font-bold"
+                    disabled={reportLoading}
+                  >
+                    {reportLoading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      'Enviar reporte'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -569,7 +729,7 @@ function ImageGallery({ property }: { property: Property }) {
 }
 
 /* Subcomponente: Tarjeta de Contacto */
-function ContactCard({ property }: { property: Property }) {
+function ContactCard({ property, onReport }: { property: Property; onReport: () => void }) {
   const [contactSent, setContactSent] = useState(false)
 
   function handleContactSubmit(e: React.FormEvent) {
@@ -585,15 +745,15 @@ function ContactCard({ property }: { property: Property }) {
           <h2 className="text-lg font-bold text-neutral-900 mb-1">
             Contactar anunciante
           </h2>
-              <p className="text-xs text-neutral-600 flex items-center gap-1.5">
-            <Calendar size={13} />
+          <p className="text-[11px] text-neutral-500 flex items-center gap-1">
+            <Calendar size={12} />
             Publicado recientemente
           </p>
         </div>
 
         {contactSent ? (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-sm text-center font-medium animate-fadeIn">
-            Mensaje enviado con éxito. El anunciante se pondrá en contacto a la brevedad.
+          <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-xs leading-relaxed">
+            <strong>¡Mensaje enviado!</strong> Tu solicitud ha sido procesada. El anunciante se pondrá en contacto contigo pronto.
           </div>
         ) : (
           <form onSubmit={handleContactSubmit} className="space-y-3">
@@ -605,7 +765,7 @@ function ContactCard({ property }: { property: Property }) {
                 id="contact-message"
                 required
                 defaultValue={`Hola, estoy interesado en "${property.title}" en ${property.location}. Quisiera recibir más detalles.`}
-                className="text-xs text-neutral-700 min-h-[90px]"
+                className="min-h-[100px] text-xs"
               />
             </div>
 
@@ -635,7 +795,11 @@ function ContactCard({ property }: { property: Property }) {
       </CardContent>
 
       <div className="border-t border-neutral-100 mt-5 pt-4 text-center">
-        <button className="inline-flex items-center gap-1.5 text-[11px] font-bold text-neutral-600 hover:text-red-500 transition-colors">
+        <button 
+          type="button" 
+          onClick={onReport}
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-neutral-600 hover:text-red-500 transition-colors cursor-pointer border-none bg-transparent"
+        >
           <AlertTriangle size={14} />
           Reportar propiedad sospechosa
         </button>

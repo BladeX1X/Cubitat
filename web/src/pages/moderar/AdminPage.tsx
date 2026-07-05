@@ -5,6 +5,24 @@ import { Check, X, Loader2, Building2, MapPin, Eye, Trash2 } from 'lucide-react'
 
 type StatusFilter = 'pending_review' | 'published' | 'paused' | 'all'
 
+type ReportStatusFilter = 'pending' | 'resolved' | 'dismissed' | 'all'
+
+type PropertyReport = {
+  id: string
+  property_id: string
+  reporter_id: string | null
+  reason: string
+  description: string | null
+  status: 'pending' | 'resolved' | 'dismissed'
+  created_at: string
+  properties: {
+    id: string
+    title: string
+    cover_image: string | null
+    status: string
+  } | null
+}
+
 type ModerationProperty = {
   id: string
   title: string
@@ -62,12 +80,48 @@ export function AdminPage({
   onNavigateHome: () => void
 }) {
   const [properties, setProperties] = useState<ModerationProperty[]>([])
+  const [reports, setReports] = useState<PropertyReport[]>([])
+  const [activeTab, setActiveTab] = useState<'properties' | 'reports'>('properties')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending_review')
+  const [reportStatusFilter, setReportStatusFilter] = useState<ReportStatusFilter>('pending')
   const [searchQuery, setSearchQuery] = useState('')
+
+  async function loadReports() {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data: repData, error: repError } = await supabase
+        .from('property_reports')
+        .select(`
+          id,
+          property_id,
+          reporter_id,
+          reason,
+          description,
+          status,
+          created_at,
+          properties (
+            id,
+            title,
+            cover_image,
+            status
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (repError) throw repError
+      setReports(repData as any || [])
+    } catch (err: any) {
+      console.error('Error loading reports:', err)
+      setError('No se pudieron cargar los reportes.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function loadProperties() {
     setLoading(true)
@@ -113,10 +167,12 @@ export function AdminPage({
   }
 
   useEffect(() => {
-    if (userRole === 'admin') {
+    if (activeTab === 'properties') {
       loadProperties()
+    } else {
+      loadReports()
     }
-  }, [userRole])
+  }, [activeTab])
 
   async function updatePropertyStatus(id: string, status: ModerationProperty['status'], moderationMessage: string | null = null) {
     setActionLoading(id)
@@ -162,6 +218,52 @@ export function AdminPage({
     setActionLoading(null)
   }
 
+  async function handleResolveReport(reportId: string, propertyId: string) {
+    setActionLoading(reportId)
+    // 1. Ocultar la propiedad
+    const { error: propError } = await supabase
+      .from('properties')
+      .update({ status: 'paused', moderation_message: 'Ocultada por reportes de usuarios.' })
+      .eq('id', propertyId)
+
+    if (propError) {
+      console.error('Error disabling property:', propError)
+      alert('No se pudo desactivar la propiedad.')
+      setActionLoading(null)
+      return
+    }
+
+    // 2. Marcar reporte como resuelto
+    const { error: repError } = await supabase
+      .from('property_reports')
+      .update({ status: 'resolved' })
+      .eq('id', reportId)
+
+    if (repError) {
+      console.error('Error resolving report:', repError)
+      alert('Propiedad desactivada, pero no se pudo actualizar el reporte.')
+    } else {
+      setReports((prev) => prev.map((r) => r.id === reportId ? { ...r, status: 'resolved' } : r))
+    }
+    setActionLoading(null)
+  }
+
+  async function handleDismissReport(reportId: string) {
+    setActionLoading(reportId)
+    const { error: repError } = await supabase
+      .from('property_reports')
+      .update({ status: 'dismissed' })
+      .eq('id', reportId)
+
+    if (repError) {
+      console.error('Error dismissing report:', repError)
+      alert('No se pudo descartar el reporte.')
+    } else {
+      setReports((prev) => prev.map((r) => r.id === reportId ? { ...r, status: 'dismissed' } : r))
+    }
+    setActionLoading(null)
+  }
+
   if (userRole === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen py-20 px-4">
@@ -203,14 +305,53 @@ export function AdminPage({
     return matchesStatus && matchesQuery
   })
 
+  const REASON_LABELS: Record<string, string> = {
+    FRAUD: 'Fraude o estafa',
+    INCORRECT_INFO: 'Información falsa/desactualizada',
+    SPAM: 'Publicidad o spam',
+    OTHER: 'Otro motivo',
+  }
+
+  const REPORT_STATUS_LABELS: Record<string, string> = {
+    pending: 'Pendiente',
+    resolved: 'Resuelto (Ocultado)',
+    dismissed: 'Descartado',
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-400">Administración</p>
-        <h1 className="text-2xl sm:text-[28px] font-black tracking-tight mt-2 text-neutral-900">Panel de moderación</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Por defecto ves las pendientes. Puedes filtrar, abrir el detalle, aprobar, ocultar o eliminar.
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-400">Administración</p>
+          <h1 className="text-2xl sm:text-[28px] font-black tracking-tight mt-2 text-neutral-900">Panel de moderación</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Revisión de anuncios publicados y reportes enviados por usuarios.
+          </p>
+        </div>
+        <div className="flex gap-2 bg-neutral-100 p-1.5 rounded-full shrink-0 h-fit w-fit">
+          <button
+            type="button"
+            onClick={() => { setActiveTab('properties'); setLoading(true); }}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+              activeTab === 'properties'
+                ? 'bg-[#035f53] text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            Propiedades
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('reports'); setLoading(true); }}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+              activeTab === 'reports'
+                ? 'bg-[#035f53] text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            Reportes
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -226,13 +367,116 @@ export function AdminPage({
             Reintentar
           </Button>
         </div>
-      ) : properties.length === 0 ? (
+      ) : activeTab === 'properties' && properties.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-4">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-4">
             <Check className="w-10 h-10 text-emerald-600" />
           </div>
           <h2 className="text-lg font-bold text-neutral-800">No hay propiedades</h2>
           <p className="text-sm text-neutral-500 mt-1">Aún no hay publicaciones para moderar.</p>
+        </div>
+      ) : activeTab === 'reports' && reports.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 px-4">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-4">
+            <Check className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-lg font-bold text-neutral-800">No hay reportes</h2>
+          <p className="text-sm text-neutral-500 mt-1">No se han registrado reportes de usuarios.</p>
+        </div>
+      ) : activeTab === 'reports' ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] flex gap-2">
+            {[
+              ['pending', 'Pendientes'],
+              ['resolved', 'Resueltos'],
+              ['dismissed', 'Descartados'],
+              ['all', 'Todos'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setReportStatusFilter(value as ReportStatusFilter)}
+                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                  reportStatusFilter === value
+                    ? 'bg-[#035f53] text-white shadow-sm'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-4">
+            {reports
+              .filter((r) => reportStatusFilter === 'all' || r.status === reportStatusFilter)
+              .map((report) => (
+                <div key={report.id} className="bg-white rounded-2xl shadow-[0_4px_14px_rgba(10,31,28,0.04)] border border-neutral-100 p-5 flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-neutral-100 pb-3">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Reporte sobre:</span>
+                      <h3 className="text-sm font-bold text-neutral-800 mt-0.5">
+                        {report.properties?.title || 'Propiedad no encontrada o eliminada'}
+                      </h3>
+                    </div>
+                    <span className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      report.status === 'pending'
+                        ? 'bg-amber-100 text-amber-800'
+                        : report.status === 'resolved'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-neutral-100 text-neutral-600'
+                    }`}>
+                      {REPORT_STATUS_LABELS[report.status]}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-2 text-sm text-neutral-600">
+                    <p>
+                      <strong className="text-neutral-800">Motivo:</strong>{' '}
+                      <span className="text-red-700 font-semibold">{REASON_LABELS[report.reason] || report.reason}</span>
+                    </p>
+                    {report.description && (
+                      <p className="bg-neutral-50 rounded-xl p-3 border border-neutral-100 text-xs italic">
+                        "{report.description}"
+                      </p>
+                    )}
+                    <p className="text-xs text-neutral-400">
+                      Fecha del reporte: {formatDate(report.created_at)}
+                    </p>
+                  </div>
+
+                  {report.status === 'pending' && report.properties && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
+                      <Button
+                        onClick={() => handleResolveReport(report.id, report.property_id)}
+                        className="rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white"
+                        disabled={actionLoading === report.id}
+                      >
+                        {actionLoading === report.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <X size={14} />
+                        )}
+                        Ocultar Propiedad
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDismissReport(report.id)}
+                        className="rounded-xl text-xs font-bold border-neutral-200 text-neutral-700"
+                        disabled={actionLoading === report.id}
+                      >
+                        {actionLoading === report.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Check size={14} />
+                        )}
+                        Descartar Reporte
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
