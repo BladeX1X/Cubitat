@@ -1,4 +1,4 @@
-﻿import { useRef, useState, type ReactNode, type UIEvent } from 'react'
+import { useRef, useState, type ReactNode, type UIEvent } from 'react'
 import {
   Bath,
   BedDouble,
@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect } from 'react'
+import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import type { Property } from '../../modules/properties/types'
@@ -55,6 +56,12 @@ export function DetailPage({
   const isAdmin = userRole === 'admin'
   
   const saved = isSaved(property.id)
+
+  // Dynamic document title and description for this property detail page
+  useSEO({
+    title: property ? `${property.title} | ${property.location}` : 'Cargando Propiedad',
+    description: property ? `${property.description.slice(0, 150)}... Contactar vendedor.` : undefined
+  })
 
   const locationParts = property.location ? property.location.split(',').map(s => s.trim()) : []
   let province = ''

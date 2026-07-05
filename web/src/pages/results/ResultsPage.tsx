@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSEO } from '../../shared/hooks/useSEO'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
 import { FilterBar } from '../../modules/search/components/FilterBar'
@@ -56,6 +57,22 @@ export function ResultsPage({
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
   const [isSortOpen, setIsSortOpen] = useState(false)
   const PAGE_SIZE = 16
+
+  // Dynamic document title and description
+  const isRent = filters.operations.includes('alquiler')
+  const isSale = filters.operations.includes('venta')
+  const isSwap = filters.operations.includes('permuta')
+
+  let operationText = 'Propiedades'
+  if (isRent) operationText = 'Casas y Apartamentos en Renta'
+  else if (isSale) operationText = 'Inmuebles en Venta'
+  else if (isSwap) operationText = 'Permutas de Viviendas'
+
+  const locationText = filters.query ? ` en ${filters.query}` : ' en Cuba'
+  const title = `${operationText}${locationText}`
+  const description = `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
+
+  useSEO({ title, description })
 
   // Reset to first page when properties (filters) change
   useEffect(() => {
