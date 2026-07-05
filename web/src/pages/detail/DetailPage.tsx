@@ -56,7 +56,8 @@ export function DetailPage({
   onAdminDeleteProperty,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
-  const [mediaTab, setMediaTab] = useState<'photos' | 'map'>('photos')
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
+  const [mediaModalTab, setMediaModalTab] = useState<'photos' | 'map'>('photos')
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportDescription, setReportDescription] = useState('')
@@ -94,13 +95,6 @@ export function DetailPage({
     } finally {
       setReportLoading(false)
     }
-  }
-
-  function handleScrollToMap() {
-    setMediaTab('map')
-    setTimeout(() => {
-      document.getElementById('media-viewer-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 50)
   }
 
   // Dynamic document title and description for this property detail page
@@ -311,7 +305,10 @@ export function DetailPage({
                   <span>{property.location}</span>
                   <button
                     type="button"
-                    onClick={handleScrollToMap}
+                    onClick={() => {
+                      setMediaModalTab('map')
+                      setIsMediaModalOpen(true)
+                    }}
                     className="text-xs font-bold text-emerald-800 hover:text-emerald-700 underline cursor-pointer ml-1.5 focus:outline-none"
                   >
                     Ver ubicación
@@ -328,38 +325,15 @@ export function DetailPage({
               </div>
             </div>
 
-            {/* Media Viewer Section (Fotos / Mapa Tabs) */}
-            <div id="media-viewer-section" className="media-viewer-container space-y-3">
-              {mediaTab === 'map' && (
-                <div className="media-tabs flex items-center gap-2 border-b border-neutral-100 pb-2">
-                  <button
-                    type="button"
-                    onClick={() => setMediaTab('photos')}
-                    className="px-4 py-1.5 text-xs font-bold rounded-full bg-[#035f53] text-white shadow-sm transition-all duration-200 cursor-pointer hover:bg-[#024a41]"
-                  >
-                    Volver a Fotos
-                  </button>
-                </div>
-              )}
-
-              <div className="media-tab-content min-h-[300px]">
-                {mediaTab === 'photos' ? (
-                  <ImageGallery property={property} />
-                ) : (
-                  <div className="detail-map-frame rounded-2xl overflow-hidden shadow-md border border-neutral-100 h-[300px] md:h-[450px] w-full">
-                    <iframe
-                      title="Mapa de ubicación de la propiedad"
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
-                      className="w-full h-full"
-                    />
-                  </div>
-                )}
-              </div>
+            {/* Media Viewer Container */}
+            <div className="media-viewer-container">
+              <ImageGallery 
+                property={property} 
+                isOpenModal={isMediaModalOpen}
+                setIsOpenModal={setIsMediaModalOpen}
+                activeTab={mediaModalTab}
+                setActiveTab={setMediaModalTab}
+              />
             </div>
 
             {/* Ficha Técnica / Especificaciones */}
@@ -573,15 +547,26 @@ export function DetailPage({
           </div>
         </div>
       )}
+
     </section>
   )
 }
 
-/* Subcomponente: Galeria de Imagenes (Airbnb-style Collage layout) */
-function ImageGallery({ property }: { property: Property }) {
+function ImageGallery({
+  property,
+  isOpenModal,
+  setIsOpenModal,
+  activeTab,
+  setActiveTab,
+}: {
+  property: Property
+  isOpenModal: boolean
+  setIsOpenModal: (open: boolean) => void
+  activeTab: 'photos' | 'map'
+  setActiveTab: (tab: 'photos' | 'map') => void
+}) {
   const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isOpenModal, setIsOpenModal] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
 
   const images = getPropertyGalleryImages(property.coverImage, property.images)
@@ -605,7 +590,7 @@ function ImageGallery({ property }: { property: Property }) {
         
         {/* Foto principal grande */}
         <div 
-          onClick={() => { setActiveImage(images[0]); setIsOpenModal(true); }}
+          onClick={() => { setActiveImage(images[0]); setActiveTab('photos'); setIsOpenModal(true); }}
           className="col-span-2 row-span-2 bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
           style={{ backgroundImage: `url("${images[0]}")`, backgroundColor: property.coverTone || '#f3f4f6' }}
         >
@@ -616,7 +601,7 @@ function ImageGallery({ property }: { property: Property }) {
         {images.slice(1, 5).map((img, idx) => (
           <div 
             key={idx}
-            onClick={() => { setActiveImage(img); setIsOpenModal(true); }}
+            onClick={() => { setActiveImage(img); setActiveTab('photos'); setIsOpenModal(true); }}
             className="bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
             style={{ backgroundImage: `url("${img}")` }}
           >
@@ -645,6 +630,7 @@ function ImageGallery({ property }: { property: Property }) {
               onClick={() => {
                 setActiveImage(img)
                 setActiveIndex(idx)
+                setActiveTab('photos')
                 setIsOpenModal(true)
               }}
               aria-label={`Abrir foto ${idx + 1} de ${images.length}`}
@@ -690,25 +676,62 @@ function ImageGallery({ property }: { property: Property }) {
             <X size={22} />
           </button>
           
-          <img 
-            src={activeImage} 
-            alt="Detalle de propiedad" 
-            className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl animate-scaleUp"
-          />
-
-          <div className="flex gap-2 mt-6 overflow-x-auto max-w-full py-2">
-            {images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveImage(img)}
-                className={`relative w-20 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
-                  activeImage === img ? 'border-emerald-500 scale-95 shadow' : 'border-transparent opacity-50'
-                }`}
-              >
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${img}")` }} />
-              </button>
-            ))}
+          {/* Modal Header Tabs: Fotos / Mapa */}
+          <div className="flex gap-2 mb-6 bg-white/10 p-1 rounded-full w-fit">
+            <button
+              onClick={() => setActiveTab('photos')}
+              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer ${
+                activeTab === 'photos' ? 'bg-white text-neutral-900 shadow' : 'bg-transparent text-white hover:text-neutral-200'
+              }`}
+            >
+              Fotos
+            </button>
+            <button
+              onClick={() => setActiveTab('map')}
+              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer ${
+                activeTab === 'map' ? 'bg-white text-neutral-900 shadow' : 'bg-transparent text-white hover:text-neutral-200'
+              }`}
+            >
+              Mapa
+            </button>
           </div>
+          
+          {activeTab === 'photos' ? (
+            <>
+              <img 
+                src={activeImage} 
+                alt="Detalle de propiedad" 
+                className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-scaleUp"
+              />
+
+              <div className="flex gap-2 mt-6 overflow-x-auto max-w-full py-2">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(img)}
+                    className={`relative w-20 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                      activeImage === img ? 'border-emerald-500 scale-95 shadow' : 'border-transparent opacity-50'
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${img}")` }} />
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="w-full max-w-4xl h-[50vh] md:h-[65vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-scaleUp">
+              <iframe
+                title="Mapa de ubicación de la propiedad"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
+                className="w-full h-full"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
