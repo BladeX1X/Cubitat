@@ -139,22 +139,27 @@ export function AccountPage({
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarMessage('La imagen debe pesar menos de 2 MB.')
-      return
-    }
-
     setIsUploadingAvatar(true)
     setAvatarMessage(null)
 
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const filePath = `${user.id}/avatar.${extension}`
+    let compressedBlob: Blob
+    try {
+      compressedBlob = await compressAvatarToWebP(file)
+    } catch (err) {
+      console.error('Error compressing avatar:', err)
+      setAvatarMessage('No se pudo optimizar la imagen del avatar.')
+      setIsUploadingAvatar(false)
+      return
+    }
+
+    const filePath = `${user.id}/avatar.webp`
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, file, {
+      .upload(filePath, compressedBlob, {
         cacheControl: '3600',
         upsert: true,
+        contentType: 'image/webp'
       })
 
     if (uploadError) {
@@ -561,4 +566,57 @@ function StatusPill({ status }: { status: 'verified' | 'pending' | 'missing' }) 
       Pendiente
     </span>
   )
+}
+
+/* Helper to compress avatar image to WebP offline with Canvas */
+async function compressAvatarToWebP(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+          
+          const MAX_SIZE = 300 // WebP avatar max resolution (perfect size for avatars)
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width
+              width = MAX_SIZE
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height
+              height = MAX_SIZE
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('No se pudo obtener el contexto 2D del canvas.'))
+            return
+          }
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob)
+            } else {
+              reject(new Error('Fallo al generar Blob de WebP.'))
+            }
+          }, 'image/webp', 0.8)
+        } catch (err) {
+          reject(err)
+        }
+      }
+      img.onerror = () => reject(new Error('Error al cargar la imagen.'))
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'))
+    reader.readAsDataURL(file)
+  })
 }
