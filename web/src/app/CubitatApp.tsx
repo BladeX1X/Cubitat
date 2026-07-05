@@ -519,9 +519,12 @@ export function CubitatApp() {
 
   // Operation tab navigation in main header
   function handleOperationNavigation(op: 'venta' | 'alquiler' | 'permuta') {
-    setFilters((current) => ({ ...current, operations: [op] }))
+    setIsMobileMenuOpen(false)
+    setFilters({ ...initialFilters, operations: [op] })
     setSelectedPropertyId(undefined)
-    navigateResults()
+    window.history.pushState(null, '', `/resultados?operacion=${op}`)
+    setPageMode('results')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   /*
