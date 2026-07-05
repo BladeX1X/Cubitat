@@ -23,6 +23,7 @@ type Property = {
   price_usd: number
   cover_image: string | null
   status: 'published' | 'pending_review' | 'paused'
+  moderation_message: string | null
   created_at: string
   user_id: string
 }
@@ -148,6 +149,13 @@ function PropertyCard({
           <Calendar className="w-3.5 h-3.5" />
           {formatDate(property.created_at)}
         </div>
+
+        {property.status === 'paused' && property.moderation_message && (
+          <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">
+            <strong className="block mb-1">Motivo del rechazo</strong>
+            {property.moderation_message}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 mt-1 pt-3 border-t border-neutral-100">
