@@ -561,6 +561,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         age_years: formData.ageYears,
         amenities,
         status: 'pending_review',
+        moderation_message: null,
         cover_image: uploadedImages.length > 0 ? uploadedImages[0] : null,
         images: uploadedImages,
         features,
