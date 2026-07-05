@@ -42,7 +42,7 @@ export function AccountLayout({
               <SideItem
                 active={active === 'contents'}
                 icon={<Home size={20} />}
-                label="Ver mis contenidos"
+                label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
             </nav>

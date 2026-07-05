@@ -214,7 +214,7 @@ export function UserMenu({
                 type="button"
               >
                 <Home size={18} className="text-neutral-400" />
-                Ver mis contenidos
+                Mis publicaciones
               </button>
               {userRole === 'admin' && (
                 <button

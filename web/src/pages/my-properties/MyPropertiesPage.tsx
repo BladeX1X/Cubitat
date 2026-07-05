@@ -22,7 +22,7 @@ type Property = {
   location: string
   price_usd: number
   cover_image: string | null
-  status: 'published' | 'pending_review' | 'paused'
+  status: 'published' | 'pending_review' | 'paused' | 'local_draft'
   moderation_message: string | null
   created_at: string
   user_id: string
@@ -79,6 +79,12 @@ const STATUS_CONFIG: Record<
     bg: 'bg-neutral-100',
     text: 'text-neutral-500',
     dot: 'bg-neutral-400',
+  },
+  local_draft: {
+    label: 'Borrador (Sin publicar)',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    dot: 'bg-blue-500',
   },
 }
 
@@ -252,9 +258,40 @@ export function MyPropertiesPage({
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
+        let finalProperties: Property[] = []
         if (!error && data) {
-          setProperties(data as Property[])
+          finalProperties = data as Property[]
         }
+
+        // Cargar borrador local si existe en localStorage
+        try {
+          const savedDraft = localStorage.getItem('cubitat_publish_draft')
+          if (savedDraft) {
+            const parsed = JSON.parse(savedDraft)
+            if (parsed && typeof parsed === 'object') {
+              const propertyTypeName = parsed.propertyType === 'apartamento' ? 'Departamento' : parsed.propertyType === 'casa' ? 'Casa' : 'Terreno'
+              const operationName = parsed.operation === 'alquiler' ? 'en renta' : parsed.operation === 'venta' ? 'en venta' : 'en permuta'
+              const draftTitle = `${propertyTypeName} ${operationName} en ${parsed.municipality || parsed.neighborhood || 'Cuba'} (Borrador)`
+              
+              const localDraftProp: Property = {
+                id: 'local_draft_id',
+                title: draftTitle,
+                location: parsed.location || `${parsed.municipality || ''}, ${parsed.province || 'Cuba'}`.replace(/^,\s*/, '').replace(/,\s*$/, ''),
+                price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
+                cover_image: null,
+                status: 'local_draft',
+                moderation_message: null,
+                created_at: new Date().toISOString(),
+                user_id: user.id,
+              }
+              finalProperties = [localDraftProp, ...finalProperties]
+            }
+          }
+        } catch (e) {
+          console.error('Error al parsear el borrador local:', e)
+        }
+
+        setProperties(finalProperties)
       } finally {
         setLoading(false)
       }
@@ -264,6 +301,16 @@ export function MyPropertiesPage({
 
   /* ---- delete handler ---- */
   async function handleDelete(propertyId: string) {
+    if (propertyId === 'local_draft_id') {
+      const confirmed = window.confirm(
+        '¿Estás seguro de que deseas eliminar este borrador local? Se perderán todos los datos guardados en tu navegador.',
+      )
+      if (!confirmed) return
+      localStorage.removeItem('cubitat_publish_draft')
+      setProperties((prev) => prev.filter((p) => p.id !== 'local_draft_id'))
+      return
+    }
+
     const confirmed = window.confirm(
       '¿Estás seguro de que deseas eliminar esta propiedad? Esta acción no se puede deshacer.',
     )
@@ -289,7 +336,7 @@ export function MyPropertiesPage({
           Publicaciones
         </p>
         <h1 className="text-2xl sm:text-[28px] font-black tracking-tight mt-2">
-          Ver mis contenidos
+          Mis publicaciones
         </h1>
         <p className="mt-2 max-w-2xl text-sm sm:text-base font-semibold text-white/85">
           Administra, edita y controla todas las propiedades que has publicado en la plataforma.
@@ -306,8 +353,8 @@ export function MyPropertiesPage({
                   {properties.length}
                 </span>{' '}
                 {properties.length === 1
-                  ? 'propiedad publicada'
-                  : 'propiedades publicadas'}
+                  ? 'propiedad o borrador'
+                  : 'propiedades o borradores'}
               </p>
               <Button
                 className="rounded-full h-9 px-5 text-xs font-bold bg-[#035f53] hover:bg-[#024a41] text-white"
@@ -330,7 +377,7 @@ export function MyPropertiesPage({
                 <PropertyCard
                   key={property.id}
                   property={property}
-                  onEdit={() => onEditProperty(property.id)}
+                  onEdit={() => property.id === 'local_draft_id' ? onNewProperty() : onEditProperty(property.id)}
                   onDelete={() => handleDelete(property.id)}
                 />
               ))}

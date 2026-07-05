@@ -166,7 +166,7 @@ export function Header({
             <nav className="mobile-menu-list" aria-label="Opciones de cuenta">
               <button type="button" onClick={() => handleNavigation(navigateAccount)}>Mi cuenta</button>
               <button type="button" onClick={() => handleNavigation(navigateFavorites)}>Favoritos</button>
-              <button type="button" onClick={() => handleNavigation(navigateMyProperties)}>Ver mis contenidos</button>
+              <button type="button" onClick={() => handleNavigation(navigateMyProperties)}>Mis publicaciones</button>
               {userRole === 'admin' && (
                 <button type="button" onClick={() => handleNavigation(navigateModerar)}>Moderar</button>
               )}
