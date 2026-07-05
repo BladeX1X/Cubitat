@@ -78,6 +78,7 @@ export function PropertyCard({
     <article
       className={`property-card ${isSelected ? 'is-selected' : ''}`}
       role="button"
+      aria-label={`Ver ${property.title}`}
       tabIndex={0}
       onClick={(e) => selectProperty(e)}
       onKeyDown={(event) => {
@@ -94,12 +95,12 @@ export function PropertyCard({
               const shouldRenderImage = index === 0 || index === activeImageIndex
 
               return (
-              <CarouselItem key={index} className="pl-0 h-full w-full">
-                {shouldRenderImage ? (
-                  <img
-                    className="property-photo-slide"
-                    src={image}
-                    alt=""
+                <CarouselItem key={index} className="pl-0 h-full w-full">
+                  {shouldRenderImage ? (
+                    <img
+                      className="property-photo-slide"
+                      src={image}
+                      alt=""
                     loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
                     fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}

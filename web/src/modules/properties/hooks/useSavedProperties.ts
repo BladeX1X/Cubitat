@@ -4,19 +4,19 @@ import { useAuthModal } from '../../auth/contexts/AuthModalContext'
 
 export function useSavedProperties() {
   const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set())
-  const [userId, setUserId] = useState<string | null>(null)
+  const [sessionUid, setSessionUid] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const { openSavePrompt } = useAuthModal()
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null)
+      setSessionUid(session?.user?.id ?? null)
     })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id ?? null)
+      setSessionUid(session?.user?.id ?? null)
     })
 
     return () => subscription.unsubscribe()
@@ -24,7 +24,7 @@ export function useSavedProperties() {
 
   useEffect(() => {
     async function loadSavedProperties() {
-      if (!userId) {
+      if (!sessionUid) {
         setSavedPropertyIds(new Set())
         setLoading(false)
         return
@@ -34,7 +34,7 @@ export function useSavedProperties() {
         const { data, error } = await supabase
           .from('saved_properties')
           .select('property_id')
-          .eq('user_id', userId)
+          .eq('user_id', sessionUid)
 
         if (error) throw error
 
@@ -49,10 +49,10 @@ export function useSavedProperties() {
     }
 
     loadSavedProperties()
-  }, [userId])
+  }, [sessionUid])
 
   const toggleSave = async (propertyId: string) => {
-    if (!userId) {
+    if (!sessionUid) {
       openSavePrompt()
       return false // Indicates that the action didn't complete because user wasn't logged in
     }
@@ -75,14 +75,14 @@ export function useSavedProperties() {
         const { error } = await supabase
           .from('saved_properties')
           .delete()
-          .eq('user_id', userId)
+          .eq('user_id', sessionUid)
           .eq('property_id', propertyId)
         
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('saved_properties')
-          .insert({ user_id: userId, property_id: propertyId })
+          .insert({ user_id: sessionUid, property_id: propertyId })
         
         if (error) throw error
       }

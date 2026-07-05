@@ -12,25 +12,25 @@ export interface Notification {
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [userId, setUserId] = useState<string | null>(null)
+  const [sessionUid, setSessionUid] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null)
+      setSessionUid(session?.user?.id ?? null)
     })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id ?? null)
+      setSessionUid(session?.user?.id ?? null)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
-    if (!userId) {
+    if (!sessionUid) {
       setNotifications([])
       setLoading(false)
       return
@@ -44,7 +44,7 @@ export function useNotifications() {
         const { data, error } = await supabase
           .from('notifications')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', sessionUid)
           .order('created_at', { ascending: false })
 
         if (error) throw error
@@ -61,14 +61,14 @@ export function useNotifications() {
     // Each mounted menu needs its own channel. Reusing a channel name can crash
     // Supabase Realtime when React mounts desktop and mobile menus together.
     const channel = supabase
-      .channel(`notifications-changes-${userId}-${crypto.randomUUID()}`)
+      .channel(`notifications-changes-${sessionUid}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userId}`,
+          filter: `user_id=eq.${sessionUid}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -86,12 +86,12 @@ export function useNotifications() {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [userId])
+  }, [sessionUid])
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   const markAsRead = async (notificationId: string) => {
-    if (!userId) return
+    if (!sessionUid) return
 
     // Optimistic UI update
     setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n))
@@ -101,7 +101,7 @@ export function useNotifications() {
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
-        .eq('user_id', userId)
+        .eq('user_id', sessionUid)
       
       if (error) throw error
     } catch (err) {
@@ -112,7 +112,7 @@ export function useNotifications() {
   }
 
   const markAllAsRead = async () => {
-    if (!userId || unreadCount === 0) return
+    if (!sessionUid || unreadCount === 0) return
 
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
 
@@ -120,7 +120,7 @@ export function useNotifications() {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('user_id', userId)
+        .eq('user_id', sessionUid)
         .eq('is_read', false)
       
       if (error) throw error

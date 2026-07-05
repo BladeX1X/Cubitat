@@ -113,11 +113,9 @@ export function AdminPage({
   }
 
   useEffect(() => {
-    if (userRole !== 'admin') {
-      setLoading(false)
-      return
+    if (userRole === 'admin') {
+      loadProperties()
     }
-    loadProperties()
   }, [userRole])
 
   async function updatePropertyStatus(id: string, status: ModerationProperty['status'], moderationMessage: string | null = null) {
@@ -162,6 +160,14 @@ export function AdminPage({
       if (selectedId === id) setSelectedId(null)
     }
     setActionLoading(null)
+  }
+
+  if (userRole === undefined) {
+    return (
+      <div className="flex items-center justify-center min-h-screen py-20 px-4">
+        <Loader2 className="w-10 h-10 text-[#035f53] animate-spin" />
+      </div>
+    )
   }
 
   if (userRole !== 'admin') {
