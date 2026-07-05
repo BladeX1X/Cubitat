@@ -218,6 +218,7 @@ export function CubitatApp() {
         const { data, error } = await supabase
           .from('properties')
           .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates')
+          .eq('status', 'published')
         
         if (error) throw error
 

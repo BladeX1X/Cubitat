@@ -6,6 +6,8 @@ export function filterProperties(
   filters: SearchFilters,
 ) {
   return properties.filter((property) => {
+    if (property.status !== 'published') return false
+
     const searchableText = [
       property.title,
       property.location,
