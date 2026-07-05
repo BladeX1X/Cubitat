@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  Map as MapIcon,
   X,
 } from 'lucide-react'
 import { useEffect } from 'react'
@@ -56,10 +55,18 @@ export function DetailPage({
   onAdminDeleteProperty,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
+  const [mediaTab, setMediaTab] = useState<'photos' | 'map'>('photos')
   const { isSaved, toggleSave } = useSavedProperties()
   const isAdmin = userRole === 'admin'
   
   const saved = isSaved(property.id)
+
+  function handleScrollToMap() {
+    setMediaTab('map')
+    setTimeout(() => {
+      document.getElementById('media-viewer-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
 
   // Dynamic document title and description for this property detail page
   useSEO({
@@ -244,42 +251,94 @@ export function DetailPage({
           <div className="detail-main-column lg:col-span-2 space-y-6">
             
             {/* Cabecera del Inmueble */}
-            <div className="detail-hero-copy">
-              <div className="detail-badges flex items-center gap-2 mb-2">
-                <span className="text-[10px] tracking-wider uppercase font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded">
-                  {property.propertyType}
-                </span>
-                <span className="text-[10px] tracking-wider uppercase font-bold bg-[#035f53]/10 text-[#035f53] px-2.5 py-1 rounded">
-                  {property.operation}
-                </span>
-              </div>
-              <h1 className="detail-title text-2xl md:text-3xl font-extrabold text-neutral-900 leading-tight mb-2">
-                {property.title}
-              </h1>
-              
-              <div className="detail-meta flex items-center gap-3 mb-4 text-xs font-bold text-neutral-600">
-                {null}
-                {property.ageYears && (
-                  <>
-                    <span className="hidden">|</span>
+            <div className="detail-hero-copy flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+              <div className="flex-1">
+                <div className="detail-badges flex items-center gap-2 mb-2">
+                  <span className="text-[10px] tracking-wider uppercase font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded">
+                    {titleCase(property.propertyType)}
+                  </span>
+                  <span className="text-[10px] tracking-wider uppercase font-bold bg-[#035f53]/10 text-[#035f53] px-2.5 py-1 rounded">
+                    {titleCase(property.operation)}
+                  </span>
+                </div>
+                <h1 className="detail-title text-2xl md:text-3xl font-extrabold text-neutral-900 leading-tight mb-2">
+                  {property.title}
+                </h1>
+                
+                <div className="detail-meta flex items-center gap-3 mb-3 text-xs font-bold text-neutral-600">
+                  {property.ageYears && (
                     <span>Antigüedad: {property.ageYears} años</span>
-                  </>
-                )}
+                  )}
+                </div>
+
+                <p className="detail-location-line flex items-center gap-2 text-sm text-neutral-500">
+                  <MapPin size={16} className="text-[#035f53] shrink-0" />
+                  <span>{property.location}</span>
+                  <button
+                    type="button"
+                    onClick={handleScrollToMap}
+                    className="text-xs font-bold text-emerald-800 hover:text-emerald-700 underline cursor-pointer ml-1.5 focus:outline-none"
+                  >
+                    Ver ubicación
+                  </button>
+                </p>
               </div>
 
-              <p className="detail-location-line flex items-center gap-2 text-sm text-neutral-500 mb-4">
-                <MapPin size={16} className="text-[#035f53] shrink-0" />
-                {property.location}
-              </p>
-              <p className="detail-price-line text-3xl font-black text-[#035f53]">
-                {property.operation === 'permuta'
-                  ? 'Permuta'
-                  : formatPrice(property.priceUsd)}
-              </p>
+              <div className="detail-price-wrapper md:text-right shrink-0">
+                <p className="detail-price-line text-3xl font-black text-[#035f53]">
+                  {property.operation === 'permuta'
+                    ? 'Permuta'
+                    : formatPrice(property.priceUsd)}
+                </p>
+              </div>
             </div>
 
-            {/* Galería de Fotos Interactiva */}
-            <ImageGallery property={property} />
+            {/* Media Viewer Section (Fotos / Mapa Tabs) */}
+            <div id="media-viewer-section" className="media-viewer-container space-y-3">
+              <div className="media-tabs flex items-center gap-2 border-b border-neutral-100 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setMediaTab('photos')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
+                    mediaTab === 'photos'
+                      ? 'bg-[#035f53] text-white shadow-sm'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  Fotos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaTab('map')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
+                    mediaTab === 'map'
+                      ? 'bg-[#035f53] text-white shadow-sm'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  Mapa
+                </button>
+              </div>
+
+              <div className="media-tab-content min-h-[300px]">
+                {mediaTab === 'photos' ? (
+                  <ImageGallery property={property} />
+                ) : (
+                  <div className="detail-map-frame rounded-2xl overflow-hidden shadow-md border border-neutral-100 h-[300px] md:h-[450px] w-full">
+                    <iframe
+                      title="Mapa de ubicación de la propiedad"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
+                      className="w-full h-full"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Ficha Técnica / Especificaciones */}
             <div className="bg-white border border-neutral-100 rounded-xl p-5 shadow-sm">
@@ -348,31 +407,7 @@ export function DetailPage({
         </div>
       </div>
 
-      {/* Mapa de Ubicación */}
-      <div className="detail-map-section max-w-7xl mx-auto px-4 mt-8">
-        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-neutral-100 flex items-center gap-3">
-            <div className="p-2 bg-[#035f53]/10 rounded-lg">
-              <MapIcon size={18} className="text-[#035f53]" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-neutral-900">Ubicación aproximada</h2>
-              <p className="text-[11px] text-neutral-600">{property.location}</p>
-            </div>
-          </div>
-          <div className="w-full h-[300px] md:h-[400px]">
-            <iframe
-              title="Ubicación de la propiedad"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
-            />
-          </div>
-        </div>
-      </div>
+
 
       {/* Propiedades Similares */}
       <div className="detail-similar-section max-w-7xl mx-auto px-4 pb-12 mt-8">
