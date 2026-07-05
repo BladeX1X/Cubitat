@@ -3,6 +3,8 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import { Check, X, Loader2, Building2, MapPin, Eye, Trash2 } from 'lucide-react'
 
+type StatusFilter = 'pending_review' | 'published' | 'paused' | 'all'
+
 type ModerationProperty = {
   id: string
   title: string
@@ -31,7 +33,7 @@ type ModerationProperty = {
 const STATUS_LABELS: Record<ModerationProperty['status'], string> = {
   published: 'Publicada',
   pending_review: 'Pendiente',
-  paused: 'Pausada',
+  paused: 'Oculta',
 }
 
 function formatPrice(value: number | null): string {
@@ -64,6 +66,8 @@ export function AdminPage({
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending_review')
+  const [searchQuery, setSearchQuery] = useState('')
 
   async function loadProperties() {
     setLoading(true)
@@ -88,7 +92,10 @@ export function AdminPage({
         .in('id', userIds)
 
       const profileMap = new Map(
-        (profiles || []).map((p: any) => [p.id, p.email || p.full_name || 'Sin email']),
+        (profiles || []).map((p: any) => [
+          p.id,
+          p.full_name && p.email ? `${p.full_name} · ${p.email}` : p.email || p.full_name || `ID ${p.id.slice(0, 8)}`,
+        ]),
       )
 
       setProperties(
@@ -175,6 +182,20 @@ export function AdminPage({
   }
 
   const pendingCount = properties.filter((p) => p.status === 'pending_review').length
+  const publishedCount = properties.filter((p) => p.status === 'published').length
+  const hiddenCount = properties.filter((p) => p.status === 'paused').length
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const displayedProperties = properties.filter((property) => {
+    const matchesStatus = statusFilter === 'all' || property.status === statusFilter
+    const matchesQuery = !normalizedQuery || [
+      property.title,
+      property.location,
+      property.user_email,
+      property.operation,
+      property.property_type,
+    ].join(' ').toLowerCase().includes(normalizedQuery)
+    return matchesStatus && matchesQuery
+  })
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -182,7 +203,7 @@ export function AdminPage({
         <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-400">Administración</p>
         <h1 className="text-2xl sm:text-[28px] font-black tracking-tight mt-2 text-neutral-900">Panel de moderación</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Revisa propiedades pendientes, abre el detalle completo y elimina publicaciones si es necesario.
+          Por defecto ves las pendientes. Puedes filtrar, abrir el detalle, aprobar, ocultar o eliminar.
         </p>
       </div>
 
@@ -209,12 +230,43 @@ export function AdminPage({
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500 mb-4">
-            <span className="font-bold text-neutral-800">{properties.length}</span> propiedades en total ·{' '}
-            <span className="font-bold text-amber-700">{pendingCount}</span> pendientes
-          </p>
+          <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['pending_review', `Pendientes (${pendingCount})`],
+                ['published', `Publicadas (${publishedCount})`],
+                ['paused', `Ocultas (${hiddenCount})`],
+                ['all', `Todas (${properties.length})`],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(value as StatusFilter)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${statusFilter === value ? 'bg-[#035f53] text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Buscar por título, ubicación, anunciante, operación o tipo..."
+              className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:border-[#035f53] focus:ring-2 focus:ring-[#035f53]/10"
+            />
+            <p className="text-xs text-neutral-500">
+              Mostrando <span className="font-bold text-neutral-800">{displayedProperties.length}</span> resultado(s)
+            </p>
+          </div>
 
-          {properties.map((property) => {
+          {displayedProperties.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+              No hay propiedades que coincidan con estos filtros.
+            </div>
+          )}
+
+          {displayedProperties.map((property) => {
             const isSelected = selectedId === property.id
             return (
               <div key={property.id} className="bg-white rounded-2xl shadow-[0_4px_14px_rgba(10,31,28,0.04)] border border-neutral-100 overflow-hidden">
@@ -261,7 +313,7 @@ export function AdminPage({
                           </Button>
                           <Button variant="outline" className="rounded-xl text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleReject(property.id)} disabled={actionLoading === property.id}>
                             <X className="w-3.5 h-3.5" />
-                            Rechazar con motivo
+                            Ocultar con motivo
                           </Button>
                         </>
                       )}

@@ -75,7 +75,7 @@ const STATUS_CONFIG: Record<
     dot: 'bg-amber-500',
   },
   paused: {
-    label: 'Pausada',
+    label: 'Oculta',
     bg: 'bg-neutral-100',
     text: 'text-neutral-500',
     dot: 'bg-neutral-400',

@@ -36,11 +36,23 @@ type DetailPageProps = {
   onBack: () => void
   filters: SearchFilters
   onChangeFilters: (filters: SearchFilters) => void
+  userRole?: string
+  onAdminHideProperty?: (propertyId: string) => void
+  onAdminDeleteProperty?: (propertyId: string) => void
 }
 
-export function DetailPage({ property, onBack, filters, onChangeFilters }: DetailPageProps) {
+export function DetailPage({
+  property,
+  onBack,
+  filters,
+  onChangeFilters,
+  userRole,
+  onAdminHideProperty,
+  onAdminDeleteProperty,
+}: DetailPageProps) {
   const [copied, setCopied] = useState(false)
   const { isSaved, toggleSave } = useSavedProperties()
+  const isAdmin = userRole === 'admin'
   
   const saved = isSaved(property.id)
 
@@ -187,6 +199,30 @@ export function DetailPage({ property, onBack, filters, onChangeFilters }: Detai
               <Share2 size={14} className="text-neutral-500" />
               <span className="detail-action-label">{copied ? 'Copiado' : 'Compartir'}</span>
             </Button>
+            {isAdmin && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Ocultar publicación"
+                  onClick={() => onAdminHideProperty?.(property.id)}
+                  className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-amber-200 hover:bg-amber-50 text-xs font-bold text-amber-700 transition-colors duration-200"
+                >
+                  <AlertTriangle size={14} />
+                  <span className="detail-action-label">Ocultar</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Eliminar publicación"
+                  onClick={() => onAdminDeleteProperty?.(property.id)}
+                  className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-red-200 hover:bg-red-50 text-xs font-bold text-red-700 transition-colors duration-200"
+                >
+                  <X size={14} />
+                  <span className="detail-action-label">Eliminar</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

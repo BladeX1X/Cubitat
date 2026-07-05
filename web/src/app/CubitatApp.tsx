@@ -480,6 +480,43 @@ export function CubitatApp() {
     setSelectedPropertyId(undefined)
   }
 
+  async function handleAdminHideProperty(propertyId: string) {
+    const reason = window.prompt('Motivo para ocultar esta publicación:', 'Ocultada por moderación.')?.trim()
+    if (!reason) return
+
+    const { error } = await supabase
+      .from('properties')
+      .update({ status: 'paused', moderation_message: reason })
+      .eq('id', propertyId)
+
+    if (error) {
+      console.error('Error hiding property:', error)
+      alert('No se pudo ocultar la publicación.')
+      return
+    }
+
+    setProperties((current) => current.filter((property) => property.id !== propertyId))
+    setRefreshCounter((prev) => prev + 1)
+    navigateResults()
+  }
+
+  async function handleAdminDeleteProperty(propertyId: string) {
+    const confirmed = window.confirm('¿Eliminar esta publicación? Esta acción no se puede deshacer.')
+    if (!confirmed) return
+
+    const { error } = await supabase.from('properties').delete().eq('id', propertyId)
+
+    if (error) {
+      console.error('Error deleting property:', error)
+      alert('No se pudo eliminar la publicación.')
+      return
+    }
+
+    setProperties((current) => current.filter((property) => property.id !== propertyId))
+    setRefreshCounter((prev) => prev + 1)
+    navigateResults()
+  }
+
   // Operation tab navigation in main header
   function handleOperationNavigation(op: 'venta' | 'alquiler' | 'permuta') {
     setFilters((current) => ({ ...current, operations: [op] }))
@@ -696,6 +733,9 @@ export function CubitatApp() {
             onBack={handleBackToResults}
             filters={filters}
             onChangeFilters={setFilters}
+            userRole={userRole}
+            onAdminHideProperty={handleAdminHideProperty}
+            onAdminDeleteProperty={handleAdminDeleteProperty}
           />
         )}
 
