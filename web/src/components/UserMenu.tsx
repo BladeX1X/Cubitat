@@ -9,7 +9,6 @@ import {
   User as UserIcon,
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from '../shared/lib/supabaseClient'
 import { useNotifications } from '../modules/auth/hooks/useNotifications'
 
 interface UserMenuProps {
@@ -159,7 +158,6 @@ export function UserMenu({
   async function handleSignOut() {
     setIsOpen(false)
     onSignOut?.()
-    await supabase.auth.signOut()
   }
 
   return (
