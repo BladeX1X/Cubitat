@@ -580,7 +580,7 @@ export function CubitatApp() {
         )}
 
         {pageMode === 'detail' && loading && (
-          <div className="min-h-screen" />
+          <PageLoadingState pageMode={pageMode} />
         )}
 
         {!loading && !error && pageMode === 'detail' && selectedProperty && (
