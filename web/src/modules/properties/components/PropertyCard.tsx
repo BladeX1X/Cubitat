@@ -75,7 +75,7 @@ export function PropertyCard({
   }, [carouselApi])
 
   return (
-    <article
+    <div
       className={`property-card ${isSelected ? 'is-selected' : ''}`}
       role="button"
       aria-label={`Ver ${property.title}`}
@@ -225,7 +225,7 @@ export function PropertyCard({
           </Button>
         </div>
       </div>
-    </article>
+    </div>
   )
 }
 
