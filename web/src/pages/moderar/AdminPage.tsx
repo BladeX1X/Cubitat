@@ -85,7 +85,7 @@ export function AdminPage({
         return
       }
 
-      const userIds = [...new Set(props.map((p: any) => p.user_id))]
+      const userIds = [...new Set(props.map((p: any) => p.user_id))].filter(Boolean)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
