@@ -51,9 +51,8 @@ const mockProfiles = [
 ]
 
 const mockFrom = vi.fn().mockImplementation((table: string) => {
-  const target = {}
-  const proxy = new Proxy(target, {
-    get(target, prop) {
+  const proxy: any = new Proxy({}, {
+    get(_, prop) {
       if (prop === 'then') {
         return (resolve: any) => {
           if (table === 'property_reports') {

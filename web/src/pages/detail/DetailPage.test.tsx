@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DetailPage } from './DetailPage'
+import { useSEO } from '../../shared/hooks/useSEO'
 import type { Property } from '../../modules/properties/types'
+import type { SearchFilters } from '../../modules/search/types'
 
 // Mock useSavedProperties
 vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
@@ -19,9 +21,8 @@ vi.mock('../../shared/hooks/useSEO', () => ({
 // Mock SupabaseClient
 const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
 const mockFrom = vi.fn().mockImplementation((table: string) => {
-  const target = {}
-  const proxy = new Proxy(target, {
-    get(target, prop) {
+  const proxy: any = new Proxy({}, {
+    get(_, prop) {
       if (prop === 'insert') {
         return mockInsert
       }
@@ -76,6 +77,13 @@ const mockProperty: Property = {
   coordinates: { latitude: 23.1136, longitude: -82.3666 },
 }
 
+const mockFilters: SearchFilters = {
+  query: 'Habana',
+  operations: [],
+  propertyType: 'all',
+  zoneId: 'all',
+}
+
 describe('DetailPage - Reportes y Visor', () => {
   it('debería renderizar la información básica de la propiedad', () => {
     render(
@@ -83,6 +91,7 @@ describe('DetailPage - Reportes y Visor', () => {
         property={mockProperty}
         onBack={vi.fn()}
         onChangeFilters={vi.fn()}
+        filters={mockFilters}
       />
     )
 
@@ -91,12 +100,31 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getByText('Playa, La Habana')).toBeInTheDocument()
   })
 
+  it('debería registrar metadatos SEO dinámicos con Open Graph', () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    expect(useSEO).toHaveBeenCalledWith(expect.objectContaining({
+      title: expect.stringMatching(/Casa independiente en Playa - USD\s68,000/),
+      description: expect.stringContaining('Espectacular casa independiente en la mejor zona de Playa.'),
+      image: 'https://example.com/image.jpg',
+      type: 'article',
+    }))
+  })
+
   it('debería abrir el modal de reportes al hacer clic en "Reportar propiedad sospechosa"', () => {
     render(
       <DetailPage
         property={mockProperty}
         onBack={vi.fn()}
         onChangeFilters={vi.fn()}
+        filters={mockFilters}
       />
     )
 
@@ -112,6 +140,7 @@ describe('DetailPage - Reportes y Visor', () => {
         property={mockProperty}
         onBack={vi.fn()}
         onChangeFilters={vi.fn()}
+        filters={mockFilters}
       />
     )
 

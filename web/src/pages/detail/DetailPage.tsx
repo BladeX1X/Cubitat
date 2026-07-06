@@ -99,8 +99,11 @@ export function DetailPage({
 
   // Dynamic document title and description for this property detail page
   useSEO({
-    title: property ? `${property.title} | ${property.location}` : 'Cargando Propiedad',
-    description: property ? `${property.description.slice(0, 150)}... Contactar vendedor.` : undefined
+    title: property ? `${property.title} - ${formatPrice(property.priceUsd)}` : 'Cargando Propiedad',
+    description: property ? `${property.description.slice(0, 150)}... Contacto en Cubitat.` : undefined,
+    image: property?.coverImage || undefined,
+    url: typeof window !== 'undefined' ? window.location.href : undefined,
+    type: 'article'
   })
 
   const locationParts = property.location ? property.location.split(',').map(s => s.trim()) : []
