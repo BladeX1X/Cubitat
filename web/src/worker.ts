@@ -107,10 +107,8 @@ export default {
                 }
               })
               .on('title', {
-                text(textNode: any) {
-                  if (textNode.lastInTextNode) {
-                    textNode.replace(title);
-                  }
+                element(el: any) {
+                  el.setInnerContent(title);
                 }
               })
               .transform(assetResponse);
