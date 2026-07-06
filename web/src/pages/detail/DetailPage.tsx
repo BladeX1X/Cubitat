@@ -126,10 +126,35 @@ export function DetailPage({
     province = locationParts[0]
   }
 
-  function handleShare() {
+  function copyToClipboardFallback() {
     navigator.clipboard.writeText(window.location.href)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch((err) => {
+        console.error('Error al copiar al portapapeles:', err)
+      })
+  }
+
+  async function handleShare() {
+    const shareData = {
+      title: property.title,
+      text: property.description ? (property.description.substring(0, 100) + '...') : 'Anuncio publicado en Cubitat',
+      url: window.location.href
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') {
+          copyToClipboardFallback()
+        }
+      }
+    } else {
+      copyToClipboardFallback()
+    }
   }
 
   function scrollToContact() {
