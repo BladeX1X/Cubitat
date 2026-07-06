@@ -6,16 +6,30 @@ interface Env {
   VITE_SUPABASE_ANON_KEY: string;
 }
 
+function extractIdFromSlug(slug: string): string {
+  if (!slug) return ''
+  const parts = slug.split('-')
+  if (parts.length >= 5) {
+    const uuidCandidate = parts.slice(-5).join('-')
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(uuidCandidate)) {
+      return uuidCandidate
+    }
+  }
+  return slug
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Interceptar solicitudes a la página de detalles: /propiedad/uuid
+    // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
     const match = path.match(/^\/propiedad\/([^\/]+)/);
 
     if (match) {
-      const propertyId = match[1];
+      const slug = match[1];
+      const propertyId = extractIdFromSlug(slug);
 
       try {
         const supabaseUrl = env.VITE_SUPABASE_URL;
