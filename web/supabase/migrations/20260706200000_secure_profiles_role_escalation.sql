@@ -4,7 +4,7 @@ RETURNS trigger AS $$
 DECLARE
   assigned_role public.user_role;
 BEGIN
-  assigned_role := coalesce((new.raw_user_metadata->>'role')::public.user_role, 'buyer'::public.user_role);
+  assigned_role := coalesce((new.raw_user_meta_data->>'role')::public.user_role, 'buyer'::public.user_role);
   
   -- Si intentan registrarse como admin mediante metadatos, degradar a buyer
   IF assigned_role = 'admin'::public.user_role THEN
@@ -15,12 +15,12 @@ BEGIN
   VALUES (
     new.id,
     new.email,
-    coalesce(new.raw_user_metadata->>'full_name', ''),
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
     assigned_role
   );
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 2. Crear función protectora para impedir la actualización de la columna role
 CREATE OR REPLACE FUNCTION public.check_profile_role_update()
