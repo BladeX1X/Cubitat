@@ -46,3 +46,32 @@ El sistema MUST mantener controles tactiles suficientemente grandes en las tarje
 - AND el boton de guardar/favorito MUST tener un area interactiva minima de `44x44 px`
 - AND las flechas de galeria MUST permanecer visibles en viewport movil aunque no exista estado `hover`
 - AND en escritorio las flechas MAY permanecer discretas y aparecer al pasar el cursor para reducir ruido visual
+
+### Requirement: Reporte de Propiedades Sospechosas
+El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar un anuncio sospechoso, fraudulento o con información incorrecta mediante un modal de informe estructurado.
+
+#### Scenario: Reportar una propiedad sospechosa
+- GIVEN un usuario visualizando la ficha detallada de una propiedad
+- WHEN hace clic en el botón "Reportar propiedad sospechosa"
+- THEN el sistema MUST desplegar un modal que contenga motivos predefinidos de reporte y un área de texto para comentarios adicionales
+- AND al enviar el formulario de reporte, el sistema MUST registrar el incidente en la base de datos de Supabase (`public.property_reports`)
+- AND el sistema MUST mostrar un mensaje de confirmación al usuario y cerrar el modal.
+
+### Requirement: Metadatos Open Graph Dinámicos en Servidor Perimetral (Edge)
+El sistema MUST servir metadatos de redes sociales (Open Graph y Twitter Cards) pre-procesados en el servidor perimetral para crawlers (como Telegram, WhatsApp o Facebook) que no ejecutan JavaScript del lado del cliente.
+
+#### Scenario: Obtener vista previa de una propiedad en redes sociales
+- GIVEN un crawler o bot de red social solicitando la URL de una propiedad `/propiedad/:slug-uuid`
+- WHEN la petición llega a Cloudflare Edge
+- THEN el sistema MUST interceptar la petición mediante un Worker script
+- AND el sistema MUST consultar de forma asíncrona los datos de la propiedad (título, descripción, imagen y precio) desde la base de datos de Supabase
+- AND el sistema MUST reescribir dinámicamente las etiquetas `<meta property="og:*">` y `<meta name="twitter:*">` en el flujo HTML usando `HTMLRewriter` antes de enviarlo al cliente.
+
+### Requirement: Skeletons de Carga con Shimmer (UX Premium)
+El sistema MUST mostrar skeletons de carga animados (shimmer) en lugar de layouts vacíos o spinners genéricos para reducir el layout shift y mejorar la experiencia de usuario percibida.
+
+#### Scenario: Carga de la ficha de detalle de propiedad
+- GIVEN un usuario navegando hacia la vista detallada de una propiedad `/propiedad/:slug-uuid`
+- WHEN la información del inmueble está cargando
+- THEN el sistema MUST renderizar un skeleton que simule la estructura exacta de la ficha (rejilla de fotos, líneas de texto para el título y descripción, círculos para las estadísticas rápidas y tarjeta lateral de contacto)
+- AND los elementos del skeleton MUST incluir una animación de barrido de luz degradada (shimmer) continua.
