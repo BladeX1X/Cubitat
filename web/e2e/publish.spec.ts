@@ -2,7 +2,45 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
   test('debería guiar por los pasos de dirección, información, características y guardar borrador', async ({ page }) => {
-    // 1. Navegar a la página de publicar
+    // Interceptar la llamada de validación del token de Supabase
+    await page.route('**/auth/v1/user', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'bb4455b8-0330-440d-ace3-33d0ba5fc28a',
+          email: 'test@example.com',
+          user_metadata: { full_name: 'Test User' },
+          role: 'authenticated',
+          aud: 'authenticated'
+        })
+      })
+    })
+
+    // 1. Navegar al Home primero para poder acceder a localStorage sin errores de seguridad de origen
+    await page.goto('/')
+
+    // 2. Establecer la sesión de Supabase ficticia con expires_at en el futuro
+    await page.evaluate(() => {
+      const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+      window.localStorage.setItem(
+        'sb-tohjzoncoosvjbjcakdl-auth-token',
+        JSON.stringify({
+          access_token: 'dummy-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: expiresAt,
+          refresh_token: 'dummy-refresh',
+          user: {
+            id: 'bb4455b8-0330-440d-ace3-33d0ba5fc28a',
+            email: 'test@example.com',
+            user_metadata: { full_name: 'Test User' }
+          }
+        })
+      )
+    })
+
+    // 3. Navegar a la página de publicar
     await page.goto('/publicar')
 
     // Verificar cabecera

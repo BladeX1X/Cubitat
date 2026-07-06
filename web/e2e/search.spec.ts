@@ -7,7 +7,7 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     await expect(page).toHaveTitle(/Cubitat/i)
 
     // 2. Realizar búsqueda por texto "Vedado"
-    const searchInput = page.locator('input[placeholder="Donde quieres buscar?"]')
+    const searchInput = page.locator('input[placeholder="¿Dónde quieres buscar?"]')
     await expect(searchInput).toBeVisible()
     await searchInput.fill('Vedado')
 
@@ -31,11 +31,10 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     await expect(operationDropdown).toBeVisible()
     await operationDropdown.click()
 
-    // Marcar/Desmarcar "Venta" en las casillas desanidadas
-    const ventaCheckbox = page.locator('button#op-venta')
+    // Marcar "Venta" en las casillas desanidadas
+    const ventaCheckbox = page.locator('input#op-venta')
     await expect(ventaCheckbox).toBeVisible()
-    await ventaCheckbox.click() // Marca Venta también
-    await ventaCheckbox.click() // Desmarca Venta para dejar solo Renta
+    await ventaCheckbox.click() // Selecciona Venta y cierra el popover automáticamente
 
     // Cerrar popover haciendo clic fuera o pulsando Escape
     await page.keyboard.press('Escape')
@@ -44,7 +43,7 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     const typeDropdown = page.locator('button:has-text("Inmueble")')
     await typeDropdown.click()
 
-    const departamentoCheckbox = page.locator('button#type-apartamento')
+    const departamentoCheckbox = page.locator('input#type-apartamento')
     await expect(departamentoCheckbox).toBeVisible()
     await departamentoCheckbox.click() // Marca Departamento
 
@@ -63,7 +62,7 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     await applyPriceBtn.click()
 
     // Verificar que el label del botón de precio se actualiza dinámicamente
-    await expect(page.locator('button:has-text("$20k - $80k")')).toBeVisible()
+    await expect(page.locator('button:has-text("$20000 - $80000")')).toBeVisible()
 
     // 10. Abrir filtros adicionales y verificar botones segmentados
     const moreFiltersBtn = page.locator('button:has-text("Filtros")')
