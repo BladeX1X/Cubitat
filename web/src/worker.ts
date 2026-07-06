@@ -32,8 +32,8 @@ export default {
       const propertyId = extractIdFromSlug(slug);
 
       try {
-        const supabaseUrl = env.VITE_SUPABASE_URL;
-        const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
+        const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
+        const supabaseKey = env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo";
 
         // Consultar la propiedad de manera asíncrona usando la API REST pública de Supabase
         const supabaseResponse = await fetch(
