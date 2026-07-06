@@ -729,6 +729,63 @@ function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
     )
   }
 
+  if (pageMode === 'detail') {
+    return (
+      <div className="detail-loading-shell">
+        {/* Gallery skeleton */}
+        <div className="detail-loading-gallery">
+          <div className="detail-loading-gallery-main loading-line" style={{ borderRadius: '12px' }} />
+          <div className="detail-loading-gallery-side">
+            <div className="detail-loading-gallery-thumb loading-line" style={{ borderRadius: '12px' }} />
+            <div className="detail-loading-gallery-thumb loading-line" style={{ borderRadius: '12px' }} />
+          </div>
+        </div>
+
+        {/* Content columns */}
+        <div className="detail-loading-content">
+          {/* Main Info */}
+          <div className="detail-loading-info">
+            <div className="loading-line loading-line-eyebrow" />
+            <div className="loading-line" style={{ width: '80%', height: '36px', marginBottom: '8px' }} />
+            <div className="loading-line" style={{ width: '40%', height: '18px', marginBottom: '16px' }} />
+            
+            <div className="flex gap-3 items-center">
+              <div className="loading-pill" style={{ width: '130px', height: '44px' }} />
+              <div className="loading-line" style={{ width: '80px', height: '16px' }} />
+            </div>
+
+            {/* Quick Stats Circles */}
+            <div className="detail-loading-meta-circles">
+              <div className="detail-loading-circle" />
+              <div className="detail-loading-circle" />
+              <div className="detail-loading-circle" />
+              <div className="detail-loading-circle" />
+            </div>
+
+            {/* Description lines */}
+            <div className="flex flex-col gap-3 mt-4">
+              <div className="loading-line" style={{ width: '100%', height: '16px' }} />
+              <div className="loading-line" style={{ width: '95%', height: '16px' }} />
+              <div className="loading-line" style={{ width: '90%', height: '16px' }} />
+              <div className="loading-line" style={{ width: '60%', height: '16px' }} />
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="detail-loading-sidebar">
+            <div className="detail-loading-card">
+              <div className="detail-loading-avatar" />
+              <div className="loading-line" style={{ width: '60%', height: '18px', marginBottom: '4px' }} />
+              <div className="loading-line" style={{ width: '40%', height: '14px', marginBottom: '12px' }} />
+              <div className="detail-loading-button" />
+              <div className="detail-loading-button" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center justify-center py-20 min-h-screen text-center space-y-3">
       <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
