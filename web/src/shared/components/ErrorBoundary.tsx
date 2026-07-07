@@ -6,19 +6,26 @@ interface Props {
 
 interface State {
   hasError: boolean
+  isChunkError: boolean
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
+    isChunkError: false
   }
 
   public static getDerivedStateFromError(error: Error): State {
-    // Detect page-load chunk failures and force reload to fetch latest versions
-    if (error.name === 'ChunkLoadError' || error.message.includes('Failed to fetch dynamically imported module')) {
+    const isChunk =
+      error.name === 'ChunkLoadError' ||
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('loading chunk')
+
+    if (isChunk) {
       window.location.reload()
+      return { hasError: true, isChunkError: true }
     }
-    return { hasError: true }
+    return { hasError: true, isChunkError: false }
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -31,6 +38,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.state.isChunkError) {
+        return (
+          <div className="flex items-center justify-center min-h-screen bg-neutral-50">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-neutral-500 font-medium">Actualizando aplicación...</p>
+            </div>
+          </div>
+        )
+      }
+
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-50 px-4 py-20 text-center">
           <div className="max-w-md w-full bg-white rounded-2xl border border-neutral-100 shadow-xl p-8 space-y-4">
