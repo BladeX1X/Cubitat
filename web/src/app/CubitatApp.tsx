@@ -12,6 +12,7 @@ import { supabase } from '../shared/lib/supabaseClient'
 import { initAnalytics, trackPageView } from '../shared/lib/analytics'
 import { Header } from '../components/layout/Header'
 import { SiteFooter } from '../components/layout/SiteFooter'
+import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -670,6 +671,8 @@ export function CubitatApp() {
 
         <SiteFooter />
       </Suspense>
+
+      <PWAInstallPrompt />
 
       <nav className="mobile-bottom-nav" aria-label="Navegación móvil">
         <button className={pageMode === 'home' ? 'is-active' : ''} type="button" onClick={navigateHome}>
