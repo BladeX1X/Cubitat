@@ -6,6 +6,24 @@ interface Env {
   VITE_SUPABASE_ANON_KEY: string;
 }
 
+const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const record = rateLimitCache.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitCache.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+
+  record.count++;
+  if (record.count > limit) {
+    return true;
+  }
+  return false;
+}
+
 function extractIdFromSlug(slug: string): string {
   if (!slug) return ''
   const parts = slug.split('-')
@@ -23,6 +41,99 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // 1. Interceptar solicitudes de API de Supabase Proxy
+    if (path.startsWith('/api/supabase/')) {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const method = request.method;
+      const subPath = path.replace('/api/supabase', '');
+
+      // 1. Denuncias (POST a rest/v1/property_reports) - Máximo 3 cada 5 minutos (300,000 ms)
+      if (method === 'POST' && subPath.startsWith('/rest/v1/property_reports')) {
+        const key = `${clientIp}:reports`;
+        if (isRateLimited(key, 3, 300000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de denuncias excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '300'
+              }
+            }
+          );
+        }
+      }
+      // 2. Publicaciones (POST a rest/v1/properties) - Máximo 5 cada 10 minutos (600,000 ms)
+      else if (method === 'POST' && subPath.startsWith('/rest/v1/properties')) {
+        const key = `${clientIp}:publish`;
+        if (isRateLimited(key, 5, 600000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de publicaciones excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '600'
+              }
+            }
+          );
+        }
+      }
+      // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos (600,000 ms)
+      else if ((method === 'POST' || method === 'PUT') && subPath.startsWith('/storage/v1/object/')) {
+        const key = `${clientIp}:storage`;
+        if (isRateLimited(key, 40, 600000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de subida de imágenes excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '600'
+              }
+            }
+          );
+        }
+      }
+      // 4. Límite general (GET, OPTIONS, etc.) - Máximo 100 cada 1 minuto (60,000 ms)
+      else {
+        const key = `${clientIp}:general`;
+        if (isRateLimited(key, 100, 60000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de peticiones excedido. Demasiadas solicitudes.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '60'
+              }
+            }
+          );
+        }
+      }
+
+      const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
+      const targetUrl = request.url.replace(
+        url.origin + '/api/supabase',
+        supabaseUrl
+      );
+
+      const headers = new Headers(request.headers);
+      headers.delete('host');
+
+      const fetchOptions: RequestInit = {
+        method: request.method,
+        headers: headers
+      };
+
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+        fetchOptions.body = request.body;
+      }
+
+      const response = await fetch(targetUrl, fetchOptions);
+      return response;
+    }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
     const match = path.match(/^\/propiedad\/([^\/]+)/);
