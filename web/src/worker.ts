@@ -122,6 +122,17 @@ export default {
       const headers = new Headers(request.headers);
       headers.delete('host');
 
+      // Inyectar la Anon Key real si falta o es la clave dummy en el cliente
+      const apiKeyHeader = headers.get('apikey');
+      if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
+        headers.set('apikey', env.VITE_SUPABASE_ANON_KEY);
+      }
+
+      const authHeader = headers.get('Authorization');
+      if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
+        headers.set('Authorization', `Bearer ${env.VITE_SUPABASE_ANON_KEY}`);
+      }
+
       const fetchOptions: RequestInit = {
         method: request.method,
         headers: headers
