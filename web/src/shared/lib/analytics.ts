@@ -28,16 +28,8 @@ function scheduleAnalyticsScript() {
   if (scriptScheduled) return
   scriptScheduled = true
 
-  const scheduleIdle = () => {
-    setTimeout(loadAnalyticsScript, 8000)
-  }
-
-  if (document.readyState === 'complete') {
-    scheduleIdle()
-    return
-  }
-
-  window.addEventListener('load', scheduleIdle, { once: true })
+  // Cargar el script de analíticas tras un retraso de 5 segundos para priorizar la interactividad inicial del sitio
+  setTimeout(loadAnalyticsScript, 5000)
 }
 
 export function initAnalytics() {
