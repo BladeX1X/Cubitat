@@ -56,6 +56,8 @@ export function HomePage({
       </section>
 
       <PopularLocations />
+      <ServicesSection />
+      <ProductsSection />
     </>
   )
 }

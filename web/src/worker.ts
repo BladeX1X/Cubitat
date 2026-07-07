@@ -271,6 +271,20 @@ export default {
   }
 
     // Retorno por defecto (activos estáticos normales del frontend)
-    return env.ASSETS.fetch(request);
+    let response = await env.ASSETS.fetch(request);
+
+    if (path === '/sw.js' || path === '/registerSW.js') {
+      const newHeaders = new Headers(response.headers);
+      newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      newHeaders.set('Pragma', 'no-cache');
+      newHeaders.set('Expires', '0');
+      response = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders
+      });
+    }
+
+    return response;
   }
 };

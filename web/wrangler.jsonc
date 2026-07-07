@@ -12,6 +12,10 @@
     "not_found_handling": "single-page-application",
     "binding": "ASSETS"
   },
+  "vars": {
+    "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo"
+  },
   "observability": {
     "enabled": true
   }
