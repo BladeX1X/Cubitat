@@ -214,7 +214,7 @@ export function CubitatApp() {
         setError(null)
         const { data, error } = await supabase
           .from('properties')
-          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates')
+          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
           .eq('status', 'published')
         
         if (error) throw error
@@ -242,7 +242,8 @@ export function CubitatApp() {
             coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
-            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 }
+            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
+            contact_info: item.contact_info
           }))
           setProperties(mapped)
         }

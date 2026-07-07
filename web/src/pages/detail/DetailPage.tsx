@@ -467,13 +467,34 @@ export function DetailPage({
       </div>
 
       <div className="mobile-detail-cta" aria-label="Acciones de contacto">
-        <button type="button" className="mobile-detail-cta-icon" onClick={scrollToContact} aria-label="Llamar o ver telefono">
+        <button
+          type="button"
+          className="mobile-detail-cta-icon"
+          onClick={() => {
+            const phone = property.contact_info?.phone
+            if (phone) {
+              window.location.href = `tel:${phone}`
+            } else {
+              scrollToContact()
+            }
+          }}
+          aria-label="Llamar al anunciante"
+        >
           <Phone size={16} />
         </button>
-        <button type="button" className="mobile-detail-cta-secondary" onClick={scrollToContact}>
-          Contactar
-        </button>
-        <button type="button" className="mobile-detail-cta-primary" onClick={scrollToContact}>
+        <button
+          type="button"
+          className="mobile-detail-cta-primary"
+          onClick={() => {
+            const phone = property.contact_info?.phone
+            if (phone) {
+              const cleanPhone = phone.replace(/[^0-9+]/g, '')
+              window.open(`https://wa.me/${cleanPhone}`, '_blank')
+            } else {
+              scrollToContact()
+            }
+          }}
+        >
           <MessageCircle size={16} />
           Consultar
         </button>

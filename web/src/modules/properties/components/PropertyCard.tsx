@@ -215,7 +215,12 @@ export function PropertyCard({
             size="sm"
             onClick={(event) => {
               event.stopPropagation()
-              onSelect(property.id, true)
+              const phone = property.contact_info?.phone
+              if (phone) {
+                window.location.href = `tel:${phone}`
+              } else {
+                onSelect(property.id, true)
+              }
             }}
           >
             Contactar
@@ -226,7 +231,13 @@ export function PropertyCard({
             size="sm"
             onClick={(event) => {
               event.stopPropagation()
-              onSelect(property.id, true)
+              const phone = property.contact_info?.phone
+              if (phone) {
+                const cleanPhone = phone.replace(/[^0-9+]/g, '')
+                window.open(`https://wa.me/${cleanPhone}`, '_blank')
+              } else {
+                onSelect(property.id, true)
+              }
             }}
           >
             <MessageCircle size={14} fill="white" className="stroke-none shrink-0" />

@@ -32,4 +32,9 @@ export type Property = {
     latitude: number
     longitude: number
   }
+  contact_info?: {
+    name?: string
+    phone?: string
+    email?: string
+  } | null
 }
