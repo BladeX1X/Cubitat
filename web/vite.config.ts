@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, __dirname, '')
   const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || ''
 
   return {
@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
+          navigateFallbackDenylist: [/\/api\//],
           runtimeCaching: [
             {
               urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/rest\/v1\/.*/i,
@@ -86,13 +87,15 @@ export default defineConfig(({ mode }) => {
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq, req) => {
               const authHeader = req.headers['authorization'];
+              const apiKeyHeader = req.headers['apikey'];
+              console.log('[Proxy Debug] Incoming:', { authHeader, apiKeyHeader, resolvedKeyExists: !!supabaseAnonKey });
               if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
                 proxyReq.setHeader('Authorization', `Bearer ${supabaseAnonKey}`);
               }
-              const apiKeyHeader = req.headers['apikey'];
               if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
                 proxyReq.setHeader('apikey', supabaseAnonKey);
               }
+              console.log('[Proxy Debug] Outgoing headers:', proxyReq.getHeaders());
             });
           }
         }

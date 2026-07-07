@@ -124,18 +124,29 @@ export default {
 
       // Inyectar la Anon Key real si falta o es la clave dummy en el cliente
       const apiKeyHeader = headers.get('apikey');
+      const authHeader = headers.get('Authorization');
+      
+      console.log('Worker Proxy Request:', {
+        path,
+        method,
+        apiKeyHeader,
+        authHeader,
+        envKeyLength: env.VITE_SUPABASE_ANON_KEY ? env.VITE_SUPABASE_ANON_KEY.length : 0,
+        envKeyStart: env.VITE_SUPABASE_ANON_KEY ? env.VITE_SUPABASE_ANON_KEY.substring(0, 10) : 'none'
+      });
+
       if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
         headers.set('apikey', env.VITE_SUPABASE_ANON_KEY);
       }
 
-      const authHeader = headers.get('Authorization');
       if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
         headers.set('Authorization', `Bearer ${env.VITE_SUPABASE_ANON_KEY}`);
       }
 
       const fetchOptions: RequestInit = {
         method: request.method,
-        headers: headers
+        headers: headers,
+        redirect: 'manual'
       };
 
       if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -143,6 +154,20 @@ export default {
       }
 
       const response = await fetch(targetUrl, fetchOptions);
+
+      // Si la respuesta es una redirección (3xx), construir una nueva respuesta de redirección limpia para el navegador
+      if (response.status >= 300 && response.status < 400) {
+        const redirectUrl = response.headers.get('Location') || response.headers.get('location');
+        if (redirectUrl) {
+          return new Response(null, {
+            status: response.status,
+            headers: {
+              'Location': redirectUrl
+            }
+          });
+        }
+      }
+
       return response;
     }
 
