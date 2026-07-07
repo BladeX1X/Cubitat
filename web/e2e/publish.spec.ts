@@ -24,7 +24,7 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     await page.evaluate(() => {
       const expiresAt = Math.floor(Date.now() / 1000) + 3600;
       window.localStorage.setItem(
-        'sb-tohjzoncoosvjbjcakdl-auth-token',
+        'cubitat-auth-token',
         JSON.stringify({
           access_token: 'dummy-token',
           token_type: 'bearer',
