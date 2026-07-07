@@ -69,6 +69,14 @@ export function DetailPage({
   
   const saved = isSaved(property.id)
 
+  useEffect(() => {
+    if (window.location.hash === '#contactar-anunciante') {
+      setTimeout(() => {
+        scrollToContact()
+      }, 300)
+    }
+  }, [property.id])
+
   async function handleReportSubmit(e: React.FormEvent) {
     e.preventDefault()
     setReportLoading(true)

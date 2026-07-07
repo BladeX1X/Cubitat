@@ -25,7 +25,7 @@ import { getPropertyGalleryImages, optimizePropertyCardImage } from '../utils/im
 type PropertyCardProps = {
   property: Property
   isSelected: boolean
-  onSelect: (propertyId: string) => void
+  onSelect: (propertyId: string, autoScroll?: boolean) => void
   prioritizeImage?: boolean
 }
 
@@ -48,7 +48,10 @@ export function PropertyCard({
     if (target.closest('.property-contact-btn') || 
         target.closest('.property-whatsapp-btn') || 
         target.closest('.property-save') ||
-        target.closest('.property-photo-arrow')) {
+        target.closest('.carousel-control-prev') ||
+        target.closest('.carousel-control-next') ||
+        target.closest('.carousel-indicators')
+    ) {
       return
     }
     onSelect(property.id)
@@ -210,7 +213,10 @@ export function PropertyCard({
             className="property-contact-btn"
             type="button"
             size="sm"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              onSelect(property.id, true)
+            }}
           >
             Contactar
           </Button>
@@ -218,7 +224,10 @@ export function PropertyCard({
             className="property-whatsapp-btn"
             type="button"
             size="sm"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              onSelect(property.id, true)
+            }}
           >
             <MessageCircle size={14} fill="white" className="stroke-none shrink-0" />
             Consultar

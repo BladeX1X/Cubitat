@@ -426,7 +426,7 @@ export function CubitatApp() {
   }
   */
 
-  function handleSelectProperty(propertyId: string) {
+  function handleSelectProperty(propertyId: string, autoScrollToContact = false) {
     const prop = properties.find(p => p.id === propertyId)
     let urlPath = `/propiedad/${propertyId}`
     if (prop) {
@@ -443,10 +443,22 @@ export function CubitatApp() {
         : 'cuba'
       urlPath = `/propiedad/${typeStr}-en-${opStr}-en-${cleanLoc}-${propertyId}`
     }
+
+    if (autoScrollToContact) {
+      urlPath += '#contactar-anunciante'
+    }
+
     setSelectedPropertyId(propertyId)
     setPageMode('detail')
     window.history.pushState(null, '', urlPath)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    if (autoScrollToContact) {
+      setTimeout(() => {
+        document.getElementById('contactar-anunciante')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   function handleBackToResults() {
