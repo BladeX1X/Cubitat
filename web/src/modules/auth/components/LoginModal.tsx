@@ -42,10 +42,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setErrorMsg(null)
     setSuccessMsg(null)
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: getAuthRedirectUrl('/auth/callback?flow=oauth'),
+        skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -56,6 +57,19 @@ export function LoginModal({ onClose }: LoginModalProps) {
     if (error) {
       setLoading(false)
       setErrorMsg(error.message || 'No pudimos iniciar sesion con Google.')
+      return
+    }
+
+    if (data?.url) {
+      // Reemplazar la URL del proxy por la URL nativa de Supabase para evitar interceptaciones del Service Worker PWA
+      const nativeUrl = data.url.replace(
+        window.location.origin + '/api/supabase',
+        import.meta.env.VITE_SUPABASE_URL
+      )
+      window.location.assign(nativeUrl)
+    } else {
+      setLoading(false)
+      setErrorMsg('No se pudo generar la URL de autenticación.')
     }
   }
 
