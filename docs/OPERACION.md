@@ -35,6 +35,42 @@ npm run test:e2e -- e2e/security.spec.ts
 npm run build
 ```
 
+## Tests E2E Reales
+
+Prueba el flujo completo de publicacion contra Supabase real.
+
+### Variables de entorno requeridas
+
+```bash
+CUBITAT_E2E_EMAIL=usuario@ejemplo.com
+CUBITAT_E2E_PASSWORD=contraseña
+VITE_SUPABASE_ANON_KEY=eyJ...              # Del .env (nunca commiteada)
+SUPABASE_SERVICE_ROLE_KEY=eyJ...           # Opcional, para limpieza automatica
+```
+
+Sin `CUBITAT_E2E_EMAIL` y `CUBITAT_E2E_PASSWORD` el test se salta automaticamente.
+
+### Ejecutar
+
+```bash
+cd web
+npm run test:e2e:real
+```
+
+### Que valida
+
+1. Login real contra Supabase Auth.
+2. Recorre los 8 pasos del asistente de publicacion.
+3. Verifica que la propiedad queda en `pending_review`.
+4. Verifica que **no** aparece en `/resultados` (solo se muestran `published`).
+5. Limpieza automatica de la propiedad creada.
+
+### Seguridad
+
+- Las credenciales se leen de variables de entorno, nunca del codigo.
+- No commitees `.env` ni claves.
+- La cuenta usada debe tener `enable_confirmations = false` o estar confirmada.
+
 Validar produccion despues de deploy:
 
 ```powershell
