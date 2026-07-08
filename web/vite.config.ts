@@ -12,6 +12,191 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      {
+        name: 'local-api-metrics',
+        configureServer(server) {
+          server.middlewares.use('/api/metrics', async (_req, res) => {
+            let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID en .env' };
+            let supabaseData = { storage_bytes: null as number | null, egress_bytes: null as number | null, db_bytes: null as number | null, error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID en .env' };
+            
+            const cfToken = env.CF_API_TOKEN || process.env.CF_API_TOKEN;
+            const cfAccount = env.CF_ACCOUNT_ID || process.env.CF_ACCOUNT_ID;
+            const sbToken = env.SUPABASE_MANAGEMENT_TOKEN || process.env.SUPABASE_MANAGEMENT_TOKEN;
+            const sbProject = env.SUPABASE_PROJECT_ID || process.env.SUPABASE_PROJECT_ID;
+            
+            // Fetch Cloudflare
+            if (cfToken && cfAccount) {
+              try {
+                const date = new Date();
+                const todayStr = date.toISOString().split('T')[0] + 'T00:00:00Z';
+                const cfQuery = `
+                  query {
+                    viewer {
+                      accounts(filter: {accountTag: "${cfAccount}"}) {
+                        workersInvocationsAdaptive(limit: 10000, filter: {datetime_geq: "${todayStr}"}) {
+                          sum { requests }
+                        }
+                      }
+                    }
+                  }
+                `;
+                const cfRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${cfToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ query: cfQuery })
+                });
+                const cfJson: any = await cfRes.json();
+                if (cfJson?.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive?.[0]?.sum?.requests !== undefined) {
+                  cloudflareData = { requests: cfJson.data.viewer.accounts[0].workersInvocationsAdaptive[0].sum.requests, error: '' };
+                } else {
+                  const cfErr = cfJson?.errors?.[0]?.message || 'Error desconocido';
+                  cloudflareData.error = `Error GraphQL CF: ${cfErr}`;
+                }
+              } catch (e: any) {
+                cloudflareData.error = `Excepción CF: ${e.message}`;
+              }
+            }
+
+            // Fetch Supabase
+            // Supabase API doesn't expose usage metrics publicly
+            if (sbToken && sbProject) {
+              supabaseData = {
+                db_bytes: null,
+                storage_bytes: null,
+                egress_bytes: null,
+                error: 'Usa el dashboard de Supabase para ver el ancho de banda y storage real.'
+              };
+            }
+            
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              cloudflare: cloudflareData,
+              supabase: supabaseData,
+              analytics: { activeUsers: null, error: 'Integración GA pendiente de Service Account' },
+            }));
+          });
+
+          server.middlewares.use('/api/ai-moderate', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405;
+              res.end('Method Not Allowed');
+              return;
+            }
+            
+            const geminiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk.toString(); });
+            req.on('end', async () => {
+              try {
+                const body = JSON.parse(bodyStr);
+                const authHeader = req.headers.authorization || '';
+                const url = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+                const anonKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+                if (!url || !anonKey) {
+                  res.statusCode = 500;
+                  res.end(JSON.stringify({ error: 'Supabase no está configurado.' }));
+                  return;
+                }
+
+                if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
+                  res.statusCode = 401;
+                  res.end(JSON.stringify({ error: 'Unauthorized' }));
+                  return;
+                }
+
+                const userRes = await fetch(`${url}/auth/v1/user`, {
+                  headers: { apikey: anonKey, Authorization: authHeader }
+                });
+
+                if (!userRes.ok) {
+                  res.statusCode = 401;
+                  res.end(JSON.stringify({ error: 'Unauthorized' }));
+                  return;
+                }
+
+                if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.property_id || '')) {
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({ error: 'Invalid property_id' }));
+                  return;
+                }
+
+                const propertyRes = await fetch(`${url}/rest/v1/properties?id=eq.${encodeURIComponent(body.property_id)}&select=id`, {
+                  headers: { apikey: anonKey, Authorization: authHeader }
+                });
+                const properties = propertyRes.ok ? await propertyRes.json() as any[] : [];
+                if (!propertyRes.ok || properties.length === 0) {
+                  res.statusCode = 403;
+                  res.end(JSON.stringify({ error: 'Forbidden' }));
+                  return;
+                }
+
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 202;
+                res.end(JSON.stringify({ status: 'processing', reason: 'Moderación en background iniciada' }));
+                
+                let aiResult = { status: 'pending_review', reason: 'IA deshabilitada en local. Pendiente de revisión manual.' };
+                
+                if (geminiKey) {
+                  const prompt = `Eres un moderador experto de bienes raíces en Cuba para la plataforma Cubitat. 
+Tu tarea es analizar el siguiente anuncio y determinar si cumple con las reglas (sin lenguaje ofensivo, sin spam evidente, precio razonable, descripción coherente).
+Devuelve estrictamente un objeto JSON con dos propiedades:
+"status": "ai_approved" o "ai_rejected".
+"reason": Una breve explicación de por qué lo aprobaste o rechazaste.
+
+Anuncio:
+Título: ${body.title}
+Descripción: ${body.description}
+Precio: ${body.price_usd} USD
+Tipo: ${body.property_type}`;
+
+                  try {
+                    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                      })
+                    });
+
+                    const geminiJson = await geminiRes.json() as any;
+                    if (geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                      aiResult = JSON.parse(geminiJson.candidates[0].content.parts[0].text);
+                    } else {
+                      aiResult = { status: 'pending_review', reason: 'Error al parsear IA local. Pendiente de revisión manual.' };
+                    }
+                  } catch (e: any) {
+                    aiResult = { status: 'pending_review', reason: `Excepción local IA: ${e.message}` };
+                  }
+                }
+                
+                // Actualizar en base de datos
+                if (url && anonKey) {
+                  await fetch(`${url}/rest/v1/rpc/set_property_ai_moderation`, {
+                    method: 'POST',
+                    headers: {
+                      'apikey': anonKey,
+                      'Authorization': authHeader,
+                      'Content-Type': 'application/json',
+                      'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                      p_property_id: body.property_id,
+                      p_status: aiResult.status || 'pending_review',
+                      p_message: aiResult.reason || ''
+                    })
+                  });
+                }
+
+              } catch (e) {
+                console.error("Error en proxy local IA:", e);
+              }
+            });
+          });
+        }
+      },
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'favicon-32.png', 'favicon-48.png', 'apple-touch-icon.png'],
