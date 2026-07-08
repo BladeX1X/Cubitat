@@ -22,7 +22,7 @@ type Property = {
   location: string
   price_usd: number
   cover_image: string | null
-  status: 'published' | 'pending_review' | 'paused' | 'local_draft'
+  status: 'published' | 'pending_review' | 'paused' | 'local_draft' | 'ai_approved' | 'ai_rejected'
   moderation_message: string | null
   created_at: string
   user_id: string
@@ -85,6 +85,18 @@ const STATUS_CONFIG: Record<
     bg: 'bg-blue-50',
     text: 'text-blue-700',
     dot: 'bg-blue-500',
+  },
+  ai_approved: {
+    label: 'Aprobada por IA',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    dot: 'bg-emerald-500',
+  },
+  ai_rejected: {
+    label: 'Rechazada por IA',
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    dot: 'bg-red-500',
   },
 }
 
@@ -156,9 +168,9 @@ function PropertyCard({
           {formatDate(property.created_at)}
         </div>
 
-        {property.status === 'paused' && property.moderation_message && (
-          <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">
-            <strong className="block mb-1">Motivo del rechazo</strong>
+        {property.moderation_message && (property.status === 'ai_rejected' || property.status === 'paused' || property.status === 'pending_review') && (
+          <div className={`rounded-xl border p-3 text-xs leading-relaxed ${property.status === 'pending_review' ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+            <strong className="block mb-1">{property.status === 'ai_rejected' ? '🚨 Rechazada por IA' : property.status === 'pending_review' ? 'ℹ️ Nota de moderación' : '🚫 Motivo del rechazo'}</strong>
             {property.moderation_message}
           </div>
         )}

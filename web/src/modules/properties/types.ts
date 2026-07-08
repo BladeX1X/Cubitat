@@ -2,7 +2,7 @@ export type OperationType = 'venta' | 'alquiler' | 'permuta'
 
 export type PropertyType = 'casa' | 'apartamento' | 'terreno'
 
-export type PropertyStatus = 'published' | 'pending_review' | 'paused'
+export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'ai_approved' | 'ai_rejected'
 
 export type Property = {
   id: string

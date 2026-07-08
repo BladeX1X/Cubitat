@@ -236,6 +236,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   const [isCompressing, setIsCompressing] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [editLoading, setEditLoading] = useState(isEditMode)
+  const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null)
 
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
 
@@ -438,23 +439,31 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault()
     
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      alert('Debes iniciar sesión para publicar.')
+      return
+    }
+
+    if (images.length === 0 && !isEditMode) {
+      alert('Por favor, agrega al menos una foto de la propiedad.')
+      return
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        alert("Debes iniciar sesión para publicar una propiedad.")
-        setIsSubmitting(false)
-        return
-      }
+      setIsSubmitting(true)
 
       // 1. Subir imágenes a Storage
       const uploadedImages: string[] = []
       
       for (let i = 0; i < images.length; i++) {
         const img = images[i]
+        if (img.dataUrl.startsWith('http')) {
+          uploadedImages.push(img.dataUrl)
+          continue
+        }
+
         const fileName = `${user.id}/${Date.now()}-${i}.webp`
         
         // Convert dataUrl back to blob for upload
@@ -519,7 +528,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       const operationName = formData.operation === 'alquiler' ? 'en renta' : formData.operation === 'venta' ? 'en venta' : 'en permuta'
       const generatedTitle = `${propertyTypeName} ${operationName} en ${formData.municipality || formData.neighborhood || 'Cuba'}`
 
-      // 3. Insertar o actualizar en base de datos
+      // 3. Insertar o actualizar en base de datos (con status pending_review por defecto)
       const propertyPayload = {
         user_id: user.id,
         title: generatedTitle,
@@ -544,23 +553,50 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         coordinates: (formData.latitude && formData.longitude) ? { latitude: formData.latitude, longitude: formData.longitude } : null,
       }
 
-      let dbError: any = null
+      let savedPropertyId = editPropertyId;
+      
+      setAiStatusMessage('Guardando publicación...')
 
       if (isEditMode && editPropertyId) {
         const { error } = await supabase
           .from('properties')
           .update(propertyPayload)
           .eq('id', editPropertyId)
-        dbError = error
+        if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('properties')
           .insert(propertyPayload)
-        dbError = error
+          .select('id')
+          .single()
+        if (error) throw error;
+        if (data) savedPropertyId = data.id;
       }
+
+      // 4. Iniciar moderación por IA en segundo plano (Fire and forget)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
         
-      if (dbError) {
-        throw dbError
+        // No le hacemos await para no colgar la UI
+        fetch('/api/ai-moderate', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            property_id: savedPropertyId,
+            title: generatedTitle,
+            location: formData.location || '',
+            description: formData.description || '',
+            price_usd: formData.priceUsd,
+            property_type: formData.propertyType,
+            images: images.map(img => img.dataUrl)
+          })
+        }).catch(e => console.warn('Error asincrono IA', e));
+      } catch (e) {
+        console.warn('Error preparando moderacion asincrona', e);
       }
       
       setSubmitted(true)
@@ -568,9 +604,9 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       setTimeout(() => {
         onSubmitSuccess()
       }, 3000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error publicando propiedad:', error)
-      alert('Hubo un error al publicar la propiedad. Inténtalo de nuevo.')
+      alert(`Hubo un error al publicar la propiedad: ${error.message || JSON.stringify(error)}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -726,6 +762,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
                       onClearDraft={handleClearDraft}
                       isSubmitting={isSubmitting}
                       isEditMode={isEditMode}
+                      aiStatusMessage={aiStatusMessage}
                     />
                   )}
 
@@ -1671,6 +1708,7 @@ function StepContact({
   onClearDraft,
   isSubmitting,
   isEditMode,
+  aiStatusMessage,
 }: {
   formData: PublishFormData
   onChange: (updates: Partial<PublishFormData>) => void
@@ -1678,6 +1716,7 @@ function StepContact({
   onClearDraft: () => void
   isSubmitting: boolean
   isEditMode: boolean
+  aiStatusMessage: string | null
 }) {
   const isPhoneValid = validatePhone(formData.contactPhone)
   const isSubmitDisabled = !formData.contactName || !isPhoneValid
@@ -1745,7 +1784,7 @@ function StepContact({
           disabled={isSubmitDisabled || isSubmitting}
           className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full h-11 px-8 text-xs font-bold transition-colors duration-200 shadow-md"
         >
-          {isSubmitting ? (isEditMode ? 'Guardando...' : 'Publicando...') : (isEditMode ? 'Guardar Cambios' : 'Publicar Propiedad')}
+          {isSubmitting ? (aiStatusMessage || (isEditMode ? 'Guardando...' : 'Publicando...')) : (isEditMode ? 'Guardar Cambios' : 'Publicar Propiedad')}
         </Button>
       </div>
     </div>

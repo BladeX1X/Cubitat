@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
-import { Check, X, Loader2, Building2, MapPin, Eye, Trash2 } from 'lucide-react'
+import { Check, X, Loader2, Building2, MapPin, Eye, Trash2, Bot } from 'lucide-react'
 
-type StatusFilter = 'pending_review' | 'published' | 'paused' | 'all'
+type StatusFilter = 'pending_review' | 'ai_approved' | 'ai_rejected' | 'published' | 'paused' | 'all'
 
 type ReportStatusFilter = 'pending' | 'resolved' | 'dismissed' | 'all'
 
@@ -43,7 +43,7 @@ type ModerationProperty = {
   amenities: string[] | null
   features: Record<string, unknown> | null
   contact_info: { name?: string; phone?: string } | null
-  status: 'published' | 'pending_review' | 'paused'
+  status: 'published' | 'pending_review' | 'paused' | 'ai_approved' | 'ai_rejected'
   moderation_message: string | null
   user_email?: string
 }
@@ -52,6 +52,8 @@ const STATUS_LABELS: Record<ModerationProperty['status'], string> = {
   published: 'Publicada',
   pending_review: 'Pendiente',
   paused: 'Oculta',
+  ai_approved: 'Aprobada por IA',
+  ai_rejected: 'Rechazada por IA',
 }
 
 function formatPrice(value: number | null): string {
@@ -81,14 +83,70 @@ export function AdminPage({
 }) {
   const [properties, setProperties] = useState<ModerationProperty[]>([])
   const [reports, setReports] = useState<PropertyReport[]>([])
-  const [activeTab, setActiveTab] = useState<'properties' | 'reports'>('properties')
+  const [activeTab, setActiveTab] = useState<'properties' | 'reports' | 'stats'>('properties')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [aiAlertMessage, setAiAlertMessage] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending_review')
   const [reportStatusFilter, setReportStatusFilter] = useState<ReportStatusFilter>('pending')
   const [searchQuery, setSearchQuery] = useState('')
+  const [statsData, setStatsData] = useState<{
+    db_size: string
+    properties_count: number
+    users_count: number
+    reports_count: number
+  } | null>(null)
+  const [apiMetrics, setApiMetrics] = useState<{
+    cloudflare?: { requests: number | null, error: string },
+    analytics?: { activeUsers: number | null, error: string },
+    supabase?: { storage_bytes: number | null, egress_bytes: number | null, db_bytes: number | null, error: string }
+  } | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+
+  async function loadStats() {
+    setStatsLoading(true)
+    setError(null)
+    try {
+      // 1. Fetch Supabase Data (via DB count, since Management API isn't setup for UI yet)
+      const { count: propCount } = await supabase.from('properties').select('id', { count: 'exact', head: true })
+      const { count: profileCount } = await supabase.from('profiles').select('id', { count: 'exact', head: true })
+      const { count: repCount } = await supabase.from('property_reports').select('id', { count: 'exact', head: true })
+      
+      const { data: rpcData } = await supabase.rpc('get_database_stats')
+      
+      setStatsData({
+        db_size: rpcData?.db_size || 'API Req.',
+        properties_count: propCount || 0,
+        users_count: profileCount || 0,
+        reports_count: repCount || 0
+      })
+
+      // 2. Fetch external metrics (Cloudflare, Google Analytics)
+      try {
+        const res = await fetch('/api/metrics')
+        if (res.ok) {
+          const metricsData = await res.json()
+          setApiMetrics(metricsData)
+        } else {
+          throw new Error('API route not found')
+        }
+      } catch (e) {
+        console.error('Error fetching api metrics', e)
+        setApiMetrics({
+          cloudflare: { requests: null, error: 'Endpoint /api/metrics no disponible en local.' },
+          analytics: { activeUsers: null, error: 'Endpoint /api/metrics no disponible en local.' },
+          supabase: { storage_bytes: null, egress_bytes: null, db_bytes: null, error: 'Endpoint /api/metrics no disponible en local.' }
+        })
+      }
+    } catch (err: any) {
+      console.error('Error loading stats:', err)
+      setError('No se pudieron cargar las estadísticas.')
+    } finally {
+      setStatsLoading(false)
+    }
+  }
 
   async function loadReports() {
     setLoading(true)
@@ -169,8 +227,10 @@ export function AdminPage({
   useEffect(() => {
     if (activeTab === 'properties') {
       loadProperties()
-    } else {
+    } else if (activeTab === 'reports') {
       loadReports()
+    } else if (activeTab === 'stats') {
+      loadStats()
     }
   }, [activeTab])
 
@@ -217,6 +277,38 @@ export function AdminPage({
     }
     setActionLoading(null)
   }
+
+  async function handleReevaluateAI(property: ModerationProperty) {
+    updatePropertyStatus(property.id, 'pending_review', 'Reevaluando con IA...')
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      
+      fetch('/api/ai-moderate', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          property_id: property.id,
+          title: property.title,
+          location: property.location || '',
+          description: property.description || '',
+          price_usd: property.price_usd,
+          property_type: property.property_type,
+          images: [property.cover_image, ...(property.images || [])].filter(Boolean)
+        })
+      }).catch(e => console.warn('Error asincrono IA', e));
+      
+      setAiAlertMessage('La reevaluación por IA ha iniciado. Refresca la página en unos segundos.');
+    } catch (e) {
+      console.warn('Error preparando moderacion asincrona', e);
+      setAiAlertMessage('Error al iniciar la reevaluación.');
+    }
+  }
+
 
   async function handleResolveReport(reportId: string, propertyId: string) {
     setActionLoading(reportId)
@@ -292,6 +384,8 @@ export function AdminPage({
   const pendingCount = properties.filter((p) => p.status === 'pending_review').length
   const publishedCount = properties.filter((p) => p.status === 'published').length
   const hiddenCount = properties.filter((p) => p.status === 'paused').length
+  const aiApprovedCount = properties.filter((p) => p.status === 'ai_approved').length
+  const aiRejectedCount = properties.filter((p) => p.status === 'ai_rejected').length
   const normalizedQuery = searchQuery.trim().toLowerCase()
   const displayedProperties = properties.filter((property) => {
     const matchesStatus = statusFilter === 'all' || property.status === statusFilter
@@ -350,6 +444,17 @@ export function AdminPage({
             }`}
           >
             Reportes
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('stats'); }}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+              activeTab === 'stats'
+                ? 'bg-[#035f53] text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            Métricas
           </button>
         </div>
       </div>
@@ -478,12 +583,130 @@ export function AdminPage({
               ))}
           </div>
         </div>
+      ) : activeTab === 'stats' ? (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-[#035f53] to-[#02443a] rounded-3xl p-6 text-white shadow-xl flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">Consumo y Límites (APIs)</h2>
+              <p className="text-xs text-[#a3e2d7] mt-1">
+                Visualización automática de plataformas en tiempo real sin ejecutar scripts.
+              </p>
+            </div>
+            <div className="hidden sm:flex gap-2">
+              <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold border border-white/20">Supabase</span>
+              <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold border border-white/20">Cloudflare</span>
+              <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold border border-white/20">Google</span>
+            </div>
+          </div>
+
+          {statsLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-8 h-8 text-[#035f53] animate-spin" />
+              <p className="text-xs text-neutral-500 font-medium">Sincronizando con APIs…</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Cloudflare Card */}
+              <div className="bg-white border border-neutral-200/60 rounded-3xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-0"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                    <span className="text-xs font-black text-neutral-800 uppercase tracking-wider">Cloudflare Workers</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500 mb-4">Límite gratuito: 100,000 peticiones / día</p>
+                  
+                  {apiMetrics?.cloudflare?.error ? (
+                    <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center">
+                      <p className="text-xs text-neutral-600 font-medium">{apiMetrics.cloudflare.error}</p>
+                      <p className="text-[10px] text-neutral-400 mt-1">Añade CF_API_TOKEN y CF_ACCOUNT_ID en .env</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-3xl font-black text-neutral-900">{apiMetrics?.cloudflare?.requests?.toLocaleString() || 0}</span>
+                      <span className="text-xs text-neutral-500 font-medium">peticiones consumidas hoy</span>
+                      <div className="w-full bg-neutral-100 rounded-full h-1.5 mt-2">
+                        <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${Math.min(((apiMetrics?.cloudflare?.requests || 0) / 100000) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Supabase Card */}
+              <div className="bg-white border border-neutral-200/60 rounded-3xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-0"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="text-xs font-black text-neutral-800 uppercase tracking-wider">Supabase</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 mb-4">
+                    <p className="text-[10px] text-neutral-500">Límite Base de Datos: <b>500 MB</b> {apiMetrics?.supabase?.db_bytes !== undefined && apiMetrics?.supabase?.db_bytes !== null ? <span className="text-emerald-600 font-bold ml-1">({(apiMetrics.supabase.db_bytes / 1024 / 1024).toFixed(1)} MB usados)</span> : ''}</p>
+                    <p className="text-[10px] text-neutral-500">Límite Storage (Imágenes): <b>1 GB</b> {apiMetrics?.supabase?.storage_bytes !== undefined && apiMetrics?.supabase?.storage_bytes !== null ? <span className="text-emerald-600 font-bold ml-1">({(apiMetrics.supabase.storage_bytes / 1024 / 1024).toFixed(1)} MB usados)</span> : ''}</p>
+                    <p className="text-[10px] text-neutral-500">Límite Ancho de banda: <b>5 GB / mes</b> {apiMetrics?.supabase?.egress_bytes !== undefined && apiMetrics?.supabase?.egress_bytes !== null ? <span className="text-emerald-600 font-bold ml-1">({(apiMetrics.supabase.egress_bytes / 1024 / 1024 / 1024).toFixed(2)} GB usados)</span> : ''}</p>
+                  </div>
+                  
+                  {apiMetrics?.supabase?.error && (
+                    <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 mb-4 text-center">
+                      <p className="text-[10px] text-neutral-600 font-medium">{apiMetrics.supabase.error}</p>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xl font-black text-neutral-900">{statsData?.properties_count}</p>
+                      <p className="text-[10px] text-neutral-500">Anuncios</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-black text-neutral-900">{statsData?.users_count}</p>
+                      <p className="text-[10px] text-neutral-500">Usuarios</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-neutral-100">
+                    <div className="flex justify-between items-end mb-1">
+                      <span className="text-xs font-bold text-neutral-600">Espacio en BD consumido</span>
+                      <span className="text-[10px] font-medium text-neutral-400">{statsData?.db_size} / 500 MB</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Google Analytics Card */}
+              <div className="bg-white border border-neutral-200/60 rounded-3xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span className="text-xs font-black text-neutral-800 uppercase tracking-wider">Google Analytics</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500 mb-4">Tráfico y visitantes en tiempo real</p>
+                  
+                  {apiMetrics?.analytics?.error ? (
+                    <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center">
+                      <p className="text-xs text-neutral-600 font-medium">{apiMetrics.analytics.error}</p>
+                      <p className="text-[10px] text-neutral-400 mt-1">Requiere credenciales Service Account</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-3xl font-black text-neutral-900">{apiMetrics?.analytics?.activeUsers || 0}</span>
+                      <span className="text-xs text-neutral-500 font-medium">usuarios activos ahora</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] space-y-3">
             <div className="flex flex-wrap gap-2">
               {[
                 ['pending_review', `Pendientes (${pendingCount})`],
+                ['ai_approved', `IA: Aprobadas (${aiApprovedCount})`],
+                ['ai_rejected', `IA: Rechazadas (${aiRejectedCount})`],
                 ['published', `Publicadas (${publishedCount})`],
                 ['paused', `Ocultas (${hiddenCount})`],
                 ['all', `Todas (${properties.length})`],
@@ -547,6 +770,11 @@ export function AdminPage({
                       <span>·</span>
                       <span>{formatDate(property.created_at)}</span>
                     </div>
+                    {property.moderation_message && (
+                      <div className={`mt-1 text-xs p-2 rounded-lg border leading-relaxed ${property.status === 'ai_approved' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : property.status === 'pending_review' ? 'text-amber-700 bg-amber-50 border-amber-100' : 'text-red-700 bg-red-50 border-red-100'}`}>
+                        <strong>{property.status === 'ai_approved' ? '🤖 Motivo de IA:' : property.status === 'ai_rejected' ? '🚨 Rechazo de IA:' : 'ℹ️ Motivo:'}</strong> {property.moderation_message}
+                      </div>
+                    )}
                     <p className="text-xs text-neutral-400">
                       Publicado por: <span className="font-medium text-neutral-600">{property.user_email || 'Usuario'}</span>
                     </p>
@@ -555,7 +783,7 @@ export function AdminPage({
                         <Eye className="w-3.5 h-3.5" />
                         {isSelected ? 'Cerrar detalle' : 'Ver detalle'}
                       </Button>
-                      {property.status === 'pending_review' && (
+                      {(property.status === 'pending_review' || property.status === 'ai_approved' || property.status === 'ai_rejected') && (
                         <>
                           <Button className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApprove(property.id)} disabled={actionLoading === property.id}>
                             {actionLoading === property.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
@@ -564,6 +792,10 @@ export function AdminPage({
                           <Button variant="outline" className="rounded-xl text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleReject(property.id)} disabled={actionLoading === property.id}>
                             <X className="w-3.5 h-3.5" />
                             Ocultar con motivo
+                          </Button>
+                          <Button variant="outline" className="rounded-xl text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleReevaluateAI(property)} disabled={actionLoading === property.id}>
+                            <Bot className="w-3.5 h-3.5" />
+                            Reevaluar con IA
                           </Button>
                         </>
                       )}
@@ -577,6 +809,11 @@ export function AdminPage({
 
                 {isSelected && (
                   <div className="border-t border-neutral-100 bg-neutral-50/60 p-5 grid gap-5">
+                    {(property.status === 'ai_approved' || property.status === 'ai_rejected') && property.moderation_message && (
+                      <div className={`p-4 rounded-xl border ${property.status === 'ai_approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                        <strong>{property.status === 'ai_approved' ? '🤖 Aprobada por IA:' : '🚨 Rechazada por IA:'}</strong> {property.moderation_message}
+                      </div>
+                    )}
                     <div>
                       <h4 className="text-sm font-bold text-neutral-800 mb-2">Descripción</h4>
                       <p className="text-sm text-neutral-600 whitespace-pre-wrap">{property.description || 'Sin descripción'}</p>
@@ -627,6 +864,25 @@ export function AdminPage({
               </div>
             )
           })}
+        </div>
+      )}
+
+      {aiAlertMessage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setAiAlertMessage(null)}
+          />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-75 fade-in duration-300 ease-out text-center">
+            <h3 className="text-lg font-bold text-neutral-900 mb-2">Aviso del Sistema</h3>
+            <p className="text-sm text-neutral-600 mb-6">{aiAlertMessage}</p>
+            <Button 
+              className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              onClick={() => setAiAlertMessage(null)}
+            >
+              Aceptar
+            </Button>
+          </div>
         </div>
       )}
     </div>
