@@ -2,6 +2,10 @@
 
 Guia corta para desplegar, validar y operar Cubitat en produccion.
 
+Documentacion relacionada:
+
+- [PWA](./PWA.md): instalacion, service worker, cache, offline/update prompts y checklist.
+
 ## Despliegue
 
 Desde `web/`:
@@ -34,6 +38,13 @@ npm run test:run
 npm run test:e2e -- e2e/security.spec.ts
 npm run build
 ```
+
+Validacion manual recomendada en `/publicar`:
+
+- En el paso 1, el mapa no debe cargarse antes de seleccionar provincia y municipio.
+- Al seleccionar municipio, el mapa debe abrir automaticamente centrado en ese municipio.
+- Al cambiar provincia o municipio, las coordenadas marcadas deben limpiarse para evitar guardar una ubicacion vieja.
+- La seccion del mapa no debe mostrar texto de "opcional" ni boton manual de abrir mapa.
 
 ## Tests E2E Reales
 

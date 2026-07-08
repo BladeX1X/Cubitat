@@ -42,18 +42,7 @@ export function PropertyCard({
 
   const saved = isSaved(property.id)
 
-  function selectProperty(event: React.MouseEvent | React.KeyboardEvent) {
-    // Evitar que el clic en los botones de acción o en las flechas del carrusel dispare la selección
-    const target = event.target as HTMLElement
-    if (target.closest('.property-contact-btn') || 
-        target.closest('.property-whatsapp-btn') || 
-        target.closest('.property-save') ||
-        target.closest('.carousel-control-prev') ||
-        target.closest('.carousel-control-next') ||
-        target.closest('.carousel-indicators')
-    ) {
-      return
-    }
+  function selectProperty() {
     onSelect(property.id)
   }
 
@@ -78,19 +67,15 @@ export function PropertyCard({
   }, [carouselApi])
 
   return (
-    <div
+    <article
       className={`property-card ${isSelected ? 'is-selected' : ''}`}
-      role="button"
-      aria-label={`Ver ${property.title}`}
-      tabIndex={0}
-      onClick={(e) => selectProperty(e)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          selectProperty(event)
-        }
-      }}
     >
+      <button
+        className="property-card-hit-target"
+        type="button"
+        aria-label={`Ver ${property.title}`}
+        onClick={selectProperty}
+      />
       <div className="property-photo">
         <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }} setApi={setCarouselApi}>
           <CarouselContent className="-ml-0 h-full">
@@ -245,7 +230,7 @@ export function PropertyCard({
           </Button>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

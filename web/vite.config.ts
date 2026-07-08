@@ -272,6 +272,7 @@ Tipo: ${body.property_type}`;
         },
         workbox: {
           navigateFallbackDenylist: [/\/api\//],
+          globIgnores: ['**/vendor-maplibre-*.js', '**/vendor-maplibre-*.css'],
           runtimeCaching: [
             {
               urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/rest\/v1\/.*/i,
@@ -328,6 +329,39 @@ Tipo: ${body.property_type}`;
           }
         }
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined
+            }
+
+            if (id.includes('maplibre-gl')) {
+              return 'vendor-maplibre'
+            }
+
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase'
+            }
+
+            if (id.includes('react') || id.includes('scheduler')) {
+              return 'vendor-react'
+            }
+
+            if (
+              id.includes('@radix-ui') ||
+              id.includes('cmdk') ||
+              id.includes('embla-carousel-react')
+            ) {
+              return 'vendor-ui'
+            }
+
+            return 'vendor'
+          },
+        },
+      },
     },
     test: {
       globals: true,

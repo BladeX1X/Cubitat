@@ -133,6 +133,7 @@ export function FilterBar({
           name="filter-query"
           type="text"
           placeholder="Buscar zona..."
+          aria-label="Buscar zona"
           className="w-full text-sm outline-none text-neutral-800 placeholder-neutral-400 pr-6"
           value={filters.query}
           onChange={(e) => handleQueryChange(e.target.value)}

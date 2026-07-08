@@ -241,6 +241,11 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
   const markerRef = useRef<maplibregl.Marker | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const onCoordinatesRef = useRef(onCoordinatesChange)
+  const initialCenterRef = useRef(
+    (municipality && MUNICIPALITY_CENTERS[municipality]) ||
+      (province && PROVINCE_CENTERS[province]) ||
+      PROVINCE_CENTERS['La Habana']
+  )
 
   // Keep callback ref stable
   useEffect(() => {
@@ -253,19 +258,18 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
 
     const abortController = new AbortController()
 
-    const defaultCenter = PROVINCE_CENTERS['La Habana']
-
     async function initMap() {
       if (!containerRef.current || mapRef.current) return
       try {
         const resp = await fetch(OPEN_SOURCE_STYLE, { signal: abortController.signal })
         const style = (await resp.json()) as StyleSpecification
+        const initialCenter = initialCenterRef.current
 
         mapRef.current = new maplibregl.Map({
           container: containerRef.current,
           style,
-          center: [defaultCenter.lng, defaultCenter.lat],
-          zoom: defaultCenter.zoom,
+          center: [initialCenter.lng, initialCenter.lat],
+          zoom: initialCenter.zoom,
           attributionControl: false,
         })
 

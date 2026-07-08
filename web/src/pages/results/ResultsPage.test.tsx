@@ -161,9 +161,8 @@ describe('ResultsPage', () => {
       />
     )
 
-    // Clic en la tarjeta de la primera propiedad
-    const cardTitle = screen.getByText('Casa en Playa')
-    fireEvent.click(cardTitle)
+    const cardButton = screen.getByRole('button', { name: /ver casa en playa/i })
+    fireEvent.click(cardButton)
 
     expect(handleSelectProperty).toHaveBeenCalledWith('prop-1')
   })

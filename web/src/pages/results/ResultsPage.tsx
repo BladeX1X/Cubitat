@@ -224,7 +224,7 @@ export function ResultsPage({
         <div className="property-catalog-grid">
           {loading ? (
             <PropertyCardSkeleton count={6} />
-          ) : (
+          ) : paginatedProperties.length > 0 ? (
             paginatedProperties.map((property, index) => (
               <PropertyCard
                 key={property.id}
@@ -234,6 +234,21 @@ export function ResultsPage({
                 prioritizeImage={index < 4}
               />
             ))
+          ) : (
+            <div className="results-empty-state">
+              <p className="eyebrow">Sin resultados</p>
+              <h2>No encontramos propiedades con esos filtros</h2>
+              <p>
+                Prueba con otra zona, cambia la operación o limpia los filtros para ver más opciones.
+              </p>
+              <Button
+                type="button"
+                className="results-empty-action"
+                onClick={onClearFilters}
+              >
+                Limpiar filtros
+              </Button>
+            </div>
           )}
         </div>
 
@@ -264,6 +279,7 @@ export function ResultsPage({
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum as number)}
+                    aria-current={isCurrent ? 'page' : undefined}
                     className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
                       isCurrent
                         ? 'bg-[#035f53] text-white shadow-md'

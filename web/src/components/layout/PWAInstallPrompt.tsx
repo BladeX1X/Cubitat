@@ -1,44 +1,88 @@
 import { useEffect, useState } from 'react'
-import { Download, Share, X } from 'lucide-react'
+import { Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
+import { registerSW } from 'virtual:pwa-register'
 import { Button } from '../../shared/ui/button'
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [showPrompt, setShowPrompt] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
+  const [isOffline, setIsOffline] = useState(false)
+  const [showOnlineNotice, setShowOnlineNotice] = useState(false)
+  const [needsRefresh, setNeedsRefresh] = useState(false)
+  const [updateServiceWorker, setUpdateServiceWorker] = useState<((reloadPage?: boolean) => Promise<void>) | null>(null)
 
   useEffect(() => {
-    // 1. Detectar si la app ya corre en modo standalone (instalada)
+    const runUpdate = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        setNeedsRefresh(true)
+      },
+      onOfflineReady() {
+        // The app shell is cached; detailed offline UX is driven by network status below.
+      },
+    })
+
+    setUpdateServiceWorker(() => runUpdate)
+  }, [])
+
+  useEffect(() => {
+    function syncNetworkState() {
+      const nextIsOffline = !navigator.onLine
+      setIsOffline(nextIsOffline)
+
+      if (!nextIsOffline) {
+        setShowOnlineNotice(true)
+        window.setTimeout(() => setShowOnlineNotice(false), 3600)
+      }
+    }
+
+    setIsOffline(!navigator.onLine)
+    window.addEventListener('online', syncNetworkState)
+    window.addEventListener('offline', syncNetworkState)
+
+    return () => {
+      window.removeEventListener('online', syncNetworkState)
+      window.removeEventListener('offline', syncNetworkState)
+    }
+  }, [])
+
+  useEffect(() => {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      (window.navigator as { standalone?: boolean }).standalone === true
 
     if (isStandalone) return
 
-    // 2. Detectar si el usuario ya la cerró permanentemente
     const isDismissed = localStorage.getItem('cubitat_pwa_prompt_dismissed') === 'true'
     if (isDismissed) return
 
-    // 3. Detectar iOS (Safari)
     const userAgent = window.navigator.userAgent.toLowerCase()
     const ios = /iphone|ipad|ipod/.test(userAgent) && !/chrome|crios|opios|firefox|fxios/.test(userAgent)
     setIsIOS(ios)
 
-    // 4. Manejador para Android/Chrome/Edge (beforeinstallprompt)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      setShowPrompt(true)
+    function handleBeforeInstallPrompt(event: Event) {
+      event.preventDefault()
+      setDeferredPrompt(event as BeforeInstallPromptEvent)
+      setShowInstallPrompt(true)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
-    // 5. Para iOS, como no soporta el evento natively, sugerimos la instalación proactiva tras 8 segundos
     if (ios) {
-      const timer = setTimeout(() => {
-        setShowPrompt(true)
+      const timer = window.setTimeout(() => {
+        setShowInstallPrompt(true)
       }, 8000)
-      return () => clearTimeout(timer)
+
+      return () => {
+        window.clearTimeout(timer)
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      }
     }
 
     return () => {
@@ -46,69 +90,132 @@ export function PWAInstallPrompt() {
     }
   }, [])
 
-  const handleInstallClick = async () => {
+  async function handleInstallClick() {
     if (!deferredPrompt) return
-    deferredPrompt.prompt()
+
+    await deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
+
     if (outcome === 'accepted') {
       setDeferredPrompt(null)
-      setShowPrompt(false)
+      setShowInstallPrompt(false)
     }
   }
 
-  const handleDismiss = () => {
+  function handleDismissInstall() {
     localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
-    setShowPrompt(false)
+    setShowInstallPrompt(false)
   }
 
-  if (!showPrompt) return null
+  async function handleRefresh() {
+    await updateServiceWorker?.(true)
+  }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-96 bg-white border border-neutral-200 rounded-2xl shadow-xl p-4 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-      <div className="flex gap-3 items-start">
-        <div className="p-2.5 rounded-xl bg-[#035f53]/10 text-[#035f53] shrink-0">
-          <Download size={20} className="animate-bounce" />
+    <div className="pwa-toast-stack" aria-live="polite" aria-atomic="false">
+      {isOffline && (
+        <div className="pwa-toast pwa-toast--offline" role="status">
+          <WifiOff size={18} />
+          <div>
+            <strong>Sin conexión</strong>
+            <span>Mostraremos lo que ya esté guardado. Algunas acciones pueden fallar hasta reconectar.</span>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-neutral-900">Instalar Cubitat</h4>
-          <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+      )}
+
+      {!isOffline && showOnlineNotice && (
+        <div className="pwa-toast pwa-toast--online" role="status">
+          <Wifi size={18} />
+          <div>
+            <strong>Conexión restaurada</strong>
+            <span>Ya puedes volver a buscar, guardar y publicar propiedades.</span>
+          </div>
+          <button
+            type="button"
+            className="pwa-toast-close"
+            onClick={() => setShowOnlineNotice(false)}
+            aria-label="Cerrar aviso de conexión"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {needsRefresh && (
+        <div className="pwa-toast pwa-toast--update" role="status">
+          <RefreshCw size={18} />
+          <div>
+            <strong>Actualización disponible</strong>
+            <span>Hay una versión nueva de Cubitat lista para usar.</span>
+          </div>
+          <div className="pwa-toast-actions">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="pwa-toast-secondary"
+              onClick={() => setNeedsRefresh(false)}
+            >
+              Luego
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="pwa-toast-primary"
+              onClick={handleRefresh}
+            >
+              Actualizar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showInstallPrompt && (
+        <div className="pwa-toast pwa-toast--install" role="status">
+          <div className="pwa-install-icon">
+            <Download size={20} />
+          </div>
+          <div>
+            <strong>Instalar Cubitat</strong>
             {isIOS ? (
-              <span className="flex items-center gap-1.5 flex-wrap">
-                Pulsa el botón de compartir <Share size={12} className="inline text-neutral-600" /> y selecciona <strong>"Añadir a pantalla de inicio"</strong>.
+              <span className="pwa-ios-copy">
+                Pulsa compartir <Share size={12} /> y selecciona <b>Añadir a pantalla de inicio</b>.
               </span>
             ) : (
-              'Accede más rápido, sin consumir datos de red móvil adicionales y con soporte offline.'
+              <span>Accede más rápido y conserva soporte básico sin conexión.</span>
             )}
-          </p>
-          {!isIOS && (
-            <div className="flex gap-2 mt-3 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs rounded-lg text-neutral-500 hover:text-neutral-700 h-8"
-                onClick={handleDismiss}
-              >
-                Quizás luego
-              </Button>
-              <Button
-                size="sm"
-                className="text-xs rounded-lg bg-[#035f53] hover:bg-[#024a41] text-white font-medium h-8 px-4"
-                onClick={handleInstallClick}
-              >
-                Instalar app
-              </Button>
-            </div>
-          )}
+            {!isIOS && (
+              <div className="pwa-toast-actions">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="pwa-toast-secondary"
+                  onClick={handleDismissInstall}
+                >
+                  Quizás luego
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="pwa-toast-primary"
+                  onClick={handleInstallClick}
+                >
+                  Instalar app
+                </Button>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="pwa-toast-close"
+            onClick={handleDismissInstall}
+            aria-label="Cerrar aviso de instalación"
+          >
+            <X size={15} />
+          </button>
         </div>
-        <button
-          type="button"
-          className="text-neutral-400 hover:text-neutral-600 transition-colors p-1 shrink-0"
-          onClick={handleDismiss}
-          aria-label="Cerrar aviso"
-        >
-          <X size={16} />
-        </button>
-      </div>
+      )}
     </div>
   )
 }

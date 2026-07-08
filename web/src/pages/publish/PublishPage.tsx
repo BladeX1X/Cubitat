@@ -956,7 +956,7 @@ function StepAddress({
   onNext: () => void
 }) {
   const isNextDisabled = !formData.streetAddress || !formData.province || !formData.municipality
-  const [showMap, setShowMap] = useState(() => formData.latitude !== null && formData.longitude !== null)
+  const shouldShowMap = Boolean(formData.province && formData.municipality)
 
   return (
     <div className="space-y-5">
@@ -1016,7 +1016,7 @@ function StepAddress({
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-semibold">Municipio *</label>
             <Select
               value={formData.municipality}
-              onValueChange={(val) => onChange({ municipality: val })}
+              onValueChange={(val) => onChange({ municipality: val, latitude: null, longitude: null })}
             >
               <SelectTrigger
                 disabled={!formData.province}
@@ -1068,10 +1068,10 @@ function StepAddress({
         {/* Right: Interactive Map */}
         <div className="flex flex-col gap-2">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-            Ubicación en el Mapa <span className="text-neutral-300 font-normal normal-case">(opcional – haz clic para marcar)</span>
+            Ubicación en el Mapa
           </label>
           <div className="flex-1 min-h-[300px] lg:min-h-[340px]">
-            {showMap ? (
+            {shouldShowMap ? (
               <Suspense fallback={
                 <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
                   <div className="text-center space-y-2">
@@ -1092,18 +1092,10 @@ function StepAddress({
               <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-50 border border-dashed border-neutral-200 flex items-center justify-center p-6">
                 <div className="max-w-xs text-center space-y-3">
                   <MapPin className="w-8 h-8 text-[#035f53] mx-auto" />
-                  <p className="text-sm font-bold text-neutral-800">Mapa opcional</p>
+                  <p className="text-sm font-bold text-neutral-800">Selecciona provincia y municipio</p>
                   <p className="text-xs text-neutral-500 leading-relaxed">
-                    Carga el mapa solo si quieres marcar la ubicación exacta. Esto mantiene el formulario más rápido en conexiones móviles.
+                    El mapa se abrirá automáticamente con la vista del municipio para que puedas marcar la ubicación exacta.
                   </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-full h-10 px-5 text-xs font-bold border-[#035f53]/20 text-[#035f53] hover:bg-emerald-50"
-                    onClick={() => setShowMap(true)}
-                  >
-                    Abrir mapa
-                  </Button>
                 </div>
               </div>
             )}
