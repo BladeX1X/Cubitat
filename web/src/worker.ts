@@ -330,6 +330,17 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
     // Endpoint interno para obtener las métricas de plataformas usando APIs directamente
     if (path === '/api/metrics') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const user = await getAuthenticatedUser(authHeader, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+      }
+
+      const role = await getUserRole(user.id, authHeader, env);
+      if (role !== 'admin') {
+        return jsonResponse({ error: 'Forbidden' }, 403);
+      }
+
       // 1. Fetch Cloudflare Metrics (si tenemos los tokens)
       let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID' };
       if (env.CF_API_TOKEN && env.CF_ACCOUNT_ID) {

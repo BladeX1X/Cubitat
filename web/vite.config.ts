@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       {
         name: 'local-api-metrics',
         configureServer(server) {
-          server.middlewares.use('/api/metrics', async (_req, res) => {
+          server.middlewares.use('/api/metrics', async (req, res) => {
             let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID en .env' };
             let supabaseData = { storage_bytes: null as number | null, egress_bytes: null as number | null, db_bytes: null as number | null, error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID en .env' };
             
@@ -23,6 +23,49 @@ export default defineConfig(({ mode }) => {
             const cfAccount = env.CF_ACCOUNT_ID || process.env.CF_ACCOUNT_ID;
             const sbToken = env.SUPABASE_MANAGEMENT_TOKEN || process.env.SUPABASE_MANAGEMENT_TOKEN;
             const sbProject = env.SUPABASE_PROJECT_ID || process.env.SUPABASE_PROJECT_ID;
+            const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+            const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+            const authHeader = req.headers.authorization || '';
+
+            if (!supabaseUrl || !supabaseAnonKey) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Supabase no está configurado.' }));
+              return;
+            }
+
+            if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
+              res.statusCode = 401;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Unauthorized' }));
+              return;
+            }
+
+            const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+              headers: { apikey: supabaseAnonKey, Authorization: authHeader }
+            });
+
+            if (!userRes.ok) {
+              res.statusCode = 401;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Unauthorized' }));
+              return;
+            }
+
+            const user = await userRes.json() as { id?: string };
+            const roleRes = user.id
+              ? await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=role`, {
+                  headers: { apikey: supabaseAnonKey, Authorization: authHeader }
+                })
+              : null;
+            const roles = roleRes?.ok ? await roleRes.json() as { role?: string }[] : [];
+
+            if (roles[0]?.role !== 'admin') {
+              res.statusCode = 403;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Forbidden' }));
+              return;
+            }
             
             // Fetch Cloudflare
             if (cfToken && cfAccount) {

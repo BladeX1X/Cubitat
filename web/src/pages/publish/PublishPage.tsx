@@ -13,6 +13,7 @@ import {
   Plus,
   Check,
   Info,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
@@ -955,6 +956,7 @@ function StepAddress({
   onNext: () => void
 }) {
   const isNextDisabled = !formData.streetAddress || !formData.province || !formData.municipality
+  const [showMap, setShowMap] = useState(() => formData.latitude !== null && formData.longitude !== null)
 
   return (
     <div className="space-y-5">
@@ -1069,22 +1071,42 @@ function StepAddress({
             Ubicación en el Mapa <span className="text-neutral-300 font-normal normal-case">(opcional – haz clic para marcar)</span>
           </label>
           <div className="flex-1 min-h-[300px] lg:min-h-[340px]">
-            <Suspense fallback={
-              <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-[11px] text-neutral-400">Cargando mapa…</p>
+            {showMap ? (
+              <Suspense fallback={
+                <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-[11px] text-neutral-400">Cargando mapa…</p>
+                  </div>
+                </div>
+              }>
+                <AddressMap
+                  province={formData.province}
+                  municipality={formData.municipality}
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  onCoordinatesChange={(lat, lng) => onChange({ latitude: lat, longitude: lng })}
+                />
+              </Suspense>
+            ) : (
+              <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-50 border border-dashed border-neutral-200 flex items-center justify-center p-6">
+                <div className="max-w-xs text-center space-y-3">
+                  <MapPin className="w-8 h-8 text-[#035f53] mx-auto" />
+                  <p className="text-sm font-bold text-neutral-800">Mapa opcional</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Carga el mapa solo si quieres marcar la ubicación exacta. Esto mantiene el formulario más rápido en conexiones móviles.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full h-10 px-5 text-xs font-bold border-[#035f53]/20 text-[#035f53] hover:bg-emerald-50"
+                    onClick={() => setShowMap(true)}
+                  >
+                    Abrir mapa
+                  </Button>
                 </div>
               </div>
-            }>
-              <AddressMap
-                province={formData.province}
-                municipality={formData.municipality}
-                latitude={formData.latitude}
-                longitude={formData.longitude}
-                onCoordinatesChange={(lat, lng) => onChange({ latitude: lat, longitude: lng })}
-              />
-            </Suspense>
+            )}
           </div>
         </div>
 

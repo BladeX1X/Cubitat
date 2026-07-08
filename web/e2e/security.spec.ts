@@ -43,4 +43,14 @@ test.describe('Auditoría de Seguridad - Evasión de Proxy y Anon Key', () => {
 
     expect(response.status()).toBe(401)
   })
+
+  test('debería rechazar métricas internas sin sesión admin', async ({ request }) => {
+    const response = await request.get('/api/metrics', {
+      headers: {
+        Authorization: 'Bearer invalid-test-token',
+      },
+    })
+
+    expect(response.status()).toBe(401)
+  })
 })
