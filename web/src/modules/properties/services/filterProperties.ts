@@ -1,6 +1,13 @@
 import type { SearchFilters } from '../../search/types'
 import type { Property } from '../types'
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 export function filterProperties(
   properties: Property[],
   filters: SearchFilters,
@@ -16,7 +23,8 @@ export function filterProperties(
       property.propertyType,
     ]
       .join(' ')
-      .toLowerCase()
+    const normalizedSearchableText = normalizeSearchText(searchableText)
+    const normalizedQuery = normalizeSearchText(filters.query.trim())
 
     // Filter bedrooms (>=)
     if (filters.bedrooms && filters.bedrooms !== 'all') {
@@ -58,7 +66,7 @@ export function filterProperties(
       (filters.propertyType === 'all' ||
         property.propertyType === filters.propertyType) &&
       (!filters.query ||
-        searchableText.includes(filters.query.trim().toLowerCase()))
+        normalizedSearchableText.includes(normalizedQuery))
     )
   })
 }

@@ -6,6 +6,7 @@ import { filterProperties } from '../modules/properties/services/filterPropertie
 import type { Property } from '../modules/properties/types'
 import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
+import { filtersMatchSeoRoute, parseSeoResultsRoute, type SeoResultsRoute } from '../modules/search/seoRoutes'
 import { HomePage } from '../pages/home/HomePage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
@@ -59,6 +60,10 @@ function getInitialFilters(): SearchFilters {
   if (typeof window === 'undefined') {
     return initialFilters
   }
+  const seoRoute = parseSeoResultsRoute(window.location.pathname)
+  if (seoRoute) {
+    return seoRoute.filters
+  }
   const params = new URLSearchParams(window.location.search)
   const opsStr = params.get('operacion')
   const operations = opsStr ? (opsStr.split(',') as any[]) : []
@@ -77,7 +82,7 @@ function getInitialPageMode(): PageMode {
     return 'home'
   }
   const path = window.location.pathname
-  if (path.startsWith('/resultados')) {
+  if (path.startsWith('/resultados') || parseSeoResultsRoute(path)) {
     return 'results'
   }
   if (path.startsWith('/propiedad/')) {
@@ -142,6 +147,10 @@ export function CubitatApp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<SearchFilters>(getInitialFilters)
+  const [seoResultsRoute, setSeoResultsRoute] = useState<SeoResultsRoute | null>(() => {
+    if (typeof window === 'undefined') return null
+    return parseSeoResultsRoute(window.location.pathname)
+  })
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>(getInitialSelectedPropertyId)
   const { isLoginOpen, openLogin, closeLogin, isSavePromptOpen, closeSavePrompt } = useAuthModal()
   const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
@@ -290,6 +299,7 @@ export function CubitatApp() {
       setPageMode(getInitialPageMode())
       setFilters(getInitialFilters())
       setSelectedPropertyId(getInitialSelectedPropertyId())
+      setSeoResultsRoute(parseSeoResultsRoute(window.location.pathname))
       window.scrollTo({ top: 0 })
     }
 
@@ -301,6 +311,12 @@ export function CubitatApp() {
   useEffect(() => {
     if (pageMode !== 'results') {
       return
+    }
+    if (seoResultsRoute && filtersMatchSeoRoute(filters, seoResultsRoute)) {
+      return
+    }
+    if (seoResultsRoute) {
+      setSeoResultsRoute(null)
     }
     const params = new URLSearchParams()
     if (filters.query) params.set('q', filters.query)
@@ -315,11 +331,12 @@ export function CubitatApp() {
     if (currentPath !== path) {
       window.history.pushState(null, '', path)
     }
-  }, [filters, pageMode])
+  }, [filters, pageMode, seoResultsRoute])
 
   function navigateHome() {
     window.history.pushState(null, '', '/')
     setPageMode('home')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -340,6 +357,7 @@ export function CubitatApp() {
 
     window.history.pushState(null, '', path)
     setPageMode('results')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -352,6 +370,7 @@ export function CubitatApp() {
     const path = loadDraft ? '/publicar?load_draft=true' : '/publicar'
     window.history.pushState(null, '', path)
     setPageMode('publish')
+    setSeoResultsRoute(null)
     setEditPropertyId(undefined)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -364,6 +383,7 @@ export function CubitatApp() {
     }
     window.history.pushState(null, '', '/mis-propiedades')
     setPageMode('my-properties')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -375,6 +395,7 @@ export function CubitatApp() {
     }
     window.history.pushState(null, '', '/mi-cuenta')
     setPageMode('account')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -386,6 +407,7 @@ export function CubitatApp() {
     }
     window.history.pushState(null, '', '/favoritos')
     setPageMode('favorites')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -397,6 +419,7 @@ export function CubitatApp() {
     }
     window.history.pushState(null, '', '/moderar')
     setPageMode('moderar')
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -410,6 +433,7 @@ export function CubitatApp() {
     window.history.pushState(null, '', `/editar/${propertyId}`)
     setEditPropertyId(propertyId)
     setPageMode('edit')
+    setSeoResultsRoute(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -451,6 +475,7 @@ export function CubitatApp() {
 
     setSelectedPropertyId(propertyId)
     setPageMode('detail')
+    setSeoResultsRoute(null)
     window.history.pushState(null, '', urlPath)
 
     if (autoScrollToContact) {
@@ -465,6 +490,7 @@ export function CubitatApp() {
   function handleBackToResults() {
     setSelectedPropertyId(undefined)
     setPageMode('results')
+    setSeoResultsRoute(null)
     const params = new URLSearchParams()
     if (filters.query) params.set('q', filters.query)
     if (filters.operations.length > 0) params.set('operacion', filters.operations.join(','))
@@ -479,6 +505,7 @@ export function CubitatApp() {
 
   function handleClearFilters() {
     setFilters(initialFilters)
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
   }
 
@@ -522,6 +549,7 @@ export function CubitatApp() {
   // Operation tab navigation in main header
   function handleOperationNavigation(op: 'venta' | 'alquiler' | 'permuta') {
     setFilters({ ...initialFilters, operations: [op] })
+    setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.history.pushState(null, '', `/resultados?operacion=${op}`)
     setPageMode('results')
@@ -595,6 +623,7 @@ export function CubitatApp() {
             onSelectProperty={handleSelectProperty}
             onClearFilters={handleClearFilters}
             onChangeFilters={setFilters}
+            seoRoute={seoResultsRoute}
           />
         )}
 

@@ -5,6 +5,7 @@ import { PropertyCardSkeleton } from '../../modules/properties/components/Proper
 import { FilterBar } from '../../modules/search/components/FilterBar'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
+import type { SeoResultsRoute } from '../../modules/search/seoRoutes'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 
@@ -41,6 +42,7 @@ export type ResultsPageProps = {
   onSelectProperty: (propertyId: string) => void
   onClearFilters: () => void
   onChangeFilters?: (filters: SearchFilters) => void
+  seoRoute?: SeoResultsRoute | null
 }
 
 export function ResultsPage({
@@ -51,6 +53,7 @@ export function ResultsPage({
   onSelectProperty,
   onClearFilters,
   onChangeFilters,
+  seoRoute,
 }: ResultsPageProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -69,8 +72,9 @@ export function ResultsPage({
   else if (isSwap) operationText = 'Permutas de Viviendas'
 
   const locationText = filters.query ? ` en ${filters.query}` : ' en Cuba'
-  const title = `${operationText}${locationText}`
-  const description = `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
+  const title = seoRoute?.title ?? `${operationText}${locationText}`
+  const description = seoRoute?.description ?? `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
+  const heading = seoRoute?.heading ?? `${properties.length} propiedades en Cuba`
 
   useSEO({ title, description })
 
@@ -168,7 +172,7 @@ export function ResultsPage({
         <div className="results-heading">
           <div>
             <p className="eyebrow">Resultados destacados</p>
-            <h1>{properties.length} propiedades en Cuba</h1>
+            <h1>{heading}</h1>
           </div>
           <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
             <PopoverTrigger asChild>
@@ -217,8 +221,7 @@ export function ResultsPage({
         </div>
 
         <p className="results-summary">
-          Encuentra viviendas por zona, compara precios y contacta al
-          anunciante desde una busqueda clara y rapida.
+          {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
         </p>
 
         <div className="property-catalog-grid">

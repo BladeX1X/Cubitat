@@ -16,6 +16,37 @@ const staticRoutes = [
   { path: '/resultados?tipo=terreno', priority: '0.7', changefreq: 'weekly' },
 ]
 
+const seoProvinces = [
+  'Pinar del Río',
+  'Artemisa',
+  'La Habana',
+  'Mayabeque',
+  'Matanzas',
+  'Cienfuegos',
+  'Villa Clara',
+  'Sancti Spíritus',
+  'Ciego de Ávila',
+  'Camagüey',
+  'Las Tunas',
+  'Holguín',
+  'Granma',
+  'Santiago de Cuba',
+  'Guantánamo',
+  'Isla de la Juventud',
+]
+
+const seoOperations = [
+  { slug: 'venta', priority: '0.86', changefreq: 'daily' },
+  { slug: 'renta', priority: '0.86', changefreq: 'daily' },
+  { slug: 'permuta', priority: '0.82', changefreq: 'weekly' },
+]
+
+const seoPropertyTypes = [
+  { slug: 'casas', priority: '0.84', changefreq: 'daily' },
+  { slug: 'apartamentos', priority: '0.84', changefreq: 'daily' },
+  { slug: 'terrenos', priority: '0.78', changefreq: 'weekly' },
+]
+
 function escapeXml(value) {
   return value
     .replace(/&/g, '&amp;')
@@ -44,6 +75,27 @@ function operationToSlug(operation) {
   if (operation === 'alquiler') return 'renta'
   if (operation === 'venta') return 'venta'
   return 'permuta'
+}
+
+function buildSeoLandingRoutes() {
+  return seoProvinces.flatMap((province) => {
+    const provinceSlug = slugify(province)
+    const operationRoutes = seoOperations.map((operation) => ({
+      path: `/${operation.slug}/${provinceSlug}`,
+      priority: operation.priority,
+      changefreq: operation.changefreq,
+    }))
+
+    const typedRoutes = seoOperations.flatMap((operation) =>
+      seoPropertyTypes.map((propertyType) => ({
+        path: `/${propertyType.slug}-en-${operation.slug}/${provinceSlug}`,
+        priority: propertyType.priority,
+        changefreq: propertyType.changefreq,
+      })),
+    )
+
+    return [...operationRoutes, ...typedRoutes]
+  })
 }
 
 function readEnv() {
@@ -99,7 +151,7 @@ async function readPublishedProperties() {
   })
 }
 
-const routes = [...staticRoutes, ...await readPublishedProperties()]
+const routes = [...staticRoutes, ...buildSeoLandingRoutes(), ...await readPublishedProperties()]
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
