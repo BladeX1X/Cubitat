@@ -6,7 +6,7 @@ import { filterProperties } from '../modules/properties/services/filterPropertie
 import type { Property } from '../modules/properties/types'
 import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
-import { HomePage, PopularLocations } from '../pages/home/HomePage'
+import { HomePage } from '../pages/home/HomePage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
 import { initAnalytics, trackPageView } from '../shared/lib/analytics'
@@ -587,18 +587,15 @@ export function CubitatApp() {
         )}
 
         {!error && pageMode === 'results' && (
-          <>
-            <ResultsPage
-              filters={filters}
-              properties={visibleProperties}
-              selectedPropertyId={selectedPropertyId}
-              loading={loading}
-              onSelectProperty={handleSelectProperty}
-              onClearFilters={handleClearFilters}
-              onChangeFilters={setFilters}
-            />
-            <PopularLocations />
-          </>
+          <ResultsPage
+            filters={filters}
+            properties={visibleProperties}
+            selectedPropertyId={selectedPropertyId}
+            loading={loading}
+            onSelectProperty={handleSelectProperty}
+            onClearFilters={handleClearFilters}
+            onChangeFilters={setFilters}
+          />
         )}
 
         {pageMode === 'detail' && loading && (
