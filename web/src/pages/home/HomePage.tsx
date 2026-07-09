@@ -89,7 +89,7 @@ export function PopularLocations() {
         <p className="section-description">Compra, venta y renta de inmuebles en toda Cuba.</p>
       </div>
       <div className="location-grid-cards">
-        {POPULAR_LOCATIONS.map(({ province, image }) => {
+        {POPULAR_LOCATIONS.map(({ province, image }, index) => {
           const name = `Departamentos en venta en ${province}`
           const href = `/resultados?q=${encodeURIComponent(province)}&tipo=apartamento&operacion=venta`
           
@@ -107,8 +107,8 @@ export function PopularLocations() {
               <img
                 className="location-card-image"
                 src={image}
-                alt=""
-                loading="lazy"
+                alt={province}
+                loading={index < 8 ? 'eager' : 'lazy'}
                 decoding="async"
               />
               <div className="location-card-content">

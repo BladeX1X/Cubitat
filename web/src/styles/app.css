@@ -2595,6 +2595,30 @@ h2 {
 @media (max-width: 640px) {
   .location-grid-cards {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .location-card:nth-child(n + 9) {
+    display: none;
+  }
+
+  .location-card-image {
+    height: 132px;
+  }
+
+  .location-card-content {
+    padding: 14px;
+    gap: 5px;
+  }
+
+  .location-card-content h3 {
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .location-card-action {
+    font-size: 12px;
   }
 }
 
