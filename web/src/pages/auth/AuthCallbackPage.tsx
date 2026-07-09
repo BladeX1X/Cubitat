@@ -16,7 +16,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
 
   useEffect(() => {
     async function handleCallback() {
-      const { accessToken, code, error, isOAuthCallback, refreshToken } = getAuthUrlParams()
+      const { code, error, isOAuthCallback } = getAuthUrlParams()
 
       if (error) {
         setStatus('error')
@@ -29,12 +29,6 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
-        } else if (accessToken && refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-          if (sessionError) throw sessionError
         } else {
           const { data: { session } } = await supabase.auth.getSession()
           if (!session) {

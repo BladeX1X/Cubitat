@@ -7,6 +7,8 @@ type StatusFilter = 'pending_review' | 'ai_approved' | 'ai_rejected' | 'publishe
 
 type ReportStatusFilter = 'pending' | 'resolved' | 'dismissed' | 'all'
 
+const PAGE_SIZE = 15
+
 type PropertyReport = {
   id: string
   property_id: string
@@ -92,6 +94,10 @@ export function AdminPage({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending_review')
   const [reportStatusFilter, setReportStatusFilter] = useState<ReportStatusFilter>('pending')
   const [searchQuery, setSearchQuery] = useState('')
+  const [propPage, setPropPage] = useState(0)
+  const [propTotal, setPropTotal] = useState(0)
+  const [repPage, setRepPage] = useState(0)
+  const [repTotal, setRepTotal] = useState(0)
   const [statsData, setStatsData] = useState<{
     db_size: string
     properties_count: number
@@ -148,11 +154,13 @@ export function AdminPage({
     }
   }
 
-  async function loadReports() {
+  async function loadReports(page = 0) {
     setLoading(true)
     setError(null)
     try {
-      const { data: repData, error: repError } = await supabase
+      const from = page * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+      const { data: repData, error: repError, count: repCount } = await supabase
         .from('property_reports')
         .select(`
           id,
@@ -168,11 +176,14 @@ export function AdminPage({
             cover_image,
             status
           )
-        `)
+        `, { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range(from, to)
 
       if (repError) throw repError
       setReports(repData as any || [])
+      setRepTotal(repCount || 0)
+      setRepPage(page)
     } catch (err: any) {
       console.error('Error loading reports:', err)
       setError('No se pudieron cargar los reportes.')
@@ -181,14 +192,17 @@ export function AdminPage({
     }
   }
 
-  async function loadProperties() {
+  async function loadProperties(page = 0) {
     setLoading(true)
     setError(null)
     try {
-      const { data: props, error: propsError } = await supabase
+      const from = page * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+      const { data: props, error: propsError, count: propCount } = await supabase
         .from('properties')
-        .select('id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message')
+        .select('id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message', { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range(from, to)
 
       if (propsError) throw propsError
 
@@ -216,6 +230,8 @@ export function AdminPage({
           user_email: profileMap.get(p.user_id),
         })),
       )
+      setPropTotal(propCount || 0)
+      setPropPage(page)
     } catch (err: any) {
       console.error('Error loading properties:', err)
       setError(err.message || 'Error al cargar propiedades')
@@ -226,9 +242,9 @@ export function AdminPage({
 
   useEffect(() => {
     if (activeTab === 'properties') {
-      loadProperties()
+      loadProperties(0)
     } else if (activeTab === 'reports') {
-      loadReports()
+      loadReports(0)
     } else if (activeTab === 'stats') {
       loadStats()
     }
@@ -468,7 +484,7 @@ export function AdminPage({
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="text-sm font-bold text-red-700">Error al cargar</p>
           <p className="text-xs text-red-500 mt-1">{error}</p>
-          <Button className="mt-4 rounded-full bg-red-700 hover:bg-red-800 text-white px-5 text-xs" onClick={loadProperties}>
+          <Button className="mt-4 rounded-full bg-red-700 hover:bg-red-800 text-white px-5 text-xs" onClick={() => loadProperties(propPage)}>
             Reintentar
           </Button>
         </div>
@@ -580,8 +596,35 @@ export function AdminPage({
                     </div>
                   )}
                 </div>
-              ))}
+))}
           </div>
+
+          {/* Paginación - Reportes */}
+          {repTotal > PAGE_SIZE && (
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white px-4 py-3">
+              <p className="text-xs text-neutral-500">
+                Página {repPage + 1} de {Math.ceil(repTotal / PAGE_SIZE)} ({repTotal} reportes)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={repPage === 0}
+                  onClick={() => loadReports(repPage - 1)}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={(repPage + 1) * PAGE_SIZE >= repTotal}
+                  onClick={() => loadReports(repPage + 1)}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : activeTab === 'stats' ? (
         <div className="space-y-6">
@@ -864,6 +907,33 @@ export function AdminPage({
               </div>
             )
           })}
+
+          {/* Paginación - Propiedades */}
+          {propTotal > PAGE_SIZE && (
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white px-4 py-3">
+              <p className="text-xs text-neutral-500">
+                Página {propPage + 1} de {Math.ceil(propTotal / PAGE_SIZE)} ({propTotal} propiedades)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={propPage === 0}
+                  onClick={() => loadProperties(propPage - 1)}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={(propPage + 1) * PAGE_SIZE >= propTotal}
+                  onClick={() => loadProperties(propPage + 1)}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-neutral-100 text-neutral-600 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

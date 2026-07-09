@@ -1,3 +1,7 @@
+import { RateLimiter } from './rate-limiter';
+
+export { RateLimiter };
+
 interface Env {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
@@ -11,15 +15,30 @@ interface Env {
   GA_SERVICE_ACCOUNT_JSON?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
+  RATE_LIMITER: any;
 }
-
-const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
+  return withSecurityHeaders(new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' }
+  }));
+}
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  if (response.headers.get('Content-Type')?.includes('text/html')) {
+    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://*.cubitathome.com; frame-src 'self' https://www.google.com; media-src 'self' blob:;");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
   });
 }
 
@@ -90,20 +109,13 @@ async function canModerateProperty(propertyId: string, userId: string, authHeade
   return (await getUserRole(userId, authHeader, env)) === 'admin';
 }
 
-function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const record = rateLimitCache.get(ip);
-
-  if (!record || now > record.resetTime) {
-    rateLimitCache.set(ip, { count: 1, resetTime: now + windowMs });
-    return false;
-  }
-
-  record.count++;
-  if (record.count > limit) {
-    return true;
-  }
-  return false;
+async function isRateLimited(env: Env, ip: string, limit: number, windowMs: number): Promise<boolean> {
+  const id = env.RATE_LIMITER.idFromName('global');
+  const stub = env.RATE_LIMITER.get(id);
+  const url = `https://dummy/check?key=${encodeURIComponent(ip)}&limit=${limit}&windowMs=${windowMs}`;
+  const res = await stub.fetch(url);
+  const data = await res.json() as { allowed: boolean };
+  return !data.allowed;
 }
 
 function extractIdFromSlug(slug: string): string {
@@ -401,16 +413,38 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       });
     }
 
-    // 1. Interceptar solicitudes de API de Supabase Proxy
+// 1. Interceptar solicitudes de API de Supabase Proxy
     if (path.startsWith('/api/supabase/')) {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       const method = request.method;
       const subPath = path.replace('/api/supabase', '');
 
-      // 1. Denuncias (POST a rest/v1/property_reports) - Máximo 3 cada 5 minutos (300,000 ms)
-      if (method === 'POST' && subPath.startsWith('/rest/v1/property_reports')) {
+      // ── Lista blanca de tablas y métodos permitidos ──
+      const authHeader = request.headers.get('Authorization') || '';
+      const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
+
+      const allowedWriteTables = ['properties', 'property_reports'];
+
+      const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
+      const tableName = restMatch ? restMatch[1] : null;
+
+      // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
+      if (method === 'DELETE' || method === 'PATCH') {
+        if (!tableName || !allowedWriteTables.includes(tableName) || !authenticated) {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+      }
+
+      // Bloquear POST a tablas no permitidas
+      if (method === 'POST' && tableName && !allowedWriteTables.includes(tableName)) {
+        return jsonResponse({ error: 'Operación no permitida.' }, 403);
+      }
+
+      // Rate limiting por tipo de operación
+      // 1. Denuncias (POST a property_reports) - Máximo 3 cada 5 minutos
+      if (method === 'POST' && tableName === 'property_reports') {
         const key = `${clientIp}:reports`;
-        if (isRateLimited(key, 3, 300000)) {
+        if (await isRateLimited(env, key, 3, 300000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de denuncias excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -423,10 +457,10 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           );
         }
       }
-      // 2. Publicaciones (POST a rest/v1/properties) - Máximo 5 cada 10 minutos (600,000 ms)
-      else if (method === 'POST' && subPath.startsWith('/rest/v1/properties')) {
+      // 2. Publicaciones (POST a properties) - Máximo 5 cada 10 minutos
+      else if (method === 'POST' && tableName === 'properties') {
         const key = `${clientIp}:publish`;
-        if (isRateLimited(key, 5, 600000)) {
+        if (await isRateLimited(env, key, 5, 600000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de publicaciones excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -439,10 +473,10 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           );
         }
       }
-      // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos (600,000 ms)
+      // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos
       else if ((method === 'POST' || method === 'PUT') && subPath.startsWith('/storage/v1/object/')) {
         const key = `${clientIp}:storage`;
-        if (isRateLimited(key, 40, 600000)) {
+        if (await isRateLimited(env, key, 40, 600000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de subida de imágenes excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -455,10 +489,10 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           );
         }
       }
-      // 4. Límite general (GET, OPTIONS, etc.) - Máximo 100 cada 1 minuto (60,000 ms)
+      // 4. Límite general (GET, OPTIONS, etc.) - Máximo 100 cada 1 minuto
       else {
         const key = `${clientIp}:general`;
-        if (isRateLimited(key, 100, 60000)) {
+        if (await isRateLimited(env, key, 100, 60000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de peticiones excedido. Demasiadas solicitudes.' }),
             {
@@ -483,15 +517,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
       // Inyectar la Anon Key real si falta o es la clave dummy en el cliente
       const apiKeyHeader = headers.get('apikey');
-      const authHeader = headers.get('Authorization');
-      
-      console.log(JSON.stringify({
-        message: 'supabase proxy request',
-        path,
-        method,
-        hasApiKeyHeader: Boolean(apiKeyHeader),
-        hasAuthHeader: Boolean(authHeader)
-      }));
 
       if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
         headers.set('apikey', env.VITE_SUPABASE_ANON_KEY);
@@ -513,7 +538,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
       const response = await fetch(targetUrl, fetchOptions);
 
-      // Si la respuesta es una redirección (3xx), construir una nueva respuesta de redirección limpia para el navegador
       if (response.status >= 300 && response.status < 400) {
         const redirectUrl = response.headers.get('Location') || response.headers.get('location');
         if (redirectUrl) {
@@ -526,7 +550,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      return response;
+      return withSecurityHeaders(response);
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
@@ -573,7 +597,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
             // Re-escribir las etiquetas HTML usando HTMLRewriter al vuelo
             // @ts-ignore
-            return new HTMLRewriter()
+            const rewritten = new HTMLRewriter()
               .on('meta[property="og:title"]', {
                 element(el: any) {
                   el.setAttribute('content', title);
@@ -620,6 +644,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 }
               })
               .transform(assetResponse);
+            return withSecurityHeaders(rewritten);
           }
         }
       } catch (err) {
@@ -655,6 +680,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       });
     }
 
-    return response;
+    return withSecurityHeaders(response);
   }
 };
