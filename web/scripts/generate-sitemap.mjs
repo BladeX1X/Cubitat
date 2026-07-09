@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 
@@ -164,14 +164,18 @@ ${routes.map(({ path, priority, changefreq }) => `  <url>
 </urlset>
 `
 
-writeFileSync(resolve('public/sitemap.xml'), sitemap)
-writeFileSync(
-  resolve('public/robots.txt'),
-  `User-agent: *
+const robots = `User-agent: *
 Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
-`,
-)
+`
+
+writeFileSync(resolve('public/sitemap.xml'), sitemap)
+writeFileSync(resolve('public/robots.txt'), robots)
+
+if (existsSync(resolve('dist'))) {
+  writeFileSync(resolve('dist/sitemap.xml'), sitemap)
+  writeFileSync(resolve('dist/robots.txt'), robots)
+}
 
 console.log(`Generated ${routes.length} sitemap URLs for ${SITE_URL}`)
