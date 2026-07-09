@@ -238,15 +238,14 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Keep custom SMTP disabled until cubitat.com or mail.cubitat.com is verified in Resend.
-# Resend SMTP requires a verified domain; onboarding@resend.dev only works for API tests.
+# Resend SMTP: dominio cubitathome.com verificado en Resend
 [auth.email.smtp]
-enabled = false
+enabled = true
 host = "smtp.resend.com"
 port = 465
 user = "resend"
 pass = "env(RESEND_API_KEY)"
-admin_email = "env(SUPABASE_SMTP_ADMIN_EMAIL)"
+admin_email = "notificaciones@cubitathome.com"
 sender_name = "Cubitat"
 
 #[auth.email.template.invite]
