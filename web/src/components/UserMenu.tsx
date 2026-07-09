@@ -74,7 +74,7 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
             {notifications.length === 0 ? (
               <div className="py-8 px-4 text-center text-neutral-500">
                 <Bell className="mx-auto mb-2 opacity-20" size={32} />
-                <p className="text-sm">No tienes notificaciones</p>
+                <p className="text-sm">No tienes notificaciones pendientes</p>
               </div>
             ) : (
               <ul className="divide-y divide-neutral-100">

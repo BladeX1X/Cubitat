@@ -36,6 +36,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [canResendConfirmation, setCanResendConfirmation] = useState(false)
 
   async function handleGoogleSignIn() {
     setLoading(true)
@@ -100,11 +101,14 @@ export function LoginModal({ onClose }: LoginModalProps) {
     event.preventDefault()
     setErrorMsg(null)
     setSuccessMsg(null)
+    setCanResendConfirmation(false)
+
+    const cleanEmail = email.trim().toLowerCase()
 
     if (isResettingPassword) {
       setLoading(true)
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
         })
         if (error) throw error
@@ -134,8 +138,8 @@ export function LoginModal({ onClose }: LoginModalProps) {
     try {
       if (isRegistering) {
         // Sign Up with custom metadata trigger values
-        const { error } = await supabase.auth.signUp({
-          email,
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
           password,
           options: {
             emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
@@ -146,12 +150,18 @@ export function LoginModal({ onClose }: LoginModalProps) {
           }
         })
         if (error) throw error
-        setSuccessMsg('Cuenta creada. Revisa tu correo para confirmar el email antes de iniciar sesion.')
+
+        const existingAccount = data.user?.identities?.length === 0
+        setSuccessMsg(existingAccount
+          ? 'Ese correo ya tiene una cuenta. Si ya confirmaste el correo, inicia sesion. Si aun no lo confirmaste, puedes reenviar el enlace.'
+          : 'Cuenta creada. Revisa tu correo para confirmar el email antes de iniciar sesion.'
+        )
+        setCanResendConfirmation(true)
         setConfirmPassword('')
       } else {
         // Sign In
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password
         })
         if (error) throw error
@@ -182,6 +192,38 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
 
       setErrorMsg(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResendConfirmation() {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      setErrorMsg('Escribe el correo para reenviar la confirmacion.')
+      return
+    }
+
+    setLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const response = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+        }),
+      })
+
+      if (!response.ok) throw new Error('No pudimos procesar la solicitud.')
+      setSuccessMsg('Si falta confirmar el correo, recibiras un nuevo enlace. Si ya esta confirmado, recibiras un aviso con las opciones para entrar.')
+      setCanResendConfirmation(false)
+    } catch (err: any) {
+      console.error('Resend confirmation error:', err)
+      setErrorMsg(err?.message || 'No pudimos reenviar el correo de confirmacion.')
     } finally {
       setLoading(false)
     }
@@ -278,6 +320,16 @@ export function LoginModal({ onClose }: LoginModalProps) {
             {successMsg && (
               <div className="p-3 text-xs bg-green-50 border border-green-200 text-green-700 rounded-md">
                 {successMsg}
+                {canResendConfirmation && isRegistering && !isResettingPassword ? (
+                  <button
+                    className="mt-2 block font-bold text-[#035f53] underline underline-offset-2"
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                  >
+                    Reenviar enlace si falta confirmar
+                  </button>
+                ) : null}
               </div>
             )}
 
@@ -417,6 +469,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                 setIsRegistering(!isRegistering)
                 setErrorMsg(null)
                 setSuccessMsg(null)
+                setCanResendConfirmation(false)
               }}
               className="text-[#035f53] font-semibold hover:underline"
             >

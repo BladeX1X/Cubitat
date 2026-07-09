@@ -1,0 +1,409 @@
+# Rotacion de secretos de Cubitat
+
+Esta guia explica como rotar las claves usadas en produccion, donde encontrarlas y como subirlas sin guardarlas en el repositorio.
+
+## Reglas
+
+- No pegar secretos en archivos del repo.
+- No poner secretos en `wrangler.jsonc`.
+- Usar `wrangler secret put` para Cloudflare Worker.
+- Usar Supabase Dashboard o Management API para configuracion de Auth/SMTP.
+- Despues de pegar una clave en un chat o ticket, rotarla.
+
+## Secretos a rotar ahora
+
+Estas claves fueron expuestas durante soporte y deben rotarse:
+
+- `RESEND_API_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Tambien conviene revisar estas claves si fueron compartidas por otros canales:
+
+- `SUPABASE_MANAGEMENT_TOKEN`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
+- `CF_API_TOKEN`
+- `Google OAuth Client Secret`
+
+## Cloudflare Worker
+
+Proyecto Worker:
+
+```txt
+cubitat1
+```
+
+Directorio local:
+
+```txt
+D:\Proyectos\Cubitat\web
+```
+
+Listar secretos actuales:
+
+```powershell
+npx wrangler secret list
+```
+
+Subir o reemplazar un secreto:
+
+```powershell
+npx wrangler secret put NOMBRE_DEL_SECRETO
+```
+
+Ejemplo:
+
+```powershell
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+```
+
+Despues de subir secretos, desplegar:
+
+```powershell
+npx wrangler deploy
+```
+
+O con build completo:
+
+```powershell
+npm run cf:deploy
+```
+
+## RESEND_API_KEY
+
+Uso:
+
+- SMTP de Supabase Auth.
+- Worker para enviar correo informando que una cuenta ya esta confirmada.
+
+Donde encontrarla:
+
+```txt
+Resend Dashboard > API Keys
+```
+
+Como rotarla:
+
+1. Crear una nueva API key en Resend.
+2. Permitir envio desde el dominio verificado `cubitathome.com`.
+3. Actualizar Cloudflare Worker:
+
+```powershell
+npx wrangler secret put RESEND_API_KEY
+```
+
+4. Actualizar SMTP de Supabase:
+
+```txt
+Supabase Dashboard > Authentication > SMTP Settings
+```
+
+Valores:
+
+```txt
+Host: smtp.resend.com
+Port: 587
+Username: resend
+Password: <NUEVA_RESEND_API_KEY>
+Sender email: notificaciones@cubitathome.com
+Sender name: Cubitat
+```
+
+5. Probar:
+
+- Recuperar contrasena.
+- Crear cuenta nueva.
+- Reenviar confirmacion para cuenta ya confirmada.
+
+6. Revocar la API key vieja en Resend.
+
+## SUPABASE_SERVICE_ROLE_KEY
+
+Uso:
+
+- Worker consulta Auth Admin para saber si un correo ya esta confirmado.
+
+Donde encontrarla:
+
+```txt
+Supabase Dashboard > Project Settings > API > Project API keys > service_role
+```
+
+Importante:
+
+- No usar esta key en frontend.
+- No ponerla en `.env` publico.
+- Solo debe vivir como secret del Worker o en entornos servidor seguros.
+
+Como rotarla:
+
+1. En Supabase, rotar/regenerar la key `service_role` si el dashboard lo permite.
+2. Copiar la nueva key.
+3. Subirla al Worker:
+
+```powershell
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+```
+
+4. Desplegar:
+
+```powershell
+npx wrangler deploy
+```
+
+5. Probar el endpoint:
+
+```powershell
+Invoke-WebRequest -Method Post `
+  -Uri "https://cubitathome.com/api/auth/resend-confirmation" `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{"email":"correo-confirmado@example.com"}'
+```
+
+Resultado esperado:
+
+```json
+{"ok":true}
+```
+
+Confirmar en logs:
+
+```powershell
+npx wrangler tail cubitat1 --format json
+```
+
+Log esperado para correo confirmado:
+
+```txt
+resend-confirmation sending already-confirmed email
+```
+
+## SUPABASE_MANAGEMENT_TOKEN
+
+Uso:
+
+- Consultas y operaciones de Management API desde Worker/admin.
+
+Donde encontrarlo:
+
+```txt
+Supabase Dashboard > Account > Access Tokens
+```
+
+Como rotarlo:
+
+1. Crear nuevo access token personal.
+2. Subirlo a Cloudflare:
+
+```powershell
+npx wrangler secret put SUPABASE_MANAGEMENT_TOKEN
+```
+
+3. Desplegar:
+
+```powershell
+npx wrangler deploy
+```
+
+4. Revocar el token viejo en Supabase.
+
+## SUPABASE_PROJECT_ID
+
+Uso:
+
+- Project ref usado por Management API.
+
+Valor actual:
+
+```txt
+tohjzoncoosvjbjcakdl
+```
+
+Donde encontrarlo:
+
+```txt
+Supabase Dashboard > Project Settings > General > Reference ID
+```
+
+Subirlo a Cloudflare si cambia:
+
+```powershell
+npx wrangler secret put SUPABASE_PROJECT_ID
+```
+
+## VITE_SUPABASE_ANON_KEY
+
+Uso:
+
+- Key anonima usada por el Worker para proxy seguro hacia Supabase.
+
+Donde encontrarla:
+
+```txt
+Supabase Dashboard > Project Settings > API > Project API keys > anon / publishable
+```
+
+Subirla al Worker:
+
+```powershell
+npx wrangler secret put VITE_SUPABASE_ANON_KEY
+```
+
+Nota:
+
+- La anon/publishable key puede ser publica, pero en este proyecto no se expone directamente al navegador porque el cliente usa `/api/supabase`.
+
+## Google OAuth Client Secret
+
+Uso:
+
+- Login con Google desde Supabase Auth.
+
+Donde encontrarlo:
+
+```txt
+Google Cloud Console > APIs y servicios > Credenciales > OAuth 2.0 Client IDs
+```
+
+Rotacion:
+
+1. Entrar al OAuth Client usado por Cubitat.
+2. Regenerar `Client secret`.
+3. Actualizar Supabase:
+
+```txt
+Supabase Dashboard > Authentication > Sign In / Providers > Google
+```
+
+4. Verificar que siga configurado:
+
+```txt
+Client ID: 189530299276-df6laf6pppbande0t6s9k5kq5mu0b76k.apps.googleusercontent.com
+Redirect URI en Google: https://tohjzoncoosvjbjcakdl.supabase.co/auth/v1/callback
+Authorized origin: https://cubitathome.com
+```
+
+5. Probar login con Google.
+
+## Cloudflare API Token
+
+Uso:
+
+- Metricas/admin si el Worker consulta Cloudflare.
+
+Donde encontrarlo:
+
+```txt
+Cloudflare Dashboard > My Profile > API Tokens
+```
+
+Subirlo:
+
+```powershell
+npx wrangler secret put CF_API_TOKEN
+npx wrangler secret put CF_ACCOUNT_ID
+```
+
+## GROQ_API_KEY
+
+Uso:
+
+- Moderacion por IA de publicaciones.
+
+Donde encontrarla:
+
+```txt
+Groq Console > API Keys
+```
+
+Subirla:
+
+```powershell
+npx wrangler secret put GROQ_API_KEY
+```
+
+Probar:
+
+- Publicar o reevaluar una propiedad.
+- Verificar que pase por moderacion IA.
+
+## GEMINI_API_KEY
+
+Uso:
+
+- Reservado para integraciones IA si se activan.
+
+Donde encontrarla:
+
+```txt
+Google AI Studio / Google Cloud > API Keys
+```
+
+Subirla:
+
+```powershell
+npx wrangler secret put GEMINI_API_KEY
+```
+
+## Validacion despues de rotar
+
+Ejecutar build:
+
+```powershell
+npm run build
+```
+
+Desplegar:
+
+```powershell
+npx wrangler deploy
+```
+
+Ver logs:
+
+```powershell
+npx wrangler tail cubitat1 --format json
+```
+
+Checklist funcional:
+
+- Crear cuenta nueva envia confirmacion.
+- Recuperar contrasena envia correo.
+- Reenviar confirmacion a cuenta pendiente envia enlace.
+- Reenviar confirmacion a cuenta ya confirmada envia aviso de cuenta confirmada.
+- Login con Google funciona.
+- Publicar propiedad dispara moderacion IA.
+- Campanita de notificaciones marca como leido sin reaparecer.
+
+## Comandos utiles
+
+Estado de git antes de tocar secretos/config:
+
+```powershell
+git status --short
+```
+
+Build:
+
+```powershell
+npm run build
+```
+
+Deploy completo:
+
+```powershell
+npm run cf:deploy
+```
+
+Deploy Worker/assets sin rebuild:
+
+```powershell
+npx wrangler deploy
+```
+
+Listar versiones desplegadas:
+
+```powershell
+npx wrangler versions list
+```

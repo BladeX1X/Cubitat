@@ -537,8 +537,15 @@ export function CubitatApp() {
   }
   */
 
+  const appShellClass = [
+    'app-shell',
+    pageMode === 'results' ? 'is-results-page' : '',
+    pageMode === 'detail' ? 'is-detail-page' : '',
+    pageMode === 'publish' || pageMode === 'edit' ? 'is-publish-page' : '',
+  ].filter(Boolean).join(' ')
+
   return (
-    <main className={`app-shell ${pageMode === 'results' ? 'is-results-page' : ''} ${pageMode === 'detail' ? 'is-detail-page' : ''}`}>
+    <main className={appShellClass}>
       <Header
         user={user}
         userRole={userRole}

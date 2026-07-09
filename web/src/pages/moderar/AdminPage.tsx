@@ -96,6 +96,14 @@ export function AdminPage({
   const [searchQuery, setSearchQuery] = useState('')
   const [propPage, setPropPage] = useState(0)
   const [propTotal, setPropTotal] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Record<StatusFilter, number>>({
+    pending_review: 0,
+    ai_approved: 0,
+    ai_rejected: 0,
+    published: 0,
+    paused: 0,
+    all: 0,
+  })
   const [repPage, setRepPage] = useState(0)
   const [repTotal, setRepTotal] = useState(0)
   const [statsData, setStatsData] = useState<{
@@ -192,19 +200,50 @@ export function AdminPage({
     }
   }
 
+  async function loadStatusCounts() {
+    const statuses: Exclude<StatusFilter, 'all'>[] = ['pending_review', 'ai_approved', 'ai_rejected', 'published', 'paused']
+    const [allResult, ...statusResults] = await Promise.all([
+      supabase.from('properties').select('id', { count: 'exact', head: true }),
+      ...statuses.map((status) => (
+        supabase
+          .from('properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', status)
+      )),
+    ])
+
+    setStatusCounts({
+      all: allResult.count || 0,
+      pending_review: statusResults[0]?.count || 0,
+      ai_approved: statusResults[1]?.count || 0,
+      ai_rejected: statusResults[2]?.count || 0,
+      published: statusResults[3]?.count || 0,
+      paused: statusResults[4]?.count || 0,
+    })
+  }
+
   async function loadProperties(page = 0) {
     setLoading(true)
     setError(null)
     try {
       const from = page * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
-      const { data: props, error: propsError, count: propCount } = await supabase
+      let query = supabase
         .from('properties')
         .select('id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message', { count: 'exact' })
         .order('created_at', { ascending: false })
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter)
+      }
+
+      const { data: props, error: propsError, count: propCount } = await query
         .range(from, to)
 
       if (propsError) throw propsError
+
+      setPropTotal(propCount || 0)
+      setPropPage(page)
 
       if (!props || props.length === 0) {
         setProperties([])
@@ -230,8 +269,6 @@ export function AdminPage({
           user_email: profileMap.get(p.user_id),
         })),
       )
-      setPropTotal(propCount || 0)
-      setPropPage(page)
     } catch (err: any) {
       console.error('Error loading properties:', err)
       setError(err.message || 'Error al cargar propiedades')
@@ -242,13 +279,14 @@ export function AdminPage({
 
   useEffect(() => {
     if (activeTab === 'properties') {
+      loadStatusCounts()
       loadProperties(0)
     } else if (activeTab === 'reports') {
       loadReports(0)
     } else if (activeTab === 'stats') {
       loadStats()
     }
-  }, [activeTab])
+  }, [activeTab, statusFilter])
 
   async function updatePropertyStatus(id: string, status: ModerationProperty['status'], moderationMessage: string | null = null) {
     setActionLoading(id)
@@ -264,6 +302,7 @@ export function AdminPage({
       setProperties((prev) => prev.map((p) => (
         p.id === id ? { ...p, status, moderation_message: moderationMessage } : p
       )))
+      loadStatusCounts()
     }
     setActionLoading(null)
   }
@@ -397,14 +436,8 @@ export function AdminPage({
     )
   }
 
-  const pendingCount = properties.filter((p) => p.status === 'pending_review').length
-  const publishedCount = properties.filter((p) => p.status === 'published').length
-  const hiddenCount = properties.filter((p) => p.status === 'paused').length
-  const aiApprovedCount = properties.filter((p) => p.status === 'ai_approved').length
-  const aiRejectedCount = properties.filter((p) => p.status === 'ai_rejected').length
   const normalizedQuery = searchQuery.trim().toLowerCase()
   const displayedProperties = properties.filter((property) => {
-    const matchesStatus = statusFilter === 'all' || property.status === statusFilter
     const matchesQuery = !normalizedQuery || [
       property.title,
       property.location,
@@ -412,7 +445,7 @@ export function AdminPage({
       property.operation,
       property.property_type,
     ].join(' ').toLowerCase().includes(normalizedQuery)
-    return matchesStatus && matchesQuery
+    return matchesQuery
   })
 
   const REASON_LABELS: Record<string, string> = {
@@ -488,7 +521,7 @@ export function AdminPage({
             Reintentar
           </Button>
         </div>
-      ) : activeTab === 'properties' && properties.length === 0 ? (
+      ) : activeTab === 'properties' && properties.length === 0 && propTotal === 0 && statusCounts.all === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-4">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-4">
             <Check className="w-10 h-10 text-emerald-600" />
@@ -747,12 +780,12 @@ export function AdminPage({
           <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] space-y-3">
             <div className="flex flex-wrap gap-2">
               {[
-                ['pending_review', `Pendientes (${pendingCount})`],
-                ['ai_approved', `IA: Aprobadas (${aiApprovedCount})`],
-                ['ai_rejected', `IA: Rechazadas (${aiRejectedCount})`],
-                ['published', `Publicadas (${publishedCount})`],
-                ['paused', `Ocultas (${hiddenCount})`],
-                ['all', `Todas (${properties.length})`],
+                ['pending_review', `Pendientes (${statusCounts.pending_review})`],
+                ['ai_approved', `IA: Aprobadas (${statusCounts.ai_approved})`],
+                ['ai_rejected', `IA: Rechazadas (${statusCounts.ai_rejected})`],
+                ['published', `Publicadas (${statusCounts.published})`],
+                ['paused', `Ocultas (${statusCounts.paused})`],
+                ['all', `Todas (${statusCounts.all})`],
               ].map(([value, label]) => (
                 <button
                   key={value}

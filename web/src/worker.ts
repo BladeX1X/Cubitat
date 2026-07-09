@@ -12,6 +12,8 @@ interface Env {
   CF_ACCOUNT_ID?: string;
   SUPABASE_MANAGEMENT_TOKEN?: string;
   SUPABASE_PROJECT_ID?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  RESEND_API_KEY?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
@@ -129,6 +131,148 @@ function extractIdFromSlug(slug: string): string {
     }
   }
   return slug
+}
+
+function normalizeEmail(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function getEmailConfirmedAt(email: string, env: Env): Promise<string | null> {
+  if (env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const response = await fetch(
+        `${env.VITE_SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+        {
+          headers: {
+            'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json() as any;
+        const users = Array.isArray(data?.users) ? data.users : Array.isArray(data) ? data : [];
+        const user = users.find((item: any) => normalizeEmail(item?.email) === email) || users[0];
+        return user?.email_confirmed_at || user?.confirmed_at || null;
+      }
+
+      console.warn('Could not query auth user with service role:', response.status);
+    } catch (error) {
+      console.warn('Error checking email confirmation status with service role:', error);
+    }
+  }
+
+  if (!env.SUPABASE_MANAGEMENT_TOKEN || !env.SUPABASE_PROJECT_ID) {
+    return null;
+  }
+
+  try {
+    const safeEmail = email.replace(/'/g, "''");
+    const response = await fetch(
+      `https://api.supabase.com/v1/projects/${encodeURIComponent(env.SUPABASE_PROJECT_ID)}/database/query/read-only`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.SUPABASE_MANAGEMENT_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: `select email_confirmed_at from auth.users where lower(email) = lower('${safeEmail}') order by created_at desc limit 1;`,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('Could not query auth user confirmation status:', response.status);
+      return null;
+    }
+
+    const data = await response.json() as any;
+    const rows = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.rows)
+            ? data.rows
+            : Array.isArray(data?.result?.rows)
+              ? data.result.rows
+              : [];
+    const row = Array.isArray(rows) ? rows[0] : null;
+    return row?.email_confirmed_at || null;
+  } catch (error) {
+    console.warn('Error checking email confirmation status:', error);
+    return null;
+  }
+}
+
+async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void> {
+  if (!env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY is not configured; skipping already-confirmed email.');
+    return;
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Cubitat <notificaciones@cubitathome.com>',
+      to: [email],
+      subject: 'Tu correo ya esta confirmado en Cubitat',
+      html: `<!doctype html>
+<html lang="es">
+  <body style="margin:0;background:#f4f7f6;color:#10231f;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7f6;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #dce6e2;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px;color:#60716e;font-size:16px;line-height:1.55;">
+                <p style="margin:0 0 12px;color:#006b5d;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Cubitat</p>
+                <h1 style="margin:0 0 16px;color:#10231f;font-size:26px;line-height:1.15;">Tu correo ya esta confirmado</h1>
+                <p style="margin:0 0 18px;">Recibimos una solicitud para reenviar la confirmacion, pero este correo ya esta confirmado en Cubitat.</p>
+                <p style="margin:0 0 26px;">Puedes iniciar sesion con tu contrasena. Si no la recuerdas, usa la opcion de recuperar contrasena.</p>
+                <p style="margin:0;font-size:13px;color:#8a9895;">Si no fuiste tu, puedes ignorar este mensaje.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.warn('Resend already-confirmed email failed:', response.status, await response.text());
+  }
+}
+
+async function resendSignupConfirmation(email: string, env: Env): Promise<void> {
+  await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/resend`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.VITE_SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'signup',
+      email,
+      options: {
+        email_redirect_to: 'https://cubitathome.com/auth/callback',
+      },
+    }),
+  });
 }
 
 export default {
@@ -413,6 +557,37 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       });
     }
 
+    if (path === '/api/auth/resend-confirmation' && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      if (await isRateLimited(env, `${clientIp}:resend-confirmation:v2`, 5, 600000)) {
+        console.info('resend-confirmation skipped by rate limit');
+        return jsonResponse({ ok: true });
+      }
+
+      let body: any;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({ ok: true });
+      }
+
+      const email = normalizeEmail(body?.email);
+      if (!isValidEmail(email)) {
+        return jsonResponse({ ok: true });
+      }
+
+      const confirmedAt = await getEmailConfirmedAt(email, env);
+      if (confirmedAt) {
+        console.info('resend-confirmation sending already-confirmed email');
+        await sendAlreadyConfirmedEmail(email, env);
+      } else {
+        console.info('resend-confirmation requesting signup confirmation email');
+        await resendSignupConfirmation(email, env);
+      }
+
+      return jsonResponse({ ok: true });
+    }
+
 // 1. Interceptar solicitudes de API de Supabase Proxy
     if (path.startsWith('/api/supabase/')) {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
@@ -423,7 +598,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports'];
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
@@ -489,10 +664,10 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           );
         }
       }
-      // 4. Límite general (GET, OPTIONS, etc.) - Máximo 100 cada 1 minuto
+      // 4. Límite general (GET, OPTIONS, etc.) - evita falsos positivos en navegación pública
       else {
         const key = `${clientIp}:general`;
-        if (await isRateLimited(env, key, 100, 60000)) {
+        if (await isRateLimited(env, key, 300, 60000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de peticiones excedido. Demasiadas solicitudes.' }),
             {
@@ -507,10 +682,18 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       }
 
       const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
-      const targetUrl = request.url.replace(
+      let targetUrl = request.url.replace(
         url.origin + '/api/supabase',
         supabaseUrl
       );
+
+      if (subPath.startsWith('/realtime/')) {
+        const realtimeUrl = new URL(targetUrl);
+        if (realtimeUrl.searchParams.get('apikey') === 'dummy-key-safe-from-browsers') {
+          realtimeUrl.searchParams.set('apikey', env.VITE_SUPABASE_ANON_KEY);
+          targetUrl = realtimeUrl.toString();
+        }
+      }
 
       const headers = new Headers(request.headers);
       headers.delete('host');

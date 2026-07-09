@@ -4,6 +4,7 @@ Guia corta para desplegar, validar y operar Cubitat en produccion.
 
 Documentacion relacionada:
 
+- [Despliegue completo](./DESPLIEGUE_COMPLETO.md): guia desde GitHub hasta produccion con Cloudflare, Supabase, Groq, Resend, Google Analytics, Search Console y PWA.
 - [PWA](./PWA.md): instalacion, service worker, cache, offline/update prompts y checklist.
 
 ## Despliegue

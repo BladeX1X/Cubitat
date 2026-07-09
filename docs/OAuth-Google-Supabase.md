@@ -41,7 +41,7 @@ Authorized JavaScript origins:
 
 ```txt
 http://127.0.0.1:5173
-https://cubitat.com
+https://cubitathome.com
 ```
 
 Authorized redirect URIs:
@@ -75,7 +75,7 @@ http://127.0.0.1:5173
 
 Redirect URLs:
 http://127.0.0.1:5173/auth/callback
-https://cubitat.com/auth/callback
+https://cubitathome.com/auth/callback
 ```
 
 ## Configuracion local
@@ -130,7 +130,7 @@ App name: Cubitat
 Logo: logo oficial de Cubitat
 Support email: correo del propietario
 Developer contact: correo del propietario
-Authorized domain: cubitat.com
+Authorized domain: cubitathome.com
 ```
 
 Esto mejora la confianza visual, aunque Google todavia puede mostrar el dominio tecnico de Supabase como destino del callback.
