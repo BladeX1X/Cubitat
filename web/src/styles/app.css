@@ -2960,6 +2960,33 @@ h2 {
   line-height: 1.5;
 }
 
+.results-empty-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 640px;
+  margin-top: 4px;
+}
+
+.results-empty-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #b8dccf;
+  border-radius: 999px;
+  color: var(--green-dark);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.results-empty-links a:hover {
+  background: var(--blue-soft);
+}
+
 .results-empty-action {
   margin-top: 8px;
   border-radius: 999px;

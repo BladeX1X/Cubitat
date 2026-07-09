@@ -5,7 +5,7 @@ import { PropertyCardSkeleton } from '../../modules/properties/components/Proper
 import { FilterBar } from '../../modules/search/components/FilterBar'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
-import type { SeoResultsRoute } from '../../modules/search/seoRoutes'
+import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/search/seoRoutes'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 
@@ -75,6 +75,7 @@ export function ResultsPage({
   const title = seoRoute?.title ?? `${operationText}${locationText}`
   const description = seoRoute?.description ?? `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
   const heading = seoRoute?.heading ?? `${properties.length} propiedades en Cuba`
+  const relatedSeoRoutes = seoRoute ? buildRelatedSeoRoutes(seoRoute) : []
 
   useSEO({ title, description })
 
@@ -240,10 +241,25 @@ export function ResultsPage({
           ) : (
             <div className="results-empty-state">
               <p className="eyebrow">Sin resultados</p>
-              <h2>No encontramos propiedades con esos filtros</h2>
-              <p>
-                Prueba con otra zona, cambia la operación o limpia los filtros para ver más opciones.
-              </p>
+              <h2>
+                {seoRoute
+                  ? 'Todavia no hay anuncios para esta busqueda'
+                  : 'No encontramos propiedades con esos filtros'}
+              </h2>
+              {seoRoute ? (
+                <p>
+                  Esta pagina se actualiza cuando entren nuevos anuncios. Mientras tanto puedes explorar busquedas relacionadas en {seoRoute.province} o ampliar los filtros.
+                </p>
+              ) : null}
+              {relatedSeoRoutes.length > 0 ? (
+                <div className="results-empty-links" aria-label="Busquedas relacionadas">
+                  {relatedSeoRoutes.map((route) => (
+                    <a key={route.path} href={route.path}>
+                      {route.label}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
               <Button
                 type="button"
                 className="results-empty-action"

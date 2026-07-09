@@ -27,6 +27,9 @@ export type SeoResultsRoute = {
   description: string
   intro: string
   canonicalPath: string
+  province: string
+  operation: OperationType
+  propertyType?: PropertyType
 }
 
 const operationBySlug: Record<string, OperationType> = {
@@ -107,7 +110,43 @@ export function parseSeoResultsRoute(pathname: string): SeoResultsRoute | null {
     filters,
     ...copy,
     canonicalPath: pathname,
+    province,
+    operation,
+    propertyType,
   }
+}
+
+export function buildRelatedSeoRoutes(seoRoute: SeoResultsRoute) {
+  const provinceSlug = slugifySeo(seoRoute.province)
+  const currentPath = seoRoute.canonicalPath
+  const related = [
+    {
+      label: `Ver todas las ventas en ${seoRoute.province}`,
+      path: `/venta/${provinceSlug}`,
+    },
+    {
+      label: `Ver rentas en ${seoRoute.province}`,
+      path: `/renta/${provinceSlug}`,
+    },
+    {
+      label: `Ver permutas en ${seoRoute.province}`,
+      path: `/permuta/${provinceSlug}`,
+    },
+    {
+      label: `Casas en venta en ${seoRoute.province}`,
+      path: `/casas-en-venta/${provinceSlug}`,
+    },
+    {
+      label: `Apartamentos en renta en ${seoRoute.province}`,
+      path: `/apartamentos-en-renta/${provinceSlug}`,
+    },
+    {
+      label: `Terrenos en venta en ${seoRoute.province}`,
+      path: `/terrenos-en-venta/${provinceSlug}`,
+    },
+  ]
+
+  return related.filter((route) => route.path !== currentPath).slice(0, 4)
 }
 
 export function filtersMatchSeoRoute(filters: SearchFilters, seoRoute: SeoResultsRoute): boolean {
