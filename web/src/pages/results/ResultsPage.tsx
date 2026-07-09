@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { BellPlus } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
@@ -6,10 +8,12 @@ import { FilterBar } from '../../modules/search/components/FilterBar'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
 import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/search/seoRoutes'
+import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
+const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
 
 const sortOptions: Array<{ value: SortOption; label: string; helper: string }> = [
   {
@@ -43,6 +47,8 @@ export type ResultsPageProps = {
   onClearFilters: () => void
   onChangeFilters?: (filters: SearchFilters) => void
   seoRoute?: SeoResultsRoute | null
+  user?: User | null
+  onRequireLogin?: () => void
 }
 
 export function ResultsPage({
@@ -54,11 +60,17 @@ export function ResultsPage({
   onClearFilters,
   onChangeFilters,
   seoRoute,
+  user,
+  onRequireLogin,
 }: ResultsPageProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
   const [isSortOpen, setIsSortOpen] = useState(false)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertError, setAlertError] = useState<string | null>(null)
+  const pendingAlertProcessedRef = useRef(false)
+  const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
   const PAGE_SIZE = 16
 
   // Dynamic document title and description
@@ -83,6 +95,32 @@ export function ResultsPage({
   useEffect(() => {
     setCurrentPage(1)
   }, [properties, sortBy])
+
+  useEffect(() => {
+    if (!user || pendingAlertProcessedRef.current) return
+
+    const rawPendingAlert = window.localStorage.getItem(PENDING_SEARCH_ALERT_KEY)
+    if (!rawPendingAlert) return
+
+    pendingAlertProcessedRef.current = true
+
+    try {
+      const pendingFilters = JSON.parse(rawPendingAlert) as SearchFilters
+      createAlert(pendingFilters)
+        .then(() => {
+          window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
+          setAlertError(null)
+          setAlertMessage('Alerta creada. La veras en Mi cuenta.')
+        })
+        .catch(() => {
+          pendingAlertProcessedRef.current = false
+          setAlertError('No se pudo crear la alerta despues de iniciar sesion.')
+        })
+    } catch {
+      window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
+      pendingAlertProcessedRef.current = false
+    }
+  }, [createAlert, user])
 
   // Sticky toolbar detection using IntersectionObserver
   useEffect(() => {
@@ -129,6 +167,25 @@ export function ResultsPage({
     const sentinel = document.getElementById('sticky-sentinel')
     if (sentinel) {
       sentinel.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  const handleCreateSearchAlert = async () => {
+    setAlertMessage(null)
+    setAlertError(null)
+
+    if (!user) {
+      window.localStorage.setItem(PENDING_SEARCH_ALERT_KEY, JSON.stringify(filters))
+      onRequireLogin?.()
+      setAlertMessage('Inicia sesion para guardar esta alerta.')
+      return
+    }
+
+    try {
+      await createAlert(filters)
+      setAlertMessage('Alerta creada. La veras en Mi cuenta.')
+    } catch {
+      setAlertError('No se pudo crear la alerta. Intentalo de nuevo.')
     }
   }
 
@@ -224,6 +281,24 @@ export function ResultsPage({
         <p className="results-summary">
           {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
         </p>
+
+        <div className="search-alert-strip">
+          <div>
+            <strong>Guarda esta busqueda</strong>
+            <span>Te avisaremos cuando entren propiedades que coincidan con estos filtros.</span>
+          </div>
+          <Button
+            type="button"
+            className="search-alert-button"
+            onClick={handleCreateSearchAlert}
+            disabled={creatingSearchAlert}
+          >
+            <BellPlus size={16} />
+            {creatingSearchAlert ? 'Guardando...' : 'Crear alerta'}
+          </Button>
+        </div>
+        {alertMessage ? <p className="search-alert-feedback">{alertMessage}</p> : null}
+        {alertError ? <p className="search-alert-feedback is-error">{alertError}</p> : null}
 
         <div className="property-catalog-grid">
           {loading ? (

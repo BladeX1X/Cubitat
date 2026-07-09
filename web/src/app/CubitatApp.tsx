@@ -624,6 +624,8 @@ export function CubitatApp() {
             onClearFilters={handleClearFilters}
             onChangeFilters={setFilters}
             seoRoute={seoResultsRoute}
+            user={user}
+            onRequireLogin={openLogin}
           />
         )}
 

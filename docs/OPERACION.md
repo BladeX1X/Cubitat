@@ -121,6 +121,28 @@ Estados relevantes:
 - `published`: visible publicamente.
 - `paused`: oculta/rechazada manualmente.
 
+## Tareas Pendientes
+
+### Envio automatico de alertas de busqueda
+
+La primera fase ya guarda alertas en `public.search_alerts` con RLS por usuario y permite crearlas desde resultados. Falta automatizar el envio por email.
+
+Implementacion recomendada:
+
+1. Crear un Worker programado con Cloudflare Cron Triggers para revisar `search_alerts` activas.
+2. Consultar propiedades nuevas que coincidan con `filters` y que no hayan sido enviadas desde `last_sent_at`.
+3. Enviar el resumen con Resend usando el correo de la cuenta y una plantilla transaccional.
+4. Actualizar `last_sent_at` solo cuando Resend confirme el envio.
+5. Agregar enlace de baja o pausa de alerta, validado con token firmado.
+6. Registrar errores de envio y reintentos para no bloquear el lote completo por una alerta fallida.
+
+Variables/servicios involucrados:
+
+- Supabase: tabla `search_alerts`, propiedades publicadas y usuarios.
+- Cloudflare Workers: job programado y variables secretas.
+- Resend: envio transaccional.
+- Google Analytics: evento opcional `search_alert_email_sent` sin datos personales.
+
 ## Seguridad
 
 Nunca commitear:

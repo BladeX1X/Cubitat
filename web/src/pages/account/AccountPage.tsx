@@ -2,18 +2,22 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   Camera,
+  Bell,
   Check,
   Edit3,
+  Loader2,
   Mail,
   MessageCircle,
   Search,
   ShieldCheck,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
+import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
 
 type AccountPageProps = {
   user: User
@@ -47,6 +51,11 @@ export function AccountPage({
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const email = user.email || 'Sin correo registrado'
   const initial = (fullName || email).substring(0, 1).toUpperCase()
+  const {
+    alerts: searchAlerts,
+    loading: loadingSearchAlerts,
+    deleteAlert: deleteSearchAlert,
+  } = useSearchAlerts(user.id)
   const verifiedItems = [
     Boolean(fullName.trim()),
     Boolean(email),
@@ -267,6 +276,12 @@ export function AccountPage({
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
                 />
 
+                <SearchAlertsCard
+                  alerts={searchAlerts}
+                  loading={loadingSearchAlerts}
+                  onDelete={deleteSearchAlert}
+                />
+
                 <AccountSection title="Informacion de usuario">
                   <EditableNameRow
                     value={fullName}
@@ -326,6 +341,96 @@ export function AccountPage({
               </section>
             </div>
     </AccountLayout>
+  )
+}
+
+function SearchAlertsCard({
+  alerts,
+  loading,
+  onDelete,
+}: {
+  alerts: SearchAlert[]
+  loading: boolean
+  onDelete: (alertId: string) => Promise<void>
+}) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+
+  async function handleDelete(alertId: string) {
+    setDeletingId(alertId)
+    setMessage(null)
+
+    try {
+      await onDelete(alertId)
+      setMessage('Alerta eliminada.')
+    } catch {
+      setMessage('No se pudo eliminar la alerta.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79] sm:h-12 sm:w-12">
+            <Bell size={22} />
+          </span>
+          <div>
+            <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
+              Alertas de busqueda
+            </h2>
+            <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
+              Guarda filtros importantes y consultalos aqui. El envio automatico por email queda como tarea pendiente.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center gap-2 rounded-lg bg-neutral-50 px-4 py-3 text-sm font-bold text-neutral-500">
+            <Loader2 size={16} className="animate-spin" />
+            Cargando alertas...
+          </div>
+        ) : alerts.length > 0 ? (
+          <div className="grid gap-3">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className="grid gap-3 rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-neutral-900">
+                    {alert.label}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-neutral-500">
+                    Creada el {new Date(alert.created_at).toLocaleDateString('es-CU')}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
+                  disabled={deletingId === alert.id}
+                  onClick={() => handleDelete(alert.id)}
+                >
+                  <Trash2 size={14} />
+                  {deletingId === alert.id ? 'Eliminando...' : 'Eliminar'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-neutral-200 px-4 py-5 text-sm text-neutral-500">
+            Todavia no tienes alertas. Entra a resultados, aplica filtros y pulsa Crear alerta.
+          </div>
+        )}
+
+        {message ? (
+          <p className="text-sm font-bold text-[#008f79]">{message}</p>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
