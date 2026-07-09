@@ -205,31 +205,33 @@ export function AccountPage({
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
     >
-            <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-7 py-8 text-white shadow-sm">
-              <div className="absolute left-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-black/15">
-                <Search size={18} />
-              </div>
-              <div className="pl-0 sm:pl-8">
-                <h1 className="text-2xl sm:text-[28px] font-black tracking-tight">
+            <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-4 py-5 text-white shadow-sm sm:px-7 sm:py-8">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-black/15 sm:h-10 sm:w-10">
+                  <Search size={18} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-[20px] font-black leading-[1.08] tracking-tight sm:text-[28px]">
                   Centro de verificacion y cuenta
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm sm:text-base font-semibold text-white/85">
+                  </h1>
+                  <p className="mt-1.5 max-w-2xl text-xs font-semibold leading-snug text-white/85 sm:text-base">
                   Manten tu informacion actualizada y aumenta la confianza de tus contactos.
-                </p>
+                  </p>
+                </div>
               </div>
             </section>
 
-            <div className="mt-8 grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
-              <section className="flex flex-col items-center">
+            <div className="mt-5 grid grid-cols-1 gap-5 items-start xl:mt-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
+              <section className="flex items-center justify-center gap-4 xl:flex-col">
                 <div className="relative">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt={`Avatar de ${fullName}`}
-                      className="h-44 w-44 sm:h-52 sm:w-52 rounded-full object-cover shadow-sm"
+                      className="h-24 w-24 rounded-full object-cover shadow-sm sm:h-52 sm:w-52"
                     />
                   ) : (
-                    <div className="grid h-44 w-44 sm:h-52 sm:w-52 place-items-center rounded-full bg-[#1263e6] text-[76px] sm:text-[88px] font-light text-white shadow-sm">
+                    <div className="grid h-24 w-24 place-items-center rounded-full bg-[#1263e6] text-[42px] font-light text-white shadow-sm sm:h-52 sm:w-52 sm:text-[88px]">
                       {initial}
                     </div>
                   )}
@@ -244,7 +246,7 @@ export function AccountPage({
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={isUploadingAvatar}
-                    className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-4 py-1.5 text-xs font-black text-white shadow-sm"
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-3 py-1 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:px-4 sm:py-1.5 sm:text-xs"
                   >
                     {isUploadingAvatar ? <Edit3 size={13} /> : <Camera size={13} />}
                     {isUploadingAvatar ? 'Subiendo...' : 'Editar'}
@@ -257,7 +259,7 @@ export function AccountPage({
                 ) : null}
               </section>
 
-              <section className="grid gap-8">
+              <section className="grid gap-5 sm:gap-8">
                 <VerificationCard
                   verifiedCount={verifiedCount}
                   hasName={Boolean(fullName.trim())}
@@ -419,17 +421,17 @@ function VerificationCard({
   const missingCount = totalItems - verifiedCount
 
   return (
-    <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-5">
+    <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <div className="flex gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79]">
-            <ShieldCheck size={24} />
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79] sm:h-12 sm:w-12">
+            <ShieldCheck size={22} />
           </span>
           <div>
-            <h2 className="text-lg font-black text-neutral-900">
+            <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
               Completa tu verificacion y aumenta tu rendimiento
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
               Los usuarios con datos verificados reciben mas contactos y generan mayor confianza.
             </p>
           </div>

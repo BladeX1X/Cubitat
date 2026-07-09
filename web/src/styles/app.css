@@ -2315,7 +2315,7 @@ h2 {
 
 @media (max-width: 640px) {
   .detail-section {
-    padding: 0 0 calc(86px + env(safe-area-inset-bottom));
+    padding: 0 0 calc(124px + env(safe-area-inset-bottom));
     background: #fff;
   }
 
@@ -2528,7 +2528,7 @@ h2 {
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 8px;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     border-top: 1px solid #dce6e2;
     background: rgba(255, 255, 255, 0.98);
     box-shadow: 0 -10px 28px rgba(16, 35, 31, 0.12);
@@ -2536,7 +2536,7 @@ h2 {
   }
 
   .mobile-detail-cta button {
-    min-height: 38px;
+    min-height: 36px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 900;
@@ -3436,7 +3436,7 @@ h2 {
    Publishing Wizard (propiedades.com reference style)
    ========================================================================== */
 .publish-hero {
-  background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, #024a41 0%, #035f53 100%);
   padding: 50px 20px 100px 20px;
   text-align: left;
 }
@@ -3514,15 +3514,15 @@ h2 {
 }
 
 .publish-step-bubble.completed {
-  background: var(--primary);
+  background: #035f53;
   color: #ffffff;
-  border-color: var(--primary);
+  border-color: #035f53;
 }
 
 .publish-step-bubble.active {
-  background: var(--primary);
+  background: #035f53;
   color: #ffffff;
-  border-color: var(--primary);
+  border-color: #035f53;
   box-shadow: 0 0 0 4px rgba(3, 95, 83, 0.1);
 }
 
@@ -3570,7 +3570,7 @@ h2 {
 }
 
 .publish-substep-item.active .publish-substep-dot {
-  background: var(--primary);
+  background: #035f53;
   transform: scale(1.2);
   box-shadow: 0 0 0 4px rgba(3, 95, 83, 0.1);
 }
@@ -3875,6 +3875,129 @@ h2 {
     color: var(--green-dark);
   }
 
+  .app-shell.is-publish-page {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+    background: #f7faf9;
+  }
+
+  body:has(.app-shell.is-publish-page) {
+    padding-bottom: 0;
+  }
+
+  .app-shell.is-publish-page .publish-hero {
+    padding: 28px 0 58px;
+  }
+
+  .app-shell.is-publish-page .publish-hero-inner {
+    display: grid;
+    gap: 16px;
+    padding-inline: 18px;
+  }
+
+  .app-shell.is-publish-page .publish-hero h1 {
+    max-width: none;
+    margin-bottom: 6px;
+    font-size: 24px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-publish-page .publish-hero p {
+    display: none;
+  }
+
+  .app-shell.is-publish-page .publish-hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .app-shell.is-publish-page .publish-hero-actions button {
+    height: 32px;
+    padding-inline: 12px;
+    font-size: 11px;
+  }
+
+  .app-shell.is-publish-page .publish-container {
+    margin-top: -38px;
+    padding-inline: 12px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .app-shell.is-publish-page .publish-main-card {
+    min-height: 0;
+    padding: 18px 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(16, 35, 31, 0.12);
+  }
+
+  .app-shell.is-publish-page .publish-grid-layout {
+    gap: 16px;
+  }
+
+  .app-shell.is-publish-page .publish-sidebar-steps {
+    justify-content: space-between;
+    margin-inline: 0;
+    padding: 0 0 14px;
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .app-shell.is-publish-page .publish-step-group {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .app-shell.is-publish-page .publish-step-header {
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-publish-page .publish-step-header > span:last-child {
+    display: none;
+  }
+
+  .app-shell.is-publish-page .publish-step-header:has(.publish-step-bubble.active) > span:last-child {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-shell.is-publish-page .publish-step-bubble {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  .app-shell.is-publish-page .publish-form-card {
+    padding: 18px;
+    border-radius: 10px;
+  }
+
+  .app-shell.is-publish-page .publish-form-card-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .app-shell.is-publish-page .publish-form-card form,
+  .app-shell.is-publish-page .publish-form-card .space-y-5,
+  .app-shell.is-publish-page .publish-form-card .space-y-6 {
+    gap: 16px;
+  }
+
+  .app-shell.is-publish-page .publish-form-card input {
+    height: 40px;
+  }
+
+  .app-shell.is-publish-page .publish-form-card [class*="min-h-[300px]"] {
+    min-height: 240px;
+  }
+
   .hero {
     height: calc(100svh - 58px - 34px - 66px);
     min-height: 548px;
@@ -4075,7 +4198,7 @@ h2 {
 
   .app-shell.is-results-page .workspace-catalog {
     gap: 10px;
-    padding: 10px 12px calc(34px + env(safe-area-inset-bottom));
+    padding: 8px 12px calc(34px + env(safe-area-inset-bottom));
   }
 
   .app-shell.is-results-page .results-toolbar-full {
@@ -4083,9 +4206,9 @@ h2 {
     top: 50px;
     z-index: 32;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-inline: -12px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     border: 0;
@@ -4101,24 +4224,24 @@ h2 {
   }
 
   .app-shell.is-results-page .filter-search-field {
-    flex: 0 0 min(78vw, 320px);
-    width: min(78vw, 320px);
-    max-width: min(78vw, 320px);
-    min-width: 190px;
-    height: 36px;
+    flex: 0 0 min(70vw, 280px);
+    width: min(70vw, 280px);
+    max-width: min(70vw, 280px);
+    min-width: 170px;
+    height: 34px;
     border-radius: 7px;
     box-shadow: none;
   }
 
   .app-shell.is-results-page .filter-control {
-    height: 38px;
+    height: 34px;
     flex: 0 0 auto;
     min-width: max-content;
     max-width: 158px;
-    padding-inline: 11px;
+    padding-inline: 10px;
     border-radius: 7px;
     background: #fff !important;
-    font-size: 12.25px;
+    font-size: 11.5px;
     justify-content: center;
     gap: 5px;
     white-space: nowrap;
@@ -4149,12 +4272,12 @@ h2 {
 
   .app-shell.is-results-page .results-heading h1 {
     max-width: 235px;
-    font-size: 22px;
+    font-size: 21px;
     line-height: 1.08;
   }
 
   .app-shell.is-results-page .sort-button {
-    height: 36px;
+    height: 34px;
     padding-inline: 14px;
     border-radius: 999px;
     font-size: 13px;

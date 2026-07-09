@@ -20,9 +20,9 @@ export function AccountLayout({
 }: AccountLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
-          <aside className="border-r border-neutral-100 pr-0 lg:pr-6">
+          <aside className="hidden border-r border-neutral-100 pr-0 lg:block lg:pr-6">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-4">
               Navegacion
             </p>
