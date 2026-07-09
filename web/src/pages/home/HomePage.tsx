@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import {
   Building2,
   FileCheck,
@@ -82,6 +82,13 @@ const POPULAR_LOCATIONS = [
 ]
 
 export function PopularLocations() {
+  const randomizedLocations = useMemo(() => {
+    return [...POPULAR_LOCATIONS]
+      .map((location) => ({ location, sortKey: Math.random() }))
+      .sort((a, b) => a.sortKey - b.sortKey)
+      .map(({ location }) => location)
+  }, [])
+
   return (
     <section className="content-section">
       <div className="section-heading-centered">
@@ -89,7 +96,7 @@ export function PopularLocations() {
         <p className="section-description">Compra, venta y renta de inmuebles en toda Cuba.</p>
       </div>
       <div className="location-grid-cards">
-        {POPULAR_LOCATIONS.map(({ province, image }, index) => {
+        {randomizedLocations.map(({ province, image }, index) => {
           const name = `Departamentos en venta en ${province}`
           const href = `/resultados?q=${encodeURIComponent(province)}&tipo=apartamento&operacion=venta`
           
