@@ -90,7 +90,6 @@ export function ResultsPage({
   const locationText = filters.query ? ` en ${filters.query}` : ' en Cuba'
   const title = seoRoute?.title ?? `${operationText}${locationText}`
   const description = seoRoute?.description ?? `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
-  const heading = seoRoute?.heading ?? `${properties.length} propiedades en Cuba`
   const relatedSeoRoutes = seoRoute ? buildRelatedSeoRoutes(seoRoute) : []
 
   useSEO({ title, description })
@@ -185,6 +184,7 @@ export function ResultsPage({
     const visibleIds = new Set(mapScopedPropertyIds)
     return sortedProperties.filter((property) => visibleIds.has(property.id))
   }, [isDesktopViewport, mapScopedPropertyIds, sortedProperties, viewMode])
+  const heading = seoRoute?.heading ?? `${viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? listedProperties.length : properties.length} propiedades en Cuba`
   const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
   const paginatedProperties = listedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
@@ -219,11 +219,8 @@ export function ResultsPage({
   }
 
   const handleDesktopMapPropertySelect = (propertyId: string) => {
+    setMapScopedPropertyIds([propertyId])
     setDesktopMapPropertyId(propertyId)
-    const card = document.querySelector(`[data-property-card-id="${propertyId}"]`)
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
   }
 
   const handleDesktopMapClusterSelect = (propertyIds: string[]) => {
