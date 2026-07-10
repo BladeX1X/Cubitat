@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { SearchFilters } from '../types'
 import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
@@ -24,12 +24,42 @@ export function FilterBar({
   const [isTypeOpen, setIsTypeOpen] = useState(false)
   const [isPriceOpen, setIsPriceOpen] = useState(false)
   const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
+  const [isMobileSheetMounted, setIsMobileSheetMounted] = useState(false)
+  const [isMobileSheetVisible, setIsMobileSheetVisible] = useState(false)
   
   const [minPriceInput, setMinPriceInput] = useState('')
   const [maxPriceInput, setMaxPriceInput] = useState('')
 
   const isRent = filters.operations.includes('alquiler')
   const isPermuta = filters.operations.includes('permuta')
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 640px)')
+    const updateViewport = () => setIsMobileViewport(query.matches)
+    updateViewport()
+    query.addEventListener('change', updateViewport)
+    return () => query.removeEventListener('change', updateViewport)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobileViewport) {
+      setIsMobileSheetMounted(false)
+      setIsMobileSheetVisible(false)
+      return
+    }
+
+    if (isMoreOpen) {
+      setIsMobileSheetMounted(true)
+      setIsMobileSheetVisible(false)
+      const timeout = window.setTimeout(() => setIsMobileSheetVisible(true), 90)
+      return () => window.clearTimeout(timeout)
+    }
+
+    setIsMobileSheetVisible(false)
+    const timeout = window.setTimeout(() => setIsMobileSheetMounted(false), 620)
+    return () => window.clearTimeout(timeout)
+  }, [isMobileViewport, isMoreOpen])
 
   // Calculate active extra filters count (bedrooms, bathrooms, parking, priceRange)
   const activeFiltersCount = useMemo(() => {
@@ -71,6 +101,30 @@ export function FilterBar({
     // Clear inputs when selecting pre-defined range
     setMinPriceInput('')
     setMaxPriceInput('')
+  }
+
+  const handleSegmentUpdate = (
+    field: 'bedrooms' | 'bathrooms' | 'parking',
+    value: 'all' | number,
+  ) => {
+    handleFilterUpdate({ [field]: value } as Partial<SearchFilters>)
+  }
+
+  const handleCustomPriceApply = () => {
+    const min = minPriceInput.trim()
+    const max = maxPriceInput.trim()
+    if (min || max) {
+      handleFilterUpdate({ priceRange: `${min}-${max}` })
+      setIsPriceOpen(false)
+    }
+  }
+
+  const closeMobileFilterSheet = () => {
+    setIsMobileSheetVisible(false)
+    window.setTimeout(() => {
+      setIsMoreOpen(false)
+      setIsMobileSheetMounted(false)
+    }, 620)
   }
 
   // Get human readable labels
@@ -338,14 +392,7 @@ export function FilterBar({
             <Button
               type="button"
               size="sm"
-              onClick={() => {
-                const min = minPriceInput.trim()
-                const max = maxPriceInput.trim()
-                if (min || max) {
-                  handleFilterUpdate({ priceRange: `${min}-${max}` })
-                  setIsPriceOpen(false)
-                }
-              }}
+              onClick={handleCustomPriceApply}
               className="bg-[#035f53] text-white hover:bg-[#024a41] h-8 text-xs font-bold w-full mt-1"
             >
               Aplicar rango
@@ -369,9 +416,10 @@ export function FilterBar({
               </span>
             ) : null}
             <span>Filtros</span>
-            <Filter size={14} />
+            <SlidersHorizontal size={14} />
           </Button>
         </PopoverTrigger>
+        {!isMobileViewport ? (
         <PopoverContent align="end" className="w-80 p-5 bg-white border border-neutral-200 shadow-2xl rounded-lg flex flex-col gap-5">
           {/* Segmento Recámaras */}
           <div className="flex flex-col gap-2">
@@ -468,8 +516,188 @@ export function FilterBar({
             </Button>
           </div>
         </PopoverContent>
+        ) : null}
       </Popover>
       </div>
+      {isMobileViewport && isMobileSheetMounted ? (
+        <div
+          className={`mobile-filter-sheet ${isMobileSheetVisible ? 'is-open' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filtros de busqueda"
+        >
+          <div className="mobile-filter-sheet__panel">
+            <div className="mobile-filter-sheet__handle" aria-hidden="true" />
+            <div className="mobile-filter-sheet__header">
+              <button
+                type="button"
+                className="mobile-filter-sheet__close"
+                onClick={closeMobileFilterSheet}
+                aria-label="Cerrar filtros"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="mobile-filter-sheet__body">
+              <div className="mobile-filter-segment" aria-label="Operacion">
+                {[
+                  { label: 'Comprar', value: 'venta' as const },
+                  { label: 'Alquilar', value: 'alquiler' as const },
+                  { label: 'Permuta', value: 'permuta' as const },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={filters.operations.includes(item.value) ? 'is-active' : ''}
+                    onClick={() => handleOperationToggle(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+            <section className="mobile-filter-section">
+              <h3>Ubicacion</h3>
+              <label className="mobile-filter-location">
+                <input
+                  type="text"
+                  value={filters.query}
+                  onChange={(event) => handleQueryChange(event.target.value)}
+                  placeholder="Cuba"
+                  aria-label="Buscar ubicacion"
+                />
+              </label>
+            </section>
+
+            {!isPermuta ? (
+              <section className="mobile-filter-section">
+                <h3>Valor</h3>
+                <div className="mobile-filter-price-mode">
+                  <button type="button" className={isRent ? '' : 'is-active'}>
+                    Valor total
+                  </button>
+                  <button type="button" className={isRent ? 'is-active' : ''}>
+                    Alquiler
+                  </button>
+                </div>
+                <div className="mobile-filter-price-grid">
+                  <label>
+                    <span>Minimo</span>
+                    <Input
+                      type="number"
+                      placeholder="USD 0"
+                      value={minPriceInput}
+                      onChange={(event) => setMinPriceInput(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Maximo</span>
+                    <Input
+                      type="number"
+                      placeholder="USD"
+                      value={maxPriceInput}
+                      onChange={(event) => setMaxPriceInput(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <button type="button" className="mobile-filter-apply-price" onClick={handleCustomPriceApply}>
+                  Aplicar precio
+                </button>
+              </section>
+            ) : null}
+
+            <section className="mobile-filter-section">
+              <h3>Tipos de inmueble</h3>
+              {(['apartamento', 'casa', 'terreno'] as const).map((type) => (
+                <label key={type} className="mobile-filter-check">
+                  <input
+                    type="checkbox"
+                    checked={filters.propertyType === type}
+                    onChange={() => handlePropertyTypeSelect(type)}
+                  />
+                  <span>{type === 'apartamento' ? 'Apartamento' : type === 'casa' ? 'Casa' : 'Terreno'}</span>
+                </label>
+              ))}
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Recamaras</h3>
+              <div className="mobile-filter-chips">
+                {['all', 1, 2, 3, 4].map((num) => {
+                  const isActive = (filters.bedrooms ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('bedrooms', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Todos' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Parqueo</h3>
+              <div className="mobile-filter-chips">
+                {['all', 1, 2, 3].map((num) => {
+                  const isActive = (filters.parking ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('parking', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Cualquiera' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Banos</h3>
+              <div className="mobile-filter-chips">
+                {['all', 1, 2, 3, 4].map((num) => {
+                  const isActive = (filters.bathrooms ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('bathrooms', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Todos' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
+
+            <div className="mobile-filter-sheet__footer">
+              <button
+                type="button"
+                className="mobile-filter-clear"
+                onClick={() => {
+                  onClearFilters()
+                  setMinPriceInput('')
+                  setMaxPriceInput('')
+                }}
+              >
+                Limpiar
+              </button>
+              <button type="button" className="mobile-filter-submit" onClick={closeMobileFilterSheet}>
+                Ver {totalResults} inmuebles
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
