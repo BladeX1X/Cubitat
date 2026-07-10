@@ -466,9 +466,6 @@ export function ResultsPage({
               onSelectProperty={handleDesktopMapPropertySelect}
               onSelectCluster={handleDesktopMapClusterSelect}
               onViewportChange={handleDesktopMapViewportChange}
-              onClose={() => setViewMode('list')}
-              onCreateAlert={handleCreateSearchAlert}
-              creatingAlert={creatingSearchAlert}
             />
           ) : null}
         </div>

@@ -43,9 +43,6 @@ export type ResultsDesktopMapPanelProps = {
   onSelectProperty: (propertyId: string) => void
   onSelectCluster?: (propertyIds: string[]) => void
   onViewportChange?: (propertyIds: string[]) => void
-  onClose: () => void
-  onCreateAlert?: () => void
-  creatingAlert?: boolean
 }
 
 type MapPreviewCardProps = {
@@ -289,9 +286,6 @@ export function ResultsDesktopMapPanel({
   onSelectProperty,
   onSelectCluster,
   onViewportChange,
-  onClose,
-  onCreateAlert,
-  creatingAlert = false,
 }: ResultsDesktopMapPanelProps) {
   return (
     <aside className="results-desktop-map-panel" aria-label="Mapa de resultados">
@@ -303,24 +297,6 @@ export function ResultsDesktopMapPanel({
           onSelectCluster={onSelectCluster}
           onViewportChange={onViewportChange}
         />
-
-        <div className="map-bottom-bar map-bottom-bar--desktop">
-          <button type="button" className="map-bottom-secondary" onClick={onClose}>
-            <List size={15} />
-            Ocultar mapa
-          </button>
-          {onCreateAlert ? (
-            <button
-              type="button"
-              className="map-bottom-primary"
-              onClick={onCreateAlert}
-              disabled={creatingAlert}
-            >
-              <BellPlus size={15} />
-              {creatingAlert ? 'Guardando...' : 'Crear alerta'}
-            </button>
-          ) : null}
-        </div>
       </div>
     </aside>
   )
@@ -393,15 +369,15 @@ export function ResultsMapView({
 
   return (
     <>
-      {viewMode === 'list' ? (
+      {viewMode === 'list' || (viewMode === 'map' && isDesktopViewport) ? (
         <div className="results-floating-actions" aria-label="Acciones de resultados">
           <button
             type="button"
             className="results-floating-map"
-            onClick={() => onViewModeChange('map')}
+            onClick={() => onViewModeChange(viewMode === 'map' ? 'list' : 'map')}
           >
-            <Map size={14} />
-            <span>Mostrar mapa</span>
+            {viewMode === 'map' ? <List size={14} /> : <Map size={14} />}
+            <span>{viewMode === 'map' ? 'Ocultar mapa' : 'Mostrar mapa'}</span>
           </button>
           {onCreateAlert ? (
             <button
