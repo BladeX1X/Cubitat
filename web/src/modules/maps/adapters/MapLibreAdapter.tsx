@@ -380,6 +380,11 @@ export function MapLibreAdapter({
     map.on('rotateend', handleViewportChange)
     map.on('pitchend', handleViewportChange)
 
+    // Fire initial viewport change after the map renders
+    requestAnimationFrame(() => {
+      onViewportChangeRef.current?.(getVisiblePropertyIds())
+    })
+
     return () => {
       map.off('click', handleMapClick)
       map.off('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)

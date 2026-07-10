@@ -47,13 +47,22 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - AND MUST mostrar el mapa con clusters, pines y acciones flotantes
 - AND el usuario MUST poder volver a `Lista`
 
-#### Scenario: Seleccionar cluster y pin
-- GIVEN el mapa muestra clusters
+#### Scenario: Seleccionar cluster y pin (movil)
+- GIVEN el mapa movil muestra clusters
 - WHEN el usuario toca un cluster o su numero
 - THEN el sistema MUST acercar el mapa a ese grupo
-- AND cuando el usuario toca un pin o precio cercano MUST mostrar una preview inferior
+- AND cuando el usuario toca un pin MUST mostrar carrusel de preview inferior
 - AND tocar un pin MUST permanecer en `/resultados`
-- AND solo una accion explicita como `Ver detalle` MUST navegar al detalle
+- AND solo tocar una card del carrusel MUST navegar al detalle
+
+#### Scenario: Seleccionar cluster y pin (desktop)
+- GIVEN el panel desktop de mapa muestra clusters y pines
+- WHEN el usuario pulsa un cluster
+- THEN el sistema MUST mostrar solo las propiedades del cluster en la lista
+- WHEN el usuario pulsa un pin
+- THEN el sistema MUST resaltar esa card en la lista y hacer scroll
+- AND MUST NO navegar al detalle
+- AND si no hay pin seleccionado MUST mostrar todas las propiedades del area visible
 
 #### Scenario: Modulo de mapa aislado
 - GIVEN la vista de mapa movil esta activa
@@ -82,6 +91,22 @@ El sistema MUST permitir crear alertas desde la barra de filtros y desde accione
 - THEN el sistema MUST guardar temporalmente los filtros
 - AND MUST abrir login
 - AND despues de iniciar sesion MUST crear la alerta pendiente o mostrar error recuperable
+
+### Requirement: Vista de mapa desktop (split view)
+El sistema MUST ofrecer vista dividida mapa + lista filtrada en desktop sin overlay.
+
+#### Scenario: Alternar mapa en desktop
+- GIVEN un usuario en viewport >= 1021px
+- WHEN pulsa `Mostrar mapa`
+- THEN el sistema MUST mostrar mapa en columna derecha (sticky)
+- AND MUST mantener la lista en columna izquierda
+- AND el boton flotante MUST decir `Ocultar mapa`
+
+#### Scenario: Boton flotante siempre visible
+- GIVEN el usuario esta en viewport >= 1021px
+- WHEN la lista o el mapa estan activos
+- THEN el sistema MUST mostrar acciones flotantes (`Mostrar/Ocultar mapa`, `Crear alerta`)
+- AND en modo mapa, el boton MUST decir `Ocultar mapa`
 
 ### Requirement: Estado vacio y SEO de resultados
 El sistema MUST presentar estados vacios utiles para rutas SEO y busquedas sin coincidencias.

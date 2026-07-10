@@ -59,6 +59,44 @@ El modulo MUST mostrar acciones flotantes utiles y limitadas.
 - AND MUST mostrar `Crear alerta` solo si se provee callback
 - AND MUST NOT mostrar GPS en la fase actual
 
+### Requirement: Panel desktop de mapa
+El modulo MUST exponer un panel aislado para vista dividida desktop (lista + mapa).
+
+#### Scenario: Abrir mapa en desktop
+- GIVEN el usuario esta en un viewport >= 1021px
+- WHEN pulsa `Mostrar mapa`
+- THEN el modulo MUST renderizar `ResultsDesktopMapPanel` al lado de la lista
+- AND la pagina MUST convertir el shell a grid de 2 columnas (`lista | mapa`)
+- AND el mapa MUST ocupar la columna derecha como sticky panel
+
+#### Scenario: Pin click en desktop (no navega)
+- GIVEN el panel desktop de mapa muestra pines
+- WHEN el usuario pulsa un pin
+- THEN el modulo MUST notificar el id via `onSelectProperty`
+- AND la pagina MUST resaltar la card en la lista y hacer scroll hacia ella
+- AND NO MUST navegar al detalle de la propiedad
+
+#### Scenario: Sin pin seleccionado
+- GIVEN el mapa desktop muestra propiedades
+- WHEN ningun pin esta seleccionado
+- THEN la lista MUST mostrar todas las propiedades dentro del area visible del mapa
+- AND si `onViewportChange` aun no se ha disparado (carga inicial), MUST mostrar todas las propiedades
+
+#### Scenario: Viewport change filtra lista
+- GIVEN el usuario desplaza o acerca el mapa desktop
+- WHEN el viewport cambia
+- THEN el mapa MUST calcular que ids estan dentro de los nuevos bounds
+- AND MUST notificar via `onViewportChange`
+- AND la pagina MUST filtrar la lista a solo esas propiedades
+- AND MUST reiniciar la pagina a 1
+
+#### Scenario: Cluster click en desktop
+- GIVEN el mapa desktop muestra clusters
+- WHEN el usuario pulsa un cluster
+- THEN el modulo MUST notificar los ids del cluster via `onSelectCluster`
+- AND la pagina MUST mostrar solo esas propiedades en la lista
+- AND MUST seleccionar la primera del grupo
+
 ### Requirement: Chips de contexto
 El modulo MUST mostrar filtros activos como contexto visual sobre el mapa.
 
