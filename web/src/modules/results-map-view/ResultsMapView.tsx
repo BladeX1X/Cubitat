@@ -219,7 +219,7 @@ function MapOverlay({
             onClick={() => onViewModeChange('list')}
           >
             <List size={15} />
-            Mostrar lista
+            Ocultar mapa
           </button>
           {onCreateAlert ? (
             <button

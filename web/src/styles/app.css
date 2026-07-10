@@ -3718,10 +3718,10 @@ h2 {
 
   .app-shell.is-results-page .results-desktop-shell {
     display: grid;
-    grid-template-columns: minmax(0, 58%) minmax(420px, 42%);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 0;
-    min-height: calc(100dvh - 186px);
+    min-height: auto;
   }
 
   .app-shell.is-results-page .results-list-panel {
@@ -3729,13 +3729,7 @@ h2 {
   }
 
   .app-shell.is-results-page .results-desktop-map-panel {
-    position: sticky;
-    top: 0;
-    display: block;
-    height: calc(100dvh - 142px);
-    min-height: 620px;
-    border-left: 1px solid #d8e2de;
-    background: #eef3ef;
+    display: none;
   }
 
   .app-shell.is-results-page .results-desktop-map-panel .map-card,
@@ -3821,7 +3815,7 @@ h2 {
 
 @media (min-width: 1021px) and (max-width: 1360px) {
   .app-shell.is-results-page .results-desktop-shell {
-    grid-template-columns: minmax(0, 60%) minmax(390px, 40%);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .app-shell.is-results-page .results-desktop-shell .property-catalog-grid {

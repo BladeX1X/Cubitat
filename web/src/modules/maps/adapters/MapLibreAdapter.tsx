@@ -335,23 +335,6 @@ export function MapLibreAdapter({
         onSelectPropertyRef.current(propertyId)
         return
       }
-
-      let nearestPropertyId: string | undefined
-      let nearestDistance = Number.POSITIVE_INFINITY
-
-      for (const feature of sourceDataRef.current.features) {
-        const coordinates = feature.geometry.coordinates as [number, number]
-        const projected = map.project(coordinates)
-        const distance = Math.hypot(projected.x - event.point.x, projected.y - event.point.y)
-        if (distance < nearestDistance) {
-          nearestDistance = distance
-          nearestPropertyId = feature.properties?.id as string | undefined
-        }
-      }
-
-      if (nearestPropertyId && nearestDistance <= 96) {
-        onSelectPropertyRef.current(nearestPropertyId)
-      }
     }
 
     const handleMouseEnter = () => {

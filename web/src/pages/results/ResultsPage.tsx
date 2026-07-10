@@ -11,7 +11,6 @@ import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 import { ResultsMapView } from '../../modules/results-map-view'
-import { PropertyMap } from '../../modules/maps/components/PropertyMap'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
 const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
@@ -71,8 +70,6 @@ export function ResultsPage({
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertError, setAlertError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
-  const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
-  const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | undefined>(undefined)
   const pendingAlertProcessedRef = useRef(false)
   const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
   const PAGE_SIZE = 16
@@ -99,14 +96,6 @@ export function ResultsPage({
   useEffect(() => {
     setCurrentPage(1)
   }, [properties, sortBy])
-
-  useEffect(() => {
-    setMapScopedPropertyIds(undefined)
-  }, [filters, properties])
-
-  useEffect(() => {
-    setDesktopMapPropertyId(selectedPropertyId)
-  }, [selectedPropertyId])
 
   useEffect(() => {
     if (!user || pendingAlertProcessedRef.current) return
@@ -168,25 +157,11 @@ export function ResultsPage({
   }, [properties, sortBy])
 
   const activeSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? 'Ordenar'
-  const mapScopedIdSet = useMemo(
-    () => mapScopedPropertyIds ? new Set(mapScopedPropertyIds) : undefined,
-    [mapScopedPropertyIds],
-  )
-  const listedProperties = useMemo(
-    () => mapScopedIdSet
-      ? sortedProperties.filter((property) => mapScopedIdSet.has(property.id))
-      : sortedProperties,
-    [mapScopedIdSet, sortedProperties],
-  )
-  const isMapScoped = !!mapScopedPropertyIds
-  const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
-  const paginatedProperties = listedProperties.slice(
+  const totalPages = Math.ceil(sortedProperties.length / PAGE_SIZE)
+  const paginatedProperties = sortedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   )
-  const visibleResultsHeading = isMapScoped
-    ? `${listedProperties.length} propiedad${listedProperties.length === 1 ? '' : 'es'} en esta zona`
-    : heading
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -194,38 +169,6 @@ export function ResultsPage({
     if (sentinel) {
       sentinel.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-  }
-
-  const scrollToPropertyCard = (propertyId: string) => {
-    window.setTimeout(() => {
-      const selectedCard = Array.from(
-        document.querySelectorAll<HTMLElement>('[data-property-card-id]')
-      ).find((element) => element.dataset.propertyCardId === propertyId)
-      selectedCard?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 0)
-  }
-
-  const handleDesktopPinSelect = (propertyId: string) => {
-    setDesktopMapPropertyId(propertyId)
-    setMapScopedPropertyIds([propertyId])
-    setCurrentPage(1)
-    scrollToPropertyCard(propertyId)
-  }
-
-  const handleDesktopClusterSelect = (propertyIds: string[]) => {
-    setMapScopedPropertyIds(propertyIds)
-    setCurrentPage(1)
-    const firstPropertyId = propertyIds[0]
-    if (firstPropertyId) {
-      setDesktopMapPropertyId(firstPropertyId)
-      scrollToPropertyCard(firstPropertyId)
-    }
-  }
-
-  const handleDesktopViewportChange = (propertyIds: string[]) => {
-    setMapScopedPropertyIds(propertyIds)
-    setCurrentPage(1)
-    setDesktopMapPropertyId(undefined)
   }
 
   const handleCreateSearchAlert = async () => {
@@ -315,9 +258,9 @@ export function ResultsPage({
           <div className="results-heading">
             <div>
               <p className="eyebrow">Resultados destacados</p>
-              <h1>{visibleResultsHeading}</h1>
+              <h1>{heading}</h1>
               <span className="mobile-results-count">
-                {listedProperties.length} resultado{listedProperties.length === 1 ? '' : 's'} disponibles
+                {sortedProperties.length} resultado{sortedProperties.length === 1 ? '' : 's'} disponibles
               </span>
             </div>
             <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
@@ -380,11 +323,11 @@ export function ResultsPage({
                   className="property-catalog-item"
                   data-property-card-id={property.id}
                 >
-                  <PropertyCard
-                    property={property}
-                    isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
-                    onSelect={onSelectProperty}
-                    prioritizeImage={index < 4}
+                    <PropertyCard
+                      property={property}
+                      isSelected={property.id === selectedPropertyId}
+                      onSelect={onSelectProperty}
+                      prioritizeImage={index < 4}
                   />
                 </div>
               ))
@@ -474,15 +417,6 @@ export function ResultsPage({
           )}
           </div>
 
-          <aside className="results-desktop-map-panel" aria-label="Mapa de resultados">
-            <PropertyMap
-              properties={sortedProperties}
-              selectedPropertyId={desktopMapPropertyId}
-              onSelectProperty={handleDesktopPinSelect}
-              onSelectCluster={handleDesktopClusterSelect}
-              onViewportChange={handleDesktopViewportChange}
-            />
-          </aside>
         </div>
       ) : null}
     </section>
