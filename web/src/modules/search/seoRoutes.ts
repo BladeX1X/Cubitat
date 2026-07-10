@@ -1,4 +1,5 @@
 import type { OperationType, PropertyType } from '../properties/types'
+import { cubanMunicipalities } from '../../shared/data/cubaLocations'
 import type { SearchFilters } from './types'
 
 export const SEO_PROVINCES = [
@@ -28,6 +29,7 @@ export type SeoResultsRoute = {
   intro: string
   canonicalPath: string
   province: string
+  municipality?: string
   operation: OperationType
   propertyType?: PropertyType
 }
@@ -66,25 +68,44 @@ export function slugifySeo(value: string): string {
 }
 
 const provinceBySlug = new Map(SEO_PROVINCES.map((province) => [slugifySeo(province), province]))
+const municipalityByProvinceSlug = new Map(
+  Object.entries(cubanMunicipalities).flatMap(([province, municipalities]) =>
+    municipalities.map((municipality) => [
+      `${slugifySeo(province)}/${slugifySeo(municipality)}`,
+      { province, municipality },
+    ]),
+  ),
+)
 
-function buildSeoCopy(operation: OperationType, province: string, propertyType?: PropertyType) {
+function buildSeoCopy(
+  operation: OperationType,
+  province: string,
+  propertyType?: PropertyType,
+  municipality?: string,
+) {
   const operationText = operationLabel[operation]
   const subject = propertyType ? typePluralLabel[propertyType] : 'propiedades'
-  const heading = `${subject[0].toUpperCase()}${subject.slice(1)} en ${operationText} en ${province}`
+  const location = municipality ? `${municipality}, ${province}` : province
+  const heading = `${subject[0].toUpperCase()}${subject.slice(1)} en ${operationText} en ${location}`
   const title = `${heading} | Cubitat`
-  const description = `Encuentra ${subject} en ${operationText} en ${province} con fotos, precios, ubicacion y contacto directo con anunciantes en Cubitat.`
-  const intro = `Explora ${subject} en ${operationText} en ${province}, compara precios por zona y contacta directamente al anunciante desde Cubitat.`
+  const description = `Encuentra ${subject} en ${operationText} en ${location} con fotos, precios, ubicacion y contacto directo con anunciantes en Cubitat.`
+  const intro = `Explora ${subject} en ${operationText} en ${location}, compara precios por zona y contacta directamente al anunciante desde Cubitat.`
 
   return { heading, title, description, intro }
 }
 
 export function parseSeoResultsRoute(pathname: string): SeoResultsRoute | null {
   const segments = pathname.split('/').filter(Boolean)
-  if (segments.length !== 2) return null
+  if (segments.length !== 2 && segments.length !== 3) return null
 
-  const [firstSegment, provinceSlug] = segments
+  const [firstSegment, provinceSlug, municipalitySlug] = segments
   const province = provinceBySlug.get(provinceSlug)
   if (!province) return null
+  const municipality = municipalitySlug
+    ? municipalityByProvinceSlug.get(`${provinceSlug}/${municipalitySlug}`)?.municipality
+    : undefined
+
+  if (municipalitySlug && !municipality) return null
 
   let operation: OperationType | undefined
   let propertyType: PropertyType | undefined
@@ -99,21 +120,62 @@ export function parseSeoResultsRoute(pathname: string): SeoResultsRoute | null {
   }
 
   const filters: SearchFilters = {
-    query: province,
+    query: municipality ? `${municipality}, ${province}` : province,
     operations: [operation],
     propertyType: propertyType ?? 'all',
     zoneId: 'all',
   }
-  const copy = buildSeoCopy(operation, province, propertyType)
+  const copy = buildSeoCopy(operation, province, propertyType, municipality)
 
   return {
     filters,
     ...copy,
     canonicalPath: pathname,
     province,
+    municipality,
     operation,
     propertyType,
   }
+}
+
+function operationToSlug(operation: OperationType) {
+  return operation === 'alquiler' ? 'renta' : operation
+}
+
+function getSeoLocationFromQuery(query: string) {
+  const cleanQuery = query.trim()
+  const province = SEO_PROVINCES.find((item) => item === cleanQuery)
+  if (province) {
+    return { province, municipality: undefined }
+  }
+
+  const parts = cleanQuery.split(',').map((part) => part.trim()).filter(Boolean)
+  if (parts.length !== 2) return null
+
+  const [municipality, provinceName] = parts
+  const matchedProvince = SEO_PROVINCES.find((item) => item === provinceName)
+  if (!matchedProvince) return null
+
+  const matchedMunicipality = cubanMunicipalities[matchedProvince]?.find((item) => item === municipality)
+  if (!matchedMunicipality) return null
+
+  return { province: matchedProvince, municipality: matchedMunicipality }
+}
+
+export function buildSeoResultsPath(filters: SearchFilters): string | null {
+  const location = getSeoLocationFromQuery(filters.query)
+  if (!location || filters.operations.length > 1) return null
+
+  const operation = filters.operations[0] ?? 'venta'
+  const operationSlug = operationToSlug(operation)
+  const provinceSlug = slugifySeo(location.province)
+  const municipalityPath = location.municipality ? `/${slugifySeo(location.municipality)}` : ''
+
+  if (filters.propertyType !== 'all') {
+    return `/${typePluralLabel[filters.propertyType]}-en-${operationSlug}/${provinceSlug}${municipalityPath}`
+  }
+
+  return `/${operationSlug}/${provinceSlug}${municipalityPath}`
 }
 
 export function buildRelatedSeoRoutes(seoRoute: SeoResultsRoute) {

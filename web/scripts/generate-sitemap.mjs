@@ -98,6 +98,30 @@ function buildSeoLandingRoutes() {
   })
 }
 
+function readMunicipalitySeoRoutes() {
+  try {
+    const source = readFileSync(resolve('src/shared/data/cubaLocations.ts'), 'utf8')
+    const blocks = [...source.matchAll(/^  (?:'([^']+)'|([^:]+)):\s*\[([\s\S]*?)^  \],/gm)]
+
+    return blocks.flatMap((match) => {
+      const province = (match[1] || match[2] || '').trim()
+      const provinceSlug = slugify(province)
+      const municipalities = [...match[3].matchAll(/'([^']+)'/g)].map((item) => item[1])
+
+      return municipalities.flatMap((municipality) => {
+        const municipalitySlug = slugify(municipality)
+        return seoOperations.map((operation) => ({
+          path: `/${operation.slug}/${provinceSlug}/${municipalitySlug}`,
+          priority: '0.72',
+          changefreq: operation.changefreq,
+        }))
+      })
+    })
+  } catch {
+    return []
+  }
+}
+
 function readEnv() {
   try {
     const env = readFileSync(resolve('.env'), 'utf8')
@@ -151,7 +175,12 @@ async function readPublishedProperties() {
   })
 }
 
-const routes = [...staticRoutes, ...buildSeoLandingRoutes(), ...await readPublishedProperties()]
+const routes = [
+  ...staticRoutes,
+  ...buildSeoLandingRoutes(),
+  ...readMunicipalitySeoRoutes(),
+  ...await readPublishedProperties(),
+]
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

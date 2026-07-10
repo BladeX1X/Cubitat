@@ -6,7 +6,7 @@ import { filterProperties } from '../modules/properties/services/filterPropertie
 import type { Property } from '../modules/properties/types'
 import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
-import { filtersMatchSeoRoute, parseSeoResultsRoute, type SeoResultsRoute } from '../modules/search/seoRoutes'
+import { buildSeoResultsPath, filtersMatchSeoRoute, parseSeoResultsRoute, type SeoResultsRoute } from '../modules/search/seoRoutes'
 import { HomePage } from '../pages/home/HomePage'
 import { Button } from '../shared/ui/button'
 import { supabase } from '../shared/lib/supabaseClient'
@@ -347,6 +347,20 @@ export function CubitatApp() {
   }
 
   function navigateResults() {
+    const seoPath = buildSeoResultsPath(filters)
+    if (seoPath) {
+      const seoRoute = parseSeoResultsRoute(seoPath)
+      window.history.pushState(null, '', seoPath)
+      setPageMode('results')
+      setSeoResultsRoute(seoRoute)
+      if (seoRoute) {
+        setFilters(seoRoute.filters)
+      }
+      setSelectedPropertyId(undefined)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     const params = new URLSearchParams()
     if (filters.query) params.set('q', filters.query)
     if (filters.operations.length > 0) params.set('operacion', filters.operations.join(','))
