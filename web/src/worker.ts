@@ -598,7 +598,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports', 'notifications'];
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
