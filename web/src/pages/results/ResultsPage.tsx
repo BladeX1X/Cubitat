@@ -220,7 +220,10 @@ export function ResultsPage({
 
   const handleDesktopMapPropertySelect = (propertyId: string) => {
     setDesktopMapPropertyId(propertyId)
-    onSelectProperty(propertyId)
+    const card = document.querySelector(`[data-property-card-id="${propertyId}"]`)
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
   }
 
   const handleDesktopMapClusterSelect = (propertyIds: string[]) => {
