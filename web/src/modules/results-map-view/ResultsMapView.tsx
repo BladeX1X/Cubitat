@@ -393,15 +393,15 @@ export function ResultsMapView({
 
   return (
     <>
-      {viewMode === 'list' || (viewMode === 'map' && isDesktopViewport) ? (
+      {viewMode === 'list' ? (
         <div className="results-floating-actions" aria-label="Acciones de resultados">
           <button
             type="button"
             className="results-floating-map"
-            onClick={() => onViewModeChange(viewMode === 'map' ? 'list' : 'map')}
+            onClick={() => onViewModeChange('map')}
           >
-            {viewMode === 'map' ? <List size={14} /> : <Map size={14} />}
-            <span>{viewMode === 'map' ? 'Ocultar mapa' : 'Mostrar mapa'}</span>
+            <Map size={14} />
+            <span>Mostrar mapa</span>
           </button>
           {onCreateAlert ? (
             <button
