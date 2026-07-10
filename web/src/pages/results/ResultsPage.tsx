@@ -72,7 +72,7 @@ export function ResultsPage({
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const pendingAlertProcessedRef = useRef(false)
   const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
-  const PAGE_SIZE = 16
+  const PAGE_SIZE = 15
 
   // Dynamic document title and description
   const isRent = filters.operations.includes('alquiler')

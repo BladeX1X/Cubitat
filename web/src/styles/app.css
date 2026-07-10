@@ -5746,7 +5746,58 @@ h2 {
 }
 
 .results-floating-actions {
-  display: none;
+  position: fixed;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.results-floating-actions button {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.18);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.results-floating-actions button:active {
+  transform: scale(0.96);
+}
+
+.results-floating-map {
+  background: #fff;
+  color: #111827;
+}
+
+.results-floating-alert {
+  background: #315ee8;
+  color: #fff;
+}
+
+.results-floating-alert:disabled {
+  opacity: 0.72;
+}
+
+.results-floating-actions button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .results-map-wrapper {
@@ -6153,58 +6204,7 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 
 @media (max-width: 1020px) {
   .results-floating-actions {
-    position: fixed;
-    right: 0;
     bottom: calc(16px + env(safe-area-inset-bottom));
-    left: 0;
-    z-index: 120;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 0 16px;
-    pointer-events: none;
-  }
-
-  .results-floating-actions button {
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    min-height: 42px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: 999px;
-    box-shadow: 0 10px 24px rgba(17, 24, 39, 0.18);
-    font-size: 12px;
-    font-weight: 900;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: transform 0.14s ease, box-shadow 0.14s ease;
-  }
-
-  .results-floating-actions button:active {
-    transform: scale(0.96);
-  }
-
-  .results-floating-map {
-    background: #fff;
-    color: #111827;
-  }
-
-  .results-floating-alert {
-    background: #315ee8;
-    color: #fff;
-  }
-
-  .results-floating-alert:disabled {
-    opacity: 0.72;
-  }
-
-  .results-floating-actions button svg {
-    width: 14px;
-    height: 14px;
   }
 }
 
