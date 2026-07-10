@@ -10,7 +10,7 @@ import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/searc
 import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
-import { ResultsMapView } from '../../modules/results-map-view'
+import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
 const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
@@ -70,6 +70,9 @@ export function ResultsPage({
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertError, setAlertError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | null>(null)
+  const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false)
   const pendingAlertProcessedRef = useRef(false)
   const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
   const PAGE_SIZE = 15
@@ -95,7 +98,26 @@ export function ResultsPage({
   // Reset to first page when properties (filters) change
   useEffect(() => {
     setCurrentPage(1)
-  }, [properties, sortBy])
+  }, [properties, sortBy, mapScopedPropertyIds])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1021px)')
+    const updateViewport = () => setIsDesktopViewport(mediaQuery.matches)
+
+    updateViewport()
+    mediaQuery.addEventListener('change', updateViewport)
+    return () => mediaQuery.removeEventListener('change', updateViewport)
+  }, [])
+
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setMapScopedPropertyIds(null)
+    }
+  }, [viewMode])
+
+  useEffect(() => {
+    setDesktopMapPropertyId(selectedPropertyId)
+  }, [selectedPropertyId])
 
   useEffect(() => {
     if (!user || pendingAlertProcessedRef.current) return
@@ -157,8 +179,14 @@ export function ResultsPage({
   }, [properties, sortBy])
 
   const activeSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? 'Ordenar'
-  const totalPages = Math.ceil(sortedProperties.length / PAGE_SIZE)
-  const paginatedProperties = sortedProperties.slice(
+  const listedProperties = useMemo(() => {
+    if (!isDesktopViewport || viewMode !== 'map' || mapScopedPropertyIds === null) return sortedProperties
+
+    const visibleIds = new Set(mapScopedPropertyIds)
+    return sortedProperties.filter((property) => visibleIds.has(property.id))
+  }, [isDesktopViewport, mapScopedPropertyIds, sortedProperties, viewMode])
+  const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
+  const paginatedProperties = listedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   )
@@ -188,6 +216,20 @@ export function ResultsPage({
     } catch {
       setAlertError('No se pudo crear la alerta. Intentalo de nuevo.')
     }
+  }
+
+  const handleDesktopMapPropertySelect = (propertyId: string) => {
+    setDesktopMapPropertyId(propertyId)
+    onSelectProperty(propertyId)
+  }
+
+  const handleDesktopMapClusterSelect = (propertyIds: string[]) => {
+    setMapScopedPropertyIds(propertyIds)
+    setDesktopMapPropertyId(propertyIds[0])
+  }
+
+  const handleDesktopMapViewportChange = (propertyIds: string[]) => {
+    setMapScopedPropertyIds(propertyIds)
   }
 
   const getPageNumbers = () => {
@@ -252,15 +294,14 @@ export function ResultsPage({
         }}
       />
 
-      {viewMode === 'list' ? (
-        <div className="results-desktop-shell">
+        <div className={`results-desktop-shell${viewMode === 'map' && isDesktopViewport ? ' is-map-open' : ''}`}>
           <div className="catalog-container results-list-panel">
           <div className="results-heading">
             <div>
               <p className="eyebrow">Resultados destacados</p>
               <h1>{heading}</h1>
               <span className="mobile-results-count">
-                {sortedProperties.length} resultado{sortedProperties.length === 1 ? '' : 's'} disponibles
+                {listedProperties.length} resultado{listedProperties.length === 1 ? '' : 's'} disponibles
               </span>
             </div>
             <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
@@ -311,6 +352,7 @@ export function ResultsPage({
 
           <p className="results-summary">
             {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
+            {viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? ` Mostrando ${listedProperties.length} en el area visible del mapa.` : ''}
           </p>
 
           <div className="property-catalog-grid">
@@ -325,7 +367,7 @@ export function ResultsPage({
                 >
                     <PropertyCard
                       property={property}
-                      isSelected={property.id === selectedPropertyId}
+                      isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
                       onSelect={onSelectProperty}
                       prioritizeImage={index < 4}
                   />
@@ -417,8 +459,19 @@ export function ResultsPage({
           )}
           </div>
 
+          {viewMode === 'map' && isDesktopViewport ? (
+            <ResultsDesktopMapPanel
+              properties={sortedProperties}
+              selectedPropertyId={desktopMapPropertyId}
+              onSelectProperty={handleDesktopMapPropertySelect}
+              onSelectCluster={handleDesktopMapClusterSelect}
+              onViewportChange={handleDesktopMapViewportChange}
+              onClose={() => setViewMode('list')}
+              onCreateAlert={handleCreateSearchAlert}
+              creatingAlert={creatingSearchAlert}
+            />
+          ) : null}
         </div>
-      ) : null}
     </section>
   )
 }

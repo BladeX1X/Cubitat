@@ -3403,6 +3403,10 @@ h2 {
   display: none;
 }
 
+.results-desktop-shell.is-map-open {
+  gap: 0;
+}
+
 .property-catalog-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -3724,12 +3728,31 @@ h2 {
     min-height: auto;
   }
 
+  .app-shell.is-results-page .results-desktop-shell.is-map-open {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 44vw);
+    min-height: calc(100dvh - 76px);
+  }
+
   .app-shell.is-results-page .results-list-panel {
     padding: 24px clamp(24px, 3vw, 64px) 72px;
   }
 
   .app-shell.is-results-page .results-desktop-map-panel {
     display: none;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell.is-map-open .results-desktop-map-panel {
+    position: sticky;
+    top: 76px;
+    display: block;
+    height: calc(100dvh - 76px);
+    min-height: 560px;
+    overflow: hidden;
+    background: #eef3f1;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell.is-map-open .results-list-panel {
+    padding-right: clamp(18px, 2.2vw, 34px);
   }
 
   .app-shell.is-results-page .results-desktop-map-panel .map-card,
@@ -3744,6 +3767,18 @@ h2 {
     box-shadow: none;
   }
 
+  .app-shell.is-results-page .results-desktop-map-panel .results-map-wrapper,
+  .app-shell.is-results-page .results-desktop-map-panel .results-map-wrapper .map-card--maplibre,
+  .app-shell.is-results-page .results-desktop-map-panel .results-map-wrapper .maplibre-canvas {
+    height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+  }
+
+  .app-shell.is-results-page .results-desktop-map-panel .map-bottom-bar--desktop {
+    padding-bottom: 18px;
+  }
+
   .app-shell.is-results-page .results-desktop-map-panel .map-card-header--floating {
     right: 92px;
     max-width: 360px;
@@ -3754,6 +3789,11 @@ h2 {
     align-items: start;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 28px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell.is-map-open .property-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
   }
 
   .app-shell.is-results-page .results-desktop-shell .property-catalog-item {
@@ -3818,8 +3858,16 @@ h2 {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .app-shell.is-results-page .results-desktop-shell.is-map-open {
+    grid-template-columns: minmax(0, 1fr) minmax(390px, 46vw);
+  }
+
   .app-shell.is-results-page .results-desktop-shell .property-catalog-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell.is-results-page .results-desktop-shell.is-map-open .property-catalog-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

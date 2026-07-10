@@ -37,6 +37,17 @@ export type ResultsMapViewProps = {
   filterBarProps: FilterBarProps
 }
 
+export type ResultsDesktopMapPanelProps = {
+  properties: Property[]
+  selectedPropertyId?: string
+  onSelectProperty: (propertyId: string) => void
+  onSelectCluster?: (propertyIds: string[]) => void
+  onViewportChange?: (propertyIds: string[]) => void
+  onClose: () => void
+  onCreateAlert?: () => void
+  creatingAlert?: boolean
+}
+
 type MapPreviewCardProps = {
   property: Property
   isSelected: boolean
@@ -272,6 +283,49 @@ function MapOverlay({
   )
 }
 
+export function ResultsDesktopMapPanel({
+  properties,
+  selectedPropertyId,
+  onSelectProperty,
+  onSelectCluster,
+  onViewportChange,
+  onClose,
+  onCreateAlert,
+  creatingAlert = false,
+}: ResultsDesktopMapPanelProps) {
+  return (
+    <aside className="results-desktop-map-panel" aria-label="Mapa de resultados">
+      <div className="results-map-wrapper results-map-wrapper--desktop">
+        <PropertyMap
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
+          onSelectProperty={onSelectProperty}
+          onSelectCluster={onSelectCluster}
+          onViewportChange={onViewportChange}
+        />
+
+        <div className="map-bottom-bar map-bottom-bar--desktop">
+          <button type="button" className="map-bottom-secondary" onClick={onClose}>
+            <List size={15} />
+            Ocultar mapa
+          </button>
+          {onCreateAlert ? (
+            <button
+              type="button"
+              className="map-bottom-primary"
+              onClick={onCreateAlert}
+              disabled={creatingAlert}
+            >
+              <BellPlus size={15} />
+              {creatingAlert ? 'Guardando...' : 'Crear alerta'}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </aside>
+  )
+}
+
 export function ResultsMapView({
   viewMode,
   onViewModeChange,
@@ -282,10 +336,20 @@ export function ResultsMapView({
   creatingAlert = false,
   filterBarProps,
 }: ResultsMapViewProps) {
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false)
   const [carouselPropertyIds, setCarouselPropertyIds] = useState<string[] | undefined>(
     selectedPropertyId ? [selectedPropertyId] : undefined,
   )
   const [activeCarouselId, setActiveCarouselId] = useState<string | undefined>(selectedPropertyId)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1021px)')
+    const updateViewport = () => setIsDesktopViewport(mediaQuery.matches)
+
+    updateViewport()
+    mediaQuery.addEventListener('change', updateViewport)
+    return () => mediaQuery.removeEventListener('change', updateViewport)
+  }, [])
 
   useEffect(() => {
     if (selectedPropertyId) {
@@ -329,15 +393,15 @@ export function ResultsMapView({
 
   return (
     <>
-      {viewMode === 'list' ? (
+      {viewMode === 'list' || (viewMode === 'map' && isDesktopViewport) ? (
         <div className="results-floating-actions" aria-label="Acciones de resultados">
           <button
             type="button"
             className="results-floating-map"
-            onClick={() => onViewModeChange('map')}
+            onClick={() => onViewModeChange(viewMode === 'map' ? 'list' : 'map')}
           >
-            <Map size={14} />
-            <span>Mostrar mapa</span>
+            {viewMode === 'map' ? <List size={14} /> : <Map size={14} />}
+            <span>{viewMode === 'map' ? 'Ocultar mapa' : 'Mostrar mapa'}</span>
           </button>
           {onCreateAlert ? (
             <button
@@ -353,7 +417,7 @@ export function ResultsMapView({
         </div>
       ) : null}
 
-      {viewMode === 'map' ? (
+      {viewMode === 'map' && !isDesktopViewport ? (
         <MapOverlay
           properties={properties}
           filterBarProps={filterBarProps}
