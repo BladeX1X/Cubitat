@@ -1,7 +1,6 @@
-import type { ChangeEvent, FormEvent } from 'react'
+import { useMemo, type FormEvent } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
-import { Input } from '../../../shared/ui/input'
 import {
   Select,
   SelectContent,
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../shared/ui/select'
+import { cubanMunicipalities, cubanProvinces } from '../../../shared/data/cubaLocations'
 import type { LocationSuggestion, SearchFilters } from '../types'
 
 type SearchBarProps = {
@@ -39,14 +39,22 @@ export function SearchBar({
     onChange({ ...filters, [key]: value })
   }
 
-  function handleQuery(event: ChangeEvent<HTMLInputElement>) {
-    updateFilter('query', event.target.value)
-  }
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     onSubmitSearch()
   }
+
+  const selectedProvince = useMemo(() => {
+    return cubanProvinces.find((province) => filters.query === province || filters.query.endsWith(`, ${province}`)) ?? ''
+  }, [filters.query])
+
+  const selectedMunicipality = useMemo(() => {
+    if (!selectedProvince) return ''
+    const suffix = `, ${selectedProvince}`
+    return filters.query.endsWith(suffix) ? filters.query.slice(0, -suffix.length) : ''
+  }, [filters.query, selectedProvince])
+
+  const municipalityOptions = selectedProvince ? cubanMunicipalities[selectedProvince] ?? [] : []
 
   return (
     <form className="hero-search" onSubmit={handleSubmit}>
@@ -112,18 +120,54 @@ export function SearchBar({
             </SelectContent>
           </Select>
         </label>
-        <div className="location-search-pill">
-          <label className="location-field">
-            <Input
-              id="search-query"
-              name="query"
-              className="location-search-input"
-              aria-label="Buscar propiedades"
-              placeholder="¿Dónde quieres buscar?"
-              type="search"
-              value={filters.query}
-              onChange={handleQuery}
-            />
+        <div className="location-select-group">
+          <label className="location-select-field">
+            <span>Provincia</span>
+            <Select
+              value={selectedProvince}
+              onValueChange={(province) => {
+                updateFilter('query', province)
+              }}
+            >
+              <SelectTrigger className="location-select-trigger" aria-label="Provincia">
+                <SelectValue placeholder="Selecciona provincia">
+                  {selectedProvince}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="location-select-content">
+                {cubanProvinces.map((province) => (
+                  <SelectItem key={province} value={province}>
+                    {province}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="location-select-field">
+            <span>Municipio</span>
+            <Select
+              value={selectedMunicipality}
+              onValueChange={(municipality) => {
+                updateFilter('query', municipality + ', ' + selectedProvince)
+              }}
+            >
+              <SelectTrigger
+                className="location-select-trigger"
+                disabled={!selectedProvince}
+                aria-label="Municipio"
+              >
+                <SelectValue placeholder={selectedProvince ? 'Selecciona municipio' : 'Elige provincia'}>
+                  {selectedMunicipality}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="location-select-content">
+                {municipalityOptions.map((municipality) => (
+                  <SelectItem key={municipality} value={municipality}>
+                    {municipality}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <Button className="search-submit" type="submit" aria-label="Buscar">
             <Search size={20} strokeWidth={2.2} />

@@ -8,6 +8,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { SearchBar } from '../../modules/search/components/SearchBar'
+import { slugifySeo } from '../../modules/search/seoRoutes'
 import type { LocationSuggestion, SearchFilters } from '../../modules/search/types'
 
 type HomePageProps = {
@@ -98,7 +99,7 @@ export function PopularLocations() {
       <div className="location-grid-cards">
         {randomizedLocations.map(({ province, image }, index) => {
           const name = `Departamentos en venta en ${province}`
-          const href = `/resultados?q=${encodeURIComponent(province)}&tipo=apartamento&operacion=venta`
+          const href = `/apartamentos-en-venta/${slugifySeo(province)}`
           
           return (
             <a
