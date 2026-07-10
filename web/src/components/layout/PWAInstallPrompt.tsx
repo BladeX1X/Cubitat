@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
-import { registerSW } from 'virtual:pwa-register'
 import { Button } from '../../shared/ui/button'
 
 type BeforeInstallPromptEvent = Event & {
@@ -18,17 +17,8 @@ export function PWAInstallPrompt() {
   const [updateServiceWorker, setUpdateServiceWorker] = useState<((reloadPage?: boolean) => Promise<void>) | null>(null)
 
   useEffect(() => {
-    const runUpdate = registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        setNeedsRefresh(true)
-      },
-      onOfflineReady() {
-        // The app shell is cached; detailed offline UX is driven by network status below.
-      },
-    })
-
-    setUpdateServiceWorker(() => runUpdate)
+    // Temporarily disable SW registration while stabilizing production cache issues.
+    setUpdateServiceWorker(null)
   }, [])
 
   useEffect(() => {

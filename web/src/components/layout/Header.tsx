@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Menu, Search, X } from 'lucide-react'
+import { Building2, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
 
@@ -142,6 +142,10 @@ export function Header({
 
       {isMobileMenuOpen && (
         <aside className="mobile-menu-panel" aria-label="Menú móvil">
+          <div className="mobile-menu-topline">
+            <span>Menú</span>
+            {user && <small>Cuenta Cubitat</small>}
+          </div>
           {user ? (
             <div className="mobile-menu-profile">
               <span>{(user.user_metadata?.full_name || user.email || 'U').slice(0, 1).toUpperCase()}</span>
@@ -151,37 +155,42 @@ export function Header({
               </div>
             </div>
           ) : (
-            <button
-              className="mobile-menu-login"
-              type="button"
-              onClick={() => {
-                setIsMobileMenuOpen(false)
-                openLogin()
-              }}
-            >
-              Ingresar o crear cuenta
-            </button>
+            <div className="mobile-menu-guest-card">
+              <strong>Entra a tu cuenta</strong>
+              <p>Guarda favoritos, publica inmuebles y gestiona tus alertas.</p>
+              <button
+                className="mobile-menu-login"
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  openLogin()
+                }}
+              >
+                Ingresar o crear cuenta
+              </button>
+            </div>
           )}
           {user && (
             <nav className="mobile-menu-list" aria-label="Opciones de cuenta">
-              <button type="button" onClick={() => handleNavigation(navigateAccount)}>Mi cuenta</button>
-              <button type="button" onClick={() => handleNavigation(navigateFavorites)}>Favoritos</button>
-              <button type="button" onClick={() => handleNavigation(navigateMyProperties)}>Mis publicaciones</button>
+              <button type="button" onClick={() => handleNavigation(navigateAccount)}><UserCircle size={19} />Mi cuenta</button>
+              <button type="button" onClick={() => handleNavigation(navigateFavorites)}><Heart size={19} />Favoritos</button>
+              <button type="button" onClick={() => handleNavigation(navigateMyProperties)}><Building2 size={19} />Mis publicaciones</button>
               {userRole === 'admin' && (
-                <button type="button" onClick={() => handleNavigation(navigateModerar)}>Moderar</button>
+                <button type="button" onClick={() => handleNavigation(navigateModerar)}><ShieldCheck size={19} />Moderar</button>
               )}
-              <button type="button" onClick={() => handleNavigation(navigatePublish)}>Vender</button>
+              <button type="button" onClick={() => handleNavigation(navigatePublish)}><Home size={19} />Vender</button>
               <button className="mobile-menu-signout" type="button" onClick={() => handleNavigation(onSignOut)}>
-                Cerrar sesión
+                <LogOut size={19} />Cerrar sesión
               </button>
             </nav>
           )}
           <Button className="mobile-menu-publish" type="button" onClick={() => handleNavigation(navigatePublish)}>
             Publicar gratis
           </Button>
+          <p className="mobile-menu-section-title">Explorar inmuebles</p>
           <nav className="mobile-menu-accordion" aria-label="Operaciones">
-            <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}>Comprar</button>
-            <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('alquiler'))}>Rentar</button>
+            <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>
+            <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('alquiler'))}><Building2 size={18} />Rentar</button>
           </nav>
         </aside>
       )}

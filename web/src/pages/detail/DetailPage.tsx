@@ -1,9 +1,10 @@
 import { useRef, useState, type ReactNode, type UIEvent } from 'react'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   Bath,
   BedDouble,
   Car,
-  Heart,
   MapPin,
   MessageCircle,
   Phone,
@@ -21,10 +22,16 @@ import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
+import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { Property } from '../../modules/properties/types'
+import {
+  getPropertyContactInfo,
+  normalizePhoneForTel,
+  normalizePhoneForWhatsApp,
+} from '../../modules/properties/utils/contact'
 import { getPropertyGalleryImages, normalizePropertyImages } from '../../modules/properties/utils/images'
-import { useSavedProperties } from '../../modules/properties/hooks/useSavedProperties'
 import { formatPrice } from '../../shared/lib/formatPrice'
+import { getOpenFreeMapStyle } from '../../modules/maps/lib/openFreeMapStyle'
 import { Button } from '../../shared/ui/button'
 import { Card, CardContent } from '../../shared/ui/card'
 import { Input } from '../../shared/ui/input'
@@ -64,10 +71,8 @@ export function DetailPage({
   const [reportLoading, setReportLoading] = useState(false)
   const [reportSuccess, setReportSuccess] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const { isSaved, toggleSave } = useSavedProperties()
+
   const isAdmin = userRole === 'admin'
-  
-  const saved = isSaved(property.id)
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
@@ -76,6 +81,8 @@ export function DetailPage({
       }, 300)
     }
   }, [property.id])
+
+
 
   async function handleReportSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -262,16 +269,14 @@ export function DetailPage({
             </div>
           </div>
           <div className="detail-actions flex items-center gap-2 w-full md:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              aria-label={saved ? 'Quitar de guardados' : 'Guardar propiedad'}
-              onClick={() => toggleSave(property.id)}
-              className={`detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
-            >
-              <Heart size={14} className={saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'} />
-              <span className="detail-action-label">{saved ? 'Guardado' : 'Guardar'}</span>
-            </Button>
+            <SavePropertyButton
+              propertyId={property.id}
+              iconSize={14}
+              showLabel
+              labelClassName="detail-action-label"
+              className={(saved) => `detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
+              iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'}
+            />
             <Button
               type="button"
               variant="outline"
@@ -306,6 +311,93 @@ export function DetailPage({
                 </Button>
               </>
             )}
+          </div>
+        </div>
+
+        <div className="detail-desktop-hero">
+          <div className="detail-desktop-hero-copy">
+            <div className="detail-badges flex items-center gap-2 mb-4">
+              <span className="text-[10px] tracking-wider uppercase font-bold bg-white text-neutral-700 px-2.5 py-1 rounded">
+                {titleCase(property.propertyType)}
+              </span>
+              <span className="text-[10px] tracking-wider uppercase font-bold bg-[#035f53]/10 text-[#035f53] px-2.5 py-1 rounded">
+                {titleCase(property.operation)}
+              </span>
+            </div>
+            <h1 className="detail-desktop-title">
+              {property.title}
+            </h1>
+            <p className="detail-desktop-location">
+              <MapPin size={18} />
+              <span>{property.location}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('map')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Ver ubicación
+              </button>
+            </p>
+            <div className="detail-desktop-price-card">
+              <span>{property.operation === 'alquiler' ? 'Alquiler' : property.operation === 'venta' ? 'Precio' : 'Operación'}</span>
+              <strong>
+                {property.operation === 'permuta'
+                  ? 'Permuta'
+                  : formatPrice(property.priceUsd)}
+              </strong>
+              {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
+            </div>
+            <div className="detail-desktop-cta-row">
+              <button type="button" className="detail-desktop-primary-cta" onClick={scrollToContact}>
+                Contactar
+              </button>
+              <button
+                type="button"
+                className="detail-desktop-secondary-cta"
+                onClick={() => {
+                  const phone = property.contact_info?.phone
+                  if (phone) {
+                    window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
+                  } else {
+                    scrollToContact()
+                  }
+                }}
+              >
+                <MessageCircle size={17} />
+                Consultar
+              </button>
+            </div>
+          </div>
+          <div className="detail-desktop-media">
+            <ImageGallery
+              property={property}
+              isOpenModal={isMediaModalOpen}
+              setIsOpenModal={setIsMediaModalOpen}
+              activeTab={mediaModalTab}
+              setActiveTab={setMediaModalTab}
+            />
+            <div className="detail-desktop-media-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('photos')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Fotos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('map')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Mapa
+              </button>
+            </div>
           </div>
         </div>
 
@@ -363,6 +455,78 @@ export function DetailPage({
 
             {/* Media Viewer Container */}
             <div className="media-viewer-container">
+              <div className="detail-mobile-media-overlay" aria-label="Acciones de la propiedad">
+                <div className="detail-mobile-media-topbar">
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      onBack()
+                    }}
+                    aria-label="Regresar a la búsqueda"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                  <div>
+                    <button
+                    type="button"
+                    aria-label="Compartir propiedad"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                        handleShare()
+                      }}
+                    >
+                      <Share2 size={18} />
+                    </button>
+                    <SavePropertyButton
+                      propertyId={property.id}
+                      iconSize={18}
+                      iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : ''}
+                      preventDefault
+                      stopPropagation
+                    />
+                  </div>
+                </div>
+                <h1>{property.title}</h1>
+                <div className="detail-mobile-media-pills">
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setMediaModalTab('photos')
+                      setIsMediaModalOpen(true)
+                    }}
+                  >
+                    Fotos
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setMediaModalTab('map')
+                      setIsMediaModalOpen(true)
+                    }}
+                  >
+                    Mapa
+                  </button>
+                </div>
+              </div>
               <ImageGallery 
                 property={property} 
                 isOpenModal={isMediaModalOpen}
@@ -467,29 +631,31 @@ export function DetailPage({
       </div>
 
       <div className="mobile-detail-cta" aria-label="Acciones de contacto">
-        <button
-          type="button"
-          className="mobile-detail-cta-icon"
-          onClick={() => {
-            const phone = property.contact_info?.phone
-            if (phone) {
-              window.location.href = `tel:${phone}`
-            } else {
-              scrollToContact()
-            }
-          }}
-          aria-label="Llamar al anunciante"
-        >
-          <Phone size={16} />
-        </button>
+        {property.contact_info?.phone ? (
+          <a
+            className="mobile-detail-cta-icon"
+            href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
+            aria-label="Llamar al anunciante"
+          >
+            <Phone size={16} />
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="mobile-detail-cta-icon"
+            onClick={scrollToContact}
+            aria-label="Ver datos de contacto"
+          >
+            <Phone size={16} />
+          </button>
+        )}
         <button
           type="button"
           className="mobile-detail-cta-primary"
           onClick={() => {
             const phone = property.contact_info?.phone
             if (phone) {
-              const cleanPhone = phone.replace(/[^0-9+]/g, '')
-              window.open(`https://wa.me/${cleanPhone}`, '_blank')
+              window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
             } else {
               scrollToContact()
             }
@@ -615,12 +781,14 @@ function ImageGallery({
   setIsOpenModal,
   activeTab,
   setActiveTab,
+  renderModal = true,
 }: {
   property: Property
   isOpenModal: boolean
   setIsOpenModal: (open: boolean) => void
   activeTab: 'photos' | 'map'
   setActiveTab: (tab: 'photos' | 'map') => void
+  renderModal?: boolean
 }) {
   const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -641,9 +809,9 @@ function ImageGallery({
   }
 
   return (
-    <div className="detail-gallery space-y-4">
-      {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
-      <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100">
+      <div className="detail-gallery space-y-4">
+        {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
+      <div className={`hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100 ${images.length < 3 ? 'detail-gallery-grid--single' : ''}`}>
         
         {/* Foto principal grande */}
         <div 
@@ -717,7 +885,7 @@ function ImageGallery({
       </div>
 
       {/* Modal visor de pantalla completa */}
-      {isOpenModal && (
+      {renderModal && isOpenModal && (
         <div 
           className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-4 animate-fadeIn"
           onClick={(e) => { if (e.target === e.currentTarget) setIsOpenModal(false) }}
@@ -777,15 +945,9 @@ function ImageGallery({
             </>
           ) : (
             <div className="w-full max-w-4xl h-[50vh] md:h-[65vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-scaleUp">
-              <iframe
-                title="Mapa de ubicación de la propiedad"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
-                className="w-full h-full"
+              <DetailLocationMap
+                latitude={property.coordinates.latitude}
+                longitude={property.coordinates.longitude}
               />
             </div>
           )}
@@ -793,6 +955,62 @@ function ImageGallery({
       )}
     </div>
   )
+}
+
+function DetailLocationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
+  const markerRef = useRef<maplibregl.Marker | null>(null)
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return
+
+    const abortController = new AbortController()
+
+    async function initMap() {
+      if (!containerRef.current || mapRef.current) return
+
+      const style = await getOpenFreeMapStyle(abortController.signal)
+      const center: [number, number] = [longitude, latitude]
+
+      mapRef.current = new maplibregl.Map({
+        container: containerRef.current,
+        style,
+        center,
+        zoom: 15,
+        attributionControl: false,
+      })
+
+      mapRef.current.addControl(
+        new maplibregl.NavigationControl({ showCompass: false }),
+        'top-right',
+      )
+      mapRef.current.addControl(
+        new maplibregl.AttributionControl({ compact: true }),
+        'bottom-right',
+      )
+
+      markerRef.current = new maplibregl.Marker({ color: '#035f53' })
+        .setLngLat(center)
+        .addTo(mapRef.current)
+    }
+
+    initMap().catch((error) => {
+      if (!abortController.signal.aborted) {
+        console.error('No se pudo inicializar el mapa de detalle', error)
+      }
+    })
+
+    return () => {
+      abortController.abort()
+      markerRef.current?.remove()
+      markerRef.current = null
+      mapRef.current?.remove()
+      mapRef.current = null
+    }
+  }, [latitude, longitude])
+
+  return <div ref={containerRef} className="h-full w-full bg-neutral-100" aria-label="Mapa de ubicación de la propiedad" />
 }
 
 /* Subcomponente: Tarjeta de Contacto */
@@ -957,7 +1175,8 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
-            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 }
+            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
         }))
         setSimilar(mapped)
       }

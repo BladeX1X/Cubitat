@@ -139,6 +139,17 @@ const propertyTypeLabels = {
   terreno: 'Terreno',
 }
 
+const publishStepLabels = [
+  'Dirección y ubicación',
+  'Información general',
+  'Características',
+  'Amenidades',
+  'Descripción',
+  'Fotos',
+  'Precio',
+  'Contacto',
+]
+
 const cubanProvinces = [
   'La Habana',
   'Matanzas',
@@ -240,6 +251,8 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null)
 
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
+  const progressPercent = Math.round((step / publishStepLabels.length) * 100)
+  const currentStepLabel = publishStepLabels[step - 1] ?? 'Publicación'
 
   // 1. Detectar e instalar borrador automáticamente si viene de la URL
   useEffect(() => {
@@ -257,6 +270,46 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (isEditMode) return
+
+    let cancelled = false
+
+    async function loadSellerContact() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+      let profileName = ''
+      let profilePhone = ''
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (data) {
+        profileName = typeof data.full_name === 'string' ? data.full_name : ''
+        profilePhone = typeof data.phone === 'string' ? data.phone : ''
+      }
+
+      if (cancelled) return
+
+      setFormData((prev) => ({
+        ...prev,
+        contactName: prev.contactName || profileName || fallbackName,
+        contactPhone: prev.contactPhone || formatCubanPhoneForDisplay(profilePhone),
+      }))
+    }
+
+    loadSellerContact()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isEditMode])
 
   // Load existing property data when editing
   useEffect(() => {
@@ -333,7 +386,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
             hasTerrace: features.hasTerrace || false,
             hasPortal: features.hasPortal || false,
             contactName: contactInfo.name || '',
-            contactPhone: contactInfo.phone || '',
+            contactPhone: formatCubanPhoneForDisplay(contactInfo.phone || ''),
           })
           // Load existing images as preview-only entries
           if (data.images && data.images.length > 0) {
@@ -512,7 +565,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       
       const contactInfo = {
         name: formData.contactName,
-        phone: formData.contactPhone
+        phone: normalizeCubanPhoneForStorage(formData.contactPhone)
       }
       
       const amenities: string[] = []
@@ -638,6 +691,11 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           <div>
             <h1>{isEditMode ? 'Editar propiedad' : 'Publicar propiedad'}</h1>
             <p>{isEditMode ? 'Modifica los datos de tu propiedad y guarda los cambios.' : 'Asegúrate de documentar todos los datos de tu propiedad y verifica que sean correctos.'}</p>
+            <div className="publish-hero-pills" aria-label="Ventajas de publicar en Cubitat">
+              <span>Revisión segura</span>
+              <span>Mapa automático</span>
+              <span>Borrador editable</span>
+            </div>
           </div>
           <div className="publish-hero-actions flex items-center gap-2">
             {showSaveFeedback && (
@@ -677,6 +735,16 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           ) : submitted ? (
             <PublishSuccessCard />
           ) : (
+            <>
+            <div className="publish-progress-summary" aria-label="Progreso de publicación">
+              <div>
+                <span>Paso {step} de {publishStepLabels.length}</span>
+                <strong>{currentStepLabel}</strong>
+              </div>
+              <div className="publish-progress-track" aria-hidden="true">
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
+            </div>
             <div className="publish-grid-layout">
               
               {/* Left Column: Sidebar 8-Steps Timeline Navigator */}
@@ -771,6 +839,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
               </div>
 
             </div>
+            </>
           )}
         </div>
       </div>
@@ -1759,14 +1828,19 @@ function StepContact({
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">WhatsApp / Teléfono Cuba *</label>
           <Input
             required
-            placeholder="Ej: 52345678 o 7123456"
+            type="tel"
+            placeholder="Ej: +53 52345678 o +53 7123456"
             value={formData.contactPhone}
             onChange={(e) => onChange({ contactPhone: e.target.value })}
+            onBlur={(e) => onChange({ contactPhone: formatCubanPhoneForDisplay(e.target.value) })}
             className={`h-11 text-xs ${!isPhoneValid && formData.contactPhone ? 'border-red-500 focus-visible:ring-red-500/20' : 'border-neutral-200'}`}
           />
+          <span className="text-[9px] text-neutral-500 font-semibold block mt-1">
+            Incluye el código de país. Ejemplo: +53 52345678.
+          </span>
           {!isPhoneValid && formData.contactPhone && (
             <span className="text-[9px] text-red-500 font-bold block mt-1">
-              Teléfono inválido. Si es móvil debe empezar con 5 y tener 8 dígitos. Si es fijo debe empezar con 7 y tener de 6 a 8 dígitos.
+              Teléfono inválido. Usa el formato +53 seguido del número móvil o fijo cubano.
             </span>
           )}
         </div>
@@ -1832,17 +1906,29 @@ function PublishSuccessCard() {
 
 /* Validador de Teléfono cubano */
 function validatePhone(phone: string): boolean {
-  const clean = phone.replace(/[\s\-\+]/g, '')
-  
-  // Si contiene el código de país cubano 53 al inicio
-  if (clean.startsWith('53')) {
-    const withoutCountry = clean.slice(2)
-    return withoutCountry.length === 8 && withoutCountry.startsWith('5')
-  }
-  
-  // Móvil simple (ej: 52839201) de 8 dígitos empezando con 5, o fijo (ej: 78392010) de 6 a 8 dígitos empezando con 7 u otros prefijos
-  return (clean.length === 8 && clean.startsWith('5')) || 
-         (clean.length >= 6 && clean.length <= 8 && (clean.startsWith('7') || clean.startsWith('4') || clean.startsWith('3') || clean.startsWith('2')))
+  const local = getCubanLocalPhone(phone)
+  if (!local) return false
+
+  return (local.length === 8 && local.startsWith('5')) ||
+         (local.length >= 6 && local.length <= 8 && ['2', '3', '4', '7'].some((prefix) => local.startsWith(prefix)))
+}
+
+function getCubanLocalPhone(phone: string): string {
+  const clean = phone.replace(/[^0-9]/g, '')
+  if (clean.startsWith('0053')) return clean.slice(4)
+  if (clean.startsWith('53')) return clean.slice(2)
+  return clean
+}
+
+function normalizeCubanPhoneForStorage(phone: string): string {
+  const local = getCubanLocalPhone(phone)
+  return local ? `+53${local}` : ''
+}
+
+function formatCubanPhoneForDisplay(phone: string): string {
+  const local = getCubanLocalPhone(phone)
+  if (!local) return ''
+  return `+53 ${local}`
 }
 
 

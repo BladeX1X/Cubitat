@@ -46,6 +46,11 @@ export function HomePage({
             Búscalo en Cubitat.
             <span>El portal de propiedades para Cuba.</span>
           </h1>
+          <div className="hero-mobile-trust" aria-label="Beneficios de Cubitat">
+            <span>Fotos reales</span>
+            <span>Mapa por zona</span>
+            <span>Contacto directo</span>
+          </div>
           <SearchBar
             filters={filters}
             locationSuggestions={locationSuggestions}
@@ -57,8 +62,9 @@ export function HomePage({
       </section>
 
       <PopularLocations />
-      <ServicesSection />
-      <ProductsSection />
+      {/* Reactivar cuando Servicios y Productos tengan contenido final de Fase 1. */}
+      {/* <ServicesSection /> */}
+      {/* <ProductsSection /> */}
     </>
   )
 }

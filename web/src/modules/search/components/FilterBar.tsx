@@ -1,6 +1,18 @@
-import { useEffect, useState, useMemo } from 'react'
-import { SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState } from 'react'
+import { BellPlus, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { SearchFilters } from '../types'
+import {
+  getActiveExtraFiltersCount,
+  getOperationLabel,
+  getPriceLabel,
+  getPropertyTypeLabel,
+  parkingOptions,
+  propertyTypeOptions,
+  purchasePriceOptions,
+  rentPriceOptions,
+  segmentOptions,
+} from '../lib/filterOptions'
+import { useMobileFilterSheet } from '../hooks/useMobileFilterSheet'
 import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
 import { Input } from '../../../shared/ui/input'
@@ -11,6 +23,10 @@ export type FilterBarProps = {
   onClearFilters: () => void
   onChangeFilters?: (filters: SearchFilters) => void
   totalResults?: number
+  onCreateAlert?: () => void
+  creatingAlert?: boolean
+  alertMessage?: string | null
+  alertError?: string | null
 }
 
 export function FilterBar({
@@ -19,58 +35,27 @@ export function FilterBar({
   onClearFilters,
   onChangeFilters,
   totalResults = 0,
+  onCreateAlert,
+  creatingAlert = false,
+  alertMessage,
+  alertError,
 }: FilterBarProps) {
   const [isOperationOpen, setIsOperationOpen] = useState(false)
   const [isTypeOpen, setIsTypeOpen] = useState(false)
   const [isPriceOpen, setIsPriceOpen] = useState(false)
   const [isMoreOpen, setIsMoreOpen] = useState(false)
-  const [isMobileViewport, setIsMobileViewport] = useState(false)
-  const [isMobileSheetMounted, setIsMobileSheetMounted] = useState(false)
-  const [isMobileSheetVisible, setIsMobileSheetVisible] = useState(false)
-  
   const [minPriceInput, setMinPriceInput] = useState('')
   const [maxPriceInput, setMaxPriceInput] = useState('')
 
   const isRent = filters.operations.includes('alquiler')
   const isPermuta = filters.operations.includes('permuta')
-
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 640px)')
-    const updateViewport = () => setIsMobileViewport(query.matches)
-    updateViewport()
-    query.addEventListener('change', updateViewport)
-    return () => query.removeEventListener('change', updateViewport)
-  }, [])
-
-  useEffect(() => {
-    if (!isMobileViewport) {
-      setIsMobileSheetMounted(false)
-      setIsMobileSheetVisible(false)
-      return
-    }
-
-    if (isMoreOpen) {
-      setIsMobileSheetMounted(true)
-      setIsMobileSheetVisible(false)
-      const timeout = window.setTimeout(() => setIsMobileSheetVisible(true), 90)
-      return () => window.clearTimeout(timeout)
-    }
-
-    setIsMobileSheetVisible(false)
-    const timeout = window.setTimeout(() => setIsMobileSheetMounted(false), 620)
-    return () => window.clearTimeout(timeout)
-  }, [isMobileViewport, isMoreOpen])
-
-  // Calculate active extra filters count (bedrooms, bathrooms, parking, priceRange)
-  const activeFiltersCount = useMemo(() => {
-    let count = 0
-    if (filters.bedrooms && filters.bedrooms !== 'all') count++
-    if (filters.bathrooms && filters.bathrooms !== 'all') count++
-    if (filters.parking && filters.parking !== 'all') count++
-    if (filters.priceRange && filters.priceRange !== 'all' && !isPermuta) count++
-    return count
-  }, [filters, isPermuta])
-
+  const {
+    isMobileViewport,
+    isMounted: isMobileSheetMounted,
+    isVisible: isMobileSheetVisible,
+    close: closeMobileFilterSheet,
+  } = useMobileFilterSheet(isMoreOpen, setIsMoreOpen)
+  const activeFiltersCount = getActiveExtraFiltersCount(filters)
   const handleFilterUpdate = (updatedFields: Partial<SearchFilters>) => {
     if (onChangeFilters) {
       onChangeFilters({
@@ -116,65 +101,20 @@ export function FilterBar({
     if (min || max) {
       handleFilterUpdate({ priceRange: `${min}-${max}` })
       setIsPriceOpen(false)
+      if (isMobileViewport) {
+        closeMobileFilterSheet()
+      }
     }
   }
 
-  const closeMobileFilterSheet = () => {
-    setIsMobileSheetVisible(false)
-    window.setTimeout(() => {
-      setIsMoreOpen(false)
-      setIsMobileSheetMounted(false)
-    }, 620)
-  }
 
-  // Get human readable labels
-  const operationLabel = (() => {
-    if (filters.operations.length === 0) return 'Operación'
-    const labels = filters.operations.map(op => op === 'alquiler' ? 'Renta' : op === 'venta' ? 'Venta' : 'Permuta')
-    return labels.join(' + ')
-  })()
-
-  const typeLabel = (() => {
-    if (filters.propertyType === 'casa') return 'Casas'
-    if (filters.propertyType === 'apartamento') return 'Departamentos'
-    if (filters.propertyType === 'terreno') return 'Terrenos'
-    return 'Inmueble'
-  })()
-
-  const priceLabel = (() => {
-    if (!filters.priceRange || filters.priceRange === 'all') return 'Precio'
-    
-    if (isRent) {
-      if (filters.priceRange === '0-200') return 'Hasta $200'
-      if (filters.priceRange === '200-500') return '$200 - $500'
-      if (filters.priceRange === '500-1000') return '$500 - $1000'
-      if (filters.priceRange === '1000-') return 'Más de $1000'
-    } else {
-      if (filters.priceRange === '0-50000') return 'Hasta $50k'
-      if (filters.priceRange === '50000-100000') return '$50k - $100k'
-      if (filters.priceRange === '100000-200000') return '$100k - $200k'
-      if (filters.priceRange === '200000-') return 'Más de $200k'
-    }
-
-    // Custom label parsing: "min-max"
-    const [minStr, maxStr] = filters.priceRange.split('-')
-    const minVal = minStr ? Number(minStr) : 0
-    const maxVal = maxStr ? Number(maxStr) : null
-
-    if (minVal > 0 && maxVal) {
-      return `$${minVal} - $${maxVal}`
-    }
-    if (minVal > 0) {
-      return `Más de $${minVal}`
-    }
-    if (maxVal) {
-      return `Hasta $${maxVal}`
-    }
-    return 'Precio'
-  })()
+  const operationLabel = getOperationLabel(filters)
+  const typeLabel = getPropertyTypeLabel(filters)
+  const priceLabel = getPriceLabel(filters)
+  const activePriceOptions = isRent ? rentPriceOptions : purchasePriceOptions
 
   const mobileSummaryParts = [
-    operationLabel === 'OperaciÃ³n' ? 'Operacion' : operationLabel,
+    operationLabel === 'Operación' ? 'Operación' : operationLabel,
     typeLabel,
     priceLabel === 'Precio' ? null : priceLabel,
   ].filter(Boolean)
@@ -235,7 +175,7 @@ export function FilterBar({
             {isOperationOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-48 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
+        <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-48 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
           <div className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700 cursor-pointer"
                onClick={() => { handleOperationToggle('venta'); setIsOperationOpen(false) }}>
             <input
@@ -291,8 +231,8 @@ export function FilterBar({
             {isTypeOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-52 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
-          {(['casa', 'apartamento', 'terreno'] as const).map((type) => (
+        <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-52 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
+          {propertyTypeOptions.map((type) => (
             <div
               key={type}
               className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700"
@@ -329,22 +269,9 @@ export function FilterBar({
               {isPriceOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-64 p-3 flex flex-col gap-2 bg-white border border-neutral-200 shadow-lg rounded-md">
+          <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-64 p-3 flex flex-col gap-2 bg-white border border-neutral-200 shadow-lg rounded-md">
             <div className="flex flex-col gap-1">
-              {(isRent
-                ? [
-                    { label: 'Hasta $200', value: '0-200' },
-                    { label: '$200 - $500', value: '200-500' },
-                    { label: '$500 - $1000', value: '500-1000' },
-                    { label: 'Más de $1000', value: '1000-' },
-                  ]
-                : [
-                    { label: 'Hasta $50k', value: '0-50000' },
-                    { label: '$50k - $100k', value: '50000-100000' },
-                    { label: '$100k - $200k', value: '100000-200000' },
-                    { label: 'Más de $200k', value: '200000-' },
-                  ]
-              ).map((item, idx) => (
+              {(isRent ? rentPriceOptions : purchasePriceOptions).map((item, idx) => (
                 <div
                   key={item.value}
                   className="flex items-center gap-3 px-3 py-1.5 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700"
@@ -420,12 +347,12 @@ export function FilterBar({
           </Button>
         </PopoverTrigger>
         {!isMobileViewport ? (
-        <PopoverContent align="end" className="w-80 p-5 bg-white border border-neutral-200 shadow-2xl rounded-lg flex flex-col gap-5">
+        <PopoverContent side="bottom" align="end" sideOffset={8} avoidCollisions={false} className="w-80 p-5 bg-white border border-neutral-200 shadow-2xl rounded-lg flex flex-col gap-5">
           {/* Segmento Recámaras */}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Recámaras</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.bedrooms ?? 'all') === num
                 return (
                   <button
@@ -449,7 +376,7 @@ export function FilterBar({
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Baños</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.bathrooms ?? 'all') === num
                 return (
                   <button
@@ -473,7 +400,7 @@ export function FilterBar({
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Estacionamientos</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.parking ?? 'all') === num
                 return (
                   <button
@@ -518,15 +445,30 @@ export function FilterBar({
         </PopoverContent>
         ) : null}
       </Popover>
+      {onCreateAlert ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="filter-alert-control"
+          onClick={onCreateAlert}
+          disabled={creatingAlert}
+        >
+          <BellPlus size={14} />
+          {creatingAlert ? 'Guardando...' : 'Crear alerta'}
+        </Button>
+      ) : null}
       </div>
+      {alertMessage ? <p className="search-alert-feedback">{alertMessage}</p> : null}
+      {alertError ? <p className="search-alert-feedback is-error">{alertError}</p> : null}
       {isMobileViewport && isMobileSheetMounted ? (
         <div
           className={`mobile-filter-sheet ${isMobileSheetVisible ? 'is-open' : ''}`}
           role="dialog"
           aria-modal="true"
-          aria-label="Filtros de busqueda"
+          aria-label="Filtros de búsqueda"
+          onClick={closeMobileFilterSheet}
         >
-          <div className="mobile-filter-sheet__panel">
+          <div className="mobile-filter-sheet__panel" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-filter-sheet__handle" aria-hidden="true" />
             <div className="mobile-filter-sheet__header">
               <button
@@ -540,7 +482,7 @@ export function FilterBar({
             </div>
 
             <div className="mobile-filter-sheet__body">
-              <div className="mobile-filter-segment" aria-label="Operacion">
+              <div className="mobile-filter-segment" aria-label="Operación">
                 {[
                   { label: 'Comprar', value: 'venta' as const },
                   { label: 'Alquilar', value: 'alquiler' as const },
@@ -558,14 +500,14 @@ export function FilterBar({
               </div>
 
             <section className="mobile-filter-section">
-              <h3>Ubicacion</h3>
+              <h3>Ubicación</h3>
               <label className="mobile-filter-location">
                 <input
                   type="text"
                   value={filters.query}
                   onChange={(event) => handleQueryChange(event.target.value)}
                   placeholder="Cuba"
-                  aria-label="Buscar ubicacion"
+                  aria-label="Buscar ubicación"
                 />
               </label>
             </section>
@@ -574,16 +516,24 @@ export function FilterBar({
               <section className="mobile-filter-section">
                 <h3>Valor</h3>
                 <div className="mobile-filter-price-mode">
-                  <button type="button" className={isRent ? '' : 'is-active'}>
+                  <button
+                    type="button"
+                    className={isRent ? '' : 'is-active'}
+                    onClick={() => handleFilterUpdate({ operations: ['venta'], priceRange: 'all' })}
+                  >
                     Valor total
                   </button>
-                  <button type="button" className={isRent ? 'is-active' : ''}>
+                  <button
+                    type="button"
+                    className={isRent ? 'is-active' : ''}
+                    onClick={() => handleFilterUpdate({ operations: ['alquiler'], priceRange: 'all' })}
+                  >
                     Alquiler
                   </button>
                 </div>
                 <div className="mobile-filter-price-grid">
                   <label>
-                    <span>Minimo</span>
+                    <span>Mínimo</span>
                     <Input
                       type="number"
                       placeholder="USD 0"
@@ -592,7 +542,7 @@ export function FilterBar({
                     />
                   </label>
                   <label>
-                    <span>Maximo</span>
+                    <span>Máximo</span>
                     <Input
                       type="number"
                       placeholder="USD"
@@ -600,6 +550,18 @@ export function FilterBar({
                       onChange={(event) => setMaxPriceInput(event.target.value)}
                     />
                   </label>
+                </div>
+                <div className="mobile-filter-chips" aria-label="Rangos de precio">
+                  {activePriceOptions.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={filters.priceRange === item.value ? 'is-active' : ''}
+                      onClick={() => handlePriceRangeSelect(item.value)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
                 <button type="button" className="mobile-filter-apply-price" onClick={handleCustomPriceApply}>
                   Aplicar precio
@@ -609,7 +571,7 @@ export function FilterBar({
 
             <section className="mobile-filter-section">
               <h3>Tipos de inmueble</h3>
-              {(['apartamento', 'casa', 'terreno'] as const).map((type) => (
+              {propertyTypeOptions.map((type) => (
                 <label key={type} className="mobile-filter-check">
                   <input
                     type="checkbox"
@@ -622,9 +584,9 @@ export function FilterBar({
             </section>
 
             <section className="mobile-filter-section">
-              <h3>Recamaras</h3>
+              <h3>Recámaras</h3>
               <div className="mobile-filter-chips">
-                {['all', 1, 2, 3, 4].map((num) => {
+                {segmentOptions.map((num) => {
                   const isActive = (filters.bedrooms ?? 'all') === num
                   return (
                     <button
@@ -643,7 +605,7 @@ export function FilterBar({
             <section className="mobile-filter-section">
               <h3>Parqueo</h3>
               <div className="mobile-filter-chips">
-                {['all', 1, 2, 3].map((num) => {
+                {parkingOptions.map((num) => {
                   const isActive = (filters.parking ?? 'all') === num
                   return (
                     <button
@@ -660,9 +622,9 @@ export function FilterBar({
             </section>
 
             <section className="mobile-filter-section">
-              <h3>Banos</h3>
+              <h3>Baños</h3>
               <div className="mobile-filter-chips">
-                {['all', 1, 2, 3, 4].map((num) => {
+                {segmentOptions.map((num) => {
                   const isActive = (filters.bathrooms ?? 'all') === num
                   return (
                     <button
@@ -691,6 +653,17 @@ export function FilterBar({
               >
                 Limpiar
               </button>
+              {onCreateAlert ? (
+                <button
+                  type="button"
+                  className="mobile-filter-alert"
+                  onClick={onCreateAlert}
+                  disabled={creatingAlert}
+                >
+                  <BellPlus size={15} />
+                  {creatingAlert ? 'Guardando...' : 'Alerta'}
+                </button>
+              ) : null}
               <button type="button" className="mobile-filter-submit" onClick={closeMobileFilterSheet}>
                 Ver {totalResults} inmuebles
               </button>

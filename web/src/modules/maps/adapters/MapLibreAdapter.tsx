@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import maplibregl, {
-  type StyleSpecification,
-} from 'maplibre-gl'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
 import { formatPrice } from '../../../shared/lib/formatPrice'
 import type { Property } from '../../properties/types'
 import type { MapAdapterProps } from '../types'
+import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 
-const OPEN_SOURCE_STYLE =
-  'https://tiles.openfreemap.org/styles/liberty'
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
 const CLUSTER_LAYER_ID = 'property-clusters'
 const CLUSTER_COUNT_LAYER_ID = 'property-cluster-count'
@@ -20,16 +17,29 @@ export function MapLibreAdapter({
   properties,
   selectedPropertyId,
   onSelectProperty,
+  onSelectCluster,
+  onViewportChange,
+  locateTrigger,
 }: MapAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const onSelectPropertyRef = useRef(onSelectProperty)
+  const onSelectClusterRef = useRef(onSelectCluster)
+  const onViewportChangeRef = useRef(onViewportChange)
   const sourceDataRef = useRef<FeatureCollection<Point>>(createPropertySourceData([], undefined))
   const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
     onSelectPropertyRef.current = onSelectProperty
   }, [onSelectProperty])
+
+  useEffect(() => {
+    onSelectClusterRef.current = onSelectCluster
+  }, [onSelectCluster])
+
+  useEffect(() => {
+    onViewportChangeRef.current = onViewportChange
+  }, [onViewportChange])
 
   const sourceData = useMemo(
     () => createPropertySourceData(properties, selectedPropertyId),
@@ -59,10 +69,7 @@ export function MapLibreAdapter({
     async function initializeMap() {
       if (!containerRef.current || mapRef.current) return
 
-      const response = await fetch(OPEN_SOURCE_STYLE, {
-        signal: abortController.signal,
-      })
-      const style = (await response.json()) as StyleSpecification
+      const style = await getOpenFreeMapStyle(abortController.signal)
 
       mapRef.current = new maplibregl.Map({
         container: containerRef.current,
@@ -111,105 +118,124 @@ export function MapLibreAdapter({
     map.addSource(PROPERTY_SOURCE_ID, {
       type: 'geojson',
       data: sourceDataRef.current,
-        cluster: true,
-        clusterMaxZoom: 11,
-        clusterRadius: 54,
+      cluster: true,
+      clusterMaxZoom: 14,   // cluster until very detailed zoom (street level)
+      clusterRadius: 65,    // wider grouping radius → fewer crowded pins
     })
 
     map.addLayer({
-        id: CLUSTER_LAYER_ID,
-        type: 'circle',
-        source: PROPERTY_SOURCE_ID,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#1164d8',
-            4,
-            '#0f8f68',
-            8,
-            '#ef7d32',
-          ],
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            22,
-            4,
-            28,
-            8,
-            34,
-          ],
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 3,
-        },
+      id: CLUSTER_LAYER_ID,
+      type: 'circle',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': '#ffffff',
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          22,
+          4,
+          28,
+          8,
+          34,
+        ],
+        'circle-stroke-color': '#9ca3af',
+        'circle-stroke-width': 2.5,
+      },
     })
 
     map.addLayer({
-        id: CLUSTER_COUNT_LAYER_ID,
-        type: 'symbol',
-        source: PROPERTY_SOURCE_ID,
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-size': 14,
-          'text-font': ['Noto Sans Regular'],
-        },
-        paint: {
-          'text-color': '#ffffff',
-        },
+      id: CLUSTER_COUNT_LAYER_ID,
+      type: 'symbol',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-size': 14,
+        'text-font': ['Noto Sans Bold'],
+      },
+      paint: {
+        'text-color': '#374151',
+      },
     })
 
     map.addLayer({
-        id: PROPERTY_POINT_LAYER_ID,
-        type: 'circle',
-        source: PROPERTY_SOURCE_ID,
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-color': [
-            'case',
-            ['boolean', ['get', 'isSelected'], false],
-            '#1164d8',
-            '#ffffff',
-          ],
-          'circle-radius': [
-            'case',
-            ['boolean', ['get', 'isSelected'], false],
-            12,
-            10,
-          ],
-          'circle-stroke-color': '#1164d8',
-          'circle-stroke-width': 2.5,
-        },
+      id: PROPERTY_POINT_LAYER_ID,
+      type: 'circle',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': [
+          'case',
+          ['boolean', ['get', 'isSelected'], false],
+          '#035f53',
+          '#ffffff',
+        ],
+        'circle-radius': [
+          'case',
+          ['boolean', ['get', 'isSelected'], false],
+          14,
+          12,
+        ],
+        'circle-stroke-color': [
+          'case',
+          ['boolean', ['get', 'isSelected'], false],
+          '#024a41',
+          '#035f53',
+        ],
+        'circle-stroke-width': 2.5,
+      },
     })
 
     map.addLayer({
-        id: PROPERTY_LABEL_LAYER_ID,
-        type: 'symbol',
-        source: PROPERTY_SOURCE_ID,
-        filter: ['!', ['has', 'point_count']],
-        layout: {
-          'text-field': ['get', 'label'],
-          'text-size': 11,
-          'text-font': ['Noto Sans Regular'],
-          'text-offset': [0, 1.8],
-          'text-anchor': 'top',
-        },
-        paint: {
-          'text-color': '#10233f',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2,
-        },
+      id: PROPERTY_LABEL_LAYER_ID,
+      type: 'symbol',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['!', ['has', 'point_count']],
+      layout: {
+        'text-field': ['get', 'label'],
+        'text-size': 10,
+        'text-font': ['Noto Sans Bold'],
+        'text-offset': [0, 0],
+        'text-anchor': 'center',
+      },
+      paint: {
+        'text-color': [
+          'case',
+          ['boolean', ['get', 'isSelected'], false],
+          '#ffffff',
+          '#035f53',
+        ],
+      },
     })
 
     const handleClusterClick = async (event: maplibregl.MapMouseEvent) => {
       const feature = map.queryRenderedFeatures(event.point, {
-        layers: [CLUSTER_LAYER_ID],
+        layers: [CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
       })[0]
       const clusterId = feature?.properties?.cluster_id as number | undefined
       if (clusterId === undefined) return
 
       const source = map.getSource(PROPERTY_SOURCE_ID) as maplibregl.GeoJSONSource
+
+      // If caller wants to handle cluster selection, resolve property IDs and pass them up
+      if (onSelectClusterRef.current) {
+        const pointCount = (feature?.properties?.point_count as number) ?? 0
+        try {
+          const leaves = await source.getClusterLeaves(clusterId, pointCount, 0)
+          const ids = leaves
+            .map((leaf) => leaf.properties?.id as string | undefined)
+            .filter((id): id is string => !!id)
+          if (ids.length > 0) {
+            onSelectClusterRef.current(ids)
+            return
+          }
+        } catch {
+          // Fall through to zoom
+        }
+      }
+
+      // Default: zoom into cluster
       const zoom = await source.getClusterExpansionZoom(clusterId)
       map.easeTo({
         center: (feature.geometry as Point).coordinates as [number, number],
@@ -219,11 +245,44 @@ export function MapLibreAdapter({
 
     const handlePropertyClick = (event: maplibregl.MapMouseEvent) => {
       const feature = map.queryRenderedFeatures(event.point, {
-        layers: [PROPERTY_POINT_LAYER_ID],
+        layers: [PROPERTY_POINT_LAYER_ID, PROPERTY_LABEL_LAYER_ID],
       })[0]
       const propertyId = feature?.properties?.id as string | undefined
       if (propertyId) {
         onSelectPropertyRef.current(propertyId)
+      }
+    }
+
+    const handleMapClick = (event: maplibregl.MapMouseEvent) => {
+      const clusterFeature = map.queryRenderedFeatures(event.point, {
+        layers: [CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
+      })[0]
+      if (clusterFeature) return
+
+      const propertyFeature = map.queryRenderedFeatures(event.point, {
+        layers: [PROPERTY_POINT_LAYER_ID, PROPERTY_LABEL_LAYER_ID],
+      })[0]
+      const propertyId = propertyFeature?.properties?.id as string | undefined
+      if (propertyId) {
+        onSelectPropertyRef.current(propertyId)
+        return
+      }
+
+      let nearestPropertyId: string | undefined
+      let nearestDistance = Number.POSITIVE_INFINITY
+
+      for (const feature of sourceDataRef.current.features) {
+        const coordinates = feature.geometry.coordinates as [number, number]
+        const projected = map.project(coordinates)
+        const distance = Math.hypot(projected.x - event.point.x, projected.y - event.point.y)
+        if (distance < nearestDistance) {
+          nearestDistance = distance
+          nearestPropertyId = feature.properties?.id as string | undefined
+        }
+      }
+
+      if (nearestPropertyId && nearestDistance <= 96) {
+        onSelectPropertyRef.current(nearestPropertyId)
       }
     }
 
@@ -235,20 +294,48 @@ export function MapLibreAdapter({
       map.getCanvas().style.cursor = ''
     }
 
+    const handleViewportChange = (event: maplibregl.MapLibreEvent) => {
+      if (event.originalEvent) {
+        onViewportChangeRef.current?.()
+      }
+    }
+
     map.on('click', CLUSTER_LAYER_ID, handleClusterClick)
+    map.on('click', CLUSTER_COUNT_LAYER_ID, handleClusterClick)
     map.on('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
+    map.on('click', PROPERTY_LABEL_LAYER_ID, handlePropertyClick)
+    map.on('click', handleMapClick)
     map.on('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
+    map.on('mouseenter', CLUSTER_COUNT_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
+    map.on('mouseenter', PROPERTY_LABEL_LAYER_ID, handleMouseEnter)
     map.on('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+    map.on('mouseleave', CLUSTER_COUNT_LAYER_ID, handleMouseLeave)
     map.on('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
+    map.on('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
+    map.on('dragstart', handleViewportChange)
+    map.on('zoomstart', handleViewportChange)
+    map.on('rotatestart', handleViewportChange)
+    map.on('pitchstart', handleViewportChange)
 
     return () => {
       map.off('click', CLUSTER_LAYER_ID, handleClusterClick)
+      map.off('click', CLUSTER_COUNT_LAYER_ID, handleClusterClick)
       map.off('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
+      map.off('click', PROPERTY_LABEL_LAYER_ID, handlePropertyClick)
+      map.off('click', handleMapClick)
       map.off('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
+      map.off('mouseenter', CLUSTER_COUNT_LAYER_ID, handleMouseEnter)
       map.off('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
+      map.off('mouseenter', PROPERTY_LABEL_LAYER_ID, handleMouseEnter)
       map.off('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+      map.off('mouseleave', CLUSTER_COUNT_LAYER_ID, handleMouseLeave)
       map.off('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
+      map.off('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
+      map.off('dragstart', handleViewportChange)
+      map.off('zoomstart', handleViewportChange)
+      map.off('rotatestart', handleViewportChange)
+      map.off('pitchstart', handleViewportChange)
     }
   }, [mapReady])
 
@@ -262,18 +349,49 @@ export function MapLibreAdapter({
     }
   }, [mapReady, sourceData])
 
+  // When the property list (bounds) changes, fit the map to show all results.
+  // maxZoom: 13 so a municipality-level search zooms in properly.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !mapReady) return
 
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, {
-        padding: { top: 74, right: 74, bottom: 74, left: 74 },
-        maxZoom: 8.6,
+        padding: { top: 74, right: 74, bottom: 180, left: 74 },
+        maxZoom: 13,
         duration: 500,
       })
     }
   }, [bounds, mapReady])
+
+  // NOTE: We intentionally do NOT zoom/pan when selectedPropertyId changes.
+  // The user already clicked the pin – no need to move the camera.
+
+  const handleLocateMe = useCallback(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (!navigator.geolocation) return
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        map.flyTo({
+          center: [position.coords.longitude, position.coords.latitude],
+          zoom: 13,
+          duration: 1000,
+        })
+      },
+      () => {
+        // Geolocation denied or failed — silently ignore
+      },
+      { enableHighAccuracy: false, timeout: 5000 },
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!locateTrigger) return
+    handleLocateMe()
+  }, [locateTrigger, handleLocateMe])
 
   return (
     <div className="map-card map-card--maplibre">

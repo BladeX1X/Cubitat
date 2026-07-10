@@ -171,6 +171,7 @@ export function SearchBar({
           </label>
           <Button className="search-submit" type="submit" aria-label="Buscar">
             <Search size={20} strokeWidth={2.2} />
+            <span>Buscar inmuebles</span>
           </Button>
         </div>
       </div>

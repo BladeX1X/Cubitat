@@ -1,6 +1,7 @@
 .agents/
 .agent/
 .claude/
+.tmp-map-reference-frames/
 .playwright/
 .playwright-cli/
 %TEMP%/

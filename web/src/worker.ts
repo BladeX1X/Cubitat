@@ -35,7 +35,10 @@ function withSecurityHeaders(response: Response): Response {
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
   if (response.headers.get('Content-Type')?.includes('text/html')) {
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com; frame-src 'self' https://www.google.com; media-src 'self' blob:;");
+    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org; frame-src 'self' https://www.google.com https://www.openstreetmap.org; media-src 'self' blob:;");
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
   }
   return new Response(response.body, {
     status: response.status,
@@ -598,7 +601,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts'];
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
@@ -853,9 +856,14 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
     // Inyectar cabeceras de Content-Type con charset=utf-8 para documentos HTML
     const contentType = response.headers.get('Content-Type') || '';
-    if (contentType.includes('text/html') && !contentType.includes('charset')) {
+    if (contentType.includes('text/html')) {
       const newHeaders = new Headers(response.headers);
-      newHeaders.set('Content-Type', 'text/html; charset=utf-8');
+      if (!contentType.includes('charset')) {
+        newHeaders.set('Content-Type', 'text/html; charset=utf-8');
+      }
+      newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      newHeaders.set('Pragma', 'no-cache');
+      newHeaders.set('Expires', '0');
       response = new Response(response.body, {
         status: response.status,
         statusText: response.statusText,

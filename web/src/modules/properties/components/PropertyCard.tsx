@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Bath,
   BedDouble,
   Car,
-  Heart,
   MessageCircle,
   Ruler,
 } from 'lucide-react'
@@ -18,8 +17,9 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '../../../shared/ui/carousel'
-import { useSavedProperties } from '../hooks/useSavedProperties'
+import { SavePropertyButton } from './SavePropertyButton'
 import type { Property } from '../types'
+import { normalizePhoneForTel, normalizePhoneForWhatsApp } from '../utils/contact'
 import { getPropertyGalleryImages, optimizePropertyCardImage } from '../utils/images'
 
 type PropertyCardProps = {
@@ -36,11 +36,9 @@ export function PropertyCard({
   prioritizeImage = false,
 }: PropertyCardProps) {
   const priceLabel = getPriceLabel(property)
-  const { isSaved, toggleSave } = useSavedProperties()
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-
-  const saved = isSaved(property.id)
+  const photoPointerStartRef = useRef<{ x: number; y: number } | null>(null)
 
   function selectProperty() {
     onSelect(property.id)
@@ -76,7 +74,23 @@ export function PropertyCard({
         aria-label={`Ver ${property.title}`}
         onClick={selectProperty}
       />
-      <div className="property-photo">
+      <div
+        className="property-photo"
+        onPointerDown={(event) => {
+          photoPointerStartRef.current = { x: event.clientX, y: event.clientY }
+        }}
+        onPointerUp={(event) => {
+          const start = photoPointerStartRef.current
+          photoPointerStartRef.current = null
+          if (!start) return
+
+          const deltaX = Math.abs(event.clientX - start.x)
+          const deltaY = Math.abs(event.clientY - start.y)
+          if (deltaX < 8 && deltaY < 8) {
+            selectProperty()
+          }
+        }}
+      >
         <Carousel className="w-full h-full group" opts={{ loop: hasMultipleImages }} setApi={setCarouselApi}>
           <CarouselContent className="-ml-0 h-full">
             {images.map((image, index) => {
@@ -105,10 +119,22 @@ export function PropertyCard({
             })}
           </CarouselContent>
           {hasMultipleImages && (
-            <>
+            <div
+              className="property-carousel-controls"
+              aria-hidden="true"
+              onPointerDown={(event) => {
+                event.stopPropagation()
+              }}
+              onPointerUp={(event) => {
+                event.stopPropagation()
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+              }}
+            >
               <CarouselPrevious />
               <CarouselNext />
-            </>
+            </div>
           )}
         </Carousel>
         {hasMultipleImages && (
@@ -133,17 +159,15 @@ export function PropertyCard({
         {property.badge ? (
           <Badge className="property-badge">{property.badge}</Badge>
         ) : null}
-        <button
+        <SavePropertyButton
           className="property-save"
-          type="button"
-          aria-label={saved ? `Quitar ${property.title} de guardados` : `Guardar ${property.title}`}
-          onClick={(event) => {
-            event.stopPropagation()
-            toggleSave(property.id)
-          }}
-        >
-          <Heart size={19} className={saved ? 'fill-red-500 text-red-500' : ''} />
-        </button>
+          propertyId={property.id}
+          propertyTitle={property.title}
+          iconSize={19}
+          iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : ''}
+          preventDefault
+          stopPropagation
+        />
       </div>
 
       <div className="property-info">
@@ -167,28 +191,28 @@ export function PropertyCard({
 
         {/* Row 4: Specs Grid */}
         <div className="property-specs-grid" aria-label="Características">
-          <span className="spec-item">
-            <BedDouble size={14} className="spec-icon" />
-            {Math.floor(property.bedrooms)} Recám.
-          </span>
-          <span className="spec-item">
-            <Bath size={14} className="spec-icon" />
-            {Math.floor(property.bathrooms)} Baño
-          </span>
+          {property.bedrooms > 0 && (
+            <span className="spec-item">
+              <BedDouble size={14} className="spec-icon" />
+              {Math.floor(property.bedrooms)} Recám.
+            </span>
+          )}
+          {property.bathrooms > 0 && (
+            <span className="spec-item">
+              <Bath size={14} className="spec-icon" />
+              {Math.floor(property.bathrooms)} Baño
+            </span>
+          )}
           <span className="spec-item">
             <Ruler size={14} className="spec-icon" />
             {property.areaM2} m²
           </span>
-          <span className="spec-item">
-            <Car size={14} className="spec-icon" />
-            {property.parking} Auto
-          </span>
-          <span className="spec-item text-neutral-600 font-semibold">
-            Mascota
-          </span>
-          <span className="spec-item text-neutral-600 font-semibold">
-            ...
-          </span>
+          {property.parking > 0 && (
+            <span className="spec-item">
+              <Car size={14} className="spec-icon" />
+              {property.parking} Auto
+            </span>
+          )}
         </div>
 
         {/* Row 5: Actions */}
@@ -202,7 +226,7 @@ export function PropertyCard({
               event.stopPropagation()
               const phone = property.contact_info?.phone
               if (phone) {
-                window.location.href = `tel:${phone}`
+                window.location.href = `tel:${normalizePhoneForTel(phone)}`
               } else {
                 onSelect(property.id, true)
               }
@@ -218,8 +242,7 @@ export function PropertyCard({
               event.stopPropagation()
               const phone = property.contact_info?.phone
               if (phone) {
-                const cleanPhone = phone.replace(/[^0-9+]/g, '')
-                window.open(`https://wa.me/${cleanPhone}`, '_blank')
+                window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
               } else {
                 onSelect(property.id, true)
               }

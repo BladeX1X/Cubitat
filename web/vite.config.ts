@@ -271,6 +271,9 @@ Tipo: ${body.property_type}`;
           ]
         },
         workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           navigateFallbackDenylist: [/\/api\//],
           globIgnores: ['**/vendor-maplibre-*.js', '**/vendor-maplibre-*.css'],
           runtimeCaching: [

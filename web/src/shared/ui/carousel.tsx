@@ -204,7 +204,14 @@ const CarouselPrevious = React.forwardRef<
         className
       )}
       disabled={!canScrollPrev}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation()
+      }}
       onClick={(e) => {
+        e.preventDefault()
         e.stopPropagation()
         scrollPrev()
       }}
@@ -235,7 +242,14 @@ const CarouselNext = React.forwardRef<
         className
       )}
       disabled={!canScrollNext}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation()
+      }}
       onClick={(e) => {
+        e.preventDefault()
         e.stopPropagation()
         scrollNext()
       }}

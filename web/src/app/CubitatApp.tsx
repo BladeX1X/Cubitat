@@ -4,6 +4,7 @@ import { Building2, Heart, Home, UserRound } from 'lucide-react'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
+import { getPropertyContactInfo } from '../modules/properties/utils/contact'
 import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
 import { buildSeoResultsPath, filtersMatchSeoRoute, parseSeoResultsRoute, type SeoResultsRoute } from '../modules/search/seoRoutes'
@@ -94,7 +95,7 @@ function getInitialPageMode(): PageMode {
   if (path.startsWith('/mis-propiedades')) {
     return 'my-properties'
   }
-  if (path.startsWith('/mi-cuenta')) {
+  if (path.startsWith('/mi-cuenta') || path.startsWith('/cuenta')) {
     return 'account'
   }
   if (path.startsWith('/favoritos')) {
@@ -156,6 +157,7 @@ export function CubitatApp() {
   const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
   const [user, setUser] = useState<User | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [pendingAuthPath, setPendingAuthPath] = useState<string | null>(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/editar/')) {
@@ -167,6 +169,31 @@ export function CubitatApp() {
 
   useEffect(() => {
     initAnalytics()
+  }, [])
+
+  useEffect(() => {
+    const cacheVersion = '20260710-clear-stale-pwa-v2'
+    if (window.localStorage.getItem(cacheVersion) === 'done') return
+
+    async function clearStalePwaState() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          await Promise.all(registrations.map((registration) => registration.unregister()))
+        }
+
+        if ('caches' in window) {
+          const cacheNames = await window.caches.keys()
+          await Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName)))
+        }
+
+        window.localStorage.setItem(cacheVersion, 'done')
+      } catch (error) {
+        console.warn('No se pudo limpiar cache PWA antigua', error)
+      }
+    }
+
+    clearStalePwaState()
   }, [])
 
   useEffect(() => {
@@ -208,12 +235,27 @@ export function CubitatApp() {
   useEffect(() => {
     const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar']
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
+      setPendingAuthPath(window.location.pathname + window.location.search + window.location.hash)
       openLogin()
       window.history.pushState(null, '', '/')
       setPageMode('home')
       setSelectedPropertyId(undefined)
     }
-  }, [isAuthLoading, pageMode, user])
+  }, [isAuthLoading, openLogin, pageMode, user])
+
+  useEffect(() => {
+    if (!user || !pendingAuthPath) return
+
+    const targetPath = pendingAuthPath
+    setPendingAuthPath(null)
+    closeLogin()
+    window.history.pushState(null, '', targetPath)
+    setPageMode(getInitialPageMode())
+    setFilters(getInitialFilters())
+    setSelectedPropertyId(getInitialSelectedPropertyId())
+    setSeoResultsRoute(parseSeoResultsRoute(window.location.pathname))
+    window.scrollTo({ top: 0 })
+  }, [closeLogin, pendingAuthPath, user])
 
   // Fetch properties from Supabase on mount
   useEffect(() => {
@@ -252,7 +294,7 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: item.contact_info
+            contact_info: getPropertyContactInfo(item.id, item.contact_info)
           }))
           setProperties(mapped)
         }
@@ -377,11 +419,12 @@ export function CubitatApp() {
   }
 
   function navigatePublish(loadDraft?: boolean) {
+    const path = loadDraft ? '/publicar?load_draft=true' : '/publicar'
     if (!user) {
+      setPendingAuthPath(path)
       openLogin()
       return
     }
-    const path = loadDraft ? '/publicar?load_draft=true' : '/publicar'
     window.history.pushState(null, '', path)
     setPageMode('publish')
     setSeoResultsRoute(null)
@@ -392,6 +435,7 @@ export function CubitatApp() {
 
   function navigateMyProperties() {
     if (!user) {
+      setPendingAuthPath('/mis-propiedades')
       openLogin()
       return
     }
@@ -404,6 +448,7 @@ export function CubitatApp() {
 
   function navigateAccount() {
     if (!user) {
+      setPendingAuthPath('/mi-cuenta')
       openLogin()
       return
     }
@@ -416,6 +461,7 @@ export function CubitatApp() {
 
   function navigateFavorites() {
     if (!user) {
+      setPendingAuthPath('/favoritos')
       openLogin()
       return
     }
@@ -428,6 +474,7 @@ export function CubitatApp() {
 
   function navigateModerar() {
     if (!user) {
+      setPendingAuthPath('/moderar')
       openLogin()
       return
     }

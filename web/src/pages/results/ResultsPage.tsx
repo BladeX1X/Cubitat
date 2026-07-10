@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { BellPlus } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
@@ -11,6 +10,12 @@ import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/searc
 import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
+import {
+  getOperationLabel,
+  getPropertyTypeLabel,
+  getPriceLabel,
+} from '../../modules/search/lib/filterOptions'
+import { ResultsMapView } from '../../modules/results-map-view'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
 const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
@@ -69,6 +74,7 @@ export function ResultsPage({
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertError, setAlertError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const pendingAlertProcessedRef = useRef(false)
   const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
   const PAGE_SIZE = 16
@@ -162,6 +168,15 @@ export function ResultsPage({
     currentPage * PAGE_SIZE
   )
 
+  const filterChips = useMemo(() => {
+    const chips: { label: string; key: string }[] = []
+    if (filters.query) chips.push({ label: filters.query, key: 'query' })
+    if (filters.operations.length > 0) chips.push({ label: getOperationLabel(filters), key: 'operation' })
+    if (filters.propertyType !== 'all') chips.push({ label: getPropertyTypeLabel(filters), key: 'type' })
+    if (filters.priceRange && filters.priceRange !== 'all') chips.push({ label: getPriceLabel(filters), key: 'price' })
+    return chips
+  }, [filters])
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
     const sentinel = document.getElementById('sticky-sentinel')
@@ -224,192 +239,193 @@ export function ResultsPage({
         onClearFilters={onClearFilters}
         onChangeFilters={onChangeFilters}
         totalResults={properties.length}
+        onCreateAlert={handleCreateSearchAlert}
+        creatingAlert={creatingSearchAlert}
+        alertMessage={alertMessage}
+        alertError={alertError}
       />
 
-      <div className="catalog-container">
-        <div className="results-heading">
-          <div>
-            <p className="eyebrow">Resultados destacados</p>
-            <h1>{heading}</h1>
-          </div>
-          <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                className="sort-button"
-                type="button"
-                variant="outline"
-                aria-label={`Ordenar resultados: ${activeSortLabel}`}
-              >
-                {activeSortLabel === 'Relevancia' ? 'Ordenar' : activeSortLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-2 bg-white border border-neutral-200 shadow-lg rounded-md">
-              <div className="px-2 py-2">
-                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#035f53]">
-                  Ordenar por
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                {sortOptions.map((option) => {
-                  const isActive = option.value === sortBy
+      <ResultsMapView
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        properties={sortedProperties}
+        filterChips={filterChips}
+        selectedPropertyId={selectedPropertyId}
+        onSelectProperty={onSelectProperty}
+        onCreateAlert={handleCreateSearchAlert}
+        creatingAlert={creatingSearchAlert}
+        filterBarProps={{
+          filters,
+          isSticky: false,
+          onClearFilters,
+          onChangeFilters,
+          totalResults: properties.length,
+          onCreateAlert: handleCreateSearchAlert,
+          creatingAlert: creatingSearchAlert,
+          alertMessage,
+          alertError,
+        }}
+      />
 
+      {viewMode === 'list' ? (
+        <div className="catalog-container">
+          <div className="results-heading">
+            <div>
+              <p className="eyebrow">Resultados destacados</p>
+              <h1>{heading}</h1>
+              <span className="mobile-results-count">
+                {properties.length} resultado{properties.length === 1 ? '' : 's'} disponibles
+              </span>
+            </div>
+            <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  className="sort-button"
+                  type="button"
+                  variant="outline"
+                  aria-label={`Ordenar resultados: ${activeSortLabel}`}
+                >
+                  {activeSortLabel === 'Relevancia' ? 'Ordenar' : activeSortLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="end" sideOffset={8} avoidCollisions={false} className="w-64 p-2 bg-white border border-neutral-200 shadow-lg rounded-md">
+                <div className="px-2 py-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#035f53]">
+                    Ordenar por
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {sortOptions.map((option) => {
+                    const isActive = option.value === sortBy
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                          isActive
+                            ? 'bg-[#035f53]/10 text-[#035f53]'
+                            : 'text-neutral-700 hover:bg-neutral-50'
+                        }`}
+                        aria-pressed={isActive}
+                        onClick={() => {
+                          setSortBy(option.value)
+                          setIsSortOpen(false)
+                        }}
+                      >
+                        <span className="block text-sm font-bold">{option.label}</span>
+                        <span className="block text-xs text-neutral-500">{option.helper}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <p className="results-summary">
+            {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
+          </p>
+
+          <div className="property-catalog-grid">
+            {loading ? (
+              <PropertyCardSkeleton count={6} />
+            ) : paginatedProperties.length > 0 ? (
+              paginatedProperties.map((property, index) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  isSelected={property.id === selectedPropertyId}
+                  onSelect={onSelectProperty}
+                  prioritizeImage={index < 4}
+                />
+              ))
+            ) : (
+              <div className="results-empty-state">
+                <p className="eyebrow">Sin resultados</p>
+                <h2>
+                  {seoRoute
+                    ? 'Todavia no hay anuncios para esta busqueda'
+                    : 'No encontramos propiedades con esos filtros'}
+                </h2>
+                {seoRoute ? (
+                  <p>
+                    Esta pagina se actualiza cuando entren nuevos anuncios. Mientras tanto puedes explorar busquedas relacionadas en {seoRoute.province} o ampliar los filtros.
+                  </p>
+                ) : null}
+                {relatedSeoRoutes.length > 0 ? (
+                  <div className="results-empty-links" aria-label="Busquedas relacionadas">
+                    {relatedSeoRoutes.map((route) => (
+                      <a key={route.path} href={route.path}>
+                        {route.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  className="results-empty-action"
+                  onClick={onClearFilters}
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {!loading && totalPages > 1 && (
+            <div className="results-pagination flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
+              >
+                Anterior
+              </Button>
+
+              <div className="flex items-center gap-1.5 mx-2">
+                {getPageNumbers().map((pageNum, idx) => {
+                  if (pageNum === '...') {
+                    return (
+                      <span key={`dots-${idx}`} className="px-2 text-neutral-500 text-xs font-bold">
+                        ...
+                      </span>
+                    )
+                  }
+                  const isCurrent = pageNum === currentPage
                   return (
                     <button
-                      key={option.value}
-                      type="button"
-                      className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
-                        isActive
-                          ? 'bg-[#035f53]/10 text-[#035f53]'
-                          : 'text-neutral-700 hover:bg-neutral-50'
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum as number)}
+                      aria-current={isCurrent ? 'page' : undefined}
+                      className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-[#035f53] text-white shadow-md'
+                          : 'text-neutral-700 hover:bg-neutral-100 active:scale-95'
                       }`}
-                      aria-pressed={isActive}
-                      onClick={() => {
-                        setSortBy(option.value)
-                        setIsSortOpen(false)
-                      }}
                     >
-                      <span className="block text-sm font-bold">{option.label}</span>
-                      <span className="block text-xs text-neutral-500">{option.helper}</span>
+                      {pageNum}
                     </button>
                   )
                 })}
               </div>
-            </PopoverContent>
-          </Popover>
-        </div>
 
-        <p className="results-summary">
-          {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
-        </p>
-
-        <div className="search-alert-strip">
-          <div>
-            <strong>Guarda esta busqueda</strong>
-            <span>Te avisaremos cuando entren propiedades que coincidan con estos filtros.</span>
-          </div>
-          <Button
-            type="button"
-            className="search-alert-button"
-            onClick={handleCreateSearchAlert}
-            disabled={creatingSearchAlert}
-          >
-            <BellPlus size={16} />
-            {creatingSearchAlert ? 'Guardando...' : 'Crear alerta'}
-          </Button>
-        </div>
-        {alertMessage ? <p className="search-alert-feedback">{alertMessage}</p> : null}
-        {alertError ? <p className="search-alert-feedback is-error">{alertError}</p> : null}
-
-        <div className="mobile-results-actions" aria-label="Acciones de resultados">
-          <button
-            type="button"
-            className="mobile-results-alert-button"
-            onClick={handleCreateSearchAlert}
-            disabled={creatingSearchAlert}
-          >
-            <BellPlus size={15} />
-            {creatingSearchAlert ? 'Guardando...' : 'Crear alerta'}
-          </button>
-        </div>
-
-        <div className="property-catalog-grid">
-          {loading ? (
-            <PropertyCardSkeleton count={6} />
-          ) : paginatedProperties.length > 0 ? (
-            paginatedProperties.map((property, index) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                isSelected={property.id === selectedPropertyId}
-                onSelect={onSelectProperty}
-                prioritizeImage={index < 4}
-              />
-            ))
-          ) : (
-            <div className="results-empty-state">
-              <p className="eyebrow">Sin resultados</p>
-              <h2>
-                {seoRoute
-                  ? 'Todavia no hay anuncios para esta busqueda'
-                  : 'No encontramos propiedades con esos filtros'}
-              </h2>
-              {seoRoute ? (
-                <p>
-                  Esta pagina se actualiza cuando entren nuevos anuncios. Mientras tanto puedes explorar busquedas relacionadas en {seoRoute.province} o ampliar los filtros.
-                </p>
-              ) : null}
-              {relatedSeoRoutes.length > 0 ? (
-                <div className="results-empty-links" aria-label="Busquedas relacionadas">
-                  {relatedSeoRoutes.map((route) => (
-                    <a key={route.path} href={route.path}>
-                      {route.label}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
               <Button
-                type="button"
-                className="results-empty-action"
-                onClick={onClearFilters}
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
               >
-                Limpiar filtros
+                Siguiente
               </Button>
             </div>
           )}
         </div>
-
-        {/* Pagination Controls */}
-        {!loading && totalPages > 1 && (
-          <div className="results-pagination flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-              className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
-            >
-              Anterior
-            </Button>
-            
-            <div className="flex items-center gap-1.5 mx-2">
-              {getPageNumbers().map((pageNum, idx) => {
-                if (pageNum === '...') {
-                  return (
-                    <span key={`dots-${idx}`} className="px-2 text-neutral-500 text-xs font-bold">
-                      ...
-                    </span>
-                  )
-                }
-                const isCurrent = pageNum === currentPage
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum as number)}
-                    aria-current={isCurrent ? 'page' : undefined}
-                    className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
-                      isCurrent
-                        ? 'bg-[#035f53] text-white shadow-md'
-                        : 'text-neutral-700 hover:bg-neutral-100 active:scale-95'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-              className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
-            >
-              Siguiente
-            </Button>
-          </div>
-        )}
-      </div>
+      ) : null}
     </section>
   )
 }
