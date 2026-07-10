@@ -119,13 +119,28 @@ export function FilterBar({
     return 'Precio'
   })()
 
+  const mobileSummaryParts = [
+    operationLabel === 'OperaciÃ³n' ? 'Operacion' : operationLabel,
+    typeLabel,
+    priceLabel === 'Precio' ? null : priceLabel,
+  ].filter(Boolean)
+
   return (
-    <div
-      className={`results-toolbar-full border-b border-neutral-100 bg-white py-3 px-4 flex flex-wrap items-center gap-3 ${
-        isSticky ? 'is-sticky shadow-sm' : ''
-      }`}
-      aria-label="Filtros activos"
-    >
+    <>
+      <div className="mobile-results-summary-card" aria-label="Resumen de busqueda">
+        <div>
+          <strong>{filters.query || 'Cuba'}</strong>
+          <span>{mobileSummaryParts.join(' · ')}</span>
+        </div>
+        <small>{totalResults} inmuebles</small>
+      </div>
+
+      <div
+        className={`results-toolbar-full border-b border-neutral-100 bg-white py-3 px-4 flex flex-wrap items-center gap-3 ${
+          isSticky ? 'is-sticky shadow-sm' : ''
+        }`}
+        aria-label="Filtros activos"
+      >
       {/* 1. Selector de Lugares / Búsqueda */}
       <div className="filter-search-field flex items-center border border-neutral-300 rounded-md px-3 py-1 bg-white min-w-[200px] max-w-[300px] h-10 shadow-sm focus-within:border-[#035f53] transition-colors relative">
         <input
@@ -454,6 +469,7 @@ export function FilterBar({
           </div>
         </PopoverContent>
       </Popover>
-    </div>
+      </div>
+    </>
   )
 }

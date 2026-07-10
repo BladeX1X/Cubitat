@@ -300,6 +300,18 @@ export function ResultsPage({
         {alertMessage ? <p className="search-alert-feedback">{alertMessage}</p> : null}
         {alertError ? <p className="search-alert-feedback is-error">{alertError}</p> : null}
 
+        <div className="mobile-results-actions" aria-label="Acciones de resultados">
+          <button
+            type="button"
+            className="mobile-results-alert-button"
+            onClick={handleCreateSearchAlert}
+            disabled={creatingSearchAlert}
+          >
+            <BellPlus size={15} />
+            {creatingSearchAlert ? 'Guardando...' : 'Crear alerta'}
+          </button>
+        </div>
+
         <div className="property-catalog-grid">
           {loading ? (
             <PropertyCardSkeleton count={6} />
