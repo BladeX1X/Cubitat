@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { BellPlus, List, Map } from 'lucide-react'
 import type { Property, OperationType, PropertyType } from '../properties/types'
@@ -7,8 +7,6 @@ import { PropertyMap } from '../maps/components/PropertyMap'
 import { formatPrice } from '../../shared/lib/formatPrice'
 import { FilterBar } from '../search/components/FilterBar'
 import type { FilterBarProps } from '../search/components/FilterBar'
-
-// ─── Label helpers ────────────────────────────────────────────────────────────
 
 const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartamento: 'DEPARTAMENTO',
@@ -28,6 +26,38 @@ const BADGE_LABELS: Record<NonNullable<Property['badge']>, string> = {
   nuevo: 'Nuevo',
 }
 
+export type ResultsMapViewProps = {
+  viewMode: 'list' | 'map'
+  onViewModeChange: (mode: 'list' | 'map') => void
+  properties: Property[]
+  selectedPropertyId?: string
+  onSelectProperty: (propertyId: string) => void
+  onCreateAlert?: () => void
+  creatingAlert?: boolean
+  filterBarProps: FilterBarProps
+}
+
+type MapPreviewCardProps = {
+  property: Property
+  isSelected: boolean
+  onSelect: (id: string) => void
+}
+
+type MapOverlayProps = {
+  properties: Property[]
+  filterBarProps: FilterBarProps
+  carouselPropertyIds: string[] | undefined
+  activeCarouselId: string | undefined
+  creatingAlert: boolean
+  onViewModeChange: (mode: 'list' | 'map') => void
+  onCreateAlert?: () => void
+  onPinClick: (id: string) => void
+  onClusterClick: (ids: string[]) => void
+  onCloseCarousel: () => void
+  onCardSelect: (id: string) => void
+  onMapViewportChange: (propertyIds: string[]) => void
+}
+
 function getPropertyTypeLabel(type: PropertyType): string {
   return PROPERTY_TYPE_LABELS[type] ?? type.toUpperCase()
 }
@@ -38,7 +68,7 @@ function getOperationLabel(op: OperationType): string {
 
 function getPriceText(property: Property): string {
   if (property.operation === 'permuta') return 'Permuta'
-  return property.priceUsd ? `${formatPrice(property.priceUsd)} USD` : '—'
+  return property.priceUsd ? `${formatPrice(property.priceUsd)} USD` : '-'
 }
 
 function getOperationSuffix(op: OperationType): string {
@@ -47,38 +77,26 @@ function getOperationSuffix(op: OperationType): string {
   return ''
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type ResultsMapViewProps = {
-  viewMode: 'list' | 'map'
-  onViewModeChange: (mode: 'list' | 'map') => void
-  properties: Property[]
-  filterChips: { label: string; key: string }[]
-  selectedPropertyId?: string
-  onSelectProperty: (propertyId: string) => void
-  onCreateAlert?: () => void
-  creatingAlert?: boolean
-  // FilterBar props forwarded into the portal
-  filterBarProps: FilterBarProps
-}
-
-// ─── MapPreviewCard ───────────────────────────────────────────────────────────
-
-type MapPreviewCardProps = {
-  property: Property
-  isSelected: boolean
-  onSelect: (id: string) => void
-}
-
 function MapPreviewCard({ property, isSelected, onSelect }: MapPreviewCardProps) {
   const [imgError, setImgError] = useState(false)
   const suffix = getOperationSuffix(property.operation)
+  const selectProperty = () => onSelect(property.id)
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectProperty()
+    }
+  }
 
   return (
     <article
       className={`map-carousel-card${isSelected ? ' map-carousel-card--selected' : ''}`}
-      onClick={() => onSelect(property.id)}
-      aria-label={`${property.title} – ${getPriceText(property)}`}
+      role="button"
+      tabIndex={0}
+      onClick={selectProperty}
+      onKeyDown={handleKeyDown}
+      aria-label={`${property.title} - ${getPriceText(property)}`}
     >
       <div className="map-carousel-card__img-wrap">
         {!imgError ? (
@@ -121,37 +139,19 @@ function MapPreviewCard({ property, isSelected, onSelect }: MapPreviewCardProps)
         ) : null}
 
         <div className="map-carousel-card__meta">
-          <span>{property.areaM2} m²</span>
-          {property.bedrooms > 0 && (
+          <span>{property.areaM2} m2</span>
+          {property.bedrooms > 0 ? (
             <span>{property.bedrooms} {property.bedrooms === 1 ? 'cuarto' : 'cuartos'}</span>
-          )}
-          {property.parking > 0 && (
-            <span>{property.parking} {property.parking === 1 ? 'vaga' : 'vagas'}</span>
-          )}
+          ) : null}
+          {property.parking > 0 ? (
+            <span>{property.parking} {property.parking === 1 ? 'parqueo' : 'parqueos'}</span>
+          ) : null}
         </div>
 
         <p className="map-carousel-card__location">{property.location}</p>
       </div>
     </article>
   )
-}
-
-// ─── MapOverlay (portal rendered directly on body) ────────────────────────────
-
-type MapOverlayProps = {
-  properties: Property[]
-  filterChips: { label: string; key: string }[]
-  filterBarProps: FilterBarProps
-  carouselPropertyIds: string[] | undefined
-  activeCarouselId: string | undefined
-  creatingAlert: boolean
-  onViewModeChange: (mode: 'list' | 'map') => void
-  onCreateAlert?: () => void
-  onPinClick: (id: string) => void
-  onClusterClick: (ids: string[]) => void
-  onCloseCarousel: () => void
-  onCardSelect: (id: string) => void
-  onMapViewportChange: () => void
 }
 
 function MapOverlay({
@@ -173,43 +173,37 @@ function MapOverlay({
   const carouselProperties = useMemo(() => {
     if (!carouselPropertyIds || carouselPropertyIds.length === 0) return []
     const idSet = new Set(carouselPropertyIds)
-    return properties.filter((p) => idSet.has(p.id))
+    return properties.filter((property) => idSet.has(property.id))
   }, [carouselPropertyIds, properties])
 
   const hasCarousel = carouselProperties.length > 0
 
-  // Scroll to active card
   useEffect(() => {
     if (!activeCarouselId || !carouselRef.current) return
-    const idx = carouselProperties.findIndex((p) => p.id === activeCarouselId)
+    const idx = carouselProperties.findIndex((property) => property.id === activeCarouselId)
     if (idx < 0) return
     const card = carouselRef.current.children[idx] as HTMLElement | undefined
     card?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
   }, [activeCarouselId, carouselProperties])
 
-  // Lock body scroll while map is open
   useEffect(() => {
-    const prev = document.body.style.overflow
+    const previousOverflow = document.body.style.overflow
     document.body.classList.add('has-map-fullscreen-overlay')
     document.body.style.overflow = 'hidden'
+
     return () => {
-      document.body.style.overflow = prev
+      document.body.style.overflow = previousOverflow
       document.body.classList.remove('has-map-fullscreen-overlay')
     }
   }, [])
 
   return createPortal(
     <div className="map-fullscreen-overlay" role="dialog" aria-label="Vista de mapa">
-
-      {/* ── Filter bar at top ────────────────────────────────────────────── */}
       <div className="map-overlay-filterbar">
         <FilterBar {...filterBarProps} isSticky={false} />
       </div>
 
-      {/* ── Map + bottom UI ──────────────────────────────────────────────── */}
       <div className={`results-map-wrapper${hasCarousel ? ' has-selected-property' : ''}`}>
-
-        {/* Map */}
         <PropertyMap
           properties={properties}
           selectedPropertyId={activeCarouselId}
@@ -218,7 +212,6 @@ function MapOverlay({
           onViewportChange={onMapViewportChange}
         />
 
-        {/* Bottom action bar */}
         <div className="map-bottom-bar">
           <button
             type="button"
@@ -241,7 +234,6 @@ function MapOverlay({
           ) : null}
         </div>
 
-        {/* ── Slide-up carousel ─────────────────────────────────────────── */}
         {hasCarousel ? (
           <div
             key={`${carouselProperties.map((property) => property.id).join('|')}:${activeCarouselId ?? ''}`}
@@ -255,7 +247,7 @@ function MapOverlay({
               aria-label="Cerrar"
               onClick={onCloseCarousel}
             >
-              ×
+              x
             </button>
             {carouselProperties.length > 1 ? (
               <div className="map-carousel-counter">
@@ -280,13 +272,10 @@ function MapOverlay({
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 export function ResultsMapView({
   viewMode,
   onViewModeChange,
   properties,
-  filterChips,
   selectedPropertyId,
   onSelectProperty,
   onCreateAlert,
@@ -340,32 +329,33 @@ export function ResultsMapView({
 
   return (
     <>
-      {/* Toggle visible ONLY in list mode */}
       {viewMode === 'list' ? (
-        <div className="results-view-toggle">
+        <div className="results-floating-actions" aria-label="Acciones de resultados">
           <button
             type="button"
-            className="is-active"
-            onClick={() => onViewModeChange('list')}
-          >
-            <List size={14} />
-            <span>Lista</span>
-          </button>
-          <button
-            type="button"
+            className="results-floating-map"
             onClick={() => onViewModeChange('map')}
           >
             <Map size={14} />
-            <span>Mapa</span>
+            <span>Mostrar mapa</span>
           </button>
+          {onCreateAlert ? (
+            <button
+              type="button"
+              className="results-floating-alert"
+              onClick={onCreateAlert}
+              disabled={creatingAlert}
+            >
+              <BellPlus size={14} />
+              <span>{creatingAlert ? 'Guardando...' : 'Crear alerta'}</span>
+            </button>
+          ) : null}
         </div>
       ) : null}
 
-      {/* Full-screen map rendered as portal on document.body */}
       {viewMode === 'map' ? (
         <MapOverlay
           properties={properties}
-          filterChips={filterChips}
           filterBarProps={filterBarProps}
           carouselPropertyIds={carouselPropertyIds}
           activeCarouselId={activeCarouselId}

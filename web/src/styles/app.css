@@ -3389,11 +3389,30 @@ h2 {
   flex-direction: column;
 }
 
+.results-desktop-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.results-list-panel {
+  min-width: 0;
+}
+
+.results-desktop-map-panel {
+  display: none;
+}
+
 .property-catalog-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   margin-top: 18px;
+}
+
+.property-catalog-item {
+  min-width: 0;
+  height: 100%;
 }
 
 .results-empty-state {
@@ -3683,6 +3702,131 @@ h2 {
   transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
   animation: loading-shimmer 1.35s ease-in-out infinite;
+}
+
+@media (min-width: 1021px) {
+  .app-shell.is-results-page .workspace-catalog {
+    max-width: none;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+  }
+
+  .app-shell.is-results-page .results-toolbar-full {
+    margin: 0 24px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 58%) minmax(420px, 42%);
+    align-items: start;
+    gap: 0;
+    min-height: calc(100dvh - 186px);
+  }
+
+  .app-shell.is-results-page .results-list-panel {
+    padding: 24px clamp(24px, 3vw, 64px) 72px;
+  }
+
+  .app-shell.is-results-page .results-desktop-map-panel {
+    position: sticky;
+    top: 0;
+    display: block;
+    height: calc(100dvh - 142px);
+    min-height: 620px;
+    border-left: 1px solid #d8e2de;
+    background: #eef3ef;
+  }
+
+  .app-shell.is-results-page .results-desktop-map-panel .map-card,
+  .app-shell.is-results-page .results-desktop-map-panel .map-card--maplibre,
+  .app-shell.is-results-page .results-desktop-map-panel .maplibre-canvas {
+    top: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-shell.is-results-page .results-desktop-map-panel .map-card-header--floating {
+    right: 92px;
+    max-width: 360px;
+    border-radius: 14px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-catalog-grid {
+    align-items: start;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-catalog-item {
+    height: auto;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-card {
+    height: auto;
+    min-height: 0;
+    border-radius: 12px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-photo {
+    border-radius: 12px 12px 0 0;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-info {
+    padding: 14px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-price-row {
+    font-size: 18px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-title {
+    min-height: 34px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-specs-grid {
+    gap: 7px 5px;
+    padding-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-actions {
+    margin-top: 2px;
+    padding-top: 8px;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-contact-btn,
+  .app-shell.is-results-page .results-desktop-shell .property-whatsapp-btn {
+    height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-save {
+    width: 38px;
+    height: 38px;
+    background: rgba(8, 24, 22, 0.28);
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .results-heading {
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 1021px) and (max-width: 1360px) {
+  .app-shell.is-results-page .results-desktop-shell {
+    grid-template-columns: minmax(0, 60%) minmax(390px, 40%);
+  }
+
+  .app-shell.is-results-page .results-desktop-shell .property-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1120px) {
@@ -4993,7 +5137,7 @@ h2 {
 
   .app-shell.is-results-page .workspace-catalog {
     gap: 6px;
-    padding: 8px 10px calc(82px + env(safe-area-inset-bottom));
+    padding: 8px 10px calc(96px + env(safe-area-inset-bottom));
   }
 
   .app-shell.is-results-page .mobile-results-summary-card {
@@ -5607,6 +5751,10 @@ h2 {
   display: none;
 }
 
+.results-floating-actions {
+  display: none;
+}
+
 .results-map-wrapper {
   position: relative;
   width: 100%;
@@ -6010,54 +6158,70 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 }
 
 @media (max-width: 1020px) {
-  .results-view-toggle {
+  .results-floating-actions {
+    position: fixed;
+    right: 0;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 0;
+    z-index: 120;
     display: flex;
     align-items: center;
-    gap: 0;
-    padding: 2px;
-    border-radius: 999px;
-    background: #f3f4f6;
-    width: fit-content;
-    margin: 0 auto 8px;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+    pointer-events: none;
   }
 
-  .results-view-toggle button {
+  .results-floating-actions button {
+    pointer-events: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 7px 16px;
-    border-radius: 999px;
+    gap: 7px;
+    min-height: 42px;
+    padding: 0 16px;
     border: 0;
-    background: transparent;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(17, 24, 39, 0.18);
     font-size: 12px;
-    font-weight: 750;
-    color: #6b7280;
+    font-weight: 900;
     cursor: pointer;
-    transition: all 0.15s ease;
-    min-width: 80px;
+    white-space: nowrap;
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
 
-  .results-view-toggle button.is-active {
+  .results-floating-actions button:active {
+    transform: scale(0.96);
+  }
+
+  .results-floating-map {
     background: #fff;
     color: #111827;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   }
 
-  .results-view-toggle button svg {
+  .results-floating-alert {
+    background: #315ee8;
+    color: #fff;
+  }
+
+  .results-floating-alert:disabled {
+    opacity: 0.72;
+  }
+
+  .results-floating-actions button svg {
     width: 14px;
     height: 14px;
   }
 }
 
 @media (max-width: 620px) {
-  .app-shell.is-results-page .results-view-toggle {
-    margin: 2px auto 6px;
+  .app-shell.is-results-page .results-floating-actions {
+    bottom: calc(14px + env(safe-area-inset-bottom));
   }
 
-  .app-shell.is-results-page .results-view-toggle button {
-    min-width: 72px;
-    padding: 6px 12px;
+  .app-shell.is-results-page .results-floating-actions button {
+    min-height: 40px;
+    padding-inline: 14px;
     font-size: 11px;
   }
 
@@ -6205,6 +6369,34 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   }
 
   .app-shell.is-results-page .map-carousel-card__price {
+    font-size: 16px;
+  }
+
+  .map-fullscreen-overlay .map-bottom-bar {
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+
+  .map-fullscreen-overlay .map-bottom-bar button {
+    padding: 8px 12px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .map-fullscreen-overlay .map-bottom-bar button svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .map-fullscreen-overlay .map-carousel-card {
+    flex: 0 0 min(252px, 80vw);
+  }
+
+  .map-fullscreen-overlay .map-carousel-card__img-wrap {
+    height: 140px;
+  }
+
+  .map-fullscreen-overlay .map-carousel-card__price {
     font-size: 16px;
   }
 }

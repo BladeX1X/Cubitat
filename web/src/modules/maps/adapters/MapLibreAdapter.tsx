@@ -8,8 +8,10 @@ import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
+const CLUSTER_SELECTED_HALO_LAYER_ID = 'property-cluster-selected-halo'
 const CLUSTER_LAYER_ID = 'property-clusters'
 const CLUSTER_COUNT_LAYER_ID = 'property-cluster-count'
+const PROPERTY_SELECTED_HALO_LAYER_ID = 'property-selected-halo'
 const PROPERTY_POINT_LAYER_ID = 'property-points'
 const PROPERTY_LABEL_LAYER_ID = 'property-labels'
 
@@ -120,7 +122,31 @@ export function MapLibreAdapter({
       data: sourceDataRef.current,
       cluster: true,
       clusterMaxZoom: 14,   // cluster until very detailed zoom (street level)
-      clusterRadius: 65,    // wider grouping radius → fewer crowded pins
+      clusterRadius: 65,
+      clusterProperties: {
+        selected_count: ['+', ['case', ['boolean', ['get', 'isSelected'], false], 1, 0]],
+      },
+    })
+
+    map.addLayer({
+      id: CLUSTER_SELECTED_HALO_LAYER_ID,
+      type: 'circle',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['all', ['has', 'point_count'], ['>', ['coalesce', ['get', 'selected_count'], 0], 0]],
+      paint: {
+        'circle-color': 'rgba(3, 95, 83, 0.18)',
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          38,
+          4,
+          45,
+          8,
+          52,
+        ],
+        'circle-stroke-color': '#035f53',
+        'circle-stroke-width': 4,
+      },
     })
 
     map.addLayer({
@@ -129,18 +155,46 @@ export function MapLibreAdapter({
       source: PROPERTY_SOURCE_ID,
       filter: ['has', 'point_count'],
       paint: {
-        'circle-color': '#ffffff',
-        'circle-radius': [
-          'step',
-          ['get', 'point_count'],
-          22,
-          4,
-          28,
-          8,
-          34,
+        'circle-color': [
+          'case',
+          ['>', ['coalesce', ['get', 'selected_count'], 0], 0],
+          '#035f53',
+          '#ffffff',
         ],
-        'circle-stroke-color': '#9ca3af',
-        'circle-stroke-width': 2.5,
+        'circle-radius': [
+          'case',
+          ['>', ['coalesce', ['get', 'selected_count'], 0], 0],
+          [
+            'step',
+            ['get', 'point_count'],
+            28,
+            4,
+            34,
+            8,
+            40,
+          ],
+          [
+            'step',
+            ['get', 'point_count'],
+            22,
+            4,
+            28,
+            8,
+            34,
+          ],
+        ],
+        'circle-stroke-color': [
+          'case',
+          ['>', ['coalesce', ['get', 'selected_count'], 0], 0],
+          '#f8fafc',
+          '#9ca3af',
+        ],
+        'circle-stroke-width': [
+          'case',
+          ['>', ['coalesce', ['get', 'selected_count'], 0], 0],
+          5,
+          2.5,
+        ],
       },
     })
 
@@ -155,7 +209,25 @@ export function MapLibreAdapter({
         'text-font': ['Noto Sans Bold'],
       },
       paint: {
-        'text-color': '#374151',
+        'text-color': [
+          'case',
+          ['>', ['coalesce', ['get', 'selected_count'], 0], 0],
+          '#ffffff',
+          '#374151',
+        ],
+      },
+    })
+
+    map.addLayer({
+      id: PROPERTY_SELECTED_HALO_LAYER_ID,
+      type: 'circle',
+      source: PROPERTY_SOURCE_ID,
+      filter: ['all', ['!', ['has', 'point_count']], ['boolean', ['get', 'isSelected'], false]],
+      paint: {
+        'circle-color': 'rgba(3, 95, 83, 0.2)',
+        'circle-radius': 24,
+        'circle-stroke-color': '#035f53',
+        'circle-stroke-width': 4,
       },
     })
 
@@ -194,24 +266,27 @@ export function MapLibreAdapter({
       filter: ['!', ['has', 'point_count']],
       layout: {
         'text-field': ['get', 'label'],
-        'text-size': 10,
+        'text-size': 11,
         'text-font': ['Noto Sans Bold'],
-        'text-offset': [0, 0],
-        'text-anchor': 'center',
+        'text-offset': [0, -1.85],
+        'text-anchor': 'bottom',
+        'text-allow-overlap': true,
       },
       paint: {
         'text-color': [
           'case',
           ['boolean', ['get', 'isSelected'], false],
-          '#ffffff',
+          '#024a41',
           '#035f53',
         ],
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 2,
       },
     })
 
     const handleClusterClick = async (event: maplibregl.MapMouseEvent) => {
       const feature = map.queryRenderedFeatures(event.point, {
-        layers: [CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
+        layers: [CLUSTER_SELECTED_HALO_LAYER_ID, CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
       })[0]
       const clusterId = feature?.properties?.cluster_id as number | undefined
       if (clusterId === undefined) return
@@ -243,21 +318,14 @@ export function MapLibreAdapter({
       })
     }
 
-    const handlePropertyClick = (event: maplibregl.MapMouseEvent) => {
-      const feature = map.queryRenderedFeatures(event.point, {
-        layers: [PROPERTY_POINT_LAYER_ID, PROPERTY_LABEL_LAYER_ID],
-      })[0]
-      const propertyId = feature?.properties?.id as string | undefined
-      if (propertyId) {
-        onSelectPropertyRef.current(propertyId)
-      }
-    }
-
     const handleMapClick = (event: maplibregl.MapMouseEvent) => {
       const clusterFeature = map.queryRenderedFeatures(event.point, {
-        layers: [CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
+        layers: [CLUSTER_SELECTED_HALO_LAYER_ID, CLUSTER_LAYER_ID, CLUSTER_COUNT_LAYER_ID],
       })[0]
-      if (clusterFeature) return
+      if (clusterFeature) {
+        void handleClusterClick(event)
+        return
+      }
 
       const propertyFeature = map.queryRenderedFeatures(event.point, {
         layers: [PROPERTY_POINT_LAYER_ID, PROPERTY_LABEL_LAYER_ID],
@@ -294,48 +362,59 @@ export function MapLibreAdapter({
       map.getCanvas().style.cursor = ''
     }
 
+    const getVisiblePropertyIds = () => {
+      const currentBounds = map.getBounds()
+      return sourceDataRef.current.features
+        .filter((feature) => {
+          const [longitude, latitude] = feature.geometry.coordinates as [number, number]
+          return currentBounds.contains([longitude, latitude])
+        })
+        .map((feature) => feature.properties?.id as string | undefined)
+        .filter((id): id is string => !!id)
+    }
+
     const handleViewportChange = (event: maplibregl.MapLibreEvent) => {
       if (event.originalEvent) {
-        onViewportChangeRef.current?.()
+        onViewportChangeRef.current?.(getVisiblePropertyIds())
       }
     }
 
-    map.on('click', CLUSTER_LAYER_ID, handleClusterClick)
-    map.on('click', CLUSTER_COUNT_LAYER_ID, handleClusterClick)
-    map.on('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
-    map.on('click', PROPERTY_LABEL_LAYER_ID, handlePropertyClick)
     map.on('click', handleMapClick)
+    map.on('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', CLUSTER_COUNT_LAYER_ID, handleMouseEnter)
+    map.on('mouseenter', PROPERTY_SELECTED_HALO_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', PROPERTY_LABEL_LAYER_ID, handleMouseEnter)
     map.on('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+    map.on('mouseleave', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseLeave)
     map.on('mouseleave', CLUSTER_COUNT_LAYER_ID, handleMouseLeave)
+    map.on('mouseleave', PROPERTY_SELECTED_HALO_LAYER_ID, handleMouseLeave)
     map.on('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
     map.on('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
-    map.on('dragstart', handleViewportChange)
-    map.on('zoomstart', handleViewportChange)
-    map.on('rotatestart', handleViewportChange)
-    map.on('pitchstart', handleViewportChange)
+    map.on('dragend', handleViewportChange)
+    map.on('zoomend', handleViewportChange)
+    map.on('rotateend', handleViewportChange)
+    map.on('pitchend', handleViewportChange)
 
     return () => {
-      map.off('click', CLUSTER_LAYER_ID, handleClusterClick)
-      map.off('click', CLUSTER_COUNT_LAYER_ID, handleClusterClick)
-      map.off('click', PROPERTY_POINT_LAYER_ID, handlePropertyClick)
-      map.off('click', PROPERTY_LABEL_LAYER_ID, handlePropertyClick)
       map.off('click', handleMapClick)
+      map.off('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)
       map.off('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
       map.off('mouseenter', CLUSTER_COUNT_LAYER_ID, handleMouseEnter)
+      map.off('mouseenter', PROPERTY_SELECTED_HALO_LAYER_ID, handleMouseEnter)
       map.off('mouseenter', PROPERTY_POINT_LAYER_ID, handleMouseEnter)
       map.off('mouseenter', PROPERTY_LABEL_LAYER_ID, handleMouseEnter)
       map.off('mouseleave', CLUSTER_LAYER_ID, handleMouseLeave)
+      map.off('mouseleave', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseLeave)
       map.off('mouseleave', CLUSTER_COUNT_LAYER_ID, handleMouseLeave)
+      map.off('mouseleave', PROPERTY_SELECTED_HALO_LAYER_ID, handleMouseLeave)
       map.off('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
       map.off('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
-      map.off('dragstart', handleViewportChange)
-      map.off('zoomstart', handleViewportChange)
-      map.off('rotatestart', handleViewportChange)
-      map.off('pitchstart', handleViewportChange)
+      map.off('dragend', handleViewportChange)
+      map.off('zoomend', handleViewportChange)
+      map.off('rotateend', handleViewportChange)
+      map.off('pitchend', handleViewportChange)
     }
   }, [mapReady])
 
