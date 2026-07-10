@@ -380,7 +380,7 @@ export function CubitatApp() {
     setPageMode('home')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigateLoginAfterPasswordReset() {
@@ -399,7 +399,7 @@ export function CubitatApp() {
         setFilters(seoRoute.filters)
       }
       setSelectedPropertyId(undefined)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      window.scrollTo(0, 0)
       return
     }
 
@@ -415,7 +415,7 @@ export function CubitatApp() {
     setPageMode('results')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigatePublish(loadDraft?: boolean) {
@@ -430,7 +430,7 @@ export function CubitatApp() {
     setSeoResultsRoute(null)
     setEditPropertyId(undefined)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigateMyProperties() {
@@ -443,7 +443,7 @@ export function CubitatApp() {
     setPageMode('my-properties')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigateAccount() {
@@ -456,7 +456,7 @@ export function CubitatApp() {
     setPageMode('account')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigateFavorites() {
@@ -469,7 +469,7 @@ export function CubitatApp() {
     setPageMode('favorites')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function navigateModerar() {
@@ -482,7 +482,7 @@ export function CubitatApp() {
     setPageMode('moderar')
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   async function handleSignOut() {
@@ -495,7 +495,7 @@ export function CubitatApp() {
     setEditPropertyId(propertyId)
     setPageMode('edit')
     setSeoResultsRoute(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   /*
@@ -544,7 +544,7 @@ export function CubitatApp() {
         document.getElementById('contactar-anunciante')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 300)
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      window.scrollTo(0, 0)
     }
   }
 
@@ -561,7 +561,7 @@ export function CubitatApp() {
     const path = queryString ? `/resultados?${queryString}` : '/resultados'
 
     window.history.pushState(null, '', path)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   function handleClearFilters() {
@@ -614,7 +614,7 @@ export function CubitatApp() {
     setSelectedPropertyId(undefined)
     window.history.pushState(null, '', `/resultados?operacion=${op}`)
     setPageMode('results')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo(0, 0)
   }
 
   /*
