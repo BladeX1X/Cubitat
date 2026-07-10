@@ -15,6 +15,12 @@ El sistema MUST ofrecer acciones claras de contacto en cada tarjeta cuando exist
 - AND estas acciones MUST ser tactiles en movil
 - AND no MUST interferir con la accion de abrir detalle
 
+#### Scenario: Contacto no disponible
+- GIVEN una propiedad no tiene telefono, WhatsApp o email valido
+- WHEN se renderiza tarjeta, preview o detalle
+- THEN el sistema MUST ocultar o deshabilitar acciones no disponibles
+- AND MUST evitar enlaces rotos o botones que no hacen nada
+
 ### Requirement: Llamada telefonica en movil
 El sistema MUST usar enlaces telefonicos validos cuando el usuario pulsa el icono de telefono.
 
@@ -24,6 +30,12 @@ El sistema MUST usar enlaces telefonicos validos cuando el usuario pulsa el icon
 - THEN el enlace MUST usar formato `tel:+...`
 - AND el navegador/dispositivo MUST poder abrir el flujo nativo de llamada
 - AND si no hay telefono valido el sistema MUST ocultar o deshabilitar la accion
+
+#### Scenario: Telefono en escritorio
+- GIVEN el usuario esta en escritorio y no existe marcador telefonico nativo confiable
+- WHEN intenta contactar por telefono
+- THEN el sistema MAY mostrar el numero o copiarlo
+- AND MUST evitar depender de `tel:` como unica accion visible si no resuelve el caso desktop
 
 ### Requirement: Formulario de contacto en detalle
 El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la pagina de detalle.
@@ -35,6 +47,13 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - AND MUST registrar o enviar la consulta por el canal configurado
 - AND MUST mostrar confirmacion o error entendible
 
+#### Scenario: Consulta desde boton principal
+- GIVEN un usuario pulsa `Consultar` o accion equivalente en detalle
+- WHEN existe formulario o modal de contacto
+- THEN el sistema MUST enfocar o abrir el flujo de consulta
+- AND MUST preservar la propiedad destino
+- AND MUST evitar enviar datos sin consentimiento explicito
+
 ### Requirement: Privacidad de ubicacion y contacto
 El sistema MUST evitar exponer datos sensibles innecesarios antes de una interaccion explicita.
 
@@ -45,3 +64,11 @@ El sistema MUST evitar exponer datos sensibles innecesarios antes de una interac
 - AND MAY ocultar direccion exacta o datos sensibles del anunciante
 - AND MUST revelar solo acciones necesarias para contactar
 
+### Requirement: Canales de contacto consistentes
+El sistema MUST mantener comportamiento consistente entre catalogo, detalle, mapa y favoritos.
+
+#### Scenario: WhatsApp disponible
+- GIVEN una propiedad tiene WhatsApp valido
+- WHEN el usuario pulsa la accion WhatsApp
+- THEN el sistema MUST abrir un enlace con mensaje contextual cuando sea posible
+- AND MUST incluir referencia a la propiedad sin exponer datos sensibles innecesarios

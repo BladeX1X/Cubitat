@@ -123,6 +123,116 @@ async function isRateLimited(env: Env, ip: string, limit: number, windowMs: numb
   return !data.allowed;
 }
 
+async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const id = env.RATE_LIMITER.idFromName('global');
+  const stub = env.RATE_LIMITER.get(id);
+  const url = `https://dummy/check?key=${encodeURIComponent(key)}&limit=${limit}&windowMs=${windowMs}`;
+  const res = await stub.fetch(url);
+  return await res.json() as { allowed: boolean; remaining: number; resetAt: number };
+}
+
+function rateLimitResponse(resetAt: number): Response {
+  const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+  return withSecurityHeaders(new Response(JSON.stringify({
+    error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+  }), {
+    status: 429,
+    headers: {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+    },
+  }));
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function getRequestEmail(request: Request): Promise<string> {
+  try {
+    const contentType = request.headers.get('content-type') || '';
+    const clonedRequest = request.clone();
+
+    if (contentType.includes('application/json')) {
+      const body = await clonedRequest.json() as any;
+      return normalizeEmail(body?.email || body?.data?.email || body?.user?.email);
+    }
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const form = await clonedRequest.formData();
+      return normalizeEmail(form.get('email'));
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string, subPath: string): Promise<Response | null> {
+  const url = new URL(request.url);
+  const method = request.method.toUpperCase();
+  const isPasswordToken = method === 'POST'
+    && subPath.startsWith('/auth/v1/token')
+    && url.searchParams.get('grant_type') === 'password';
+  const isSignup = method === 'POST' && subPath === '/auth/v1/signup';
+  const isRecover = method === 'POST' && subPath === '/auth/v1/recover';
+  const isOtp = method === 'POST' && subPath === '/auth/v1/otp';
+  const isResend = method === 'POST' && subPath === '/auth/v1/resend';
+
+  if (!isPasswordToken && !isSignup && !isRecover && !isOtp && !isResend) {
+    return null;
+  }
+
+  let action = 'auth';
+  let ipLimit = 20;
+  let ipWindowMs = 60000;
+  let emailLimit = 8;
+  let emailWindowMs = 600000;
+
+  if (isPasswordToken) {
+    action = 'login';
+    ipLimit = 10;
+    ipWindowMs = 60000;
+    emailLimit = 6;
+    emailWindowMs = 600000;
+  } else if (isSignup) {
+    action = 'signup';
+    ipLimit = 5;
+    ipWindowMs = 600000;
+    emailLimit = 3;
+    emailWindowMs = 3600000;
+  } else if (isRecover || isResend || isOtp) {
+    action = isRecover ? 'recover' : isResend ? 'resend' : 'otp';
+    ipLimit = 5;
+    ipWindowMs = 600000;
+    emailLimit = 3;
+    emailWindowMs = 3600000;
+  }
+
+  const ipCheck = await checkRateLimit(env, `${clientIp}:auth:${action}:ip:v1`, ipLimit, ipWindowMs);
+  if (!ipCheck.allowed) {
+    console.info(`auth ${action} blocked by IP rate limit`);
+    return rateLimitResponse(ipCheck.resetAt);
+  }
+
+  const email = await getRequestEmail(request);
+  if (email) {
+    const emailHash = await sha256Hex(email);
+    const emailCheck = await checkRateLimit(env, `email:${emailHash}:auth:${action}:v1`, emailLimit, emailWindowMs);
+    if (!emailCheck.allowed) {
+      console.info(`auth ${action} blocked by email rate limit`);
+      return rateLimitResponse(emailCheck.resetAt);
+    }
+  }
+
+  return null;
+}
+
 function extractIdFromSlug(slug: string): string {
   if (!slug) return ''
   const parts = slug.split('-')
@@ -605,6 +715,11 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
+
+      const authRateLimitResponse = await enforceAuthRateLimit(request, env, clientIp, subPath);
+      if (authRateLimitResponse) {
+        return authRateLimitResponse;
+      }
 
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
       if (method === 'DELETE' || method === 'PATCH') {
