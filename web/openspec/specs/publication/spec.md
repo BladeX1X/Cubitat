@@ -57,35 +57,63 @@ El sistema MUST capturar operacion, tipo de inmueble, dormitorios, banos, area, 
 - AND el sistema MUST mostrar contadores o ayudas cuando existan limites
 
 ### Requirement: Imagenes optimizadas
-El sistema MUST aceptar imagenes de la propiedad y optimizarlas antes de persistirlas.
+El sistema MUST aceptar imagenes de la propiedad y optimizarlas en el cliente antes de subirlas al almacenamiento de Supabase.
 
-#### Scenario: Subir imagenes
-- GIVEN un usuario selecciona archivos de imagen
-- WHEN el sistema recibe los archivos
-- THEN el sistema MUST limitar la cantidad maxima permitida
-- AND el sistema MUST comprimir y convertir imagenes a WebP cuando sea posible
-- AND el sistema MUST mostrar previsualizaciones ordenadas
-- AND el sistema MUST permitir eliminar imagenes antes de publicar
+#### Scenario: Subir y optimizar imagenes
+- GIVEN un usuario selecciona archivos de imagen (máximo 20 imágenes)
+- WHEN el sistema procesa los archivos
+- THEN el sistema MUST redimensionar las imágenes a una resolución máxima de 800px de ancho para optimizar ancho de banda
+- AND el sistema MUST convertirlas y comprimirlas a formato WebP con calidad 0.70
+- AND el sistema MUST mostrar previsualizaciones ordenadas permitiendo reordenar y eliminar imágenes
+- AND el sistema MUST subir las imágenes optimizadas a la carpeta correspondiente en Supabase Storage
 
-### Requirement: Precio y contacto
-El sistema MUST capturar condiciones comerciales y contacto del anunciante antes de publicar.
+### Requirement: Condiciones Comerciales y Contacto
+El sistema MUST capturar precios, tipo de moneda (USD, CUP, MLC) y contacto del anunciante antes de enviar el anuncio, adaptándose al flujo especial de permutas.
 
 #### Scenario: Completar precio y contacto
-- GIVEN un usuario llega a los pasos finales
-- WHEN ingresa precio, email y telefono o WhatsApp
-- THEN el sistema MUST validar formato de telefono
-- AND para permutas MAY omitir precio monetario
-- AND el sistema MUST impedir publicar si falta contacto requerido
+- GIVEN un usuario en el paso comercial
+- WHEN selecciona la moneda (USD, CUP o MLC) e ingresa el precio
+- THEN el sistema MUST validar que el precio sea positivo
+- AND el sistema MUST requerir al menos un canal de contacto válido (teléfono o WhatsApp)
+
+#### Scenario: Selección de Permuta
+- GIVEN un anunciante que selecciona "Permuta" como tipo de operación
+- WHEN completa el formulario
+- THEN el sistema MUST permitir omitir el precio monetario
+- AND el sistema MUST habilitar un campo obligatorio para describir detalladamente qué busca a cambio de su propiedad (ej. "Busco apartamento de 2 habitaciones en Vedado")
+
+### Requirement: Moderación asistida por IA (Groq)
+El sistema MUST procesar de forma asíncrona todo nuevo anuncio enviado a través de la API `/api/ai-moderate` usando IA para moderar texto e imágenes.
+
+#### Scenario: Anuncio aprobado por IA
+- GIVEN un usuario envía una publicación completa con texto e imágenes
+- WHEN el Cloudflare Worker llama a la API de Groq con el modelo Llama 4
+- THEN la IA MUST analizar si cumple las normas (sin contenido ofensivo, spam o imágenes inapropiadas)
+- AND si el análisis es positivo, la IA retornará el estado `ai_approved`
+- AND el sistema actualizará automáticamente el anuncio a `published` en base de datos haciéndolo público de inmediato
+
+#### Scenario: Anuncio rechazado por IA o derivado a revisión manual
+- GIVEN un anuncio sospechoso de spam, fraude, lenguaje ofensivo o con imágenes inapropiadas
+- WHEN la IA detecta la infracción
+- THEN retornará el estado `ai_rejected` junto con el motivo del rechazo
+- AND el anuncio quedará oculto en estado `rejected` notificando al propietario
+- AND si hay problemas de conexión con Groq, la API key está ausente o la respuesta es ambigua, el sistema MUST dejar el anuncio en `pending_review` para revisión manual del administrador
 
 ### Requirement: Guardado y recuperacion de borrador
-El sistema MUST proteger el progreso del usuario mediante borradores locales y manuales.
+El sistema MUST proteger el progreso del usuario mediante borradores locales automáticos y manuales.
 
 #### Scenario: Guardar borrador
 - GIVEN un usuario esta completando una publicacion
 - WHEN modifica campos del formulario
-- THEN el sistema SHOULD persistir el borrador localmente
+- THEN el sistema SHOULD persistir el progreso en `localStorage` o `IndexedDB` automáticamente en tiempo real
 - AND el usuario MUST poder guardar manualmente el borrador
 - AND al volver con `load_draft=true` el sistema MUST ofrecer recuperar el borrador
+
+#### Scenario: Visualización de banner de borrador en Dashboard
+- GIVEN un usuario con sesión activa ingresa a su panel de usuario
+- WHEN el sistema detecta que existe un borrador local no guardado en base de datos
+- THEN el sistema MUST mostrar un banner destacado con la opción: "Tienes un borrador de publicación pendiente. ¿Deseas reanudarlo?"
+- AND si el usuario hace clic, MUST cargar los datos en el formulario de publicación y borrar la alerta.
 
 #### Scenario: Borrador no debe sobrescribir edicion remota
 - GIVEN un usuario abre una propiedad existente para editar

@@ -65,13 +65,23 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
     setErrorMsg(null)
     setSuccessMsg(null)
 
+    if (!navigator.onLine) {
+      setErrorMsg('Para actualizar tu contraseña necesitas una conexión a Internet activa.')
+      return
+    }
+
     if (!hasRecoverySession) {
       setErrorMsg('Primero abre el enlace de recuperacion enviado a tu correo.')
       return
     }
 
-    if (password.length < 8) {
-      setErrorMsg('La contrasena debe tener al menos 8 caracteres.')
+    const hasUppercase = /[A-Z]/.test(password)
+    const hasLowercase = /[a-z]/.test(password)
+    const hasNumber = /[0-9]/.test(password)
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+    if (password.length < 8 || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+      setErrorMsg('La contrasena debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.')
       return
     }
 

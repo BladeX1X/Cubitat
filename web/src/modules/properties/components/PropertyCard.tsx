@@ -265,8 +265,8 @@ function getPriceLabel(property: Property) {
   const formattedPrice = formatPrice(property.priceUsd)
 
   if (property.operation === 'alquiler') {
-    return `${formattedPrice} USD / mes`
+    return `${formattedPrice} / mes`
   }
 
-  return `${formattedPrice} USD`
+  return formattedPrice
 }

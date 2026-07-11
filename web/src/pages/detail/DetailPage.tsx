@@ -1015,12 +1015,59 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
 
 /* Subcomponente: Tarjeta de Contacto */
 function ContactCard({ property, onReport }: { property: Property; onReport: () => void }) {
-  const [contactSent, setContactSent] = useState(false)
+  const [contactSent, setContactSent] = useState(() => {
+    const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
+    if (saved) {
+      const diff = Date.now() - Number(saved)
+      return diff < 300000 // 5 minutos de bloqueo
+    }
+    return false
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleContactSubmit(e: React.FormEvent) {
+  async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setContactSent(true)
-    setTimeout(() => setContactSent(false), 4000)
+    setLoading(true)
+    setError(null)
+
+    // Verificar spam en local storage antes de enviar
+    const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
+    if (saved) {
+      const diff = Date.now() - Number(saved)
+      if (diff < 300000) {
+        const remaining = Math.ceil((300000 - diff) / 1000)
+        setError(`Has enviado un mensaje recientemente. Espera ${remaining} segundos.`)
+        setLoading(false)
+        return
+      }
+    }
+
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('contact-name') as string
+    const phone = formData.get('contact-phone') as string
+    const message = formData.get('contact-message') as string
+
+    try {
+      const { error: insertError } = await supabase
+        .from('contacts')
+        .insert({
+          property_id: property.id,
+          contact_name: name,
+          contact_phone: phone,
+          message: message
+        })
+
+      if (insertError) throw insertError
+
+      localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
+      setContactSent(true)
+    } catch (err: any) {
+      console.error('Error submitting contact lead:', err)
+      setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -1036,6 +1083,13 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 text-xs leading-relaxed flex items-center gap-2">
+            <AlertTriangle className="shrink-0 text-red-500" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
+
         {contactSent ? (
           <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-xs leading-relaxed">
             <strong>¡Mensaje enviado!</strong> Tu solicitud ha sido procesada. El anunciante se pondrá en contacto contigo pronto.
@@ -1048,7 +1102,9 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
               </label>
               <Textarea
                 id="contact-message"
+                name="contact-message"
                 required
+                disabled={loading}
                 defaultValue={`Hola, estoy interesado en "${property.title}" en ${property.location}. Quisiera recibir más detalles.`}
                 className="min-h-[100px] text-xs"
               />
@@ -1058,22 +1114,47 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
               <label htmlFor="contact-name" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Nombre completo
               </label>
-              <Input id="contact-name" required placeholder="Escribe tu nombre" className="text-xs" />
+              <Input 
+                id="contact-name" 
+                name="contact-name" 
+                required 
+                disabled={loading}
+                placeholder="Escribe tu nombre" 
+                className="text-xs" 
+              />
             </div>
 
             <div className="space-y-1">
               <label htmlFor="contact-phone" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Teléfono o WhatsApp
               </label>
-              <Input id="contact-phone" required type="tel" placeholder="+53 50000000" className="text-xs" />
+              <Input 
+                id="contact-phone" 
+                name="contact-phone" 
+                required 
+                type="tel" 
+                disabled={loading}
+                placeholder="+53 50000000" 
+                className="text-xs" 
+              />
             </div>
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-[#035f53] hover:bg-[#024a41] text-white rounded-full h-11 text-xs font-bold flex items-center justify-center gap-2 mt-4 transition-colors duration-200"
             >
-              <Phone size={14} />
-              Enviar mensaje y ver contacto
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={14} />
+                  Enviando mensaje...
+                </>
+              ) : (
+                <>
+                  <Phone size={14} />
+                  Enviar mensaje y ver contacto
+                </>
+              )}
             </Button>
           </form>
         )}

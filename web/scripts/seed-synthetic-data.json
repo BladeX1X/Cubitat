@@ -1,0 +1,842 @@
+[
+  {
+    "id": "seed-s001",
+    "title": "Apto 2 cuartos en Nuevo Vedado zona El Bosque",
+    "location": "La Habana, Vedado",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "vedado",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 9500,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 68,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://picsum.photos/seed/cubitat-1/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-1a/800/600",
+      "https://picsum.photos/seed/cubitat-1b/800/600",
+      "https://picsum.photos/seed/cubitat-1c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.136884,
+      "longitude": -82.377387
+    },
+    "mapPoint": {
+      "x": -82.377387,
+      "y": 23.136884
+    },
+    "contact_info": {
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s002",
+    "title": "Precioso Apartamento en Bajos en Marianao cerca de 100 y 51",
+    "location": "La Habana, Habana Vieja",
+    "description": "Vivienda con amplios espacios, techos altos, patio interior. Climatización en todas las habitaciones. Tanque de agua y planta eléctrica.",
+    "zoneId": "habana-vieja",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 8750,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 0,
+    "areaM2": 55,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://picsum.photos/seed/cubitat-2/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-2a/800/600",
+      "https://picsum.photos/seed/cubitat-2b/800/600",
+      "https://picsum.photos/seed/cubitat-2c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.132659,
+      "longitude": -82.347247
+    },
+    "mapPoint": {
+      "x": -82.347247,
+      "y": 23.132659
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 5 4012345"
+    }
+  },
+  {
+    "id": "seed-s003",
+    "title": "Se vende hermosa casa colonial con 8 habitaciones",
+    "location": "La Habana, Centro Habana",
+    "description": "Apartamento luminoso en edificio con portón eléctrico. Pasillos amplios, balcón tendal, cisterna propia. Tranquilo y seguro.",
+    "zoneId": "centro-habana",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 600000,
+    "bedrooms": 8,
+    "bathrooms": 4,
+    "parking": 1,
+    "areaM2": 350,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://picsum.photos/seed/cubitat-3/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-3a/800/600",
+      "https://picsum.photos/seed/cubitat-3b/800/600",
+      "https://picsum.photos/seed/cubitat-3c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.129478,
+      "longitude": -82.372339
+    },
+    "mapPoint": {
+      "x": -82.372339,
+      "y": 23.129478
+    },
+    "contact_info": {
+      "name": "Juan Rodríguez",
+      "phone": "+53 7 8321122"
+    }
+  },
+  {
+    "id": "seed-s004",
+    "title": "Casa de playa en Santa Fe frente al mar con piscina",
+    "location": "La Habana, Playa",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "playa",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 246,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking": 0,
+    "areaM2": 120,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://picsum.photos/seed/cubitat-4/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-4a/800/600",
+      "https://picsum.photos/seed/cubitat-4b/800/600",
+      "https://picsum.photos/seed/cubitat-4c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.103437,
+      "longitude": -82.443486
+    },
+    "mapPoint": {
+      "x": -82.443486,
+      "y": 23.103437
+    },
+    "contact_info": {
+      "name": "Carlos Pérez",
+      "phone": "+53 5 4012345"
+    }
+  },
+  {
+    "id": "seed-s005",
+    "title": "Vendo propiedad horizontal en El Náutico, La Habana",
+    "location": "La Habana, Miramar",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "miramar",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 150000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "parking": 1,
+    "areaM2": 200,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://picsum.photos/seed/cubitat-5/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-5a/800/600",
+      "https://picsum.photos/seed/cubitat-5b/800/600",
+      "https://picsum.photos/seed/cubitat-5c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.126129,
+      "longitude": -82.417245
+    },
+    "mapPoint": {
+      "x": -82.417245,
+      "y": 23.126129
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 7 2049876"
+    }
+  },
+  {
+    "id": "seed-s006",
+    "title": "Precioso apartamento para extranjeros en ubicación céntrica",
+    "location": "La Habana, Nuevo Vedado",
+    "description": "Cómoda vivienda en zona residencial tranquila. Cerca del transporte público, farmacias y mercados. Agua y gas de la calle.",
+    "zoneId": "nuevo-vedado",
+    "operation": "alquiler",
+    "propertyType": "apartamento",
+    "priceUsd": 300,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 65,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://picsum.photos/seed/cubitat-6/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-6a/800/600",
+      "https://picsum.photos/seed/cubitat-6b/800/600",
+      "https://picsum.photos/seed/cubitat-6c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.129172,
+      "longitude": -82.339376
+    },
+    "mapPoint": {
+      "x": -82.339376,
+      "y": 23.129172
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s007",
+    "title": "Apartamento en Nuevo Vedado con planta eléctrica",
+    "location": "La Habana, Marianao",
+    "description": "Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.",
+    "zoneId": "marianao",
+    "operation": "alquiler",
+    "propertyType": "apartamento",
+    "priceUsd": 400,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 70,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://picsum.photos/seed/cubitat-7/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-7a/800/600",
+      "https://picsum.photos/seed/cubitat-7b/800/600",
+      "https://picsum.photos/seed/cubitat-7c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.082386,
+      "longitude": -82.427979
+    },
+    "mapPoint": {
+      "x": -82.427979,
+      "y": 23.082386
+    },
+    "contact_info": {
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s008",
+    "title": "Bonito Apartamento en el Malecón para extranjeros",
+    "location": "La Habana, Guanabo",
+    "description": "Cómoda vivienda en zona residencial tranquila. Cerca del transporte público, farmacias y mercados. Agua y gas de la calle.",
+    "zoneId": "guanabo",
+    "operation": "alquiler",
+    "propertyType": "apartamento",
+    "priceUsd": 300,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "parking": 0,
+    "areaM2": 50,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://picsum.photos/seed/cubitat-8/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-8a/800/600",
+      "https://picsum.photos/seed/cubitat-8b/800/600",
+      "https://picsum.photos/seed/cubitat-8c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.176735,
+      "longitude": -82.134627
+    },
+    "mapPoint": {
+      "x": -82.134627,
+      "y": 23.176735
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 7 8321122"
+    }
+  },
+  {
+    "id": "seed-s009",
+    "title": "Casa independiente en Centro Habana en venta",
+    "location": "La Habana, Cerro",
+    "description": "Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.",
+    "zoneId": "cerro",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 35000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 85,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://picsum.photos/seed/cubitat-9/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-9a/800/600",
+      "https://picsum.photos/seed/cubitat-9b/800/600",
+      "https://picsum.photos/seed/cubitat-9c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.119316,
+      "longitude": -82.371898
+    },
+    "mapPoint": {
+      "x": -82.371898,
+      "y": 23.119316
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 5 3654891"
+    }
+  },
+  {
+    "id": "seed-s010",
+    "title": "Vendo apartamento de 2 habitaciones en Nuevo Vedado",
+    "location": "La Habana, Santos Suárez",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "santos-suarez",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 20000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 60,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://picsum.photos/seed/cubitat-10/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-10a/800/600",
+      "https://picsum.photos/seed/cubitat-10b/800/600",
+      "https://picsum.photos/seed/cubitat-10c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.118935,
+      "longitude": -82.338715
+    },
+    "mapPoint": {
+      "x": -82.338715,
+      "y": 23.118935
+    },
+    "contact_info": {
+      "name": "Carlos Pérez",
+      "phone": "+53 7 8321122"
+    }
+  },
+  {
+    "id": "seed-s011",
+    "title": "Se vende apartamento de 2/4 en buen estado",
+    "location": "La Habana, Vedado",
+    "description": "Apartamento luminoso en edificio con portón eléctrico. Pasillos amplios, balcón tendal, cisterna propia. Tranquilo y seguro.",
+    "zoneId": "vedado",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 7000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 55,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://picsum.photos/seed/cubitat-11/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-11a/800/600",
+      "https://picsum.photos/seed/cubitat-11b/800/600",
+      "https://picsum.photos/seed/cubitat-11c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.137628,
+      "longitude": -82.392904
+    },
+    "mapPoint": {
+      "x": -82.392904,
+      "y": 23.137628
+    },
+    "contact_info": {
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 4012345"
+    }
+  },
+  {
+    "id": "seed-s012",
+    "title": "Alquiler de casa independiente en Miramar 3 cuartos",
+    "location": "La Habana, Habana Vieja",
+    "description": "Vivienda con amplios espacios, techos altos, patio interior. Climatización en todas las habitaciones. Tanque de agua y planta eléctrica.",
+    "zoneId": "habana-vieja",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 750,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking": 1,
+    "areaM2": 140,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://picsum.photos/seed/cubitat-12/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-12a/800/600",
+      "https://picsum.photos/seed/cubitat-12b/800/600",
+      "https://picsum.photos/seed/cubitat-12c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.144448,
+      "longitude": -82.351125
+    },
+    "mapPoint": {
+      "x": -82.351125,
+      "y": 23.144448
+    },
+    "contact_info": {
+      "name": "Ana Martínez",
+      "phone": "+53 5 4012345"
+    }
+  },
+  {
+    "id": "seed-s013",
+    "title": "Renta de apartamento independiente lineal en el Vedado",
+    "location": "La Habana, Centro Habana",
+    "description": "Propiedad recién renovada con materiales de primera calidad. Cocina integral, closets empotrados, piso de porcelanato. Lista para mudarse.",
+    "zoneId": "centro-habana",
+    "operation": "alquiler",
+    "propertyType": "apartamento",
+    "priceUsd": 350,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "parking": 0,
+    "areaM2": 48,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://picsum.photos/seed/cubitat-13/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-13a/800/600",
+      "https://picsum.photos/seed/cubitat-13b/800/600",
+      "https://picsum.photos/seed/cubitat-13c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.145767,
+      "longitude": -82.368242
+    },
+    "mapPoint": {
+      "x": -82.368242,
+      "y": 23.145767
+    },
+    "contact_info": {
+      "name": "Laura López",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s014",
+    "title": "Casa independiente de 2 cuartos en Santos Suárez",
+    "location": "La Habana, Playa",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "playa",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 12000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 75,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://picsum.photos/seed/cubitat-14/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-14a/800/600",
+      "https://picsum.photos/seed/cubitat-14b/800/600",
+      "https://picsum.photos/seed/cubitat-14c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.098499,
+      "longitude": -82.457305
+    },
+    "mapPoint": {
+      "x": -82.457305,
+      "y": 23.098499
+    },
+    "contact_info": {
+      "name": "Carlos Pérez",
+      "phone": "+53 5 3654891"
+    }
+  },
+  {
+    "id": "seed-s015",
+    "title": "Apartamento en Centro Habana cerca de 23 y 36",
+    "location": "La Habana, Miramar",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "miramar",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 9000,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "parking": 0,
+    "areaM2": 45,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://picsum.photos/seed/cubitat-15/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-15a/800/600",
+      "https://picsum.photos/seed/cubitat-15b/800/600",
+      "https://picsum.photos/seed/cubitat-15c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.122609,
+      "longitude": -82.428635
+    },
+    "mapPoint": {
+      "x": -82.428635,
+      "y": 23.122609
+    },
+    "contact_info": {
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2987654"
+    }
+  },
+  {
+    "id": "seed-s016",
+    "title": "Apto de 1/4 en buen lugar de Playa",
+    "location": "La Habana, Nuevo Vedado",
+    "description": "Impecable propiedad con acabados de lujo. Vigas de acero, ventanales de cristal, terraza con vista. Cocina abierta equipada con electrodomésticos.",
+    "zoneId": "nuevo-vedado",
+    "operation": "venta",
+    "propertyType": "apartamento",
+    "priceUsd": 13000,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "parking": 1,
+    "areaM2": 40,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://picsum.photos/seed/cubitat-16/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-16a/800/600",
+      "https://picsum.photos/seed/cubitat-16b/800/600",
+      "https://picsum.photos/seed/cubitat-16c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.128473,
+      "longitude": -82.333733
+    },
+    "mapPoint": {
+      "x": -82.333733,
+      "y": 23.128473
+    },
+    "contact_info": {
+      "name": "Laura López",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s017",
+    "title": "Permuto casa en bajos de 3 cuartos y 3 baños en Centro Habana",
+    "location": "La Habana, Marianao",
+    "description": "Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.",
+    "zoneId": "marianao",
+    "operation": "permuta",
+    "propertyType": "casa",
+    "priceUsd": null,
+    "bedrooms": 3,
+    "bathrooms": 3,
+    "parking": 1,
+    "areaM2": 120,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://picsum.photos/seed/cubitat-17/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-17a/800/600",
+      "https://picsum.photos/seed/cubitat-17b/800/600",
+      "https://picsum.photos/seed/cubitat-17c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.086539,
+      "longitude": -82.435614
+    },
+    "mapPoint": {
+      "x": -82.435614,
+      "y": 23.086539
+    },
+    "contact_info": {
+      "name": "Laura López",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s018",
+    "title": "Se renta casa de 3 habitaciones con piscina en Varadero",
+    "location": "La Habana, Guanabo",
+    "description": "Impecable propiedad con acabados de lujo. Vigas de acero, ventanales de cristal, terraza con vista. Cocina abierta equipada con electrodomésticos.",
+    "zoneId": "guanabo",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 80,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking": 0,
+    "areaM2": 90,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://picsum.photos/seed/cubitat-18/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-18a/800/600",
+      "https://picsum.photos/seed/cubitat-18b/800/600",
+      "https://picsum.photos/seed/cubitat-18c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.174942,
+      "longitude": -82.132972
+    },
+    "mapPoint": {
+      "x": -82.132972,
+      "y": 23.174942
+    },
+    "contact_info": {
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 2987654"
+    }
+  },
+  {
+    "id": "seed-s019",
+    "title": "Hostal de lujo de 4 habitaciones en Centro Habana",
+    "location": "La Habana, Cerro",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "cerro",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 30,
+    "bedrooms": 4,
+    "bathrooms": 4,
+    "parking": 1,
+    "areaM2": 160,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://picsum.photos/seed/cubitat-19/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-19a/800/600",
+      "https://picsum.photos/seed/cubitat-19b/800/600",
+      "https://picsum.photos/seed/cubitat-19c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.117566,
+      "longitude": -82.364338
+    },
+    "mapPoint": {
+      "x": -82.364338,
+      "y": 23.117566
+    },
+    "contact_info": {
+      "name": "Ana Martínez",
+      "phone": "+53 5 2745638"
+    }
+  },
+  {
+    "id": "seed-s020",
+    "title": "Casa de 2/4 en el Vedado, planta baja",
+    "location": "La Habana, Santos Suárez",
+    "description": "Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.",
+    "zoneId": "santos-suarez",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 50000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "parking": 1,
+    "areaM2": 100,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://picsum.photos/seed/cubitat-20/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-20a/800/600",
+      "https://picsum.photos/seed/cubitat-20b/800/600",
+      "https://picsum.photos/seed/cubitat-20c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.119535,
+      "longitude": -82.350784
+    },
+    "mapPoint": {
+      "x": -82.350784,
+      "y": 23.119535
+    },
+    "contact_info": {
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 3654891"
+    }
+  },
+  {
+    "id": "seed-s021",
+    "title": "Se vende casa amplia en Aldabó, casa independiente",
+    "location": "La Habana, Vedado",
+    "description": "Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.",
+    "zoneId": "vedado",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 28000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking": 1,
+    "areaM2": 110,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://picsum.photos/seed/cubitat-21/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-21a/800/600",
+      "https://picsum.photos/seed/cubitat-21b/800/600",
+      "https://picsum.photos/seed/cubitat-21c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.134608,
+      "longitude": -82.381927
+    },
+    "mapPoint": {
+      "x": -82.381927,
+      "y": 23.134608
+    },
+    "contact_info": {
+      "name": "María García",
+      "phone": "+53 5 2987654"
+    }
+  },
+  {
+    "id": "seed-s022",
+    "title": "Rento casa en Vedado para larga estancia, solo familia",
+    "location": "La Habana, Habana Vieja",
+    "description": "Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.",
+    "zoneId": "habana-vieja",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 750,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking": 1,
+    "areaM2": 130,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://picsum.photos/seed/cubitat-22/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-22a/800/600",
+      "https://picsum.photos/seed/cubitat-22b/800/600",
+      "https://picsum.photos/seed/cubitat-22c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.136379,
+      "longitude": -82.350891
+    },
+    "mapPoint": {
+      "x": -82.350891,
+      "y": 23.136379
+    },
+    "contact_info": {
+      "name": "Ana Martínez",
+      "phone": "+53 7 2049876"
+    }
+  },
+  {
+    "id": "seed-s023",
+    "title": "Vendo casa en El Cotorro, 3 cuartos",
+    "location": "La Habana, Centro Habana",
+    "description": "Impecable propiedad con acabados de lujo. Vigas de acero, ventanales de cristal, terraza con vista. Cocina abierta equipada con electrodomésticos.",
+    "zoneId": "centro-habana",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 9000,
+    "bedrooms": 3,
+    "bathrooms": 1,
+    "parking": 0,
+    "areaM2": 80,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://picsum.photos/seed/cubitat-23/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-23a/800/600",
+      "https://picsum.photos/seed/cubitat-23b/800/600",
+      "https://picsum.photos/seed/cubitat-23c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.143953,
+      "longitude": -82.358074
+    },
+    "mapPoint": {
+      "x": -82.358074,
+      "y": 23.143953
+    },
+    "contact_info": {
+      "name": "Ana Martínez",
+      "phone": "+53 5 3654891"
+    }
+  },
+  {
+    "id": "seed-s024",
+    "title": "Casa independiente en Playa de 5/4",
+    "location": "La Habana, Playa",
+    "description": "Impecable propiedad con acabados de lujo. Vigas de acero, ventanales de cristal, terraza con vista. Cocina abierta equipada con electrodomésticos.",
+    "zoneId": "playa",
+    "operation": "venta",
+    "propertyType": "casa",
+    "priceUsd": 120000,
+    "bedrooms": 5,
+    "bathrooms": 4,
+    "parking": 0,
+    "areaM2": 220,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://picsum.photos/seed/cubitat-24/800/600",
+    "images": [
+      "https://picsum.photos/seed/cubitat-24a/800/600",
+      "https://picsum.photos/seed/cubitat-24b/800/600",
+      "https://picsum.photos/seed/cubitat-24c/800/600"
+    ],
+    "coordinates": {
+      "latitude": 23.106382,
+      "longitude": -82.440391
+    },
+    "mapPoint": {
+      "x": -82.440391,
+      "y": 23.106382
+    },
+    "contact_info": {
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 4012345"
+    }
+  }
+]

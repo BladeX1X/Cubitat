@@ -95,9 +95,9 @@ describe('DetailPage - Reportes y Visor', () => {
       />
     )
 
-    expect(screen.getByText('Casa independiente en Playa')).toBeInTheDocument()
-    expect(screen.getByText('USD 68,000')).toBeInTheDocument()
-    expect(screen.getByText('Playa, La Habana')).toBeInTheDocument()
+    expect(screen.getAllByText('Casa independiente en Playa')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('USD 68,000')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Playa, La Habana')[0]).toBeInTheDocument()
   })
 
   it('debería registrar metadatos SEO dinámicos con Open Graph', () => {

@@ -136,6 +136,77 @@ Las migraciones viven en:
 web/supabase/migrations/
 ```
 
+#### 3.3.1 Alternativa: Ejecución Manual vía SQL Editor (Consola de Supabase)
+
+Si experimentas problemas de compatibilidad o arquitectura con la CLI de Supabase (por ejemplo, errores de tipo `No matching Supabase CLI binary package found`), puedes aplicar los esquemas manualmente:
+
+1.  **Acceder al Editor SQL**:
+    *   En el Dashboard de Supabase, navega a la sección **SQL Editor**.
+    *   Haz clic en **New query** (Nueva consulta).
+2.  **Ejecutar los Esquemas**:
+    *   Copia y ejecuta las sentencias de los archivos `.sql` en el orden listado dentro de la carpeta `web/supabase/migrations/`.
+3.  **Habilitar Tabla de Contactos (Leads)**:
+    *   Para habilitar la persistencia de leads de interés desde el formulario de contacto, copia y ejecuta el siguiente bloque:
+    ```sql
+    -- Crear la tabla de contactos
+    CREATE TABLE contacts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        property_id UUID REFERENCES properties(id) ON DELETE CASCADE NOT NULL,
+        contact_name TEXT NOT NULL,
+        contact_phone TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    );
+
+    -- Habilitar RLS
+    ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+
+    -- Política para inserciones públicas
+    CREATE POLICY "Allow public insert for contacts" ON contacts 
+        FOR INSERT WITH CHECK (true);
+
+    -- Política para lecturas restringidas al dueño del anuncio y admins
+    CREATE POLICY "Allow read for owners and admins" ON contacts 
+        FOR SELECT USING (
+            auth.uid() IN (
+                SELECT user_id FROM properties WHERE id = contacts.property_id
+            ) OR (
+                SELECT role FROM profiles WHERE id = auth.uid()
+            ) = 'admin'
+        );
+
+    -- Función del disparador para notificar al propietario sobre un nuevo contacto
+    CREATE OR REPLACE FUNCTION public.handle_new_contact()
+    RETURNS TRIGGER AS $$
+    DECLARE
+      v_owner_id UUID;
+      v_property_title TEXT;
+    BEGIN
+      SELECT user_id, title INTO v_owner_id, v_property_title
+      FROM public.properties
+      WHERE id = NEW.property_id;
+
+      IF v_owner_id IS NOT NULL THEN
+        INSERT INTO public.notifications (user_id, title, message)
+        VALUES (
+          v_owner_id,
+          'Interés en tu propiedad',
+          NEW.contact_name || ' te ha enviado un mensaje por "' || v_property_title || '". Tel: ' || NEW.contact_phone
+        );
+      END IF;
+
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+    -- Crear el trigger sobre la tabla contacts
+    CREATE OR REPLACE TRIGGER on_new_contact
+      AFTER INSERT ON public.contacts
+      FOR EACH ROW
+      EXECUTE FUNCTION public.handle_new_contact();
+    ```
+
+
 ### 3.4 Auth URLs
 
 En Supabase Dashboard:
@@ -206,6 +277,61 @@ Mas detalle:
 ```txt
 docs/OAuth-Google-Supabase.md
 ```
+
+### 3.7 Pantalla de Consentimiento y Verificación de Marca (Google OAuth)
+
+Para evitar la pantalla de advertencia roja de "Aplicación no verificada" de Google y mostrar la marca oficial "Cubitat" en el consentimiento de inicio de sesión:
+
+1.  **Configurar Pantalla de Consentimiento**:
+    *   En Google Cloud Console, accede a **APIs & Services > OAuth consent screen**.
+    *   Define el **App name** como `Cubitat`.
+    *   Define el **User support email** y **Developer contact info** con correos administradores del proyecto.
+    *   En **Authorized domains**, añade:
+        *   `cubitathome.com`
+        *   `supabase.co`
+2.  **Definir Scopes**:
+    *   Agrega los scopes mínimos para lectura de perfil y correo: `.../auth/userinfo.email`, `.../auth/userinfo.profile` y `openid`.
+3.  **Pasar a Producción (Paso Crítico)**:
+    *   Por defecto, el proyecto inicia en estado *Testing*. Bajo la sección **Publishing status**, haz clic en **Publish App** y confirma para pasarla a **In Production**. Esto elimina la restricción que limita el inicio de sesión a usuarios de prueba configurados a mano.
+4.  **Verificación de Logotipo (Opcional para MVP)**:
+    *   Subir un logotipo de marca requiere que Google verifique manualmente tu dominio y políticas de privacidad (lo que toma entre 3 y 7 días). Para el lanzamiento inicial, puedes dejar el logotipo vacío; Google permitirá el inicio de sesión productivo sin advertencias rojas de peligro, mostrando el nombre de texto "Cubitat" de forma segura.
+
+
+### 3.8 Estructura de Seguridad y Políticas RLS (Row Level Security)
+
+Para garantizar la protección de datos sensibles e impedir que usuarios manipulen registros ajenos, Supabase debe configurar las siguientes políticas RLS (código SQL contenido en `supabase/migrations/`):
+
+#### 1. Tabla `profiles` (Perfiles de Usuario)
+*   **Seguridad**: RLS habilitado.
+*   **Políticas**:
+    *   `Permitir lectura pública (SELECT)`: Cualquier usuario (incluso no autenticado) puede leer perfiles para visualizar datos de contacto del anunciante de forma pública.
+    *   `Permitir actualización propia (UPDATE)`: Solo el usuario autenticado cuyo `auth.uid()` coincida con el `id` del registro puede modificar su información de perfil.
+
+#### 2. Tabla `properties` (Inmuebles)
+*   **Seguridad**: RLS habilitado.
+*   **Políticas**:
+    *   `Lectura pública (SELECT)`: Permitida para cualquier usuario únicamente si el anuncio tiene el estado `status = 'published'`.
+    *   `Lectura privada de borradores/revisiones (SELECT)`: Solo el propietario del anuncio (`owner_id = auth.uid()`) o usuarios con el rol `admin` en la tabla `profiles` pueden consultar propiedades en estados `draft`, `pending_review`, `rejected` o `paused`.
+    *   `Creación (INSERT)`: Permitido para cualquier usuario autenticado. El sistema inserta y vincula obligatoriamente el registro con el ID del creador (`owner_id = auth.uid()`).
+    *   `Modificación/Eliminación (UPDATE/DELETE)`: Permitido únicamente al propietario (`owner_id = auth.uid()`) o a usuarios administradores (`role = 'admin'`).
+
+#### 3. Tabla `property_images` (Galería de Fotos)
+*   **Seguridad**: RLS habilitado.
+*   **Políticas**:
+    *   `Lectura (SELECT)`: Pública para todos.
+    *   `Escritura/Borrado (INSERT/DELETE)`: Solo permitida si el usuario autenticado es el propietario de la propiedad relacionada (`property_id` apunta a una propiedad cuyo `owner_id = auth.uid()`).
+
+#### 4. Tabla `contacts` (Prospectos y Leads)
+*   **Seguridad**: RLS habilitado.
+*   **Políticas**:
+    *   `Creación (INSERT)`: Permitido de forma pública (anon) para permitir que cualquier interesado envíe mensajes al anunciante.
+    *   `Lectura (SELECT)`: Restringido únicamente al anunciante dueño de la propiedad (`owner_id = auth.uid()`) y a los administradores para labores de control de spam.
+
+#### 5. Tabla `saved_properties` (Favoritos)
+*   **Seguridad**: RLS habilitado.
+*   **Políticas**:
+    *   `Lectura/Escritura/Borrado (ALL)`: Restringido en su totalidad para que solo el propietario de la lista (`user_id = auth.uid()`) pueda ver o modificar sus favoritos. Ningún usuario puede ver favoritos de otros.
+
 
 ## 4. Resend Para Correos
 
@@ -357,6 +483,20 @@ VITE_SUPABASE_ANON_KEY
 ```
 
 Estas son publicas para el frontend, pero no deben confundirse con `service_role`.
+
+### 6.2.1 Variables en el Entorno de Construcción (Build Variables)
+
+Durante el proceso de compilación (`npm run build`), el compilador ejecuta el script `node scripts/generate-sitemap.mjs`. Este script realiza llamadas directas a la API de Supabase para recuperar la lista de propiedades públicas y construir el archivo `sitemap.xml` dinámicamente.
+
+Para que la compilación no falle en entornos de integración continua (CI/CD) como GitHub Actions o el motor de build automático de Cloudflare Pages:
+
+1.  **Configurar Variables de Build**:
+    *   En el dashboard de Cloudflare, ve a tu proyecto > **Settings > Builds > Build variables**.
+    *   Registra las siguientes dos variables y sus valores productivos:
+        *   `VITE_SUPABASE_URL`
+        *   `VITE_SUPABASE_ANON_KEY`
+2.  **Verificación**: Si el pipeline de compilación no posee estas variables o no cuenta con acceso a la red de Supabase, la build abortará con un código de error de Node.js, bloqueando el despliegue del proyecto.
+
 
 ### 6.3 Secretos Del Worker
 

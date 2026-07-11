@@ -49,6 +49,12 @@ const ResetPasswordPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('../pages/moderar/AdminPage').then((module) => ({ default: module.AdminPage })),
 )
+const PrivacyPage = lazy(() =>
+  import('../pages/legal/PrivacyPage').then((module) => ({ default: module.PrivacyPage })),
+)
+const TermsPage = lazy(() =>
+  import('../pages/legal/TermsPage').then((module) => ({ default: module.TermsPage })),
+)
 
 const initialFilters: SearchFilters = {
   query: '',
@@ -76,7 +82,7 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
@@ -112,6 +118,12 @@ function getInitialPageMode(): PageMode {
   }
   if (path.startsWith('/moderar')) {
     return 'moderar'
+  }
+  if (path.startsWith('/privacidad')) {
+    return 'privacy'
+  }
+  if (path.startsWith('/terminos')) {
+    return 'terms'
   }
   return 'home'
 }
@@ -168,8 +180,8 @@ export function CubitatApp() {
   const [userRole, setUserRole] = useState<string | undefined>()
 
   useEffect(() => {
-    initAnalytics()
-  }, [])
+     initAnalytics()
+   }, [])
 
   useEffect(() => {
     const cacheVersion = '20260710-clear-stale-pwa-v2'
@@ -308,6 +320,60 @@ export function CubitatApp() {
 
     loadProperties()
   }, [refreshCounter])
+
+  // Fetch a single property on demand if not found in preloaded properties array (e.g., drafts/pending_review)
+  useEffect(() => {
+    if (!selectedPropertyId) return
+    const found = properties.some((p) => p.id === selectedPropertyId)
+    if (found) return
+
+    async function fetchSingleProperty() {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
+          .eq('id', selectedPropertyId)
+          .single()
+
+        if (error) throw error
+        if (data) {
+          const item: any = data
+          const mapped: Property = {
+            id: item.id,
+            title: item.title,
+            location: item.location,
+            description: item.description,
+            zoneId: item.zone_id,
+            operation: item.operation,
+            propertyType: item.property_type,
+            priceUsd: item.price_usd ? Number(item.price_usd) : undefined,
+            bedrooms: Number(item.bedrooms),
+            bathrooms: Number(item.bathrooms),
+            parking: Number(item.parking),
+            areaM2: Number(item.area_m2),
+            ageYears: item.age_years ? Number(item.age_years) : undefined,
+            amenities: item.amenities || [],
+            badge: item.badge || undefined,
+            status: item.status,
+            coverTone: item.cover_tone || '#f3f4f6',
+            coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            images: normalizePropertyImages(item.images),
+            mapPoint: { x: 300, y: 200 },
+            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
+            contact_info: getPropertyContactInfo(item.id, item.contact_info)
+          }
+          setProperties((prev) => {
+            if (prev.some((p) => p.id === mapped.id)) return prev
+            return [...prev, mapped]
+          })
+        }
+      } catch (err) {
+        console.warn('Could not fetch single property details:', err)
+      }
+    }
+
+    fetchSingleProperty()
+  }, [selectedPropertyId, properties])
 
   const visibleProperties = useMemo(
     () => filterProperties(properties, filters),
@@ -777,6 +843,14 @@ export function CubitatApp() {
 
         {pageMode === 'moderar' && (
           <AdminPage userRole={userRole} onNavigateHome={navigateHome} />
+        )}
+
+        {pageMode === 'privacy' && (
+          <PrivacyPage onBack={navigateHome} />
+        )}
+
+        {pageMode === 'terms' && (
+          <TermsPage onBack={navigateHome} />
         )}
 
         <SiteFooter />

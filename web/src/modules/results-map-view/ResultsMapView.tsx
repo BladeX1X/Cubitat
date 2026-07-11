@@ -76,7 +76,7 @@ function getOperationLabel(op: OperationType): string {
 
 function getPriceText(property: Property): string {
   if (property.operation === 'permuta') return 'Permuta'
-  return property.priceUsd ? `${formatPrice(property.priceUsd)} USD` : '-'
+  return property.priceUsd ? formatPrice(property.priceUsd) : '-'
 }
 
 function getOperationSuffix(op: OperationType): string {

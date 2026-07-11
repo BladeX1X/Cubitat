@@ -26,17 +26,20 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
       }
 
       try {
+        let provider = 'email'
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
+          provider = data?.user?.app_metadata?.provider || 'email'
         } else {
           const { data: { session } } = await supabase.auth.getSession()
           if (!session) {
             throw new Error('No encontramos una sesion de verificacion activa. Abre el enlace completo desde tu correo.')
           }
+          provider = session.user?.app_metadata?.provider || 'email'
         }
 
-        if (isOAuthCallback) {
+        if (isOAuthCallback || provider !== 'email') {
           window.history.replaceState(null, '', '/')
           onContinue()
           return

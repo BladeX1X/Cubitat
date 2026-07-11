@@ -18,6 +18,7 @@ Estas specs documentan requisitos estables por modulo y por proceso. Deben actua
 - `favorites`: guardar, listar y quitar favoritos.
 - `results`: lista, mapa movil, ordenamiento y alertas.
 - `contact`: llamada, consulta y privacidad de contacto.
+- `referrals`: códigos de referido, tracking de visitas y atribución de leads.
 - `administration`: moderacion y acceso admin.
 - `navigation`: rutas, alias y retorno despues de login.
 

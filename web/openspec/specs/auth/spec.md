@@ -116,5 +116,31 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - WHEN aterriza en `/recuperar-contrasena`
 - THEN el sistema MUST preparar la sesion temporal de recuperacion
 - AND el sistema MUST pedir nueva contrasena y confirmacion
-- AND el sistema MUST validar minimo 8 caracteres y coincidencia entre ambos campos
+- AND el sistema MUST validar la fortaleza de la contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial) y la coincidencia entre ambos campos
 - AND el sistema MUST guardar la nueva contrasena mediante Supabase Auth
+
+### Requirement: Autenticación Social (Google OAuth)
+El sistema MUST permitir el registro e inicio de sesión rápido utilizando proveedores de identidad social de confianza.
+
+#### Scenario: Inicio de sesión o registro con Google exitoso
+- GIVEN un usuario en el modal de inicio de sesión
+- WHEN hace clic en el botón "Continuar con Google"
+- THEN el sistema MUST redirigir al proveedor OAuth configurado en Supabase
+- AND tras la autenticación exitosa, el sistema MUST crear o sincronizar automáticamente el perfil del usuario en la tabla `profiles` con el rol `user` por defecto
+- AND el sistema MUST redirigir al usuario al `/auth/callback` para establecer la sesión y finalmente llevarlo a su panel.
+
+### Requirement: Resiliencia de Red y Sesiones (Offline & Refresh)
+El sistema MUST reaccionar adecuadamente ante la pérdida de conectividad y expirar/renovar tokens de forma transparente.
+
+#### Scenario: Intento de inicio de sesión sin conexión a Internet (Offline)
+- GIVEN un usuario sin conexión de red activa (estado offline en el navegador)
+- WHEN intenta enviar el formulario de inicio de sesión o usar Google OAuth
+- THEN el sistema MUST evitar el envío de peticiones a la red
+- AND el sistema MUST mostrar un mensaje de advertencia visual indicando: "Para iniciar sesión necesitas una conexión a Internet activa"
+
+#### Scenario: Refresco automático y rotación de tokens (Token Rotation)
+- GIVEN un usuario autenticado cuya sesión está cerca de expirar
+- WHEN la aplicación realiza peticiones o está activa en segundo plano
+- THEN el sistema MUST renovar de manera silenciosa el token de sesión (Access Token) mediante el Refresh Token usando `onAuthStateChange`
+- AND si el token de refresco ha sido invalidado o expirado, el sistema MUST cerrar la sesión local de forma segura y redirigir al usuario al inicio (`/`) con una notificación visual no invasiva de "Sesión expirada"
+

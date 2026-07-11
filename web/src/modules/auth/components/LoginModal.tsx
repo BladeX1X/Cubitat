@@ -39,6 +39,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
   const [canResendConfirmation, setCanResendConfirmation] = useState(false)
 
   async function handleGoogleSignIn() {
+    if (!navigator.onLine) {
+      setErrorMsg('Para iniciar sesión necesitas una conexión a Internet activa.')
+      return
+    }
+
     setLoading(true)
     setErrorMsg(null)
     setSuccessMsg(null)
@@ -103,6 +108,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setSuccessMsg(null)
     setCanResendConfirmation(false)
 
+    if (!navigator.onLine) {
+      setErrorMsg('Para iniciar sesión necesitas una conexión a Internet activa.')
+      return
+    }
+
     const cleanEmail = email.trim().toLowerCase()
 
     if (isResettingPassword) {
@@ -123,8 +133,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
     // Password validation rules
     if (isRegistering) {
-      if (password.length < 8) {
-        setErrorMsg('La contraseña debe tener al menos 8 caracteres.')
+      const hasUppercase = /[A-Z]/.test(password)
+      const hasLowercase = /[a-z]/.test(password)
+      const hasNumber = /[0-9]/.test(password)
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+      if (password.length < 8 || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+        setErrorMsg('La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.')
         return
       }
       if (password !== confirmPassword) {
