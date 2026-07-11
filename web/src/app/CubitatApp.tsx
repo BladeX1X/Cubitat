@@ -15,6 +15,7 @@ import { initAnalytics, trackPageView } from '../shared/lib/analytics'
 import { Header } from '../components/layout/Header'
 import { SiteFooter } from '../components/layout/SiteFooter'
 import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
+import { saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -309,10 +310,16 @@ export function CubitatApp() {
             contact_info: getPropertyContactInfo(item.id, item.contact_info)
           }))
           setProperties(mapped)
+          saveCachedProperties(mapped) // Guardar copia para uso offline
         }
       } catch (err: any) {
-        console.error('Error loading properties from Supabase:', err)
-        setError(err.message || 'Error al conectar con el servidor.')
+        console.error('Error loading properties from Supabase, attempting offline fallback:', err)
+        const cached = await getCachedProperties()
+        if (cached && cached.length > 0) {
+          setProperties(cached)
+        } else {
+          setError(err.message || 'Error al conectar con el servidor.')
+        }
       } finally {
         setLoading(false)
       }
@@ -366,9 +373,17 @@ export function CubitatApp() {
             if (prev.some((p) => p.id === mapped.id)) return prev
             return [...prev, mapped]
           })
+          saveSingleCachedProperty(mapped) // Cachear individualmente para offline
         }
       } catch (err) {
-        console.warn('Could not fetch single property details:', err)
+        console.warn('Could not fetch single property details, attempting offline fallback:', err)
+        const cached = await getCachedProperty(selectedPropertyId!)
+        if (cached) {
+          setProperties((prev) => {
+            if (prev.some((p) => p.id === cached.id)) return prev
+            return [...prev, cached]
+          })
+        }
       }
     }
 
