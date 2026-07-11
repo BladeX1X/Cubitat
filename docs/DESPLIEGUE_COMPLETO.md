@@ -409,6 +409,59 @@ Sender email: notificaciones@cubitathome.com
 
 No activar SMTP con dominio no verificado.
 
+### 4.5 Configuración de Recepción y Enrutamiento de Correos (Cloudflare Email Routing + Gmail)
+
+Para centralizar la comunicación en una sola bandeja de entrada gratuita, se ha configurado **Cloudflare Email Routing** para recibir correos en `soporte@cubitathome.com` y redirigirlos a `pochiprats@gmail.com`, así como el envío manual desde Gmail utilizando la infraestructura SMTP de Resend.
+
+#### 4.5.1 Configuración de la Recepción (Email Routing)
+El enrutamiento de correo está activo y configurado con las siguientes reglas en Cloudflare:
+*   **Destino Verificado**: `pochiprats@gmail.com`
+*   **Regla Activa**: `soporte@cubitathome.com` → `pochiprats@gmail.com`
+    *   *Rule ID*: `a23e7eddc96b49f8a47b0d66c636bf4f`
+    *   *Catch-all*: Desactivado (los correos dirigidos a cualquier otra dirección que no sea `soporte@` se descartan por seguridad).
+
+#### 4.5.2 Comandos Wrangler utilizados para Email Routing
+Para auditorías o modificaciones futuras, se pueden utilizar los siguientes comandos de Wrangler en la terminal:
+```bash
+# Verificar estado general de Email Routing
+npx wrangler email routing settings cubitathome.com
+
+# Crear/validar la dirección de destino
+npx wrangler email routing addresses create pochiprats@gmail.com
+
+# Crear regla de reenvío literal
+npx wrangler email routing rules create cubitathome.com --name "soporte to Gmail" --match-type literal --match-field to --match-value soporte@cubitathome.com --action-type forward --action-value pochiprats@gmail.com --enabled true
+
+# Listar reglas y configuraciones
+npx wrangler email routing rules list cubitathome.com
+```
+
+#### 4.5.3 Registros DNS de Email en Cloudflare
+Los siguientes registros DNS fueron publicados en Cloudflare y verificados por resolvers públicos (`1.1.1.1` y `8.8.8.8`):
+1.  **Registros MX (Enrutamiento)**:
+    *   `cubitathome.com MX route1.mx.cloudflare.net` (Prioridad: 11)
+    *   `cubitathome.com MX route2.mx.cloudflare.net` (Prioridad: 53)
+    *   `cubitathome.com MX route3.mx.cloudflare.net` (Prioridad: 2)
+2.  **Registro SPF**:
+    *   `cubitathome.com TXT "v=spf1 include:_spf.mx.cloudflare.net include:spf.resend.com ~all"` (Combina la seguridad de Cloudflare Email Routing y los envíos transaccionales de Resend).
+3.  **Política DMARC (Prevención de Suplantación)**:
+    *   `_dmarc.cubitathome.com TXT "v=DMARC1; p=none; rua=mailto:soporte@cubitathome.com"`
+
+#### 4.5.4 Configurar Envío Manual como "soporte@cubitathome.com" en Gmail
+Para enviar correos directamente desde la interfaz de Gmail haciéndose pasar por tu dominio, realiza la siguiente configuración:
+1.  Entra a **Gmail** → **Configuración** → **Ver todos los ajustes**.
+2.  Ve a la pestaña **Cuentas e importación**.
+3.  En la sección *Enviar correo como*, haz clic en **Añadir otra dirección de correo electrónico**.
+4.  Rellena la ventana flotante:
+    *   **Nombre**: Cubitat Soporte
+    *   **Dirección de correo**: `soporte@cubitathome.com`
+    *   **Servidor SMTP**: `smtp.resend.com`
+    *   **Puerto**: `465` (con SSL)
+    *   **Usuario**: `resend`
+    *   **Contraseña**: *Tu API Key de Resend*
+5.  Gmail enviará un código de verificación a `soporte@cubitathome.com`. Como el redireccionamiento está activo, el código llegará a `pochiprats@gmail.com`. Introduce el código en la ventana flotante y confirma la vinculación.
+6.  *(Opcional)*: Crea un filtro en Gmail para que los correos enviados a `soporte@cubitathome.com` nunca se marquen como spam.
+
 ## 5. Groq Para Moderacion IA
 
 Cubitat usa Groq en el Worker para `/api/ai-moderate`.
