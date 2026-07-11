@@ -865,94 +865,116 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       
       if (uuidRegex.test(propertyId)) {
         try {
+          const cache = (caches as any).default;
+          const cachedResponse = await cache.match(request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
           const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
           const supabaseKey = env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo";
 
           // Consultar la propiedad de manera asíncrona usando la API REST pública de Supabase
           const supabaseResponse = await fetch(
             `${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=title,description,cover_image,price_usd`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+              }
+            }
+          );
+
+          if (supabaseResponse.ok) {
+            const properties = await supabaseResponse.json() as any[];
+            if (properties && properties.length > 0) {
+              const property = properties[0];
+              const price = property.price_usd 
+                ? `USD ${property.price_usd.toLocaleString('en-US')}` 
+                : 'Precio no informado';
+              
+              const title = `${property.title} - ${price}`;
+              const description = property.description 
+                ? `${property.description.slice(0, 150)}... Contacto en Cubitat.`
+                : 'Encuentra propiedades en venta y renta en Cuba con Cubitat.';
+              const image = property.cover_image || '';
+
+              // Obtener el HTML estático base desde el manejador de activos
+              const assetResponse = await env.ASSETS.fetch(request);
+
+              // Re-escribir las etiquetas HTML usando HTMLRewriter al vuelo
+              // @ts-ignore
+              const rewritten = new HTMLRewriter()
+                .on('meta[property="og:title"]', {
+                  element(el: any) {
+                    el.setAttribute('content', title);
+                  }
+                })
+                .on('meta[name="twitter:title"]', {
+                  element(el: any) {
+                    el.setAttribute('content', title);
+                  }
+                })
+                .on('meta[property="og:description"]', {
+                  element(el: any) {
+                    el.setAttribute('content', description);
+                  }
+                })
+                .on('meta[name="twitter:description"]', {
+                  element(el: any) {
+                    el.setAttribute('content', description);
+                  }
+                })
+                .on('meta[property="og:image"]', {
+                  element(el: any) {
+                    el.setAttribute('content', image);
+                  }
+                })
+                .on('meta[name="twitter:image"]', {
+                  element(el: any) {
+                    el.setAttribute('content', image);
+                  }
+                })
+                .on('meta[property="og:url"]', {
+                  element(el: any) {
+                    el.setAttribute('content', url.toString());
+                  }
+                })
+                .on('meta[property="og:type"]', {
+                  element(el: any) {
+                    el.setAttribute('content', 'article');
+                  }
+                })
+                .on('title', {
+                  element(el: any) {
+                    el.setInnerContent(title);
+                  }
+                })
+                .transform(assetResponse);
+
+              // Configurar cabeceras de cacheo y seguridad
+              const baseHeaders = new Headers(rewritten.headers);
+              baseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+              
+              const rawResponse = new Response(rewritten.body, {
+                status: rewritten.status,
+                statusText: rewritten.statusText,
+                headers: baseHeaders
+              });
+
+              const finalResponse = withSecurityHeaders(rawResponse);
+
+              // Guardar en la caché global de Cloudflare en segundo plano
+              ctx.waitUntil(cache.put(request, finalResponse.clone()));
+
+              return finalResponse;
             }
           }
-        );
-
-        if (supabaseResponse.ok) {
-          const properties = await supabaseResponse.json() as any[];
-          if (properties && properties.length > 0) {
-            const property = properties[0];
-            const price = property.price_usd 
-              ? `USD ${property.price_usd.toLocaleString('en-US')}` 
-              : 'Precio no informado';
-            
-            const title = `${property.title} - ${price}`;
-            const description = property.description 
-              ? `${property.description.slice(0, 150)}... Contacto en Cubitat.`
-              : 'Encuentra propiedades en venta y renta en Cuba con Cubitat.';
-            const image = property.cover_image || '';
-
-            // Obtener el HTML estático base desde el manejador de activos
-            const assetResponse = await env.ASSETS.fetch(request);
-
-            // Re-escribir las etiquetas HTML usando HTMLRewriter al vuelo
-            // @ts-ignore
-            const rewritten = new HTMLRewriter()
-              .on('meta[property="og:title"]', {
-                element(el: any) {
-                  el.setAttribute('content', title);
-                }
-              })
-              .on('meta[name="twitter:title"]', {
-                element(el: any) {
-                  el.setAttribute('content', title);
-                }
-              })
-              .on('meta[property="og:description"]', {
-                element(el: any) {
-                  el.setAttribute('content', description);
-                }
-              })
-              .on('meta[name="twitter:description"]', {
-                element(el: any) {
-                  el.setAttribute('content', description);
-                }
-              })
-              .on('meta[property="og:image"]', {
-                element(el: any) {
-                  el.setAttribute('content', image);
-                }
-              })
-              .on('meta[name="twitter:image"]', {
-                element(el: any) {
-                  el.setAttribute('content', image);
-                }
-              })
-              .on('meta[property="og:url"]', {
-                element(el: any) {
-                  el.setAttribute('content', url.toString());
-                }
-              })
-              .on('meta[property="og:type"]', {
-                element(el: any) {
-                  el.setAttribute('content', 'article');
-                }
-              })
-              .on('title', {
-                element(el: any) {
-                  el.setInnerContent(title);
-                }
-              })
-              .transform(assetResponse);
-            return withSecurityHeaders(rewritten);
-          }
+        } catch (err) {
+          console.error('Error al interceptar tags dinámicos:', err);
         }
-      } catch (err) {
-        console.error('Error al interceptar tags dinámicos:', err);
       }
     }
-  }
 
     // Retorno por defecto (activos estáticos normales del frontend)
     let response = await env.ASSETS.fetch(request);
