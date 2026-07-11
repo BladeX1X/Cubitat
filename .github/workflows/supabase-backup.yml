@@ -1,0 +1,41 @@
+name: Supabase Backup
+
+on:
+  schedule:
+    # Ejecutar todos los domingos a las 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    # Permitir ejecución manual desde la pestaña Actions
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run pg_dump backup
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p backups
+          DATE=$(date +'%Y%m%d_%H%M%S')
+          pg_dump -h aws-0-us-west-1.pooler.supabase.com -p 5432 -U postgres.tohjzoncoosvjbjcakdl -F p -b -v -f backups/cubitat-backup-$DATE.sql postgres
+
+      - name: Compress backup file
+        run: |
+          cd backups
+          zip -r backup.zip *.sql
+          rm *.sql
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-database-backup
+          path: backups/backup.zip
+          retention-days: 90
