@@ -990,7 +990,14 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
         'bottom-right',
       )
 
-      markerRef.current = new maplibregl.Marker({ color: '#035f53' })
+      const el = document.createElement('div')
+      el.className = 'custom-detail-map-marker'
+      el.innerHTML = `
+        <div class="pulse-ring"></div>
+        <div class="marker-pin"></div>
+      `
+
+      markerRef.current = new maplibregl.Marker({ element: el })
         .setLngLat(center)
         .addTo(mapRef.current)
     }
