@@ -12,19 +12,10 @@ export function filterProperties(
   properties: Property[],
   filters: SearchFilters,
 ) {
+  const normalizedQuery = filters.query ? normalizeSearchText(filters.query.trim()) : ''
+
   return properties.filter((property) => {
     if (property.status !== 'published') return false
-
-    const searchableText = [
-      property.title,
-      property.location,
-      property.zoneId,
-      property.operation,
-      property.propertyType,
-    ]
-      .join(' ')
-    const normalizedSearchableText = normalizeSearchText(searchableText)
-    const normalizedQuery = normalizeSearchText(filters.query.trim())
 
     // Filter bedrooms (>=)
     if (filters.bedrooms && filters.bedrooms !== 'all') {
@@ -55,18 +46,30 @@ export function filterProperties(
 
     // Evaluate zone matching: either structured zoneId matches OR the location text matches the search query
     const zoneMatches = filters.zoneId === 'all' || property.zoneId === filters.zoneId
+    if (!zoneMatches) return false
 
     const operationMatches =
       filters.operations.length === 0 ||
       filters.operations.includes(property.operation)
+    if (!operationMatches) return false
 
-    return (
-      zoneMatches &&
-      operationMatches &&
-      (filters.propertyType === 'all' ||
-        property.propertyType === filters.propertyType) &&
-      (!filters.query ||
-        normalizedSearchableText.includes(normalizedQuery))
-    )
+    const propertyTypeMatches =
+      filters.propertyType === 'all' ||
+      property.propertyType === filters.propertyType
+    if (!propertyTypeMatches) return false
+
+    if (normalizedQuery) {
+      const searchableText = [
+        property.title,
+        property.location,
+        property.zoneId,
+        property.operation,
+        property.propertyType,
+      ].join(' ')
+      const normalizedSearchableText = normalizeSearchText(searchableText)
+      if (!normalizedSearchableText.includes(normalizedQuery)) return false
+    }
+
+    return true
   })
 }
