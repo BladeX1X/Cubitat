@@ -22,16 +22,16 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 ## Estado confirmado
 
 - Rama de trabajo actual: `feature/quality-hardening`.
-- Migraciones: 39 migraciones sincronizadas con producción; la migración 39
-  endurece RLS de perfiles, contactos y reportes.
-- Validación local más reciente: lint limpio, 10 archivos de pruebas y 53
+- Migraciones: 40 migraciones sincronizadas con producción; la migración 39
+  endurece RLS y la 40 incorpora métricas agregadas admin-only.
+- Validación local más reciente: lint limpio, 14 archivos de pruebas y 65
   pruebas aprobadas, build de producción correcto y sitemap de 1007 URLs.
 - Recuperación de contraseña:
   - plantilla remota portable con `token_hash` aplicada mediante Supabase CLI;
   - enlace real probado sin el error PKCE entre navegadores;
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
-- Despliegue activo de Cloudflare: `8129f0d1-7573-485a-a42b-20ed85b4306a`.
+- Despliegue activo de Cloudflare: `1825c1df-5d47-4cd0-942e-eb409dc07147`.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación accesible para administrador. Último estado observado:
   0 pendientes, 9 rechazadas por IA y 303 publicadas.
@@ -51,13 +51,13 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | --- | --- | --- | --- |
 | A. Reconciliar checklist | Terminado | Codex principal | Casillas antiguas reconciliadas con evidencia de Supabase, RLS, Storage, contactos, revisión, dominio, SSL, canonical, `www` y redirección HTTP. |
 | B. Rutas y recarga | Terminado | Codex principal | Todas las rutas previstas responden `200`; públicas renderizan tras recarga, protegidas aplican guard anónimo, y estados especiales son seguros. |
-| C. Rendimiento y responsive | En curso | Codex principal | Responsive y TTFB completados; faltan LCP, CLS e INP/TBT porque Chrome DevTools MCP no está configurado. Fallback de imágenes rotas desplegado. |
+| C. Rendimiento y responsive | En curso | Codex principal | Responsive y TTFB completados. `chrome-devtools-mcp` 1.5.0 quedó configurado en Codex; falta recargar la aplicación para exponer sus herramientas y medir LCP, CLS e INP/TBT. Fallback de imágenes rotas desplegado. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
-| F. Moderación Groq | Bloqueado | — | Reevaluar un anuncio únicamente cuando exista uno pendiente. No usar anuncios rechazados o publicados como sustituto. |
+| F. Moderación Groq | Bloqueado | Codex principal | Se creó un borrador QA aislado y se eliminó al comprobar el bloqueo. Para completar el flujo pendiente, Chrome debe habilitar acceso a archivos locales en la extensión de ChatGPT; sin imagen el formulario no permite enviar a revisión. No usar anuncios existentes como sustituto. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
-| I. Operación humana | Bloqueado | — | El usuario debe definir quién revisa publicaciones y el tiempo máximo de revisión. |
+| I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -308,6 +308,26 @@ Usar este formato y conservar las entradas anteriores:
   `SUPABASE_MANAGEMENT_TOKEN`.
 - Cambios remotos o despliegue: Worker productivo
   `1825c1df-5d47-4cd0-942e-eb409dc07147`.
+
+### 2026-07-12 17:38 — Codex principal — carriles C, F e I
+
+- Estado: C en curso; F bloqueado; I terminado.
+- Cambios de configuración: `chrome-devtools-mcp` 1.5.0 añadido a la
+  configuración local de Codex y ejecutable validado. La tarea actual no puede
+  cargar herramientas MCP nuevas; requiere recargar Codex antes de medir LCP,
+  CLS e INP/TBT.
+- Prueba Groq: se creó desde la interfaz un borrador QA claramente temporal. El
+  formulario exigió una imagen y Chrome rechazó la carga porque la extensión de
+  ChatGPT no tiene habilitado acceso a archivos locales. El borrador se eliminó
+  inmediatamente; el inventario volvió de 6 a 5 propiedades o borradores. No se
+  modificaron anuncios existentes ni se ejecutó moderación sobre ellos.
+- Pendiente exacto de F: en `chrome://extensions`, abrir los detalles de la
+  extensión de ChatGPT y habilitar `Permitir acceso a URLs de archivo`; después
+  repetir creación, envío a `pending_review`, reevaluación Groq y eliminación.
+- Operación: Rodolfo queda como responsable de moderación con SLA máximo de
+  24 horas.
+- Bloqueos confirmados por el usuario: G continúa sin contenido real aprobado y
+  H continúa pendiente de revisión jurídica externa.
 
 ## Notas de seguridad
 
