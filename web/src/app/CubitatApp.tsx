@@ -713,23 +713,33 @@ export function CubitatApp() {
     pageMode === 'detail' ? 'is-detail-page' : '',
     pageMode === 'publish' || pageMode === 'edit' ? 'is-publish-page' : '',
   ].filter(Boolean).join(' ')
+  const isRecoveryPage = pageMode === 'reset-password'
 
   return (
     <main className={appShellClass}>
-      <Header
-        user={user}
-        userRole={userRole}
-        navigateHome={navigateHome}
-        navigateAccount={navigateAccount}
-        navigateFavorites={navigateFavorites}
-        navigateMyProperties={navigateMyProperties}
-        navigateModerar={navigateModerar}
-        navigatePublish={navigatePublish}
-        navigateResults={navigateResults}
-        openLogin={openLogin}
-        handleOperationNavigation={handleOperationNavigation}
-        onSignOut={handleSignOut}
-      />
+      {isRecoveryPage ? (
+        <header className="flex h-[68px] items-center justify-center border-b border-[#dce6e2] bg-white" aria-label="Cubitat">
+          <div className="flex items-center gap-2.5 text-xl font-extrabold text-[#10231f]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#007d6d] text-white">c</span>
+            <span>Cubitat</span>
+          </div>
+        </header>
+      ) : (
+        <Header
+          user={user}
+          userRole={userRole}
+          navigateHome={navigateHome}
+          navigateAccount={navigateAccount}
+          navigateFavorites={navigateFavorites}
+          navigateMyProperties={navigateMyProperties}
+          navigateModerar={navigateModerar}
+          navigatePublish={navigatePublish}
+          navigateResults={navigateResults}
+          openLogin={openLogin}
+          handleOperationNavigation={handleOperationNavigation}
+          onSignOut={handleSignOut}
+        />
+      )}
 
       <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
 
@@ -868,12 +878,12 @@ export function CubitatApp() {
           <TermsPage onBack={navigateHome} />
         )}
 
-        <SiteFooter />
+        {!isRecoveryPage && <SiteFooter />}
       </Suspense>
 
       <PWAInstallPrompt />
 
-      <nav className="mobile-bottom-nav" aria-label="Navegación móvil">
+      {!isRecoveryPage && <nav className="mobile-bottom-nav" aria-label="Navegación móvil">
         <button className={pageMode === 'home' ? 'is-active' : ''} type="button" onClick={navigateHome}>
           <Home size={17} />
           <span>Inicio</span>
@@ -890,7 +900,7 @@ export function CubitatApp() {
           <UserRound size={17} />
           <span>Cuenta</span>
         </button>
-      </nav>
+      </nav>}
 
       <Suspense fallback={null}>
         {isSavePromptOpen && <SavePromptModal onClose={closeSavePrompt} />}

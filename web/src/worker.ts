@@ -557,7 +557,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                   const aiResult = JSON.parse(cleanText);
                   finalStatus = aiResult.status || 'pending_review';
                   finalReason = aiResult.reason || '';
-                } catch(e: any) {
+                } catch {
                   finalStatus = 'pending_review';
                   finalReason = 'Fallo al interpretar respuesta de IA. Pendiente de revisión manual.';
                 }
@@ -566,7 +566,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 finalReason = 'No hay texto en IA. Pendiente de revisión manual.';
               }
             }
-          } catch (e: any) {
+          } catch {
             finalStatus = 'pending_review';
             finalReason = 'Fallo de conexión con IA. Pendiente de revisión manual.';
           }
@@ -857,7 +857,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
-    const match = path.match(/^\/propiedad\/([^\/]+)/);
+    const match = path.match(/^\/propiedad\/([^/]+)/);
 
     if (match) {
       const slug = match[1];

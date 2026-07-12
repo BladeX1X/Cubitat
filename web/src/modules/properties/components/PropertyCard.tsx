@@ -20,7 +20,11 @@ import {
 import { SavePropertyButton } from './SavePropertyButton'
 import type { Property } from '../types'
 import { normalizePhoneForTel, normalizePhoneForWhatsApp } from '../utils/contact'
-import { getPropertyGalleryImages, optimizePropertyCardImage } from '../utils/images'
+import {
+  getPropertyGalleryImages,
+  optimizePropertyCardImage,
+  PROPERTY_IMAGE_FALLBACK,
+} from '../utils/images'
 
 type PropertyCardProps = {
   property: Property
@@ -107,6 +111,9 @@ export function PropertyCard({
                     decoding="async"
                     fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}
                     style={{ backgroundColor: property.coverTone }}
+                    onError={(event) => {
+                      event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                    }}
                   />
                 ) : (
                   <div

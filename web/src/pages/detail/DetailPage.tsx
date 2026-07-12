@@ -29,7 +29,11 @@ import {
   normalizePhoneForTel,
   normalizePhoneForWhatsApp,
 } from '../../modules/properties/utils/contact'
-import { getPropertyGalleryImages, normalizePropertyImages } from '../../modules/properties/utils/images'
+import {
+  getPropertyGalleryImages,
+  normalizePropertyImages,
+  PROPERTY_IMAGE_FALLBACK,
+} from '../../modules/properties/utils/images'
 import { formatPrice } from '../../shared/lib/formatPrice'
 import { getOpenFreeMapStyle } from '../../modules/maps/lib/openFreeMapStyle'
 import { Button } from '../../shared/ui/button'
@@ -828,7 +832,7 @@ function ImageGallery({
             key={idx}
             onClick={() => { setActiveImage(img); setActiveTab('photos'); setIsOpenModal(true); }}
             className="bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
-            style={{ backgroundImage: `url("${img}")` }}
+            style={{ backgroundImage: `url("${img}")`, backgroundColor: property.coverTone || '#f3f4f6' }}
           >
             <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
             {idx === 3 && images.length > 5 && (
@@ -860,7 +864,14 @@ function ImageGallery({
               }}
               aria-label={`Abrir foto ${idx + 1} de ${images.length}`}
             >
-              <img src={img} alt={`Foto ${idx + 1} de la propiedad`} loading={idx === 0 ? 'eager' : 'lazy'} />
+              <img
+                src={img}
+                alt={`Foto ${idx + 1} de la propiedad`}
+                loading={idx === 0 ? 'eager' : 'lazy'}
+                onError={(event) => {
+                  event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                }}
+              />
             </button>
           ))}
         </div>
@@ -927,6 +938,9 @@ function ImageGallery({
                 src={activeImage} 
                 alt="Detalle de propiedad" 
                 className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-scaleUp"
+                onError={(event) => {
+                  event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                }}
               />
 
               <div className="flex gap-2 mt-6 overflow-x-auto max-w-full py-2">
