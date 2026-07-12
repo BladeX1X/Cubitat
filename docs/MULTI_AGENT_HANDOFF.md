@@ -51,10 +51,10 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | --- | --- | --- | --- |
 | A. Reconciliar checklist | Terminado | Codex principal | Casillas antiguas reconciliadas con evidencia de Supabase, RLS, Storage, contactos, revisión, dominio, SSL, canonical, `www` y redirección HTTP. |
 | B. Rutas y recarga | Terminado | Codex principal | Todas las rutas previstas responden `200`; públicas renderizan tras recarga, protegidas aplican guard anónimo, y estados especiales son seguros. |
-| C. Rendimiento y responsive | En curso | Codex principal | Responsive y TTFB completados. `chrome-devtools-mcp` 1.5.0 quedó configurado en Codex; falta recargar la aplicación para exponer sus herramientas y medir LCP, CLS e INP/TBT. Fallback de imágenes rotas desplegado. |
+| C. Rendimiento y responsive | Terminado | Codex principal | Producción medida con Chrome DevTools: móvil frío Slow 4G/CPU x4 con LCP 1.704 s y CLS 0; interacción con INP 51 ms. Lighthouse móvil quedó en 100 para accesibilidad, buenas prácticas, SEO y navegación agéntica, sin fallos. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
-| F. Moderación Groq | Bloqueado | Codex principal | Se creó un borrador QA aislado y se eliminó al comprobar el bloqueo. Para completar el flujo pendiente, Chrome debe habilitar acceso a archivos locales en la extensión de ChatGPT; sin imagen el formulario no permite enviar a revisión. No usar anuncios existentes como sustituto. |
+| F. Moderación Groq | Bloqueado | Codex principal | El acceso a archivos ya no es el bloqueo. La pestaña conectada de Chrome abre Cubitat como anónimo; se necesita iniciar sesión allí con la cuenta QA autorizada para crear, reevaluar con Groq y eliminar la publicación temporal. No usar anuncios existentes como sustituto. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
@@ -328,6 +328,26 @@ Usar este formato y conservar las entradas anteriores:
   24 horas.
 - Bloqueos confirmados por el usuario: G continúa sin contenido real aprobado y
   H continúa pendiente de revisión jurídica externa.
+
+### 2026-07-12 18:05 — Codex principal — carriles C y F
+
+- Estado: C terminado; F bloqueado por sesión anónima en el Chrome conectado.
+- Rendimiento productivo: escritorio sin throttling LCP 260 ms y CLS 0; móvil
+  frío con Slow 4G y CPU x4 LCP 1.704 s y CLS 0; interacción real INP 51 ms.
+- Calidad productiva: tras corregir cuatro nombres accesibles y publicar
+  `llms.txt`, Lighthouse móvil obtuvo 100 en accesibilidad, buenas prácticas,
+  SEO y navegación agéntica, con 51 auditorías aprobadas y cero fallos. Consola
+  sin errores ni advertencias relevantes.
+- Validación técnica: lint limpio; 15 archivos y 66 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs. Worker productivo
+  `fafab80b-a0e9-4396-94a9-f070c1c1a285`.
+- Moderación Groq: la conexión a Chrome funciona y se dejó Cubitat abierto, pero
+  la sesión visible es anónima. Pendiente iniciar sesión en esa pestaña con la
+  cuenta QA autorizada y repetir exclusivamente creación, reevaluación y
+  eliminación del anuncio temporal. No se creó ni modificó ningún dato en este
+  intento.
+- Bloqueos G/H: contenido real y cierre legal permanecen bloqueados por decisión
+  del usuario.
 
 ## Notas de seguridad
 

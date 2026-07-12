@@ -46,7 +46,6 @@ export function Header({
         <a
           className="brand"
           href="/"
-          aria-label="c Cubitat"
           onClick={(event) => {
             event.preventDefault()
             handleNavigation(navigateHome)
