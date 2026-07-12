@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AdminPage } from './AdminPage'
 
@@ -50,6 +50,19 @@ const mockProfiles = [
   { id: 'user-1', full_name: 'Juan Perez', email: 'juan@gmail.com' },
 ]
 
+const databaseMetrics = {
+  db_bytes: 13_487_251,
+  storage_bytes: 656_614,
+  properties_count: 313,
+  users_count: 25,
+  reports_count: 3,
+}
+
+const { mockRpc, mockGetSession } = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+  mockGetSession: vi.fn(),
+}))
+
 const mockFrom = vi.fn().mockImplementation((table: string) => {
   const proxy: any = new Proxy({}, {
     get(_, prop) {
@@ -76,10 +89,31 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
 vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: (table: string) => mockFrom(table),
+    rpc: mockRpc,
+    auth: { getSession: mockGetSession },
   },
 }))
 
 describe('AdminPage - Panel de Moderacion y Reportes', () => {
+  beforeEach(() => {
+    mockRpc.mockReset().mockResolvedValue({ data: databaseMetrics, error: null })
+    mockGetSession.mockReset().mockResolvedValue({
+      data: { session: { access_token: 'admin-test-token' } },
+      error: null,
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        cloudflare: { requests: 42, error: '' },
+        analytics: { activeUsers: null, error: 'GA no configurado' },
+        supabase: { storage_bytes: null, egress_bytes: null, db_bytes: null, error: 'Uso parcial' },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    ))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('debería renderizar la lista de propiedades pendientes de revisión por defecto', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
 
@@ -141,5 +175,26 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       // Debe actualizar el estado del reporte a 'dismissed'
       expect(mockFrom).toHaveBeenCalledWith('property_reports')
     })
+  })
+
+  it('reintenta la carga de métricas cuando falla el RPC administrativo', async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: null, error: { message: 'Fallo temporal' } })
+      .mockResolvedValueOnce({ data: databaseMetrics, error: null })
+
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Métricas' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudieron cargar las estadísticas.')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('313')).toBeInTheDocument()
+      expect(screen.getByText('25')).toBeInTheDocument()
+    })
+    expect(mockRpc).toHaveBeenCalledTimes(2)
   })
 })

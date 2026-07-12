@@ -52,8 +52,8 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | A. Reconciliar checklist | Terminado | Codex principal | Casillas antiguas reconciliadas con evidencia de Supabase, RLS, Storage, contactos, revisión, dominio, SSL, canonical, `www` y redirección HTTP. |
 | B. Rutas y recarga | Terminado | Codex principal | Todas las rutas previstas responden `200`; públicas renderizan tras recarga, protegidas aplican guard anónimo, y estados especiales son seguros. |
 | C. Rendimiento y responsive | En curso | Codex principal | Responsive y TTFB completados; faltan LCP, CLS e INP/TBT porque Chrome DevTools MCP no está configurado. Fallback de imágenes rotas desplegado. |
-| D. RLS por rol | En curso | Codex principal | Rol anónimo verificado en producción; políticas de propietario/admin auditadas en migraciones. Falta prueba autenticada real porque el control de Chrome no estuvo disponible y `db dump` requiere Docker. |
-| E. Métricas admin | Libre | — | Completar integración de métricas de GA y Supabase con estados de carga, vacío y error; validar endpoints autenticados sin exponer secretos. |
+| D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
+| E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
 | F. Moderación Groq | Bloqueado | — | Reevaluar un anuncio únicamente cuando exista uno pendiente. No usar anuncios rechazados o publicados como sustituto. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
@@ -169,6 +169,145 @@ Usar este formato y conservar las entradas anteriores:
   porque Docker Desktop no estaba iniciado; el controlador de Chrome tampoco
   estuvo disponible en este turno.
 - Cambios remotos o despliegue: ninguno.
+
+### 2026-07-12 14:20 — Codex — carril D
+
+- Estado: Bloqueado.
+- Archivos modificados: `docs/MULTI_AGENT_HANDOFF.md`, checklist y dashboard de
+  Obsidian.
+- Validaciones ejecutadas: navegación autenticada real de solo lectura en
+  Chrome con dos cuentas normales existentes; rutas `/mis-propiedades`,
+  `/moderar` y `/editar/<id>`; revisión de consola; contraste del cargador de
+  edición con el grafo de código.
+- Evidencia/resultado: ambas cuentas muestran cero publicaciones propias y
+  reciben `Acceso restringido` en `/moderar`, sin errores relevantes de
+  consola. Sin embargo, una URL directa de edición cargó el formulario y los
+  datos completos de una propiedad publicada ajena; `loadProperty` consulta
+  `properties.select('*')` por id sin comprobar propietario. No se pulsó
+  `Guardar`, no se moderó contenido y no se modificaron datos de producción.
+- Pendiente exacto para el siguiente agente: corregir y desplegar el guard de
+  propietario en edición; después repetir lectura y escritura aisladas con una
+  propiedad de prueba autorizada. Facilitar o autorizar una cuenta admin para
+  verificar panel y funciones de moderación sin ejecutar cambios.
+- Cambios remotos o despliegue: ninguno.
+
+### 2026-07-12 14:35 — Codex — carril D (remediación)
+
+- Estado: Bloqueado.
+- Archivos modificados: `PublishPage.tsx`, repositorio y prueba de propiedad
+  editable, especificación de publicación, este documento, checklist y
+  dashboard de Obsidian.
+- Validaciones ejecutadas: TDD del filtro `id + user_id`; lint limpio; 11
+  archivos y 54 pruebas; build TypeScript/Vite/PWA; sitemap de 1007 URLs;
+  `wrangler deploy --dry-run`; navegación autenticada de solo lectura.
+- Evidencia/resultado: la consulta de edición exige que el anuncio pertenezca
+  al usuario autenticado y vuelve a `/mis-propiedades` si no existe una fila
+  autorizada. La sesión Chrome controlada por el service worker anterior ya
+  bloqueó la propiedad ajena. El origen productivo entrega el bundle final,
+  pero la PWA de esa sesión aún conserva un bundle previo y debe activar su
+  actualización antes de comprobar visualmente la variante sin alertas.
+- Pendiente exacto para el siguiente agente: cerrar/reabrir la PWA o activar su
+  actualización y repetir `/editar/<id>` verificando redirección sin diálogos ni
+  consola; probar una publicación propia autorizada; facilitar una cuenta admin
+  para panel y moderación de solo lectura.
+- Cambios remotos o despliegue: Cloudflare Worker
+  `198547c3-169a-429e-b313-eae94c99a515`; sin cambios de datos, migraciones,
+  secretos ni configuración.
+
+### 2026-07-12 14:55 — Codex — carril D (administrador real)
+
+- Estado: Bloqueado.
+- Archivos modificados: este documento, checklist y dashboard de Obsidian.
+- Validaciones ejecutadas: registro y confirmación real de una cuenta QA;
+  asignación transaccional de rol mediante Management API respetando el trigger
+  anti-escalación; navegación Chrome de solo lectura por `/moderar`, propiedades
+  rechazadas y reportes; revisión de consola.
+- Evidencia/resultado: la cuenta QA con rol admin accede al panel; observa 312
+  propiedades totales, incluidas 9 rechazadas no públicas y 303 publicadas;
+  dispone de controles Aprobar, Ocultar, Reevaluar y Eliminar; abre la sección
+  de reportes; consola sin errores. No se ejecutó ningún control de moderación
+  ni se modificaron propiedades o reportes.
+- Pendiente exacto para el siguiente agente: probar `/mis-propiedades` y
+  `/editar/<id>` con una cuenta que posea un anuncio propio autorizado. No crear
+  ni modificar una propiedad de producción sin autorización específica.
+- Cambios remotos o despliegue: se creó una cuenta QA confirmada y se asignó
+  `role=admin`; no se registran credenciales en documentación. Sin despliegue,
+  migraciones ni cambios en anuncios.
+
+### 2026-07-12 15:05 — Codex — carril D (cierre)
+
+- Estado: Terminado.
+- Archivos modificados: soporte visual y prueba del estado `draft` en Mis
+  publicaciones, especificación de publicación, este documento, checklist y
+  dashboard de Obsidian.
+- Validaciones ejecutadas: propiedad QA mínima en estado `draft`; navegación
+  real como propietario y como segundo usuario; lint limpio; 12 archivos y 55
+  pruebas; build TypeScript/Vite/PWA; sitemap de 1007 URLs; despliegue y consola.
+- Evidencia/resultado: el propietario lista un único borrador QA y abre su
+  edición; el segundo usuario lista cero propiedades y la URL directa del
+  borrador ajeno redirige a `/mis-propiedades`; consola sin errores. La cuenta
+  admin ya había validado contenido no público, reportes y controles de
+  moderación sin ejecutar acciones.
+- Pendiente exacto para el siguiente agente: ninguno para el carril D. La
+  cuenta QA admin y el borrador QA no público permanecen en producción; no
+  eliminarlos sin autorización explícita.
+- Cambios remotos o despliegue: Cloudflare Worker
+  `d30e45ca-0cc6-4a0f-9767-f8d2b025dc3b`; se creó un borrador QA no público.
+  Sin migraciones, secretos ni cambios en anuncios existentes.
+
+### 2026-07-12 15:25 — Codex principal — carril E
+
+- Estado: Bloqueado.
+- Archivos modificados: capa `adminMetrics`, panel y pruebas administrativas,
+  Worker/proxy, migración 40, especificación de administración, inventario de
+  migraciones, este documento, checklist y dashboard de Obsidian.
+- Validaciones ejecutadas: lint limpio; 14 archivos y 63 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs; `db push` y `migration list`;
+  navegación admin real; pruebas `401`/`403` y allowlist RPC.
+- Evidencia/resultado: `/api/metrics` recibe la sesión admin; RPC
+  `get_admin_metrics` exige rol admin y devuelve 12.9 MB de BD, 0.6 MB de
+  Storage, 313 anuncios, 25 usuarios y 3 reportes. Las tarjetas aíslan errores
+  por proveedor y ofrecen actualización. GA muestra correctamente que falta
+  Service Account. Cloudflare mostró datos reales antes, pero durante la prueba
+  final su API respondió `521`, representado como error parcial sin romper
+  Supabase.
+- Pendiente exacto para el siguiente agente: configurar `GA_SERVICE_ACCOUNT_JSON`
+  y el identificador de propiedad GA4; completar egreso mensual de Supabase si
+  el token obtiene `analytics_usage_read`; reintentar `wrangler deploy` cuando
+  la API Cloudflare deje de devolver `521` para publicar el reintento contextual.
+- Cambios remotos o despliegue: migración 40 sincronizada. Worker activo
+  `efd49020-1dd7-46d1-96b5-ab3b4d346cbc` contiene endpoint autenticado, proxy
+  RPC y métricas Supabase; el último ajuste UI quedó solo local. Un nuevo intento
+  el 2026-07-12 pasó `wrangler deploy --dry-run`, pero la API devolvió `522`
+  antes de publicar una versión.
+
+### 2026-07-12 17:20 — Codex principal — carril E
+
+- Estado: Terminado.
+- Archivos modificados: `web/src/worker.ts`, `web/src/worker.test.ts`,
+  especificación de administración, este documento, checklist y dashboard de
+  Obsidian.
+- Validaciones ejecutadas: lint limpio; 14 archivos y 65 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs; dry-run y deploy Wrangler;
+  navegación productiva como admin y actualización repetida de métricas.
+- Evidencia/resultado: Google Analytics Data API habilitada en el proyecto
+  existente `proyecto mulet`; Service Account `Cubitat Analytics Reader` sin
+  roles amplios de Google Cloud y con rol `Lector` únicamente en la propiedad
+  GA4 `544117707`. Producción mostró 1 usuario activo, 23,260 solicitudes de
+  Cloudflare, BD 12.9 MB, Storage 0.6 MB, 313 anuncios y 25 usuarios. La
+  actualización posterior no produjo errores nuevos de consola.
+- Seguridad: `GA_SERVICE_ACCOUNT_JSON`, `GA_PROPERTY_ID` y el token de gestión
+  de Supabase se guardaron como secretos de Cloudflare sin mostrar valores. La
+  descarga temporal de la clave privada fue eliminada tras la carga.
+- Limitación documentada: `analytics_usage_read` permite consultar agregados de
+  solicitudes, pero la Management API pública no devuelve bytes de egreso
+  unificado; el panel conserva la indicación de consultar el dashboard de
+  Supabase y no inventa una medición.
+- Pendiente operativo: el token de Supabase creado para métricas tiene vigencia
+  de 30 días; renovarlo antes del 2026-08-11 y sustituir únicamente el secreto
+  `SUPABASE_MANAGEMENT_TOKEN`.
+- Cambios remotos o despliegue: Worker productivo
+  `1825c1df-5d47-4cd0-942e-eb409dc07147`.
 
 ## Notas de seguridad
 
