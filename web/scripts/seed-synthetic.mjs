@@ -1,105 +1,101 @@
 import { writeFileSync } from 'fs'
 
-const ZONES = [
-  { zoneId: 'vedado', name: 'Vedado', lat: 23.141, lng: -82.383 },
-  { zoneId: 'habana-vieja', name: 'Habana Vieja', lat: 23.139, lng: -82.354 },
-  { zoneId: 'centro-habana', name: 'Centro Habana', lat: 23.136, lng: -82.368 },
-  { zoneId: 'playa', name: 'Playa', lat: 23.097, lng: -82.450 },
-  { zoneId: 'miramar', name: 'Miramar', lat: 23.120, lng: -82.427 },
-  { zoneId: 'nuevo-vedado', name: 'Nuevo Vedado', lat: 23.125, lng: -82.335 },
-  { zoneId: 'marianao', name: 'Marianao', lat: 23.085, lng: -82.430 },
-  { zoneId: 'guanabo', name: 'Guanabo', lat: 23.170, lng: -82.140 },
-  { zoneId: 'cerro', name: 'Cerro', lat: 23.117, lng: -82.370 },
-  { zoneId: 'santos-suarez', name: 'Santos Suárez', lat: 23.110, lng: -82.345 },
+const PROVINCES = [
+  { id: 'pinar-del-rio', name: 'Pinar del Río', city: 'Pinar del Río', lat: 22.4175, lng: -83.6975 },
+  { id: 'artemisa', name: 'Artemisa', city: 'Artemisa', lat: 22.8167, lng: -82.7667 },
+  { id: 'la-habana', name: 'La Habana', city: 'Plaza de la Revolución', lat: 23.141, lng: -82.383 },
+  { id: 'mayabeque', name: 'Mayabeque', city: 'San José de las Lajas', lat: 22.9614, lng: -82.1511 },
+  { id: 'matanzas', name: 'Matanzas', city: 'Matanzas', lat: 23.0411, lng: -81.5775 },
+  { id: 'cienfuegos', name: 'Cienfuegos', city: 'Cienfuegos', lat: 22.1497, lng: -80.4467 },
+  { id: 'villa-clara', name: 'Villa Clara', city: 'Santa Clara', lat: 22.4067, lng: -79.9647 },
+  { id: 'sancti-spiritus', name: 'Sancti Spíritus', city: 'Sancti Spíritus', lat: 21.9333, lng: -79.4439 },
+  { id: 'ciego-de-avila', name: 'Ciego de Ávila', city: 'Ciego de Ávila', lat: 21.8481, lng: -78.7631 },
+  { id: 'camaguey', name: 'Camagüey', city: 'Camagüey', lat: 21.3833, lng: -77.9167 },
+  { id: 'las-tunas', name: 'Las Tunas', city: 'Las Tunas', lat: 20.9611, lng: -76.9511 },
+  { id: 'holguin', name: 'Holguín', city: 'Holguín', lat: 20.8889, lng: -76.2628 },
+  { id: 'granma', name: 'Granma', city: 'Bayamo', lat: 20.3742, lng: -76.6436 },
+  { id: 'santiago-de-cuba', name: 'Santiago de Cuba', city: 'Santiago de Cuba', lat: 20.0208, lng: -75.8267 },
+  { id: 'guantanamo', name: 'Guantánamo', city: 'Guantánamo', lat: 20.1444, lng: -75.2092 },
+  { id: 'isla-de-la-juventud', name: 'Isla de la Juventud', city: 'Nueva Gerona', lat: 21.8833, lng: -82.8000 }
 ]
 
-const PROPERTIES = [
-  { title: 'Apto 2 cuartos en Nuevo Vedado zona El Bosque', priceUsd: 9500, type: 'apartamento', op: 'venta', area: 68, beds: 2, baths: 1 },
-  { title: 'Precioso Apartamento en Bajos en Marianao cerca de 100 y 51', priceUsd: 8750, type: 'apartamento', op: 'venta', area: 55, beds: 2, baths: 1 },
-  { title: 'Se vende hermosa casa colonial con 8 habitaciones', priceUsd: 600000, type: 'casa', op: 'venta', area: 350, beds: 8, baths: 4 },
-  { title: 'Casa de playa en Santa Fe frente al mar con piscina', priceUsd: 246, type: 'casa', op: 'alquiler', area: 120, beds: 3, baths: 2 },
-  { title: 'Vendo propiedad horizontal en El Náutico, La Habana', priceUsd: 150000, type: 'casa', op: 'venta', area: 200, beds: 4, baths: 3 },
-  { title: 'Precioso apartamento para extranjeros en ubicación céntrica', priceUsd: 300, type: 'apartamento', op: 'alquiler', area: 65, beds: 2, baths: 1 },
-  { title: 'Apartamento en Nuevo Vedado con planta eléctrica', priceUsd: 400, type: 'apartamento', op: 'alquiler', area: 70, beds: 2, baths: 1 },
-  { title: 'Bonito Apartamento en el Malecón para extranjeros', priceUsd: 300, type: 'apartamento', op: 'alquiler', area: 50, beds: 1, baths: 1 },
-  { title: 'Casa independiente en Centro Habana en venta', priceUsd: 35000, type: 'casa', op: 'venta', area: 85, beds: 2, baths: 1 },
-  { title: 'Vendo apartamento de 2 habitaciones en Nuevo Vedado', priceUsd: 20000, type: 'apartamento', op: 'venta', area: 60, beds: 2, baths: 1 },
-  { title: 'Se vende apartamento de 2/4 en buen estado', priceUsd: 7000, type: 'apartamento', op: 'venta', area: 55, beds: 2, baths: 1 },
-  { title: 'Alquiler de casa independiente en Miramar 3 cuartos', priceUsd: 750, type: 'casa', op: 'alquiler', area: 140, beds: 3, baths: 2 },
-  { title: 'Renta de apartamento independiente lineal en el Vedado', priceUsd: 350, type: 'apartamento', op: 'alquiler', area: 48, beds: 1, baths: 1 },
-  { title: 'Casa independiente de 2 cuartos en Santos Suárez', priceUsd: 12000, type: 'casa', op: 'venta', area: 75, beds: 2, baths: 1 },
-  { title: 'Apartamento en Centro Habana cerca de 23 y 36', priceUsd: 9000, type: 'apartamento', op: 'venta', area: 45, beds: 1, baths: 1 },
-  { title: 'Apto de 1/4 en buen lugar de Playa', priceUsd: 13000, type: 'apartamento', op: 'venta', area: 40, beds: 1, baths: 1 },
-  { title: 'Permuto casa en bajos de 3 cuartos y 3 baños en Centro Habana', priceUsd: null, type: 'casa', op: 'permuta', area: 120, beds: 3, baths: 3 },
-  { title: 'Se renta casa de 3 habitaciones con piscina en Varadero', priceUsd: 80, type: 'casa', op: 'alquiler', area: 90, beds: 3, baths: 2 },
-  { title: 'Hostal de lujo de 4 habitaciones en Centro Habana', priceUsd: 30, type: 'casa', op: 'alquiler', area: 160, beds: 4, baths: 4 },
-  { title: 'Casa de 2/4 en el Vedado, planta baja', priceUsd: 50000, type: 'casa', op: 'venta', area: 100, beds: 2, baths: 2 },
-  { title: 'Se vende casa amplia en Aldabó, casa independiente', priceUsd: 28000, type: 'casa', op: 'venta', area: 110, beds: 3, baths: 2 },
-  { title: 'Rento casa en Vedado para larga estancia, solo familia', priceUsd: 750, type: 'casa', op: 'alquiler', area: 130, beds: 3, baths: 2 },
-  { title: 'Vendo casa en El Cotorro, 3 cuartos', priceUsd: 9000, type: 'casa', op: 'venta', area: 80, beds: 3, baths: 1 },
-  { title: 'Casa independiente en Playa de 5/4', priceUsd: 120000, type: 'casa', op: 'venta', area: 220, beds: 5, baths: 4 },
+const PROPERTY_TEMPLATES = [
+  { title: 'Apartamento de 2 cuartos muy céntrico', priceUsd: 12000, type: 'apartamento', op: 'venta', area: 65, beds: 2, baths: 1 },
+  { title: 'Casa independiente espaciosa con portal y patio', priceUsd: 35000, type: 'casa', op: 'venta', area: 150, beds: 3, baths: 2 },
+  { title: 'Se renta casa con piscina ideal para vacaciones', priceUsd: 150, type: 'casa', op: 'alquiler', area: 180, beds: 4, baths: 3 },
+  { title: 'Apartamento moderno en alquiler mensual', priceUsd: 400, type: 'apartamento', op: 'alquiler', area: 55, beds: 1, baths: 1 },
+  { title: 'Gran casona colonial con techos altos de placa libre', priceUsd: 75000, type: 'casa', op: 'venta', area: 250, beds: 5, baths: 3 },
+  { title: 'Apartamento pequeño ideal para parejas o solteros', priceUsd: 8500, type: 'apartamento', op: 'venta', area: 45, beds: 1, baths: 1 }
 ]
 
 const COVER_TONES = ['#f3f4f6', '#e8f0fe', '#fef3e2', '#e6f7ed', '#fce4e4', '#f0e6f7', '#e0f2f1', '#fff3e0']
 
 const DESCRIPTIONS = [
-  'Propiedad en excelente estado, lista para entrar a vivir. Pisos de cerámica, carpintería de aluminio, cocina equipada, baños modernos. Buena ventilación e iluminación natural.',
-  'Inmueble bien ubicado, cerca de parques, escuelas y centros comerciales. Agua 24 horas, electricidad estable. Ideal para familia.',
-  'Vivienda con amplios espacios, techos altos, patio interior. Climatización en todas las habitaciones. Tanque de agua y planta eléctrica.',
-  'Propiedad recién renovada con materiales de primera calidad. Cocina integral, closets empotrados, piso de porcelanato. Lista para mudarse.',
-  'Cómoda vivienda en zona residencial tranquila. Cerca del transporte público, farmacias y mercados. Agua y gas de la calle.',
-  'Impecable propiedad con acabados de lujo. Vigas de acero, ventanales de cristal, terraza con vista. Cocina abierta equipada con electrodomésticos.',
-  'Casa con jardín amplio y garaje para dos autos. Sala-comedor independiente, cocina amplia, lavadero. Ideal para familia con niños.',
-  'Apartamento luminoso en edificio con portón eléctrico. Pasillos amplios, balcón tendal, cisterna propia. Tranquilo y seguro.',
+  'Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.',
+  'Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.',
+  'Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.',
+  'Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.',
+  'Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.'
 ]
 
-const PHONES = ['+53 5 4012345', '+53 5 2987654', '+53 7 8321122', '+53 5 3654891', '+53 5 2745638', '+53 7 2049876']
-const NAMES = ['Carlos Pérez', 'María García', 'Juan Rodríguez', 'Ana Martínez', 'Pedro Sánchez', 'Laura López']
+const PHONES = ['+53 5 4012345', '+53 5 2987654', '+53 5 3654891', '+53 5 2745638', '+53 5 8421093', '+53 5 9182736']
+const NAMES = ['Carlos Pérez', 'María García', 'Juan Rodríguez', 'Ana Martínez', 'Pedro Sánchez', 'Laura López', 'Rodolfo Jorba']
 
 function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
-function main() {
-  const properties = PROPERTIES.map((p, i) => {
-    const zone = ZONES[i % ZONES.length]
-    const latOffset = (Math.random() - 0.5) * 0.02
-    const lngOffset = (Math.random() - 0.5) * 0.02
+function toSqlArray(arr) {
+  if (!arr || arr.length === 0) return "ARRAY[]::text[]"
+  const escapedItems = arr.map(item => `'${item.replace(/'/g, "''")}'`)
+  return `ARRAY[${escapedItems.join(', ')}]::text[]`
+}
 
-    return {
-      id: `seed-s${String(i + 1).padStart(3, '0')}`,
-      title: p.title,
-      location: `La Habana, ${zone.name}`,
-      description: randomItem(DESCRIPTIONS),
-      zoneId: zone.zoneId,
-      operation: p.op,
-      propertyType: p.type,
-      priceUsd: p.priceUsd,
-      bedrooms: p.beds,
-      bathrooms: p.baths,
-      parking: Math.random() > 0.5 ? 1 : 0,
-      areaM2: p.area,
-      amenities: [],
-      status: 'published',
-      coverTone: randomItem(COVER_TONES),
-      coverImage: `https://picsum.photos/seed/cubitat-${i + 1}/800/600`,
-      images: [
-        `https://picsum.photos/seed/cubitat-${i + 1}a/800/600`,
-        `https://picsum.photos/seed/cubitat-${i + 1}b/800/600`,
-        `https://picsum.photos/seed/cubitat-${i + 1}c/800/600`,
-      ],
-      coordinates: {
-        latitude: +(zone.lat + latOffset).toFixed(6),
-        longitude: +(zone.lng + lngOffset).toFixed(6),
-      },
-      mapPoint: {
-        x: +(zone.lng + lngOffset).toFixed(6),
-        y: +(zone.lat + latOffset).toFixed(6),
-      },
-      contact_info: {
-        name: randomItem(NAMES),
-        phone: randomItem(PHONES),
-      },
+function main() {
+  const properties = []
+  let seedIndex = 1
+
+  // Generate 6 properties for each of the 16 provinces/municipalities (total 96 properties)
+  for (const province of PROVINCES) {
+    for (let j = 0; j < 6; j++) {
+      const template = PROPERTY_TEMPLATES[j % PROPERTY_TEMPLATES.length]
+      const latOffset = (Math.random() - 0.5) * 0.03
+      const lngOffset = (Math.random() - 0.5) * 0.03
+
+      const title = `${template.title} en ${province.city}`
+      const location = `${province.name}, ${province.city}`
+
+      properties.push({
+        id: `00000000-0000-0000-0000-${String(seedIndex).padStart(12, '0')}`,
+        title: title,
+        location: location,
+        description: randomItem(DESCRIPTIONS),
+        zoneId: province.id,
+        operation: template.op,
+        propertyType: template.type,
+        priceUsd: template.priceUsd,
+        bedrooms: template.beds,
+        bathrooms: template.baths,
+        parking: Math.random() > 0.5 ? 1 : 0,
+        areaM2: template.area,
+        amenities: [],
+        status: 'published',
+        coverTone: randomItem(COVER_TONES),
+        coverImage: `https://images.unsplash.com/photo-${1560448204 + seedIndex}?auto=format&fit=crop&w=800&q=80`,
+        images: [
+          `https://images.unsplash.com/photo-${1560448204 + seedIndex + 1}?auto=format&fit=crop&w=800&q=80`,
+          `https://images.unsplash.com/photo-${1560448204 + seedIndex + 2}?auto=format&fit=crop&w=800&q=80`
+        ],
+        coordinates: {
+          latitude: +(province.lat + latOffset).toFixed(6),
+          longitude: +(province.lng + lngOffset).toFixed(6),
+        },
+        contact_info: {
+          name: randomItem(NAMES),
+          phone: randomItem(PHONES),
+        },
+      })
+      seedIndex++
     }
-  })
+  }
 
   // Generate SQL
   const inserts = properties.map(p => {
@@ -116,30 +112,30 @@ function main() {
       bathrooms: p.bathrooms,
       parking: p.parking,
       area_m2: p.areaM2,
-      amenities: JSON.stringify(p.amenities),
+      amenities: toSqlArray(p.amenities),
       status: p.status,
       cover_tone: p.coverTone,
       cover_image: p.coverImage,
-      images: JSON.stringify(p.images),
+      images: toSqlArray(p.images),
       coordinates: JSON.stringify(p.coordinates),
-      map_point: JSON.stringify(p.mapPoint),
       contact_info: p.contact_info ? JSON.stringify(p.contact_info) : null,
       created_at: new Date().toISOString(),
+      user_id: '7fd957e4-0eab-4933-b488-9dfaa3ddbb3e' // Assigning a valid default seed user
     }
 
     const cols = Object.keys(vals).join(', ')
     const valsStr = Object.values(vals).map(v =>
       v === null ? 'NULL'
+      : typeof v === 'string' && (v.startsWith('ARRAY[') || v === 'ARRAY[]::text[]') ? v
       : typeof v === 'string' ? `'${v.replace(/'/g, "''")}'`
       : v
     ).join(', ')
 
-    return `INSERT INTO properties (${cols}) VALUES (${valsStr});`
+    return `INSERT INTO properties (${cols}) VALUES (${valsStr}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, location = EXCLUDED.location, zone_id = EXCLUDED.zone_id, coordinates = EXCLUDED.coordinates, price_usd = EXCLUDED.price_usd;`
   })
 
-  const sql = `-- Seed properties for Cubitat (synthetic test data)
+  const sql = `-- Seed properties for Cubitat (synthetic test data for all provinces)
 -- Generated ${new Date().toISOString()}
--- WARNING: Test data only, not for production use
 
 ${inserts.join('\n')}
 `
@@ -153,7 +149,6 @@ ${inserts.join('\n')}
   console.log(`Generated ${properties.length} test properties`)
   console.log(`  ${jsonPath}`)
   console.log(`  ${sqlPath}`)
-  console.log(`\nTo import into Supabase, run the SQL in the Supabase SQL editor.`)
 }
 
 main()
