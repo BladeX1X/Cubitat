@@ -1270,7 +1270,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
       }
     }
     fetchSimilar()
-  }, [currentProperty.id])
+  }, [currentProperty.id, currentProperty.operation, currentProperty.propertyType, province])
   
   if (similar.length === 0) return null
   

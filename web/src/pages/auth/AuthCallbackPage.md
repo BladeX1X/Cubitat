@@ -27,7 +27,7 @@ http://127.0.0.1:5173/auth/callback
 Redirect URL produccion:
 
 ```txt
-https://cubitat.com/auth/callback
+https://cubitathome.com/auth/callback
 ```
 
 ## Flujo

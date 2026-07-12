@@ -67,6 +67,7 @@ El diseño se adapta automáticamente:
 - **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. Esa pagina intercambia el `code` de Supabase por sesion cuando aplica y muestra el resultado de verificacion.
 - **Recuperacion de contrasena:** El boton `Olvide mi contrasena` usa `supabase.auth.resetPasswordForEmail` y redirige a `/recuperar-contrasena`.
 - **Privacidad en recuperacion:** El mensaje de recuperacion no confirma si el correo existe. Siempre debe decir: `Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.`
+- **Enlaces legales:** Los enlaces del modal navegan a `/terminos` y `/privacidad`; no usan hashes internos.
 - **Rate limit de Supabase:** Si Supabase devuelve `email rate limit exceeded`, el modal muestra un mensaje amable de limite temporal. El arreglo real es configurar SMTP propio con dominio verificado.
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.

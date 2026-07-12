@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import { Check, X, Loader2, Building2, MapPin, Eye, Trash2, Bot } from 'lucide-react'
@@ -119,7 +119,7 @@ export function AdminPage({
   } | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     setStatsLoading(true)
     setError(null)
     try {
@@ -160,9 +160,9 @@ export function AdminPage({
     } finally {
       setStatsLoading(false)
     }
-  }
+  }, [])
 
-  async function loadReports(page = 0) {
+  const loadReports = useCallback(async (page = 0) => {
     setLoading(true)
     setError(null)
     try {
@@ -198,9 +198,9 @@ export function AdminPage({
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function loadStatusCounts() {
+  const loadStatusCounts = useCallback(async () => {
     const statuses: Exclude<StatusFilter, 'all'>[] = ['pending_review', 'ai_approved', 'ai_rejected', 'published', 'paused']
     const [allResult, ...statusResults] = await Promise.all([
       supabase.from('properties').select('id', { count: 'exact', head: true }),
@@ -220,9 +220,9 @@ export function AdminPage({
       published: statusResults[3]?.count || 0,
       paused: statusResults[4]?.count || 0,
     })
-  }
+  }, [])
 
-  async function loadProperties(page = 0) {
+  const loadProperties = useCallback(async (page = 0) => {
     setLoading(true)
     setError(null)
     try {
@@ -275,7 +275,7 @@ export function AdminPage({
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     if (activeTab === 'properties') {
@@ -286,7 +286,7 @@ export function AdminPage({
     } else if (activeTab === 'stats') {
       loadStats()
     }
-  }, [activeTab, statusFilter])
+  }, [activeTab, loadProperties, loadReports, loadStats, loadStatusCounts, statusFilter])
 
   async function updatePropertyStatus(id: string, status: ModerationProperty['status'], moderationMessage: string | null = null) {
     setActionLoading(id)

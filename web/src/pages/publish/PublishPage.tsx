@@ -19,6 +19,11 @@ import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import {
+  formatCubanPhoneForDisplay,
+  normalizeCubanPhoneForStorage,
+  validatePhone,
+} from './phone'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -406,7 +411,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       }
     }
     loadProperty()
-  }, [editPropertyId])
+  }, [editPropertyId, onBack])
 
   // Guardar borrador manualmente al pulsar el botón
   function handleSaveDraftManual() {
@@ -1903,35 +1908,6 @@ function PublishSuccessCard() {
 /* ==========================================================================
    HELPERS & COMPRESSORS
    ========================================================================== */
-
-/* Validador de Teléfono cubano */
-function validatePhone(phone: string): boolean {
-  const local = getCubanLocalPhone(phone)
-  if (!local) return false
-
-  return (local.length === 8 && local.startsWith('5')) ||
-         (local.length >= 6 && local.length <= 8 && ['2', '3', '4', '7'].some((prefix) => local.startsWith(prefix)))
-}
-
-function getCubanLocalPhone(phone: string): string {
-  const clean = phone.replace(/[^0-9]/g, '')
-  if (clean.startsWith('0053')) return clean.slice(4)
-  if (clean.startsWith('53')) return clean.slice(2)
-  return clean
-}
-
-function normalizeCubanPhoneForStorage(phone: string): string {
-  const local = getCubanLocalPhone(phone)
-  return local ? `+53${local}` : ''
-}
-
-function formatCubanPhoneForDisplay(phone: string): string {
-  const local = getCubanLocalPhone(phone)
-  if (!local) return ''
-  return `+53 ${local}`
-}
-
-
 
 /* Compresor WebP offline con Canvas */
 async function compressToWebP(file: File): Promise<{ dataUrl: string; size: number }> {

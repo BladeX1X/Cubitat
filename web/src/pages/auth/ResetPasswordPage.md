@@ -27,7 +27,7 @@ http://127.0.0.1:5173/recuperar-contrasena
 Redirect URL produccion:
 
 ```txt
-https://cubitat.com/recuperar-contrasena
+https://cubitathome.com/recuperar-contrasena
 ```
 
 ## Flujo
@@ -45,7 +45,7 @@ supabase.auth.resetPasswordForEmail(email, {
 4. El usuario abre el enlace.
 5. Esta pagina intercambia `?code=...` por sesion o usa tokens en hash si Supabase los envia.
 6. La URL se limpia para no dejar codigos o tokens visibles.
-7. Solo si hay sesion valida de recuperacion se habilita el formulario de nueva contrasena.
+7. Solo si el enlace genera el evento `PASSWORD_RECOVERY` o incluye `type=recovery` y existe una sesion valida se habilita el formulario. Una sesion normal ya abierta no es suficiente.
 8. La contrasena se guarda con `supabase.auth.updateUser({ password })`.
 9. Despues de guardar, se ejecuta `supabase.auth.signOut()` para cerrar la sesion temporal de recuperacion.
 10. La app vuelve al inicio y abre el modal de login para que el usuario entre con su nueva contrasena.

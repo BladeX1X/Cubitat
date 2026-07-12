@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DetailPage } from './DetailPage'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -85,6 +85,12 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    mockInsert.mockClear()
+    mockFrom.mockClear()
+  })
+
   it('debería renderizar la información básica de la propiedad', () => {
     render(
       <DetailPage
@@ -172,5 +178,49 @@ describe('DetailPage - Reportes y Visor', () => {
 
     // Mensaje de éxito de reporte enviado
     expect(screen.getByText('¡Reporte enviado con éxito!')).toBeInTheDocument()
+  })
+
+  it('debería guardar una consulta de contacto y mostrar confirmación', async () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Ana Pérez' } })
+    fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51234567' } })
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+
+    await waitFor(() => {
+      expect(mockFrom).toHaveBeenCalledWith('contacts')
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        property_id: 'prop-detail-1',
+        contact_name: 'Ana Pérez',
+        contact_phone: '+53 51234567',
+      }))
+    })
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+    expect(localStorage.getItem('cubitat_contact_sent_prop-detail-1')).toBeTruthy()
+  })
+
+  it('debería bloquear contactos repetidos durante cinco minutos', () => {
+    localStorage.setItem('cubitat_contact_sent_prop-detail-1', Date.now().toString())
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
+    expect(mockInsert).not.toHaveBeenCalled()
   })
 })

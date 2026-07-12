@@ -2,7 +2,7 @@ import { RateLimiter } from './rate-limiter';
 
 export { RateLimiter };
 
-interface Env {
+export interface Env {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
@@ -494,18 +494,20 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                     if (imgRes.ok) {
                       const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
                       const arrayBuffer = await imgRes.arrayBuffer();
-                      let binary = '';
-                      const bytes = new Uint8Array(arrayBuffer);
-                      const chunkSize = 8192;
-                      for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-                        const chunk = bytes.subarray(i, i + chunkSize);
-                        binary += String.fromCharCode.apply(null, Array.from(chunk));
+                      if (arrayBuffer.byteLength > 100) {
+                        let binary = '';
+                        const bytes = new Uint8Array(arrayBuffer);
+                        const chunkSize = 8192;
+                        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+                          const chunk = bytes.subarray(i, i + chunkSize);
+                          binary += String.fromCharCode.apply(null, Array.from(chunk));
+                        }
+                        const base64Data = btoa(binary);
+                        userContent.push({
+                          type: 'image_url',
+                          image_url: { url: `data:${contentType};base64,${base64Data}` }
+                        });
                       }
-                      const base64Data = btoa(binary);
-                      userContent.push({
-                        type: 'image_url',
-                        image_url: { url: `data:${contentType};base64,${base64Data}` }
-                      });
                     }
                   } catch (e) {
                     console.warn('Error fetching remote image for AI:', e);

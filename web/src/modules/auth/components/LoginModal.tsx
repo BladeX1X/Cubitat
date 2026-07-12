@@ -493,8 +493,8 @@ export function LoginModal({ onClose }: LoginModalProps) {
           </p>
           )}
           <p className="login-legal-copy">
-            Al continuar aceptas los <a href="#terminos">terminos</a> y el{' '}
-            <a href="#privacidad">aviso de privacidad</a>.
+            Al continuar aceptas los <a href="/terminos">terminos</a> y el{' '}
+            <a href="/privacidad">aviso de privacidad</a>.
           </p>
         </div>
       </div>

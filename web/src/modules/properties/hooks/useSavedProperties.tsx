@@ -161,6 +161,8 @@ export function SavedPropertiesProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// The colocated hook is the public consumer API for this provider module.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSavedProperties() {
   const context = useContext(SavedPropertiesContext)
 

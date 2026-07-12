@@ -3,7 +3,7 @@ import { Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
-import { cleanAuthUrl, getAuthUrlParams } from './authUrlParams'
+import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
 
 type ResetPasswordPageProps = {
   onDone: () => void
@@ -22,7 +22,7 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
 
   useEffect(() => {
     async function prepareSession() {
-      const { accessToken, code, error, refreshToken } = getAuthUrlParams()
+      const { accessToken, code, error, refreshToken, type } = getAuthUrlParams()
 
       if (error) {
         setErrorMsg(error)
@@ -32,6 +32,13 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       }
 
       try {
+        let sawPasswordRecoveryEvent = false
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            sawPasswordRecoveryEvent = true
+          }
+        })
+
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
@@ -43,7 +50,13 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
           if (sessionError) throw sessionError
         }
 
+        if (!isPasswordRecoveryFlow(type, sawPasswordRecoveryEvent)) {
+          subscription.unsubscribe()
+          throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
+        }
+
         const { data: { session } } = await supabase.auth.getSession()
+        subscription.unsubscribe()
         if (!session) {
           throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
