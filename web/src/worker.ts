@@ -494,7 +494,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                     if (imgRes.ok) {
                       const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
                       const arrayBuffer = await imgRes.arrayBuffer();
-                      if (arrayBuffer.byteLength > 100) {
+                      if (arrayBuffer.byteLength > 2000) {
                         let binary = '';
                         const bytes = new Uint8Array(arrayBuffer);
                         const chunkSize = 8192;
