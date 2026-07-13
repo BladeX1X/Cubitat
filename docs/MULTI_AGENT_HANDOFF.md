@@ -422,6 +422,15 @@ Usar este formato y conservar las entradas anteriores:
   `vendor-maplibre` supera 500 kB.
 - Datos y producción: no se ejecutó el seed, no se modificó ninguna fila y no
   se desplegó esta corrección durante la validación local.
+- CI del PR #4: `Workers Builds: cubitat` finalizó correctamente. El check
+  `cubitatdev` continúa fallando igual que en `main` (`1d035d7`). La sesión
+  autenticada confirmó que `cubitatdev` usa `dev` como rama productiva pero
+  ejecuta también ramas no productivas; en el PR usa `wrangler versions upload`,
+  detecta el nombre local `cubitat1` y falla porque `RATE_LIMITER` aún no está
+  aprovisionado en ese Worker. No tiene dominios ni rutas personalizadas. Se
+  desactivaron y verificaron sus builds de ramas no productivas en Cloudflare;
+  `dev` continúa como rama productiva y los PR dirigidos a `main` dejan de
+  recibir ese check duplicado.
 
 ### 2026-07-12 20:10 — Codex principal — seguimiento de rendimiento de resultados
 
