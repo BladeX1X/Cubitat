@@ -419,10 +419,12 @@ Usar este formato y conservar las entradas anteriores:
   ni advertencias de la aplicación.
 - Rendimiento productivo adicional: detalle real con LCP 783 ms y CLS 0 sin
   throttling; imagen LCP servida como AVIF redimensionado y con caché anual.
-- GitHub/Cloudflare: PR autogenerado #1 cerrado por obsoleto. El Worker estático
-  legado `cubitat` aún expone su subdominio `workers.dev`; no tiene dominio
-  personalizado ni bindings. Deshabilitar ese subdominio requiere una acción
-  explícita en Cloudflare y no bloquea `cubitathome.com`, servido por `cubitat1`.
+- GitHub/Cloudflare: PR autogenerado #1 cerrado por obsoleto. Se deshabilitaron
+  la URL productiva `workers.dev` y los previews del Worker estático legado
+  `cubitat`; la URL productiva devuelve `404`. No tiene dominio personalizado
+  ni bindings y no bloquea `cubitathome.com`, servido por `cubitat1`. Una URL
+  histórica inmutable de versión todavía responde `200`; retirarla exigiría
+  eliminar el Worker y requiere autorización destructiva explícita.
 - Pendientes humanos: prueba táctil en dispositivo físico, contenido/fotos
   reales aprobados y revisión jurídica. Pendientes operativos no bloqueantes:
   branding OAuth, renovar el token de métricas antes de 2026-08-11, observar
