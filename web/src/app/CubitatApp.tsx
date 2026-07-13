@@ -16,6 +16,7 @@ import { Header } from '../components/layout/Header'
 import { SiteFooter } from '../components/layout/SiteFooter'
 import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 import { saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
+import { extractReferralCode } from '../modules/referrals/referrals'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -212,6 +213,26 @@ export function CubitatApp() {
   useEffect(() => {
     trackPageView()
   }, [pageMode, selectedPropertyId])
+
+  // Referral tracking and attribution (Requirement: Atribución de visitas)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const refCode = extractReferralCode(window.location.search, user, window.sessionStorage)
+
+    if (refCode || window.location.search.includes('ref=')) {
+      // Limpieza de parámetros en la barra de direcciones
+      const params = new URLSearchParams(window.location.search)
+      params.delete('ref')
+      const newSearch = params.toString()
+      const nextSearch = newSearch ? `?${newSearch}` : ''
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + nextSearch + window.location.hash
+      )
+    }
+  }, [user])
 
   // Manage authentication state
   useEffect(() => {

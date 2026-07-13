@@ -1071,13 +1071,18 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
     const message = formData.get('contact-message') as string
 
     try {
+      const refCode = typeof window !== 'undefined' ? window.sessionStorage.getItem('cubitat_referral_code') : null
+      const sourceVal = refCode ? 'referral' : 'direct'
+
       const { error: insertError } = await supabase
         .from('contacts')
         .insert({
           property_id: property.id,
           contact_name: name,
           contact_phone: phone,
-          message: message
+          message: message,
+          referral_id: refCode,
+          source: sourceVal
         })
 
       if (insertError) throw insertError

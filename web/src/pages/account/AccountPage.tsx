@@ -329,6 +329,44 @@ export function AccountPage({
                   />
                 </AccountSection>
 
+                <AccountSection title="Programa de Referidos">
+                  <div className="py-5">
+                    <p className="text-xs text-neutral-500 mb-3 leading-relaxed">
+                      Comparte tu código o enlace directo de referido. Las visitas y los contactos realizados por los usuarios que ingresen a través de tu enlace se atribuirán a tu cuenta para el seguimiento del crecimiento.
+                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-neutral-100 bg-neutral-50">
+                      <div>
+                        <div className="text-xs font-semibold text-neutral-500 mb-1">Tu Código de Referido</div>
+                        <div className="text-base font-bold text-neutral-800 tracking-wider">
+                          {`REF-${user.id.slice(0, 8).toUpperCase()}`}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          className="rounded-full h-9 px-4 text-xs font-black text-[#008f79] border-neutral-200"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`REF-${user.id.slice(0, 8).toUpperCase()}`)
+                            alert('Código copiado al portapapeles!')
+                          }}
+                        >
+                          Copiar Código
+                        </Button>
+                        <Button
+                          className="rounded-full h-9 px-4 text-xs font-black bg-[#008f79] hover:bg-[#007565] text-white"
+                          onClick={() => {
+                            const link = `${window.location.origin}?ref=REF-${user.id.slice(0, 8).toUpperCase()}`
+                            navigator.clipboard.writeText(link)
+                            alert('Enlace de referido copiado al portapapeles!')
+                          }}
+                        >
+                          Copiar Enlace
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </AccountSection>
+
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
