@@ -30,6 +30,25 @@ const PROPERTY_TEMPLATES = [
 
 const COVER_TONES = ['#f3f4f6', '#e8f0fe', '#fef3e2', '#e6f7ed', '#fce4e4', '#f0e6f7', '#e0f2f1', '#fff3e0']
 
+const REAL_PHOTO_IDS = [
+  'photo-1570129477492-45c003edd2be',
+  'photo-1564013799919-ab600027ffc6',
+  'photo-1512917774080-9991f1c4c750',
+  'photo-1513694203232-719a280e022f',
+  'photo-1484154218962-a197022b5858',
+  'photo-1502672260266-1c1ef2d93688',
+  'photo-1600585154340-be6161a56a0c',
+  'photo-1600596542815-ffad4c1539a9',
+  'photo-1600607687939-ce8a6c25118c',
+  'photo-1600566753190-17f0baa2a6c3',
+  'photo-1580587771525-78b9dba3b914',
+  'photo-1598928506311-c55ded91a20c',
+  'photo-1568605114967-8130f3a36994',
+  'photo-1554995207-c18c203602cb',
+  'photo-1512915922686-57c11dde9b6b',
+  'photo-1515263487990-61b07816b324'
+]
+
 const DESCRIPTIONS = [
   'Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.',
   'Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.',
@@ -63,6 +82,10 @@ function main() {
       const title = `${template.title} en ${province.city}`
       const location = `${province.name}, ${province.city}`
 
+      const coverId = REAL_PHOTO_IDS[seedIndex % REAL_PHOTO_IDS.length]
+      const img1Id = REAL_PHOTO_IDS[(seedIndex + 1) % REAL_PHOTO_IDS.length]
+      const img2Id = REAL_PHOTO_IDS[(seedIndex + 2) % REAL_PHOTO_IDS.length]
+
       properties.push({
         id: `00000000-0000-0000-0000-${String(seedIndex).padStart(12, '0')}`,
         title: title,
@@ -79,10 +102,10 @@ function main() {
         amenities: [],
         status: 'published',
         coverTone: randomItem(COVER_TONES),
-        coverImage: `https://images.unsplash.com/photo-${1560448204 + seedIndex}?auto=format&fit=crop&w=800&q=80`,
+        coverImage: `https://images.unsplash.com/${coverId}?auto=format&fit=crop&w=800&q=80`,
         images: [
-          `https://images.unsplash.com/photo-${1560448204 + seedIndex + 1}?auto=format&fit=crop&w=800&q=80`,
-          `https://images.unsplash.com/photo-${1560448204 + seedIndex + 2}?auto=format&fit=crop&w=800&q=80`
+          `https://images.unsplash.com/${img1Id}?auto=format&fit=crop&w=800&q=80`,
+          `https://images.unsplash.com/${img2Id}?auto=format&fit=crop&w=800&q=80`
         ],
         coordinates: {
           latitude: +(province.lat + latOffset).toFixed(6),
@@ -131,7 +154,7 @@ function main() {
       : v
     ).join(', ')
 
-    return `INSERT INTO properties (${cols}) VALUES (${valsStr}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, location = EXCLUDED.location, zone_id = EXCLUDED.zone_id, coordinates = EXCLUDED.coordinates, price_usd = EXCLUDED.price_usd;`
+    return `INSERT INTO properties (${cols}) VALUES (${valsStr}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, location = EXCLUDED.location, zone_id = EXCLUDED.zone_id, coordinates = EXCLUDED.coordinates, price_usd = EXCLUDED.price_usd, cover_image = EXCLUDED.cover_image, images = EXCLUDED.images, description = EXCLUDED.description;`
   })
 
   const sql = `-- Seed properties for Cubitat (synthetic test data for all provinces)

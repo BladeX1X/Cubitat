@@ -3,7 +3,7 @@
     "id": "00000000-0000-0000-0000-000000000001",
     "title": "Apartamento de 2 cuartos muy céntrico en Pinar del Río",
     "location": "Pinar del Río, Pinar del Río",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "pinar-del-rio",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -14,49 +14,49 @@
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448205?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448206?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448207?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.404903,
-      "longitude": -83.689428
+      "latitude": 22.409751,
+      "longitude": -83.683915
     },
     "contact_info": {
       "name": "María García",
-      "phone": "+53 5 2745638"
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000002",
     "title": "Casa independiente espaciosa con portal y patio en Pinar del Río",
     "location": "Pinar del Río, Pinar del Río",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "pinar-del-rio",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448206?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448207?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448208?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.409601,
-      "longitude": -83.686913
+      "latitude": 22.429215,
+      "longitude": -83.70785
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 8421093"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 9182736"
     }
   },
   {
@@ -74,26 +74,26 @@
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448207?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448208?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448209?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.426914,
-      "longitude": -83.693634
+      "latitude": 22.418461,
+      "longitude": -83.703849
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 2987654"
+      "name": "Laura López",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000004",
     "title": "Apartamento moderno en alquiler mensual en Pinar del Río",
     "location": "Pinar del Río, Pinar del Río",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "pinar-del-rio",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -104,26 +104,26 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448208?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448209?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448210?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.417274,
-      "longitude": -83.711075
+      "latitude": 22.42574,
+      "longitude": -83.693129
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 8421093"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000005",
     "title": "Gran casona colonial con techos altos de placa libre en Pinar del Río",
     "location": "Pinar del Río, Pinar del Río",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "pinar-del-rio",
     "operation": "venta",
     "propertyType": "casa",
@@ -134,26 +134,26 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448209?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448210?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448211?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.417244,
-      "longitude": -83.693547
+      "latitude": 22.406528,
+      "longitude": -83.696146
     },
     "contact_info": {
       "name": "María García",
-      "phone": "+53 5 3654891"
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000006",
     "title": "Apartamento pequeño ideal para parejas o solteros en Pinar del Río",
     "location": "Pinar del Río, Pinar del Río",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "pinar-del-rio",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -164,45 +164,45 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448210?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448211?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448212?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.424303,
-      "longitude": -83.682552
+      "latitude": 22.414472,
+      "longitude": -83.682956
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000007",
     "title": "Apartamento de 2 cuartos muy céntrico en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "artemisa",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448211?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448212?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448213?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.812957,
-      "longitude": -82.768243
+      "latitude": 22.825841,
+      "longitude": -82.778886
     },
     "contact_info": {
       "name": "Ana Martínez",
@@ -213,59 +213,59 @@
     "id": "00000000-0000-0000-0000-000000000008",
     "title": "Casa independiente espaciosa con portal y patio en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "artemisa",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448212?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448213?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448214?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.829123,
-      "longitude": -82.766805
+      "latitude": 22.825389,
+      "longitude": -82.752386
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2745638"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000009",
     "title": "Se renta casa con piscina ideal para vacaciones en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "artemisa",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448213?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448214?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448215?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.821601,
-      "longitude": -82.757654
+      "latitude": 22.823833,
+      "longitude": -82.754418
     },
     "contact_info": {
-      "name": "Ana Martínez",
+      "name": "Rodolfo Jorba",
       "phone": "+53 5 4012345"
     }
   },
@@ -273,7 +273,7 @@
     "id": "00000000-0000-0000-0000-000000000010",
     "title": "Apartamento moderno en alquiler mensual en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "artemisa",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -284,26 +284,26 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448214?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448215?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448216?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.824869,
-      "longitude": -82.764684
+      "latitude": 22.825677,
+      "longitude": -82.776325
     },
     "contact_info": {
       "name": "Juan Rodríguez",
-      "phone": "+53 5 2987654"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000011",
     "title": "Gran casona colonial con techos altos de placa libre en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "artemisa",
     "operation": "venta",
     "propertyType": "casa",
@@ -314,26 +314,26 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448215?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448216?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448217?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.803618,
-      "longitude": -82.76685
+      "latitude": 22.82697,
+      "longitude": -82.752616
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2745638"
+      "name": "Ana Martínez",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000012",
     "title": "Apartamento pequeño ideal para parejas o solteros en Artemisa",
     "location": "Artemisa, Artemisa",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "artemisa",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -344,86 +344,86 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448216?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448217?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448218?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.802037,
-      "longitude": -82.754505
+      "latitude": 22.804637,
+      "longitude": -82.767342
     },
     "contact_info": {
       "name": "Laura López",
-      "phone": "+53 5 3654891"
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000013",
     "title": "Apartamento de 2 cuartos muy céntrico en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "la-habana",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
     "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448217?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448218?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448219?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.151487,
-      "longitude": -82.370914
+      "latitude": 23.135097,
+      "longitude": -82.373168
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 3654891"
+      "name": "María García",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000014",
     "title": "Casa independiente espaciosa con portal y patio en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "la-habana",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448218?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448219?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448220?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.129815,
-      "longitude": -82.372357
+      "latitude": 23.155859,
+      "longitude": -82.389786
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
-      "phone": "+53 5 2987654"
+      "name": "Ana Martínez",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000015",
     "title": "Se renta casa con piscina ideal para vacaciones en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "la-habana",
     "operation": "alquiler",
     "propertyType": "casa",
@@ -434,56 +434,56 @@
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448219?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448220?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448221?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.139029,
-      "longitude": -82.382277
+      "latitude": 23.14481,
+      "longitude": -82.395739
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 3654891"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000016",
     "title": "Apartamento moderno en alquiler mensual en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "la-habana",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
     "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448220?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448221?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448222?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.135089,
-      "longitude": -82.381311
+      "latitude": 23.143923,
+      "longitude": -82.382748
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2987654"
+      "name": "María García",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000017",
     "title": "Gran casona colonial con techos altos de placa libre en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "la-habana",
     "operation": "venta",
     "propertyType": "casa",
@@ -494,26 +494,26 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448221?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448222?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448223?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.133589,
-      "longitude": -82.392588
+      "latitude": 23.147226,
+      "longitude": -82.379907
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 3654891"
+      "name": "Ana Martínez",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000018",
     "title": "Apartamento pequeño ideal para parejas o solteros en Plaza de la Revolución",
     "location": "La Habana, Plaza de la Revolución",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "la-habana",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -524,18 +524,18 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448222?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448223?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448224?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.139775,
-      "longitude": -82.373629
+      "latitude": 23.130764,
+      "longitude": -82.380268
     },
     "contact_info": {
-      "name": "Laura López",
+      "name": "Carlos Pérez",
       "phone": "+53 5 9182736"
     }
   },
@@ -543,59 +543,59 @@
     "id": "00000000-0000-0000-0000-000000000019",
     "title": "Apartamento de 2 cuartos muy céntrico en San José de las Lajas",
     "location": "Mayabeque, San José de las Lajas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "mayabeque",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448223?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448224?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448225?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.955046,
-      "longitude": -82.142502
+      "latitude": 22.97362,
+      "longitude": -82.141557
     },
     "contact_info": {
       "name": "María García",
-      "phone": "+53 5 4012345"
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000020",
     "title": "Casa independiente espaciosa con portal y patio en San José de las Lajas",
     "location": "Mayabeque, San José de las Lajas",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "mayabeque",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448224?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448225?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448226?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.968947,
-      "longitude": -82.15216
+      "latitude": 22.95281,
+      "longitude": -82.165067
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
+      "name": "Carlos Pérez",
       "phone": "+53 5 3654891"
     }
   },
@@ -603,60 +603,60 @@
     "id": "00000000-0000-0000-0000-000000000021",
     "title": "Se renta casa con piscina ideal para vacaciones en San José de las Lajas",
     "location": "Mayabeque, San José de las Lajas",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "mayabeque",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448225?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448226?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448227?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.96156,
-      "longitude": -82.153229
+      "latitude": 22.962166,
+      "longitude": -82.145885
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 3654891"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000022",
     "title": "Apartamento moderno en alquiler mensual en San José de las Lajas",
     "location": "Mayabeque, San José de las Lajas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "mayabeque",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448226?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448227?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448228?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.976312,
-      "longitude": -82.16236
+      "latitude": 22.959415,
+      "longitude": -82.154111
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 9182736"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 3654891"
     }
   },
   {
@@ -674,56 +674,56 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448227?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448228?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448229?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.970701,
-      "longitude": -82.144888
+      "latitude": 22.959688,
+      "longitude": -82.147808
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2745638"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000024",
     "title": "Apartamento pequeño ideal para parejas o solteros en San José de las Lajas",
     "location": "Mayabeque, San José de las Lajas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "mayabeque",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448228?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448229?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448230?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.966015,
-      "longitude": -82.141226
+      "latitude": 22.962869,
+      "longitude": -82.155972
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 4012345"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000025",
     "title": "Apartamento de 2 cuartos muy céntrico en Matanzas",
     "location": "Matanzas, Matanzas",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "matanzas",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -734,45 +734,75 @@
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448229?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448230?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448231?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.040351,
-      "longitude": -81.573877
+      "latitude": 23.038554,
+      "longitude": -81.582486
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 2745638"
+      "name": "María García",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000026",
     "title": "Casa independiente espaciosa con portal y patio en Matanzas",
     "location": "Matanzas, Matanzas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "matanzas",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448230?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448231?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448232?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.02649,
-      "longitude": -81.589342
+      "latitude": 23.026773,
+      "longitude": -81.584912
+    },
+    "contact_info": {
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 4012345"
+    }
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000027",
+    "title": "Se renta casa con piscina ideal para vacaciones en Matanzas",
+    "location": "Matanzas, Matanzas",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "zoneId": "matanzas",
+    "operation": "alquiler",
+    "propertyType": "casa",
+    "priceUsd": 150,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "parking": 1,
+    "areaM2": 180,
+    "amenities": [],
+    "status": "published",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
+    ],
+    "coordinates": {
+      "latitude": 23.053154,
+      "longitude": -81.571211
     },
     "contact_info": {
       "name": "Juan Rodríguez",
@@ -780,40 +810,10 @@
     }
   },
   {
-    "id": "00000000-0000-0000-0000-000000000027",
-    "title": "Se renta casa con piscina ideal para vacaciones en Matanzas",
-    "location": "Matanzas, Matanzas",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
-    "zoneId": "matanzas",
-    "operation": "alquiler",
-    "propertyType": "casa",
-    "priceUsd": 150,
-    "bedrooms": 4,
-    "bathrooms": 3,
-    "parking": 0,
-    "areaM2": 180,
-    "amenities": [],
-    "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448231?auto=format&fit=crop&w=800&q=80",
-    "images": [
-      "https://images.unsplash.com/photo-1560448232?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448233?auto=format&fit=crop&w=800&q=80"
-    ],
-    "coordinates": {
-      "latitude": 23.038982,
-      "longitude": -81.58119
-    },
-    "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 9182736"
-    }
-  },
-  {
     "id": "00000000-0000-0000-0000-000000000028",
     "title": "Apartamento moderno en alquiler mensual en Matanzas",
     "location": "Matanzas, Matanzas",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "matanzas",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -824,86 +824,86 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448232?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448233?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448234?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.05323,
-      "longitude": -81.579013
+      "latitude": 23.051744,
+      "longitude": -81.56554
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2987654"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000029",
     "title": "Gran casona colonial con techos altos de placa libre en Matanzas",
     "location": "Matanzas, Matanzas",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "matanzas",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448233?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448234?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448235?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.038264,
-      "longitude": -81.565689
+      "latitude": 23.048384,
+      "longitude": -81.574919
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2987654"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000030",
     "title": "Apartamento pequeño ideal para parejas o solteros en Matanzas",
     "location": "Matanzas, Matanzas",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "matanzas",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
     "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448234?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448235?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448236?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 23.034432,
-      "longitude": -81.583047
+      "latitude": 23.049879,
+      "longitude": -81.582164
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 2987654"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000031",
     "title": "Apartamento de 2 cuartos muy céntrico en Cienfuegos",
     "location": "Cienfuegos, Cienfuegos",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "cienfuegos",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -914,19 +914,19 @@
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448235?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448236?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448237?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.158426,
-      "longitude": -80.456993
+      "latitude": 22.144805,
+      "longitude": -80.43666
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 9182736"
+      "name": "Laura López",
+      "phone": "+53 5 4012345"
     }
   },
   {
@@ -940,30 +940,30 @@
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
     "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448236?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448237?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448238?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.148152,
-      "longitude": -80.450566
+      "latitude": 22.138777,
+      "longitude": -80.437305
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000033",
     "title": "Se renta casa con piscina ideal para vacaciones en Cienfuegos",
     "location": "Cienfuegos, Cienfuegos",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "cienfuegos",
     "operation": "alquiler",
     "propertyType": "casa",
@@ -974,45 +974,45 @@
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448237?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448238?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448239?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.140476,
-      "longitude": -80.442232
+      "latitude": 22.147313,
+      "longitude": -80.438217
     },
     "contact_info": {
       "name": "Laura López",
-      "phone": "+53 5 2987654"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000034",
     "title": "Apartamento moderno en alquiler mensual en Cienfuegos",
     "location": "Cienfuegos, Cienfuegos",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "cienfuegos",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448238?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448239?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448240?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.158632,
-      "longitude": -80.451995
+      "latitude": 22.150576,
+      "longitude": -80.442469
     },
     "contact_info": {
       "name": "Ana Martínez",
@@ -1023,7 +1023,7 @@
     "id": "00000000-0000-0000-0000-000000000035",
     "title": "Gran casona colonial con techos altos de placa libre en Cienfuegos",
     "location": "Cienfuegos, Cienfuegos",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "cienfuegos",
     "operation": "venta",
     "propertyType": "casa",
@@ -1034,48 +1034,48 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448239?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448240?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448241?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.157443,
-      "longitude": -80.459592
+      "latitude": 22.157804,
+      "longitude": -80.438074
     },
     "contact_info": {
       "name": "Laura López",
-      "phone": "+53 5 3654891"
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000036",
     "title": "Apartamento pequeño ideal para parejas o solteros en Cienfuegos",
     "location": "Cienfuegos, Cienfuegos",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "cienfuegos",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448240?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448241?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448242?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.136955,
-      "longitude": -80.446431
+      "latitude": 22.163973,
+      "longitude": -80.435362
     },
     "contact_info": {
-      "name": "Ana Martínez",
+      "name": "Pedro Sánchez",
       "phone": "+53 5 9182736"
     }
   },
@@ -1083,30 +1083,30 @@
     "id": "00000000-0000-0000-0000-000000000037",
     "title": "Apartamento de 2 cuartos muy céntrico en Santa Clara",
     "location": "Villa Clara, Santa Clara",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "villa-clara",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448241?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448242?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448243?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.40369,
-      "longitude": -79.967054
+      "latitude": 22.411471,
+      "longitude": -79.95001
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 4012345"
     }
   },
   {
@@ -1124,49 +1124,49 @@
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448242?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448243?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448244?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.397789,
-      "longitude": -79.968626
+      "latitude": 22.401223,
+      "longitude": -79.974793
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 3654891"
+      "name": "María García",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000039",
     "title": "Se renta casa con piscina ideal para vacaciones en Santa Clara",
     "location": "Villa Clara, Santa Clara",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "villa-clara",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448243?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448244?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448245?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.40986,
-      "longitude": -79.973443
+      "latitude": 22.391806,
+      "longitude": -79.976754
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 4012345"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 2745638"
     }
   },
   {
@@ -1185,47 +1185,47 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448244?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448245?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448246?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.418957,
-      "longitude": -79.97374
+      "latitude": 22.393318,
+      "longitude": -79.977148
     },
     "contact_info": {
       "name": "Juan Rodríguez",
-      "phone": "+53 5 4012345"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000041",
     "title": "Gran casona colonial con techos altos de placa libre en Santa Clara",
     "location": "Villa Clara, Santa Clara",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "villa-clara",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448245?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448246?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448247?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.406437,
-      "longitude": -79.960716
+      "latitude": 22.40302,
+      "longitude": -79.952538
     },
     "contact_info": {
-      "name": "María García",
+      "name": "Rodolfo Jorba",
       "phone": "+53 5 4012345"
     }
   },
@@ -1233,37 +1233,37 @@
     "id": "00000000-0000-0000-0000-000000000042",
     "title": "Apartamento pequeño ideal para parejas o solteros en Santa Clara",
     "location": "Villa Clara, Santa Clara",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "villa-clara",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448246?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448247?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448248?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 22.40682,
-      "longitude": -79.951248
+      "latitude": 22.411467,
+      "longitude": -79.961697
     },
     "contact_info": {
       "name": "Ana Martínez",
-      "phone": "+53 5 4012345"
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000043",
     "title": "Apartamento de 2 cuartos muy céntrico en Sancti Spíritus",
     "location": "Sancti Spíritus, Sancti Spíritus",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "sancti-spiritus",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1275,18 +1275,18 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448247?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448248?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448249?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.920152,
-      "longitude": -79.457238
+      "latitude": 21.941968,
+      "longitude": -79.454321
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 2745638"
+      "name": "María García",
+      "phone": "+53 5 2987654"
     }
   },
   {
@@ -1300,53 +1300,53 @@
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448248?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448249?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448250?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.923208,
-      "longitude": -79.43423
+      "latitude": 21.94396,
+      "longitude": -79.440839
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 9182736"
+      "name": "Laura López",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000045",
     "title": "Se renta casa con piscina ideal para vacaciones en Sancti Spíritus",
     "location": "Sancti Spíritus, Sancti Spíritus",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "sancti-spiritus",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448249?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448250?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448251?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.930167,
-      "longitude": -79.444752
+      "latitude": 21.945324,
+      "longitude": -79.429344
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 8421093"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2987654"
     }
   },
   {
@@ -1360,23 +1360,23 @@
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448250?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448251?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448252?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.9479,
-      "longitude": -79.444978
+      "latitude": 21.937447,
+      "longitude": -79.445469
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 4012345"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 2987654"
     }
   },
   {
@@ -1390,30 +1390,30 @@
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448251?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448252?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448253?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.94416,
-      "longitude": -79.438064
+      "latitude": 21.927155,
+      "longitude": -79.433378
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2745638"
+      "name": "Laura López",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000048",
     "title": "Apartamento pequeño ideal para parejas o solteros en Sancti Spíritus",
     "location": "Sancti Spíritus, Sancti Spíritus",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "sancti-spiritus",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1424,19 +1424,19 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448252?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448253?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448254?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.94062,
-      "longitude": -79.431214
+      "latitude": 21.919566,
+      "longitude": -79.44295
     },
     "contact_info": {
-      "name": "Pedro Sánchez",
-      "phone": "+53 5 2745638"
+      "name": "Laura López",
+      "phone": "+53 5 9182736"
     }
   },
   {
@@ -1454,26 +1454,26 @@
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448253?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448254?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448255?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.849774,
-      "longitude": -78.760324
+      "latitude": 21.840609,
+      "longitude": -78.753605
     },
     "contact_info": {
-      "name": "Pedro Sánchez",
-      "phone": "+53 5 3654891"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000050",
     "title": "Casa independiente espaciosa con portal y patio en Ciego de Ávila",
     "location": "Ciego de Ávila, Ciego de Ávila",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "ciego-de-avila",
     "operation": "venta",
     "propertyType": "casa",
@@ -1484,79 +1484,79 @@
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448254?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448255?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448256?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.859505,
-      "longitude": -78.754938
+      "latitude": 21.85018,
+      "longitude": -78.77132
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2987654"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000051",
     "title": "Se renta casa con piscina ideal para vacaciones en Ciego de Ávila",
     "location": "Ciego de Ávila, Ciego de Ávila",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "ciego-de-avila",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448255?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448256?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448257?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.845712,
-      "longitude": -78.749002
+      "latitude": 21.860276,
+      "longitude": -78.771096
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 2987654"
+      "name": "María García",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000052",
     "title": "Apartamento moderno en alquiler mensual en Ciego de Ávila",
     "location": "Ciego de Ávila, Ciego de Ávila",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "ciego-de-avila",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448256?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448257?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448258?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.837688,
-      "longitude": -78.76763
+      "latitude": 21.860531,
+      "longitude": -78.753106
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2745638"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 9182736"
     }
   },
   {
@@ -1575,18 +1575,18 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448257?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448258?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448259?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.849104,
-      "longitude": -78.77099
+      "latitude": 21.853322,
+      "longitude": -78.773183
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 4012345"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 3654891"
     }
   },
   {
@@ -1600,22 +1600,22 @@
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
     "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448258?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448259?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448260?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.841059,
-      "longitude": -78.754779
+      "latitude": 21.857409,
+      "longitude": -78.772453
     },
     "contact_info": {
-      "name": "Laura López",
+      "name": "Carlos Pérez",
       "phone": "+53 5 8421093"
     }
   },
@@ -1623,7 +1623,7 @@
     "id": "00000000-0000-0000-0000-000000000055",
     "title": "Apartamento de 2 cuartos muy céntrico en Camagüey",
     "location": "Camagüey, Camagüey",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "camaguey",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1635,18 +1635,18 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448259?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448260?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448261?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.383651,
-      "longitude": -77.924933
+      "latitude": 21.382016,
+      "longitude": -77.927867
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 3654891"
+      "name": "Ana Martínez",
+      "phone": "+53 5 2745638"
     }
   },
   {
@@ -1660,52 +1660,52 @@
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448260?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448261?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448262?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.371652,
-      "longitude": -77.927251
+      "latitude": 21.390138,
+      "longitude": -77.918363
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
-      "phone": "+53 5 4012345"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000057",
     "title": "Se renta casa con piscina ideal para vacaciones en Camagüey",
     "location": "Camagüey, Camagüey",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "camaguey",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448261?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448262?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448263?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.382428,
-      "longitude": -77.903161
+      "latitude": 21.388373,
+      "longitude": -77.927028
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
+      "name": "Carlos Pérez",
       "phone": "+53 5 4012345"
     }
   },
@@ -1713,7 +1713,7 @@
     "id": "00000000-0000-0000-0000-000000000058",
     "title": "Apartamento moderno en alquiler mensual en Camagüey",
     "location": "Camagüey, Camagüey",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "camaguey",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -1724,19 +1724,19 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448262?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448263?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448264?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.387611,
-      "longitude": -77.926998
+      "latitude": 21.379499,
+      "longitude": -77.907949
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 9182736"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 8421093"
     }
   },
   {
@@ -1754,26 +1754,26 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448263?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448264?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448265?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.385677,
-      "longitude": -77.90527
+      "latitude": 21.378186,
+      "longitude": -77.931378
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 3654891"
+      "name": "Laura López",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000060",
     "title": "Apartamento pequeño ideal para parejas o solteros en Camagüey",
     "location": "Camagüey, Camagüey",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "camaguey",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1785,25 +1785,25 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448264?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448265?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448266?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.37322,
-      "longitude": -77.908002
+      "latitude": 21.373892,
+      "longitude": -77.913746
     },
     "contact_info": {
       "name": "Rodolfo Jorba",
-      "phone": "+53 5 4012345"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000061",
     "title": "Apartamento de 2 cuartos muy céntrico en Las Tunas",
     "location": "Las Tunas, Las Tunas",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "las-tunas",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1814,49 +1814,49 @@
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448265?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448266?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448267?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.961872,
-      "longitude": -76.956226
+      "latitude": 20.94826,
+      "longitude": -76.960752
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 9182736"
+      "name": "Ana Martínez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000062",
     "title": "Casa independiente espaciosa con portal y patio en Las Tunas",
     "location": "Las Tunas, Las Tunas",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "las-tunas",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448266?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448267?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448268?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.966117,
-      "longitude": -76.947594
+      "latitude": 20.965354,
+      "longitude": -76.940806
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 4012345"
+      "name": "María García",
+      "phone": "+53 5 9182736"
     }
   },
   {
@@ -1870,22 +1870,22 @@
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448267?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448268?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448269?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.957744,
-      "longitude": -76.937327
+      "latitude": 20.957741,
+      "longitude": -76.947241
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
+      "name": "María García",
       "phone": "+53 5 4012345"
     }
   },
@@ -1893,67 +1893,67 @@
     "id": "00000000-0000-0000-0000-000000000064",
     "title": "Apartamento moderno en alquiler mensual en Las Tunas",
     "location": "Las Tunas, Las Tunas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "las-tunas",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448268?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448269?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448270?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.946498,
-      "longitude": -76.957078
+      "latitude": 20.963699,
+      "longitude": -76.949119
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 4012345"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000065",
     "title": "Gran casona colonial con techos altos de placa libre en Las Tunas",
     "location": "Las Tunas, Las Tunas",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "las-tunas",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448269?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448270?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448271?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.956773,
-      "longitude": -76.963764
+      "latitude": 20.949747,
+      "longitude": -76.96023
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
-      "phone": "+53 5 3654891"
+      "name": "María García",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000066",
     "title": "Apartamento pequeño ideal para parejas o solteros en Las Tunas",
     "location": "Las Tunas, Las Tunas",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "las-tunas",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -1964,49 +1964,49 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e8f0fe",
-    "coverImage": "https://images.unsplash.com/photo-1560448270?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448271?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448272?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.974944,
-      "longitude": -76.963179
+      "latitude": 20.974567,
+      "longitude": -76.957621
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 9182736"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000067",
     "title": "Apartamento de 2 cuartos muy céntrico en Holguín",
     "location": "Holguín, Holguín",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "holguin",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448271?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448272?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448273?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.880762,
-      "longitude": -76.265227
+      "latitude": 20.88499,
+      "longitude": -76.264312
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 2745638"
     }
   },
   {
@@ -2020,30 +2020,30 @@
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448272?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448273?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448274?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.900825,
-      "longitude": -76.273678
+      "latitude": 20.877902,
+      "longitude": -76.275432
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2987654"
+      "name": "Laura López",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000069",
     "title": "Se renta casa con piscina ideal para vacaciones en Holguín",
     "location": "Holguín, Holguín",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "holguin",
     "operation": "alquiler",
     "propertyType": "casa",
@@ -2054,26 +2054,26 @@
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448273?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448274?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448275?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.877487,
-      "longitude": -76.265914
+      "latitude": 20.892626,
+      "longitude": -76.249706
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 2987654"
+      "name": "María García",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000070",
     "title": "Apartamento moderno en alquiler mensual en Holguín",
     "location": "Holguín, Holguín",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "holguin",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -2084,26 +2084,26 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448274?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448275?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448276?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.87656,
-      "longitude": -76.269013
+      "latitude": 20.884979,
+      "longitude": -76.257228
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000071",
     "title": "Gran casona colonial con techos altos de placa libre en Holguín",
     "location": "Holguín, Holguín",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "holguin",
     "operation": "venta",
     "propertyType": "casa",
@@ -2114,19 +2114,19 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448275?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448276?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448277?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.888594,
-      "longitude": -76.252909
+      "latitude": 20.883253,
+      "longitude": -76.273862
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 4012345"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 8421093"
     }
   },
   {
@@ -2140,49 +2140,49 @@
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448276?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f3f4f6",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448277?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448278?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.874877,
-      "longitude": -76.263
+      "latitude": 20.896523,
+      "longitude": -76.253749
     },
     "contact_info": {
-      "name": "Pedro Sánchez",
-      "phone": "+53 5 3654891"
+      "name": "Ana Martínez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000073",
     "title": "Apartamento de 2 cuartos muy céntrico en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "granma",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448277?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448278?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448279?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.380908,
-      "longitude": -76.643365
+      "latitude": 20.378819,
+      "longitude": -76.645468
     },
     "contact_info": {
       "name": "Ana Martínez",
@@ -2193,67 +2193,67 @@
     "id": "00000000-0000-0000-0000-000000000074",
     "title": "Casa independiente espaciosa con portal y patio en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "granma",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448278?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448279?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448280?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.377232,
-      "longitude": -76.641942
+      "latitude": 20.372809,
+      "longitude": -76.649213
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 2745638"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000075",
     "title": "Se renta casa con piscina ideal para vacaciones en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "granma",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448279?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448280?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448281?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.375818,
-      "longitude": -76.645422
+      "latitude": 20.366726,
+      "longitude": -76.631066
     },
     "contact_info": {
       "name": "María García",
-      "phone": "+53 5 8421093"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000076",
     "title": "Apartamento moderno en alquiler mensual en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "granma",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -2264,56 +2264,56 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448280?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448281?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448282?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.389033,
-      "longitude": -76.646535
+      "latitude": 20.382956,
+      "longitude": -76.645937
     },
     "contact_info": {
       "name": "Carlos Pérez",
-      "phone": "+53 5 4012345"
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000077",
     "title": "Gran casona colonial con techos altos de placa libre en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "granma",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448281?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448282?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448283?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.367078,
-      "longitude": -76.63119
+      "latitude": 20.361586,
+      "longitude": -76.633634
     },
     "contact_info": {
-      "name": "Carlos Pérez",
-      "phone": "+53 5 8421093"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000078",
     "title": "Apartamento pequeño ideal para parejas o solteros en Bayamo",
     "location": "Granma, Bayamo",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "granma",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -2324,26 +2324,26 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448282?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448283?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448284?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.367199,
-      "longitude": -76.639287
+      "latitude": 20.372033,
+      "longitude": -76.634069
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000079",
     "title": "Apartamento de 2 cuartos muy céntrico en Santiago de Cuba",
     "location": "Santiago de Cuba, Santiago de Cuba",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "santiago-de-cuba",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -2355,25 +2355,25 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448283?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448284?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448285?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.01617,
-      "longitude": -75.817451
+      "latitude": 20.015871,
+      "longitude": -75.838686
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 2745638"
+      "name": "Ana Martínez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000080",
     "title": "Casa independiente espaciosa con portal y patio en Santiago de Cuba",
     "location": "Santiago de Cuba, Santiago de Cuba",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "santiago-de-cuba",
     "operation": "venta",
     "propertyType": "casa",
@@ -2384,86 +2384,86 @@
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448284?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448285?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448286?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.01433,
-      "longitude": -75.833431
+      "latitude": 20.020993,
+      "longitude": -75.832421
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 9182736"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000081",
     "title": "Se renta casa con piscina ideal para vacaciones en Santiago de Cuba",
     "location": "Santiago de Cuba, Santiago de Cuba",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "santiago-de-cuba",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448285?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448286?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448287?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.024281,
-      "longitude": -75.819631
+      "latitude": 20.014796,
+      "longitude": -75.821715
     },
     "contact_info": {
-      "name": "Pedro Sánchez",
-      "phone": "+53 5 2745638"
+      "name": "Laura López",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000082",
     "title": "Apartamento moderno en alquiler mensual en Santiago de Cuba",
     "location": "Santiago de Cuba, Santiago de Cuba",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "santiago-de-cuba",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448286?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448287?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448288?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.02039,
-      "longitude": -75.835587
+      "latitude": 20.025804,
+      "longitude": -75.835174
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
-      "phone": "+53 5 8421093"
+      "name": "Ana Martínez",
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000083",
     "title": "Gran casona colonial con techos altos de placa libre en Santiago de Cuba",
     "location": "Santiago de Cuba, Santiago de Cuba",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "santiago-de-cuba",
     "operation": "venta",
     "propertyType": "casa",
@@ -2474,19 +2474,19 @@
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448287?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448288?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448289?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.023761,
-      "longitude": -75.823854
+      "latitude": 20.029665,
+      "longitude": -75.840249
     },
     "contact_info": {
-      "name": "Ana Martínez",
-      "phone": "+53 5 9182736"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 2987654"
     }
   },
   {
@@ -2500,30 +2500,30 @@
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
     "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448288?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448289?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448290?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.006621,
-      "longitude": -75.839747
+      "latitude": 20.031012,
+      "longitude": -75.812253
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 3654891"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 9182736"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000085",
     "title": "Apartamento de 2 cuartos muy céntrico en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "guantanamo",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -2535,25 +2535,25 @@
     "amenities": [],
     "status": "published",
     "coverTone": "#e6f7ed",
-    "coverImage": "https://images.unsplash.com/photo-1560448289?auto=format&fit=crop&w=800&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448290?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448291?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.158926,
-      "longitude": -75.213177
+      "latitude": 20.153148,
+      "longitude": -75.195625
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
-      "phone": "+53 5 8421093"
+      "name": "Pedro Sánchez",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000086",
     "title": "Casa independiente espaciosa con portal y patio en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "guantanamo",
     "operation": "venta",
     "propertyType": "casa",
@@ -2564,108 +2564,108 @@
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448290?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448291?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448292?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.153585,
-      "longitude": -75.214251
+      "latitude": 20.13204,
+      "longitude": -75.210057
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 2745638"
+      "name": "Rodolfo Jorba",
+      "phone": "+53 5 4012345"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000087",
     "title": "Se renta casa con piscina ideal para vacaciones en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
     "zoneId": "guantanamo",
     "operation": "alquiler",
     "propertyType": "casa",
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fff3e0",
-    "coverImage": "https://images.unsplash.com/photo-1560448291?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e8f0fe",
+    "coverImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448292?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448293?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.153262,
-      "longitude": -75.196996
+      "latitude": 20.149815,
+      "longitude": -75.20669
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 2745638"
+      "name": "María García",
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000088",
     "title": "Apartamento moderno en alquiler mensual en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "guantanamo",
     "operation": "alquiler",
     "propertyType": "apartamento",
     "priceUsd": 400,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448292?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448293?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448294?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.147253,
-      "longitude": -75.219958
+      "latitude": 20.138195,
+      "longitude": -75.214725
     },
     "contact_info": {
       "name": "Pedro Sánchez",
-      "phone": "+53 5 9182736"
+      "phone": "+53 5 2987654"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000089",
     "title": "Gran casona colonial con techos altos de placa libre en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
+    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
     "zoneId": "guantanamo",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fce4e4",
-    "coverImage": "https://images.unsplash.com/photo-1560448293?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448294?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448295?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.141478,
-      "longitude": -75.198904
+      "latitude": 20.132124,
+      "longitude": -75.206739
     },
     "contact_info": {
-      "name": "Laura López",
+      "name": "Ana Martínez",
       "phone": "+53 5 4012345"
     }
   },
@@ -2673,26 +2673,26 @@
     "id": "00000000-0000-0000-0000-000000000090",
     "title": "Apartamento pequeño ideal para parejas o solteros en Guantánamo",
     "location": "Guantánamo, Guantánamo",
-    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "guantanamo",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 8500,
     "bedrooms": 1,
     "bathrooms": 1,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448294?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fff3e0",
+    "coverImage": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448295?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448296?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 20.139211,
-      "longitude": -75.216064
+      "latitude": 20.156274,
+      "longitude": -75.215097
     },
     "contact_info": {
       "name": "María García",
@@ -2703,59 +2703,59 @@
     "id": "00000000-0000-0000-0000-000000000091",
     "title": "Apartamento de 2 cuartos muy céntrico en Nueva Gerona",
     "location": "Isla de la Juventud, Nueva Gerona",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
     "zoneId": "isla-de-la-juventud",
     "operation": "venta",
     "propertyType": "apartamento",
     "priceUsd": 12000,
     "bedrooms": 2,
     "bathrooms": 1,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 65,
     "amenities": [],
     "status": "published",
-    "coverTone": "#fef3e2",
-    "coverImage": "https://images.unsplash.com/photo-1560448295?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#f0e6f7",
+    "coverImage": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448296?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448297?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.87132,
-      "longitude": -82.803277
+      "latitude": 21.887348,
+      "longitude": -82.786292
     },
     "contact_info": {
-      "name": "Rodolfo Jorba",
-      "phone": "+53 5 2987654"
+      "name": "María García",
+      "phone": "+53 5 2745638"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000092",
     "title": "Casa independiente espaciosa con portal y patio en Nueva Gerona",
     "location": "Isla de la Juventud, Nueva Gerona",
-    "description": "Inmueble con excelente distribución, habitaciones amplias con clósets empotrados y baños remodelados recientemente. Tanque instalado de gran capacidad.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "isla-de-la-juventud",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 35000,
     "bedrooms": 3,
     "bathrooms": 2,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 150,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448296?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448297?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448298?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.89313,
-      "longitude": -82.797238
+      "latitude": 21.882696,
+      "longitude": -82.813291
     },
     "contact_info": {
-      "name": "Juan Rodríguez",
+      "name": "Carlos Pérez",
       "phone": "+53 5 2987654"
     }
   },
@@ -2770,30 +2770,30 @@
     "priceUsd": 150,
     "bedrooms": 4,
     "bathrooms": 3,
-    "parking": 0,
+    "parking": 1,
     "areaM2": 180,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448297?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fef3e2",
+    "coverImage": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448298?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448299?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.874258,
-      "longitude": -82.805421
+      "latitude": 21.876179,
+      "longitude": -82.808461
     },
     "contact_info": {
-      "name": "Pedro Sánchez",
-      "phone": "+53 5 2987654"
+      "name": "Juan Rodríguez",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000094",
     "title": "Apartamento moderno en alquiler mensual en Nueva Gerona",
     "location": "Isla de la Juventud, Nueva Gerona",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "isla-de-la-juventud",
     "operation": "alquiler",
     "propertyType": "apartamento",
@@ -2804,56 +2804,56 @@
     "areaM2": 55,
     "amenities": [],
     "status": "published",
-    "coverTone": "#e0f2f1",
-    "coverImage": "https://images.unsplash.com/photo-1560448298?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e6f7ed",
+    "coverImage": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448299?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448300?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.88591,
-      "longitude": -82.812678
+      "latitude": 21.871866,
+      "longitude": -82.785802
     },
     "contact_info": {
       "name": "Rodolfo Jorba",
-      "phone": "+53 5 8421093"
+      "phone": "+53 5 3654891"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000095",
     "title": "Gran casona colonial con techos altos de placa libre en Nueva Gerona",
     "location": "Isla de la Juventud, Nueva Gerona",
-    "description": "Casa con amplios espacios, cocina moderna totalmente azulejada y portal espacioso para disfrutar las tardes. Documentos listos para la venta.",
+    "description": "Ubicada en una zona muy tranquila y segura de la localidad. Cerca de paradas de transporte público, escuelas y tiendas de conveniencia. Gas de la calle o balita garantizada.",
     "zoneId": "isla-de-la-juventud",
     "operation": "venta",
     "propertyType": "casa",
     "priceUsd": 75000,
     "bedrooms": 5,
     "bathrooms": 3,
-    "parking": 1,
+    "parking": 0,
     "areaM2": 250,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f0e6f7",
-    "coverImage": "https://images.unsplash.com/photo-1560448299?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#fce4e4",
+    "coverImage": "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448300?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448301?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.894896,
-      "longitude": -82.79178
+      "latitude": 21.869397,
+      "longitude": -82.78873
     },
     "contact_info": {
-      "name": "María García",
-      "phone": "+53 5 4012345"
+      "name": "Carlos Pérez",
+      "phone": "+53 5 8421093"
     }
   },
   {
     "id": "00000000-0000-0000-0000-000000000096",
     "title": "Apartamento pequeño ideal para parejas o solteros en Nueva Gerona",
     "location": "Isla de la Juventud, Nueva Gerona",
-    "description": "Excelente propiedad en perfecto estado constructivo, lista para habitar inmediatamente. Cuenta con excelente iluminación, ventilación natural cruzada y sistema de agua independiente.",
+    "description": "Apartamento muy luminoso, ideal tanto para vivir como para negocio de renta. Marquetería de aluminio y pisos de terrazo pulido en excelente estado.",
     "zoneId": "isla-de-la-juventud",
     "operation": "venta",
     "propertyType": "apartamento",
@@ -2864,19 +2864,19 @@
     "areaM2": 45,
     "amenities": [],
     "status": "published",
-    "coverTone": "#f3f4f6",
-    "coverImage": "https://images.unsplash.com/photo-1560448300?auto=format&fit=crop&w=800&q=80",
+    "coverTone": "#e0f2f1",
+    "coverImage": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     "images": [
-      "https://images.unsplash.com/photo-1560448301?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448302?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
     ],
     "coordinates": {
-      "latitude": 21.878908,
-      "longitude": -82.806767
+      "latitude": 21.891015,
+      "longitude": -82.806104
     },
     "contact_info": {
-      "name": "Laura López",
-      "phone": "+53 5 4012345"
+      "name": "Ana Martínez",
+      "phone": "+53 5 8421093"
     }
   }
 ]
