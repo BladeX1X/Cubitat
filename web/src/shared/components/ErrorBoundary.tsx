@@ -56,8 +56,8 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-50 px-4 py-20 text-center select-none">
           <div className="max-w-md w-full bg-white rounded-3xl border border-neutral-100 shadow-[0_10px_30px_rgba(0,0,0,0.04)] p-8 md:p-10 space-y-6">
-            <svg className="w-24 h-24 text-rose-500 mx-auto" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 15L80 25V55C80 73.18 67.22 89.77 50 95C32.78 89.77 20 73.18 20 55V25L50 15Z" 
+            <svg aria-hidden="true" focusable="false" className="w-24 h-24 text-rose-500 mx-auto" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 15L80 25V55C80 73.18 67.22 89.77 50 95C32.78 89.77 20 73.18 20 55V25L50 15Z"
                     fill="#fff1f2" stroke="#f43f5e" strokeWidth="2.5" strokeLinejoin="round" />
               <path d="M50 35V60" stroke="#be123c" strokeWidth="4" strokeLinecap="round" />
               <circle cx="50" cy="73" r="3.5" fill="#be123c" />

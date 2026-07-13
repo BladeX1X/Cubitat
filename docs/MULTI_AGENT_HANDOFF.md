@@ -403,6 +403,26 @@ Usar este formato y conservar las entradas anteriores:
 
 ## Notas de seguridad
 
+### 2026-07-13 — Codex principal — endurecimiento posterior a revisión
+
+- Estado: Implementado y verificado en local; pendiente de PR y despliegue.
+- Revisión: se auditaron los cinco commits posteriores a `fcdc86c`. Se detectó
+  que la caché de propiedades podía omitir `X-Robots-Tag`, que `useSEO`
+  conservaba descripción e imagen de la ruta anterior y que el seed sintético
+  podía reemplazar filas existentes al repetirse.
+- Corrección: el Worker reaplica cabeceras a respuestas cacheadas y marca como
+  no indexables tanto hosts no canónicos como rutas privadas; `useSEO`
+  reemplaza siempre descripción, imagen, URL y tipo sin copiar query ni hash;
+  el seed usa `ON CONFLICT (id) DO NOTHING`.
+- Calidad: se añadieron pruebas para SEO, Worker/cache, seed, `ErrorBoundary` y
+  los tres estados vacíos. Las ilustraciones decorativas quedaron fuera del
+  árbol accesible y se eliminaron espacios finales.
+- Validación local: lint limpio; 20 archivos y 78 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs. Única advertencia conocida:
+  `vendor-maplibre` supera 500 kB.
+- Datos y producción: no se ejecutó el seed, no se modificó ninguna fila y no
+  se desplegó esta corrección durante la validación local.
+
 ### 2026-07-12 20:10 — Codex principal — seguimiento de rendimiento de resultados
 
 - Estado: mejora de LCP verificada en producción.

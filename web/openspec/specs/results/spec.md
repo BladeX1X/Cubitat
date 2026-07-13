@@ -120,6 +120,7 @@ El sistema MUST presentar estados vacios utiles para rutas SEO y busquedas sin c
 - THEN el sistema MUST mostrar titulo e introduccion adecuados
 - AND SHOULD ofrecer busquedas relacionadas
 - AND MUST permitir limpiar o ampliar filtros
+- AND la ilustracion decorativa MUST permanecer fuera del arbol accesible
 
 ### Requirement: Paginacion consistente
 El sistema MUST mantener paginacion clara y accesible cuando hay multiples paginas.

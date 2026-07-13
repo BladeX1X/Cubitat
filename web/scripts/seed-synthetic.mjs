@@ -154,7 +154,7 @@ function main() {
       : v
     ).join(', ')
 
-    return `INSERT INTO properties (${cols}) VALUES (${valsStr}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, location = EXCLUDED.location, zone_id = EXCLUDED.zone_id, coordinates = EXCLUDED.coordinates, price_usd = EXCLUDED.price_usd, cover_image = EXCLUDED.cover_image, images = EXCLUDED.images, description = EXCLUDED.description;`
+    return `INSERT INTO properties (${cols}) VALUES (${valsStr}) ON CONFLICT (id) DO NOTHING;`
   })
 
   const sql = `-- Seed properties for Cubitat (synthetic test data for all provinces)

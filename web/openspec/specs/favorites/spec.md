@@ -36,6 +36,7 @@ El sistema MUST mostrar una pagina privada con propiedades guardadas.
 - THEN el sistema MUST mostrar las propiedades guardadas
 - AND cada propiedad MUST conservar acciones principales de ver detalle y contactar
 - AND si no existen favoritos MUST mostrar un estado vacio con accion para ver mas propiedades
+- AND la ilustracion decorativa del estado vacio MUST permanecer fuera del arbol accesible
 
 #### Scenario: Favorito ya no publicado
 - GIVEN una propiedad guardada fue pausada, eliminada u ocultada

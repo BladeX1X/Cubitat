@@ -194,4 +194,53 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('Content-Security-Policy')).toContain("default-src 'self'")
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate')
   })
+
+  it('marks non-canonical environments as non-indexable', async () => {
+    const response = await worker.fetch(
+      new Request('https://preview.cubitat.workers.dev/resultados'),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
+  })
+
+  it('marks private production routes as non-indexable', async () => {
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/mi-cuenta/seguridad'),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
+  })
+
+  it('keeps canonical public routes indexable', async () => {
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/resultados'),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.headers.get('X-Robots-Tag')).toBeNull()
+  })
+
+  it('reapplies noindex headers to cached property HTML on staging', async () => {
+    vi.stubGlobal('caches', {
+      default: {
+        match: vi.fn(async () => new Response('<!doctype html><html></html>', {
+          headers: { 'Content-Type': 'text/html' },
+        })),
+        put: vi.fn(),
+      },
+    })
+
+    const response = await worker.fetch(
+      new Request('https://preview.cubitat.workers.dev/propiedad/casa-00000000-0000-0000-0000-000000000001'),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
+  })
 })

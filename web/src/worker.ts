@@ -29,14 +29,37 @@ function jsonResponse(body: unknown, status = 200): Response {
   }));
 }
 
-function withSecurityHeaders(response: Response, hostname?: string): Response {
+const PRIVATE_ROUTE_PREFIXES = [
+  '/auth/callback',
+  '/editar/',
+  '/favoritos',
+  '/mi-cuenta',
+  '/mis-propiedades',
+  '/moderar',
+  '/publicar',
+  '/recuperar-contrasena',
+]
+
+function shouldDisallowIndexing(url?: URL): boolean {
+  if (!url) return false
+
+  const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+  if (!isLocal && url.hostname !== 'cubitathome.com') return true
+
+  return PRIVATE_ROUTE_PREFIXES.some((route) => {
+    const baseRoute = route.endsWith('/') ? route.slice(0, -1) : route
+    return url.pathname === baseRoute || url.pathname.startsWith(`${baseRoute}/`)
+  })
+}
+
+function withSecurityHeaders(response: Response, url?: URL): Response {
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
-  
-  if (hostname && hostname !== 'cubitathome.com' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+
+  if (shouldDisallowIndexing(url)) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
   }
 
@@ -960,7 +983,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      return withSecurityHeaders(response, url.hostname);
+      return withSecurityHeaders(response, url);
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
@@ -977,7 +1000,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           const cache = (caches as any).default;
           const cachedResponse = await cache.match(request);
           if (cachedResponse) {
-            return cachedResponse;
+            return withSecurityHeaders(cachedResponse, url);
           }
 
           const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
@@ -1071,7 +1094,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 headers: baseHeaders
               });
 
-              const finalResponse = withSecurityHeaders(rawResponse, url.hostname);
+              const finalResponse = withSecurityHeaders(rawResponse, url);
 
               // Guardar en la caché global de Cloudflare en segundo plano
               ctx.waitUntil(cache.put(request, finalResponse.clone()));
@@ -1117,6 +1140,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       });
     }
 
-    return withSecurityHeaders(response, url.hostname);
+    return withSecurityHeaders(response, url);
   }
 };

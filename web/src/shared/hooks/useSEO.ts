@@ -8,6 +8,14 @@ interface SEOProps {
   type?: 'website' | 'article'
 }
 
+const DEFAULT_DESCRIPTION =
+  'Cubitat es el portal inmobiliario para buscar, comprar, vender y rentar propiedades en Cuba.'
+const DEFAULT_IMAGE = 'https://cubitathome.com/og-image.jpg'
+
+function getCurrentDocumentUrl() {
+  return `${window.location.origin}${window.location.pathname}`
+}
+
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
   useEffect(() => {
     // 1. Actualizar título
@@ -25,32 +33,24 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
       element.setAttribute('content', content)
     }
 
+    const resolvedDescription = description ?? DEFAULT_DESCRIPTION
+    const resolvedImage = image ?? DEFAULT_IMAGE
+    const resolvedUrl = url ?? getCurrentDocumentUrl()
+
     // 2. Actualizar meta descripción general
-    if (description) {
-      setMetaTag('name', 'description', description)
-    }
+    setMetaTag('name', 'description', resolvedDescription)
 
     // 3. Actualizar metadatos Open Graph (Facebook/WhatsApp/Telegram)
     setMetaTag('property', 'og:title', formattedTitle)
-    if (description) {
-      setMetaTag('property', 'og:description', description)
-    }
-    if (image) {
-      setMetaTag('property', 'og:image', image)
-    }
-    if (url) {
-      setMetaTag('property', 'og:url', url)
-    }
+    setMetaTag('property', 'og:description', resolvedDescription)
+    setMetaTag('property', 'og:image', resolvedImage)
+    setMetaTag('property', 'og:url', resolvedUrl)
     setMetaTag('property', 'og:type', type)
 
     // 4. Actualizar metadatos Twitter Cards
     setMetaTag('name', 'twitter:card', 'summary_large_image')
     setMetaTag('name', 'twitter:title', formattedTitle)
-    if (description) {
-      setMetaTag('name', 'twitter:description', description)
-    }
-    if (image) {
-      setMetaTag('name', 'twitter:image', image)
-    }
+    setMetaTag('name', 'twitter:description', resolvedDescription)
+    setMetaTag('name', 'twitter:image', resolvedImage)
   }, [title, description, image, url, type])
 }

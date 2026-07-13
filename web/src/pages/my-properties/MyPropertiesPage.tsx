@@ -169,10 +169,10 @@ function LoadingSpinner() {
   )
 }
 
-function EmptyState({ onPublish }: { onPublish: () => void }) {
+export function MyPropertiesEmptyState({ onPublish }: { onPublish: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center gap-5">
-      <svg className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg aria-hidden="true" focusable="false" className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M25 80V30H65" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
         <line x1="65" y1="30" x2="65" y2="40" stroke="#94a3b8" strokeWidth="2" />
         <rect x="35" y="45" width="30" height="35" rx="3" fill="#f0fdf4" stroke="#035f53" strokeWidth="2.5" />
@@ -354,7 +354,7 @@ export function MyPropertiesPage({
           {loading ? (
             <LoadingSpinner />
           ) : properties.length === 0 ? (
-            <EmptyState onPublish={() => onNewProperty()} />
+            <MyPropertiesEmptyState onPublish={() => onNewProperty()} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((property) => (
