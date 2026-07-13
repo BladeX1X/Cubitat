@@ -5,7 +5,7 @@ import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
 import { getPropertyContactInfo } from '../modules/properties/utils/contact'
-import { normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
+import { getPropertyCoverImage, normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
 import { buildSeoResultsPath, filtersMatchSeoRoute, parseSeoResultsRoute, type SeoResultsRoute } from '../modules/search/seoRoutes'
 import { HomePage } from '../pages/home/HomePage'
@@ -303,7 +303,7 @@ export function CubitatApp() {
             badge: item.badge || undefined,
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
-            coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
@@ -363,7 +363,7 @@ export function CubitatApp() {
             badge: item.badge || undefined,
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
-            coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },

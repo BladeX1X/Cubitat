@@ -403,6 +403,27 @@ Usar este formato y conservar las entradas anteriores:
 
 ## Notas de seguridad
 
+### 2026-07-12 20:10 — Codex principal — seguimiento de rendimiento de resultados
+
+- Estado: mejora de LCP verificada en producción.
+- Diagnóstico del informe final de Unlighthouse (400/400 rutas, tres muestras):
+  puntuación total 97, rendimiento 88, accesibilidad 100, buenas prácticas 100
+  y SEO 100. La ruta más lenta observada, `/apartamentos-en-renta/matanzas`,
+  registró inicialmente LCP 4.5 s y CLS 0.
+- Corrección: las propiedades sin portada usan el SVG local inmediato compartido
+  por resultados y detalle, evitando una descarga remota genérica en la ruta
+  crítica de LCP.
+- Evidencia productiva móvil (390x844, Slow 4G, CPU x4): LCP 1.875 s y
+  CLS 0. El registro sin portada mostró el fallback `data:image/svg+xml`; la
+  consulta de propiedades respondió 200.
+- Consola: la aplicación no produjo fallos funcionales. Persisten dos incidencias
+  externas/de contenido: una URL de imagen incompleta guardada en un anuncio
+  (`ERR_BLOCKED_BY_ORB`) y un hit de Google Analytics con resolución DNS fallida
+  en el entorno de auditoría. No se modificaron datos de producción.
+- Despliegue verificado: Worker `192cf042-b244-4909-938d-81a194404175`.
+- Validación local: lint limpio; 16 archivos y 68 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs.
+
 - Nunca registrar tokens, contraseñas, secretos, contenido de `.env` ni enlaces
   reales de recuperación.
 - No completar un cambio real de contraseña durante una prueba salvo

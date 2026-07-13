@@ -31,6 +31,7 @@ import {
 } from '../../modules/properties/utils/contact'
 import {
   getPropertyGalleryImages,
+  getPropertyCoverImage,
   normalizePropertyImages,
   PROPERTY_IMAGE_FALLBACK,
 } from '../../modules/properties/utils/images'
@@ -1274,7 +1275,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             badge: item.badge || undefined,
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
-            coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },

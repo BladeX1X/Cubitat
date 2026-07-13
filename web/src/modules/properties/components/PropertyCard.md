@@ -23,6 +23,7 @@ type PropertyCardProps = {
 ## Estructura Visual
 
 - Imagen de portada grande:
+  - Usa el fallback SVG local inmediato cuando el anuncio no tiene portada, evitando una descarga genérica remota en el LCP.
   - Usa `property.coverImage`, `property.images` y `property.coverTone`.
   - Muestra badge editorial cuando existe.
   - Incluye flechas laterales solo cuando existen varias imagenes reales.
