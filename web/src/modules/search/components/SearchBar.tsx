@@ -129,7 +129,10 @@ export function SearchBar({
                 updateFilter('query', province)
               }}
             >
-              <SelectTrigger className="location-select-trigger" aria-label="Provincia">
+              <SelectTrigger
+                className="location-select-trigger"
+                aria-label={selectedProvince || 'Selecciona provincia'}
+              >
                 <SelectValue placeholder="Selecciona provincia">
                   {selectedProvince}
                 </SelectValue>
@@ -154,7 +157,7 @@ export function SearchBar({
               <SelectTrigger
                 className="location-select-trigger"
                 disabled={!selectedProvince}
-                aria-label="Municipio"
+                aria-label={selectedMunicipality || (selectedProvince ? 'Selecciona municipio' : 'Elige provincia')}
               >
                 <SelectValue placeholder={selectedProvince ? 'Selecciona municipio' : 'Elige provincia'}>
                   {selectedMunicipality}
@@ -169,7 +172,7 @@ export function SearchBar({
               </SelectContent>
             </Select>
           </label>
-          <Button className="search-submit" type="submit" aria-label="Buscar">
+          <Button className="search-submit" type="submit" aria-label="Buscar inmuebles">
             <Search size={20} strokeWidth={2.2} />
             <span>Buscar inmuebles</span>
           </Button>

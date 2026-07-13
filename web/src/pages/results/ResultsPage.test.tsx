@@ -93,7 +93,7 @@ const mockFilters: SearchFilters = {
 
 describe('ResultsPage', () => {
   it('debería renderizar la cantidad correcta de propiedades y contador', () => {
-    render(
+    const { container } = render(
       <ResultsPage
         filters={mockFilters}
         properties={mockProperties}
@@ -105,6 +105,7 @@ describe('ResultsPage', () => {
     expect(screen.getByText('2 propiedades en Cuba')).toBeInTheDocument()
     expect(screen.getByText('Casa en Playa')).toBeInTheDocument()
     expect(screen.getByText('Apartamento en Vedado')).toBeInTheDocument()
+    expect(container.querySelector('#resultados')).toHaveClass('results-stable-viewport')
   })
 
   it('debería mostrar los filtros activos en los chips', () => {

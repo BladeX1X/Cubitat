@@ -15,7 +15,9 @@ Leer completamente, en este orden:
    correo, OAuth, analítica, PWA y rollback.
 4. `web/supabase/DATABASE_MIGRATIONS.md`: inventario y procedimiento vigente de
    migraciones del backend.
-5. La checklist operativa de Obsidian:
+5. `docs/MULTI_AGENT_HANDOFF.md`: estado actual, reparto de carriles y protocolo
+   para que varios agentes trabajen sin solaparse.
+6. La checklist operativa de Obsidian:
    `G:\Mi unidad\Obsidian\Vault_IA_Second_Brain\02 Projects\Cubitat\Cubitat - Checklist de Lanzamiento.md`.
 
 Si alguno de estos archivos no está disponible, el agente debe indicarlo antes

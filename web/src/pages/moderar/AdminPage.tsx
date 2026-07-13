@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import { Check, X, Loader2, Building2, MapPin, Eye, Trash2, Bot } from 'lucide-react'
+import { fetchAdminMetrics, type AdminMetrics } from './adminMetrics'
 
 type StatusFilter = 'pending_review' | 'ai_approved' | 'ai_rejected' | 'published' | 'paused' | 'all'
 
@@ -50,6 +51,14 @@ type ModerationProperty = {
   user_email?: string
 }
 
+type AdminDatabaseMetrics = {
+  db_bytes: number
+  storage_bytes: number
+  properties_count: number
+  users_count: number
+  reports_count: number
+}
+
 const STATUS_LABELS: Record<ModerationProperty['status'], string> = {
   published: 'Publicada',
   pending_review: 'Pendiente',
@@ -74,6 +83,10 @@ function formatDate(iso: string): string {
     month: 'short',
     year: 'numeric',
   })
+}
+
+function formatBytes(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 export function AdminPage({
@@ -112,47 +125,49 @@ export function AdminPage({
     users_count: number
     reports_count: number
   } | null>(null)
-  const [apiMetrics, setApiMetrics] = useState<{
-    cloudflare?: { requests: number | null, error: string },
-    analytics?: { activeUsers: number | null, error: string },
-    supabase?: { storage_bytes: number | null, egress_bytes: number | null, db_bytes: number | null, error: string }
-  } | null>(null)
+  const [apiMetrics, setApiMetrics] = useState<AdminMetrics | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
+  const [metricsError, setMetricsError] = useState<string | null>(null)
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true)
     setError(null)
+    setMetricsError(null)
     try {
-      // 1. Fetch Supabase Data (via DB count, since Management API isn't setup for UI yet)
-      const { count: propCount } = await supabase.from('properties').select('id', { count: 'exact', head: true })
-      const { count: profileCount } = await supabase.from('profiles').select('id', { count: 'exact', head: true })
-      const { count: repCount } = await supabase.from('property_reports').select('id', { count: 'exact', head: true })
-      
-      const { data: rpcData } = await supabase.rpc('get_database_stats')
-      
+      // 1. Fetch admin-only database and Storage metrics from Supabase.
+      const { data: rawDatabaseMetrics, error: databaseMetricsError } = await supabase.rpc('get_admin_metrics')
+      if (databaseMetricsError) throw databaseMetricsError
+      const databaseMetrics = rawDatabaseMetrics as AdminDatabaseMetrics
+
       setStatsData({
-        db_size: rpcData?.db_size || 'API Req.',
-        properties_count: propCount || 0,
-        users_count: profileCount || 0,
-        reports_count: repCount || 0
+        db_size: formatBytes(databaseMetrics.db_bytes),
+        properties_count: databaseMetrics.properties_count,
+        users_count: databaseMetrics.users_count,
+        reports_count: databaseMetrics.reports_count,
       })
 
       // 2. Fetch external metrics (Cloudflare, Google Analytics)
       try {
-        const res = await fetch('/api/metrics')
-        if (res.ok) {
-          const metricsData = await res.json()
-          setApiMetrics(metricsData)
-        } else {
-          throw new Error('API route not found')
-        }
-      } catch (e) {
-        console.error('Error fetching api metrics', e)
+        const externalMetrics = await fetchAdminMetrics()
         setApiMetrics({
-          cloudflare: { requests: null, error: 'Endpoint /api/metrics no disponible en local.' },
-          analytics: { activeUsers: null, error: 'Endpoint /api/metrics no disponible en local.' },
-          supabase: { storage_bytes: null, egress_bytes: null, db_bytes: null, error: 'Endpoint /api/metrics no disponible en local.' }
+          ...externalMetrics,
+          supabase: {
+            ...externalMetrics.supabase,
+            db_bytes: databaseMetrics.db_bytes,
+            storage_bytes: databaseMetrics.storage_bytes,
+            error: externalMetrics.supabase.egress_bytes === null
+              ? 'Base de datos y Storage actualizados. El egreso mensual requiere la API de uso de Supabase.'
+              : externalMetrics.supabase.error,
+          },
         })
+      } catch (metricsFailure) {
+        console.error('Error fetching api metrics', metricsFailure)
+        setApiMetrics(null)
+        setMetricsError(
+          metricsFailure instanceof Error
+            ? metricsFailure.message
+            : 'No se pudieron cargar las métricas externas.',
+        )
       }
     } catch (err: any) {
       console.error('Error loading stats:', err)
@@ -276,6 +291,18 @@ export function AdminPage({
       setLoading(false)
     }
   }, [statusFilter])
+
+  function retryActiveTab() {
+    if (activeTab === 'stats') {
+      void loadStats()
+      return
+    }
+    if (activeTab === 'reports') {
+      void loadReports(repPage)
+      return
+    }
+    void loadProperties(propPage)
+  }
 
   useEffect(() => {
     if (activeTab === 'properties') {
@@ -517,7 +544,7 @@ export function AdminPage({
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="text-sm font-bold text-red-700">Error al cargar</p>
           <p className="text-xs text-red-500 mt-1">{error}</p>
-          <Button className="mt-4 rounded-full bg-red-700 hover:bg-red-800 text-white px-5 text-xs" onClick={() => loadProperties(propPage)}>
+          <Button className="mt-4 rounded-full bg-red-700 hover:bg-red-800 text-white px-5 text-xs" onClick={retryActiveTab}>
             Reintentar
           </Button>
         </div>
@@ -673,7 +700,24 @@ export function AdminPage({
               <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold border border-white/20">Cloudflare</span>
               <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold border border-white/20">Google</span>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={loadStats}
+              disabled={statsLoading}
+              className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+            >
+              {statsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Actualizar métricas
+            </Button>
           </div>
+
+          {metricsError ? (
+            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <p className="font-bold">No se pudieron sincronizar las métricas externas.</p>
+              <p className="mt-1 text-xs">{metricsError}</p>
+            </div>
+          ) : null}
 
           {statsLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">

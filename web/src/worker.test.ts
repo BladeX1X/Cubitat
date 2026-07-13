@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import worker, { type Env } from './worker'
+import worker, { fetchGoogleAnalyticsMetrics, type Env } from './worker'
 
 function createEnv(assetResponse = new Response('<!doctype html><html></html>', {
   headers: { 'Content-Type': 'text/html' },
@@ -12,7 +12,9 @@ function createEnv(assetResponse = new Response('<!doctype html><html></html>', 
     VITE_SUPABASE_ANON_KEY: 'public-anon-key',
     RATE_LIMITER: {
       idFromName: vi.fn(),
-      get: vi.fn(),
+      get: vi.fn(() => ({
+        fetch: vi.fn(async () => new Response(JSON.stringify({ allowed: true }))),
+      })),
     },
   }
 }
@@ -29,6 +31,50 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
+  it('reads realtime GA4 active users with service-account credentials', async () => {
+    const keyPair = await crypto.subtle.generateKey(
+      { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+      true,
+      ['sign', 'verify'],
+    )
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
+    let binary = ''
+    for (const byte of pkcs8) binary += String.fromCharCode(byte)
+    const privateKey = `-----BEGIN PRIVATE KEY-----\n${btoa(binary)}\n-----END PRIVATE KEY-----\n`
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'google-access-token' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        rows: [{ metricValues: [{ value: '7' }] }],
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await fetchGoogleAnalyticsMetrics({
+      ...createEnv(),
+      GA_PROPERTY_ID: '544117707',
+      GA_SERVICE_ACCOUNT_JSON: JSON.stringify({
+        client_email: 'reader@example.iam.gserviceaccount.com',
+        private_key: privateKey,
+        token_uri: 'https://oauth2.googleapis.com/token',
+      }),
+    })
+
+    expect(result).toEqual({ activeUsers: 7, error: '' })
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      'https://analyticsdata.googleapis.com/v1beta/properties/544117707:runRealtimeReport',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer google-access-token' }),
+      }),
+    )
+  })
+
+  it('returns a safe partial error when GA4 credentials are missing', async () => {
+    await expect(fetchGoogleAnalyticsMetrics(createEnv())).resolves.toEqual({
+      activeUsers: null,
+      error: 'Falta configurar Google Analytics.',
+    })
+  })
+
   it('redirects HTTP traffic to the canonical HTTPS origin', async () => {
     const response = await worker.fetch(
       new Request('http://cubitathome.com/resultados', {
@@ -103,6 +149,35 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('forwards the authenticated admin metrics RPC and blocks unknown RPCs', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ db_bytes: 42 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const env = createEnv()
+
+    const allowedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/get_admin_metrics', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer admin-token' },
+        body: '{}',
+      }),
+      env,
+      createContext(),
+    )
+
+    const blockedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/unknown_function', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer admin-token' },
+        body: '{}',
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(allowedResponse.status).toBe(200)
+    expect(blockedResponse.status).toBe(403)
   })
 
   it('adds browser security headers to HTML assets', async () => {

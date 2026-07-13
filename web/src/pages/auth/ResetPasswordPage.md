@@ -43,7 +43,7 @@ supabase.auth.resetPasswordForEmail(email, {
 
 3. Supabase genera `{{ .ConfirmationURL }}` en la plantilla de recuperacion.
 4. El usuario abre el enlace.
-5. Esta pagina intercambia `?code=...` por sesion o usa tokens en hash si Supabase los envia.
+5. La plantilla preferida entrega `?token_hash=...&type=recovery`; la página llama `verifyOtp` para crear la sesión sin depender del navegador que solicitó el correo. Se conserva compatibilidad con `?code=...` y tokens en hash antiguos.
 6. La URL se limpia para no dejar codigos o tokens visibles.
 7. Solo si el enlace genera el evento `PASSWORD_RECOVERY` o incluye `type=recovery` y existe una sesion valida se habilita el formulario. Una sesion normal ya abierta no es suficiente.
 8. La contrasena se guarda con `supabase.auth.updateUser({ password })`.

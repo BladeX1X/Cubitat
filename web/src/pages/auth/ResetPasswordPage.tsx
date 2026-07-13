@@ -22,7 +22,8 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
 
   useEffect(() => {
     async function prepareSession() {
-      const { accessToken, code, error, refreshToken, type } = getAuthUrlParams()
+      const { accessToken, code, error, refreshToken, tokenHash, type } = getAuthUrlParams()
+      let unsubscribe: (() => void) | undefined
 
       if (error) {
         setErrorMsg(error)
@@ -38,8 +39,16 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
             sawPasswordRecoveryEvent = true
           }
         })
+        unsubscribe = () => subscription.unsubscribe()
 
-        if (code) {
+        if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          })
+          if (verifyError) throw verifyError
+          sawPasswordRecoveryEvent = true
+        } else if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
         } else if (accessToken && refreshToken) {
@@ -50,13 +59,12 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
           if (sessionError) throw sessionError
         }
 
-        if (!isPasswordRecoveryFlow(type, sawPasswordRecoveryEvent)) {
-          subscription.unsubscribe()
+        const hasAuthCredentials = Boolean(tokenHash || code || (accessToken && refreshToken))
+        if (!isPasswordRecoveryFlow(type, sawPasswordRecoveryEvent, hasAuthCredentials)) {
           throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
 
         const { data: { session } } = await supabase.auth.getSession()
-        subscription.unsubscribe()
         if (!session) {
           throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
@@ -65,9 +73,10 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       } catch (err: any) {
         cleanAuthUrl('/recuperar-contrasena')
         setErrorMsg(err?.message || 'No pudimos validar el enlace de recuperacion.')
+      } finally {
+        unsubscribe?.()
+        setIsPreparingSession(false)
       }
-
-      setIsPreparingSession(false)
     }
 
     prepareSession()

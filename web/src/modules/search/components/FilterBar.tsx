@@ -151,7 +151,7 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => handleQueryChange('')}
-            className="absolute right-2.5 text-neutral-400 hover:text-neutral-900 transition-colors"
+            className="filter-search-clear absolute right-0 text-neutral-400 hover:text-neutral-900 transition-colors"
             aria-label="Limpiar búsqueda"
           >
             <X size={14} className="stroke-[2.5px]" />

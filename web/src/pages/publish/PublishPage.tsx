@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
+import { getEditableProperty } from './editablePropertyRepository'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -319,15 +320,25 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   // Load existing property data when editing
   useEffect(() => {
     if (!editPropertyId) return
+    const propertyId = editPropertyId
+    let cancelled = false
     async function loadProperty() {
       setEditLoading(true)
       try {
-        const { data, error } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('id', editPropertyId)
-          .single()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (cancelled) return
+        if (!user) {
+          onBack()
+          return
+        }
+
+        const { data, error } = await getEditableProperty(propertyId, user.id)
+        if (cancelled) return
         if (error) throw error
+        if (!data) {
+          onBack()
+          return
+        }
         if (data) {
           const features = data.features || {}
           const contactInfo = data.contact_info || {}
@@ -407,10 +418,14 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         alert('No se pudo cargar la propiedad para editar.')
         onBack()
       } finally {
-        setEditLoading(false)
+        if (!cancelled) setEditLoading(false)
       }
     }
     loadProperty()
+
+    return () => {
+      cancelled = true
+    }
   }, [editPropertyId, onBack])
 
   // Guardar borrador manualmente al pulsar el botón

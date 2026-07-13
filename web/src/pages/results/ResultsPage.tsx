@@ -256,7 +256,7 @@ export function ResultsPage({
 
   return (
     <section
-      className="workspace-catalog"
+      className="workspace-catalog results-stable-viewport"
       id="resultados"
       aria-label="Resultados de busqueda"
     >

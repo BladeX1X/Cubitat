@@ -153,6 +153,7 @@ El sistema MUST permitir al anunciante administrar sus propios anuncios sin acce
 - WHEN abre `/mis-propiedades`
 - THEN el sistema MUST listar solo propiedades asociadas a ese usuario
 - AND MUST mostrar estado, fecha, operacion, precio y acciones disponibles
+- AND MUST representar sin errores los borradores remotos con estado `draft`
 
 #### Scenario: Editar publicacion propia
 - GIVEN un anunciante ve una publicacion propia
@@ -160,6 +161,13 @@ El sistema MUST permitir al anunciante administrar sus propios anuncios sin acce
 - THEN el sistema MUST abrir `/editar/:id`
 - AND MUST cargar datos existentes en el formulario
 - AND MUST validar autorizacion antes de guardar cambios
+
+#### Scenario: Bloquear edición de una publicación ajena
+- GIVEN un usuario autenticado conoce el identificador de una publicación ajena
+- WHEN abre directamente `/editar/:id`
+- THEN el sistema MUST comprobar la propiedad antes de cargar los datos
+- AND MUST impedir que el formulario muestre información de la publicación ajena
+- AND MUST regresar a una ruta segura sin ejecutar escrituras
 
 #### Scenario: Pausar o retirar publicacion propia
 - GIVEN un anunciante decide dejar de mostrar un anuncio

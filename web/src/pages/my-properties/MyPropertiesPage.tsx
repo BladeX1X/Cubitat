@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
+import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -22,7 +23,7 @@ type Property = {
   location: string
   price_usd: number
   cover_image: string | null
-  status: 'published' | 'pending_review' | 'paused' | 'local_draft' | 'ai_approved' | 'ai_rejected'
+  status: PropertyStatus
   moderation_message: string | null
   created_at: string
   user_id: string
@@ -58,48 +59,6 @@ function formatDate(iso: string): string {
   })
 }
 
-const STATUS_CONFIG: Record<
-  Property['status'],
-  { label: string; bg: string; text: string; dot: string }
-> = {
-  published: {
-    label: 'Publicada',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    dot: 'bg-emerald-500',
-  },
-  pending_review: {
-    label: 'Pendiente de revisión',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    dot: 'bg-amber-500',
-  },
-  paused: {
-    label: 'Oculta',
-    bg: 'bg-neutral-100',
-    text: 'text-neutral-500',
-    dot: 'bg-neutral-400',
-  },
-  local_draft: {
-    label: 'Borrador (Sin publicar)',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    dot: 'bg-blue-500',
-  },
-  ai_approved: {
-    label: 'Aprobada por IA',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    dot: 'bg-emerald-500',
-  },
-  ai_rejected: {
-    label: 'Rechazada por IA',
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    dot: 'bg-red-500',
-  },
-}
-
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,' +
   btoa(
@@ -114,7 +73,7 @@ const PLACEHOLDER_IMAGE =
 /* ------------------------------------------------------------------ */
 
 function StatusBadge({ status }: { status: Property['status'] }) {
-  const cfg = STATUS_CONFIG[status]
+  const cfg = getPropertyStatusConfig(status)
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}

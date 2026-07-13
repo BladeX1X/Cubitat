@@ -15,6 +15,7 @@ export interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
+  GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
   RATE_LIMITER: any;
@@ -252,6 +253,99 @@ function normalizeEmail(value: unknown): string {
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+type GoogleServiceAccountCredentials = {
+  client_email: string;
+  private_key: string;
+  private_key_id?: string;
+  token_uri?: string;
+};
+
+function encodeBase64Url(value: string | Uint8Array): string {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodePrivateKey(privateKey: string): ArrayBuffer {
+  const normalized = privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s/g, '');
+  const binary = atob(normalized);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0)).buffer;
+}
+
+async function createGoogleAccessToken(credentials: GoogleServiceAccountCredentials): Promise<string> {
+  const tokenUri = credentials.token_uri || 'https://oauth2.googleapis.com/token';
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT', ...(credentials.private_key_id ? { kid: credentials.private_key_id } : {}) };
+  const claims = {
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/analytics.readonly',
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+  const unsignedJwt = `${encodeBase64Url(JSON.stringify(header))}.${encodeBase64Url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    decodePrivateKey(credentials.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedJwt));
+  const assertion = `${unsignedJwt}.${encodeBase64Url(new Uint8Array(signature))}`;
+
+  const response = await fetch(tokenUri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google OAuth rechazó la autenticación (${response.status}).`);
+  const payload = await response.json() as { access_token?: string };
+  if (!payload.access_token) throw new Error('Google OAuth no devolvió un token de acceso.');
+  return payload.access_token;
+}
+
+export async function fetchGoogleAnalyticsMetrics(env: Env): Promise<{ activeUsers: number | null; error: string }> {
+  if (!env.GA_SERVICE_ACCOUNT_JSON || !env.GA_PROPERTY_ID) {
+    return { activeUsers: null, error: 'Falta configurar Google Analytics.' };
+  }
+
+  try {
+    const credentials = JSON.parse(env.GA_SERVICE_ACCOUNT_JSON) as Partial<GoogleServiceAccountCredentials>;
+    if (!credentials.client_email || !credentials.private_key) {
+      return { activeUsers: null, error: 'Las credenciales de Google Analytics no son válidas.' };
+    }
+    const accessToken = await createGoogleAccessToken(credentials as GoogleServiceAccountCredentials);
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(env.GA_PROPERTY_ID)}:runRealtimeReport`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ metrics: [{ name: 'activeUsers' }] }),
+      },
+    );
+    if (!response.ok) {
+      return { activeUsers: null, error: `Google Analytics no está disponible (${response.status}).` };
+    }
+    const payload = await response.json() as { rows?: Array<{ metricValues?: Array<{ value?: string }> }> };
+    const value = Number(payload.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+    return { activeUsers: Number.isFinite(value) ? value : null, error: '' };
+  } catch (error) {
+    console.warn('Google Analytics metrics request failed:', error instanceof Error ? error.message : 'Unknown error');
+    return { activeUsers: null, error: 'No fue posible consultar Google Analytics.' };
+  }
 }
 
 async function getEmailConfirmedAt(email: string, env: Env): Promise<string | null> {
@@ -557,7 +651,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                   const aiResult = JSON.parse(cleanText);
                   finalStatus = aiResult.status || 'pending_review';
                   finalReason = aiResult.reason || '';
-                } catch(e: any) {
+                } catch {
                   finalStatus = 'pending_review';
                   finalReason = 'Fallo al interpretar respuesta de IA. Pendiente de revisión manual.';
                 }
@@ -566,7 +660,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 finalReason = 'No hay texto en IA. Pendiente de revisión manual.';
               }
             }
-          } catch (e: any) {
+          } catch {
             finalStatus = 'pending_review';
             finalReason = 'Fallo de conexión con IA. Pendiente de revisión manual.';
           }
@@ -660,11 +754,12 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         };
       }
 
-      // 3. Mock Analytics for now
+      // 3. Google Analytics Data API (realtime users, read-only)
+      const analyticsData = await fetchGoogleAnalyticsMetrics(env);
       const responseBody = {
         cloudflare: cloudflareData,
         supabase: supabaseData,
-        analytics: { activeUsers: null, error: 'Integración GA pendiente de Service Account' },
+        analytics: analyticsData,
       };
 
       return new Response(JSON.stringify(responseBody), {
@@ -714,9 +809,16 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
       const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties'];
+      const allowedAuthenticatedRpcs = ['get_admin_metrics'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
+      const rpcMatch = subPath.match(/^\/rest\/v1\/rpc\/([^/?]+)/);
+      const rpcName = rpcMatch ? rpcMatch[1] : null;
+      const isAllowedAuthenticatedRpc = method === 'POST'
+        && authenticated
+        && rpcName !== null
+        && allowedAuthenticatedRpcs.includes(rpcName);
 
       const authRateLimitResponse = await enforceAuthRateLimit(request, env, clientIp, subPath);
       if (authRateLimitResponse) {
@@ -731,7 +833,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       }
 
       // Bloquear POST a tablas no permitidas
-      if (method === 'POST' && tableName && !allowedWriteTables.includes(tableName)) {
+      if (method === 'POST' && tableName && !allowedWriteTables.includes(tableName) && !isAllowedAuthenticatedRpc) {
         return jsonResponse({ error: 'Operación no permitida.' }, 403);
       }
 
@@ -857,7 +959,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
-    const match = path.match(/^\/propiedad\/([^\/]+)/);
+    const match = path.match(/^\/propiedad\/([^/]+)/);
 
     if (match) {
       const slug = match[1];

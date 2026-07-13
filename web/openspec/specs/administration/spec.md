@@ -96,6 +96,36 @@ El sistema SHOULD dejar trazabilidad de acciones administrativas sensibles.
 - THEN el sistema SHOULD registrar admin, entidad afectada, accion, razon y timestamp
 - AND MUST mostrar errores si no se pudo completar la accion
 
+### Requirement: Métricas administrativas
+El sistema MUST limitar las métricas operativas al administrador y representar cada proveedor de forma independiente.
+
+#### Scenario: Admin consulta métricas
+- GIVEN un usuario autenticado con rol `admin`
+- WHEN abre la pestaña de métricas
+- THEN el cliente MUST enviar su sesión al endpoint interno `/api/metrics`
+- AND MUST mostrar carga mientras sincroniza
+- AND MUST mostrar los valores disponibles sin convertir datos ausentes en mediciones reales
+
+#### Scenario: Proveedor de métricas no configurado
+- GIVEN Cloudflare, Google Analytics o Supabase no tiene credenciales operativas
+- WHEN el endpoint devuelve un error parcial para ese proveedor
+- THEN el panel MUST conservar las métricas locales disponibles
+- AND MUST mostrar un estado vacío o no configurado solo en la tarjeta afectada
+- AND MUST permitir reintentar la consulta
+
+#### Scenario: Sesión administrativa inválida
+- GIVEN la sesión del administrador expiró o el endpoint responde `401` o `403`
+- WHEN se consultan las métricas
+- THEN el panel MUST mostrar un error seguro
+- AND MUST evitar mostrar métricas administrativas como si fueran válidas
+
+#### Scenario: Google Analytics en tiempo real
+- GIVEN la cuenta de servicio tiene rol `Lector` en la propiedad GA4
+- WHEN el administrador consulta las métricas
+- THEN el Worker MUST autenticar mediante OAuth de servidor a servidor
+- AND MUST consultar `runRealtimeReport` con la métrica `activeUsers`
+- AND MUST mantener la clave privada exclusivamente como secreto del servidor
+
 ### Requirement: Moderacion asistida por IA
 El sistema MAY usar revision automatica para ayudar al admin sin reemplazar la decision humana en acciones destructivas.
 

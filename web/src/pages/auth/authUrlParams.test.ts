@@ -17,6 +17,11 @@ describe('auth URL parameters', () => {
     expect(getAuthUrlParams()).toMatchObject({ accessToken: 'access', refreshToken: 'refresh', type: 'recovery', error: 'expired' })
   })
 
+  it('reads a portable recovery token hash from the query string', () => {
+    window.history.replaceState(null, '', '/recuperar-contrasena?token_hash=portable-hash&type=recovery')
+    expect(getAuthUrlParams()).toMatchObject({ tokenHash: 'portable-hash', type: 'recovery' })
+  })
+
   it.each(['/auth/callback?flow=oauth', '/auth/callback?state=opaque-state', '/auth/callback#provider=google'])(
     'recognizes OAuth callback marker in %s',
     (url) => {
@@ -35,9 +40,10 @@ describe('auth URL parameters', () => {
   })
 
   it('does not treat a normal authenticated session as password recovery', () => {
-    expect(isPasswordRecoveryFlow(null, false)).toBe(false)
-    expect(isPasswordRecoveryFlow('signup', false)).toBe(false)
-    expect(isPasswordRecoveryFlow('recovery', false)).toBe(true)
-    expect(isPasswordRecoveryFlow(null, true)).toBe(true)
+    expect(isPasswordRecoveryFlow(null, false, false)).toBe(false)
+    expect(isPasswordRecoveryFlow('signup', false, true)).toBe(false)
+    expect(isPasswordRecoveryFlow('recovery', false, false)).toBe(true)
+    expect(isPasswordRecoveryFlow(null, true, false)).toBe(false)
+    expect(isPasswordRecoveryFlow(null, true, true)).toBe(true)
   })
 })

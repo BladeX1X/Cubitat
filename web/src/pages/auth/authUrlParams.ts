@@ -2,6 +2,7 @@ type AuthUrlParams = {
   code: string | null
   error: string | null
   type: string | null
+  tokenHash: string | null
   accessToken: string | null
   refreshToken: string | null
   isOAuthCallback: boolean
@@ -19,6 +20,7 @@ export function getAuthUrlParams(): AuthUrlParams {
       searchParams.get('error') ||
       hashParams.get('error'),
     type: searchParams.get('type') || hashParams.get('type'),
+    tokenHash: searchParams.get('token_hash') || hashParams.get('token_hash'),
     accessToken: hashParams.get('access_token'),
     refreshToken: hashParams.get('refresh_token'),
     isOAuthCallback: Boolean(
@@ -32,8 +34,12 @@ export function getAuthUrlParams(): AuthUrlParams {
   }
 }
 
-export function isPasswordRecoveryFlow(type: string | null, sawPasswordRecoveryEvent: boolean) {
-  return type === 'recovery' || sawPasswordRecoveryEvent
+export function isPasswordRecoveryFlow(
+  type: string | null,
+  sawPasswordRecoveryEvent: boolean,
+  hasAuthCredentials: boolean,
+) {
+  return type === 'recovery' || (sawPasswordRecoveryEvent && hasAuthCredentials)
 }
 
 export function cleanAuthUrl(pathname = window.location.pathname) {

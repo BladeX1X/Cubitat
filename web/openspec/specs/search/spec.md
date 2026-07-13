@@ -81,3 +81,12 @@ El sistema MUST permitir guardar una busqueda filtrada como alerta para usuarios
 - THEN MUST guardar temporalmente los filtros actuales
 - AND MUST abrir login
 - AND despues de autenticar MUST intentar crear la alerta pendiente
+
+### Requirement: Nombres accesibles coherentes
+Los controles del buscador MUST exponer nombres accesibles que incluyan su texto visible.
+
+#### Scenario: Leer controles con tecnologia asistiva
+- GIVEN un usuario abre el buscador principal
+- WHEN una tecnologia asistiva enumera provincia, municipio y accion de busqueda
+- THEN cada control MUST anunciar el mismo valor o instruccion que muestra visualmente
+- AND el boton de envio MUST anunciar `Buscar inmuebles`

@@ -26,6 +26,8 @@ El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y
 - WHEN la pantalla de resultados se renderiza
 - THEN MUST mostrar skeletons o estado de carga estable
 - AND MUST evitar layout shift excesivo al llegar los datos
+- AND el contenedor principal MUST reservar al menos el alto visible bajo la cabecera para mantener el footer fuera del viewport durante transiciones de carga
+- AND los controles tactiles de busqueda, limpieza y carrusel MUST conservar un area minima de 44x44 px en movil
 
 ### Requirement: Ordenamiento
 El sistema MUST permitir ordenar resultados sin perder filtros activos.
