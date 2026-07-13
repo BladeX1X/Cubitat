@@ -14,6 +14,19 @@ function metaContent(selector: string) {
 }
 
 describe('useSEO', () => {
+  it('elimina query string y fragmento de una URL explicita', () => {
+    render(
+      <SEOProbe
+        title="Casa demo"
+        url="https://cubitathome.com/propiedad/casa-demo?utm_source=qa#galeria"
+      />,
+    )
+
+    expect(metaContent('meta[property="og:url"]')).toBe(
+      'https://cubitathome.com/propiedad/casa-demo',
+    )
+  })
+
   it('reemplaza los metadatos opcionales al navegar a una pagina sin valores propios', () => {
     window.history.replaceState({}, '', '/propiedad/casa-demo?token=secreto#galeria')
 

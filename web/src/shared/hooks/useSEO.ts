@@ -12,8 +12,13 @@ const DEFAULT_DESCRIPTION =
   'Cubitat es el portal inmobiliario para buscar, comprar, vender y rentar propiedades en Cuba.'
 const DEFAULT_IMAGE = 'https://cubitathome.com/og-image.jpg'
 
-function getCurrentDocumentUrl() {
-  return `${window.location.origin}${window.location.pathname}`
+function getCleanDocumentUrl(url?: string) {
+  try {
+    const resolvedUrl = new URL(url ?? window.location.href, window.location.origin)
+    return `${resolvedUrl.origin}${resolvedUrl.pathname}`
+  } catch {
+    return `${window.location.origin}${window.location.pathname}`
+  }
 }
 
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
@@ -35,7 +40,7 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
 
     const resolvedDescription = description ?? DEFAULT_DESCRIPTION
     const resolvedImage = image ?? DEFAULT_IMAGE
-    const resolvedUrl = url ?? getCurrentDocumentUrl()
+    const resolvedUrl = getCleanDocumentUrl(url)
 
     // 2. Actualizar meta descripción general
     setMetaTag('name', 'description', resolvedDescription)

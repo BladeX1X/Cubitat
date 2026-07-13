@@ -1248,7 +1248,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
           .select('*')
           .eq('property_type', currentProperty.propertyType)
           .eq('operation', currentProperty.operation)
-          .not('id', 'in', `(${excludeIds.map(id => `'${id}'`).join(',')})`)
+          .not('id', 'in', `(${excludeIds.join(',')})`)
           .limit(3 - data.length)
           
         if (fallbackData) {

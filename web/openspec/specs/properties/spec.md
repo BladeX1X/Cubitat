@@ -93,6 +93,12 @@ El sistema MUST consultar y renderizar solo propiedades publicas en experiencias
 - THEN MUST usar solo propiedades con estado publicable
 - AND MUST ignorar borradores, pausadas u ocultas salvo en areas privadas autorizadas
 
+#### Scenario: Completar propiedades relacionadas sin repetir anuncios
+- GIVEN una ficha pública con menos de tres propiedades relacionadas en la misma provincia
+- WHEN el sistema consulta anuncios adicionales del mismo tipo y operación
+- THEN MUST excluir la propiedad actual y las ya seleccionadas mediante una lista UUID válida para PostgREST
+- AND MUST completar la sección sin provocar respuestas `400`
+
 ### Requirement: Metadatos Open Graph Dinámicos en Servidor Perimetral (Edge)
 El sistema MUST servir metadatos de redes sociales (Open Graph y Twitter Cards) pre-procesados en el servidor perimetral para crawlers (como Telegram, WhatsApp o Facebook) que no ejecutan JavaScript del lado del cliente.
 

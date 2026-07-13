@@ -20,6 +20,7 @@ vi.mock('../../shared/hooks/useSEO', () => ({
 
 // Mock SupabaseClient
 const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
+const mockNot = vi.fn()
 const mockFrom = vi.fn().mockImplementation((table: string) => {
   const proxy: any = new Proxy({}, {
     get(_, prop) {
@@ -32,6 +33,12 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
             return Promise.resolve(resolve({ data: [], error: null }))
           }
           return Promise.resolve(resolve({ data: null, error: null }))
+        }
+      }
+      if (prop === 'not') {
+        return (...args: unknown[]) => {
+          mockNot(...args)
+          return proxy
         }
       }
       return () => proxy
@@ -88,6 +95,7 @@ describe('DetailPage - Reportes y Visor', () => {
   beforeEach(() => {
     localStorage.clear()
     mockInsert.mockClear()
+    mockNot.mockClear()
     mockFrom.mockClear()
   })
 
@@ -122,6 +130,23 @@ describe('DetailPage - Reportes y Visor', () => {
       image: 'https://example.com/image.jpg',
       type: 'article',
     }))
+  })
+
+  it('excluye UUID relacionados con sintaxis PostgREST válida', async () => {
+    const propertyId = '00000000-0000-0000-0000-000000000089'
+
+    render(
+      <DetailPage
+        property={{ ...mockProperty, id: propertyId }}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockNot).toHaveBeenCalledWith('id', 'in', `(${propertyId})`)
+    })
   })
 
   it('debería abrir el modal de reportes al hacer clic en "Reportar propiedad sospechosa"', () => {

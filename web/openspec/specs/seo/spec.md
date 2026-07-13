@@ -18,6 +18,12 @@ vez que cambia la pagina visible.
 - AND MUST cambiar el tipo a `website`
 - AND MUST NOT conservar datos de la propiedad anterior
 
+#### Scenario: Una pagina proporciona una URL explicita con parametros
+- GIVEN una pagina proporciona una URL absoluta con query string o fragmento
+- WHEN el sistema actualiza los metadatos Open Graph
+- THEN `og:url` MUST contener solamente el origen y pathname
+- AND MUST NOT copiar parametros ni fragmentos
+
 ### Requirement: Rutas no indexables
 El Worker MUST excluir de indexacion entornos no canonicos y rutas privadas.
 
