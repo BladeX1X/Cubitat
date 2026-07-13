@@ -54,7 +54,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | C. Rendimiento y responsive | Terminado | Codex principal | Producción medida con Chrome DevTools: móvil frío Slow 4G/CPU x4 con LCP 1.704 s y CLS 0; interacción con INP 51 ms. Lighthouse móvil quedó en 100 para accesibilidad, buenas prácticas, SEO y navegación agéntica, sin fallos. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
-| F. Moderación Groq | Bloqueado | Codex principal | Cuenta QA admin e imagen temporal verificadas. El envío falló dos veces antes de crear el registro con `TypeError: Failed to fetch`; se borró el borrador del formulario y se confirmó que el inventario conserva únicamente el borrador RLS anterior. Diagnosticar el fallo de escritura/subida sin usar anuncios existentes. |
+| F. Moderación Groq | Terminado | Codex principal | Publicación QA temporal reevaluada manualmente: pasó por pendiente y Groq la rechazó con motivo coherente por precio irrazonable y contenido temporal. Se eliminó únicamente ese registro; inventario final 312, rechazadas 9, pendientes 0 y consola limpia. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
@@ -365,6 +365,21 @@ Usar este formato y conservar las entradas anteriores:
 - Pendiente exacto: diagnosticar el fallo de escritura/subida de publicación en
   producción y repetir el flujo temporal completo. No reutilizar anuncios
   existentes ni marcar F como terminado sin reevaluación Groq y eliminación.
+
+### 2026-07-12 18:32 — Codex principal — carril F (cierre)
+
+- Estado: Terminado.
+- Evidencia: el usuario completó la creación autorizada de la publicación QA.
+  El panel admin mostró 10 rechazadas por IA y 0 pendientes; se aisló la entrada
+  `Casa en venta en Zona QA aproximada`, perteneciente a la cuenta QA admin.
+- Reevaluación Groq: la acción la movió temporalmente a pendiente con el mensaje
+  `Reevaluando con IA`; tras refrescar volvió a `Rechazada por IA`. Motivo:
+  precio de 1 USD irrazonable para una casa y descripción coherente con un
+  registro temporal, no con una venta real.
+- Limpieza: se eliminó exclusivamente esa publicación QA. Estado final verificado
+  tras recarga: 312 propiedades totales, 303 publicadas, 9 rechazadas por IA y
+  0 pendientes. Consola sin errores ni advertencias.
+- Pendiente exacto: ninguno para F. No se tocaron los otros anuncios rechazados.
 
 ## Notas de seguridad
 
