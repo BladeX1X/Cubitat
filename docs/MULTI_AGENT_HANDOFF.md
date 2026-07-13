@@ -21,7 +21,8 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
-- Rama base actual: `main`, commit `60cd5ff` tras fusionar los PR #4 y #5.
+- Rama base actual: `main`; commit funcional `60cd5ff` tras fusionar los PR #4
+  y #5. Los commits documentales posteriores no cambian el artefacto desplegado.
 - Migraciones: 40 migraciones sincronizadas con producción; la migración 39
   endurece RLS y la 40 incorpora métricas agregadas admin-only.
 - Validación local más reciente: lint limpio, 20 archivos de pruebas y 80
