@@ -88,6 +88,7 @@ Clases principales en `app.css`:
 - Guardar y flechas tienen `aria-label`.
 - El grupo de caracteristicas usa `aria-label`.
 - Guardar y flechas deben tener minimo `44x44 px` de area interactiva para usabilidad tactil.
+- Los puntos del carrusel conservan un indicador visual pequeno dentro de un area tactil de `44x44 px` en movil.
 
 ## Pendientes Recomendados
 

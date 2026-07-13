@@ -51,7 +51,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | --- | --- | --- | --- |
 | A. Reconciliar checklist | Terminado | Codex principal | Casillas antiguas reconciliadas con evidencia de Supabase, RLS, Storage, contactos, revisión, dominio, SSL, canonical, `www` y redirección HTTP. |
 | B. Rutas y recarga | Terminado | Codex principal | Todas las rutas previstas responden `200`; públicas renderizan tras recarga, protegidas aplican guard anónimo, y estados especiales son seguros. |
-| C. Rendimiento y responsive | Terminado | Codex principal | Producción medida con Chrome DevTools: móvil frío Slow 4G/CPU x4 con LCP 1.704 s y CLS 0; interacción con INP 51 ms. Lighthouse móvil quedó en 100 para accesibilidad, buenas prácticas, SEO y navegación agéntica, sin fallos. |
+| C. Rendimiento y responsive | Terminado | Codex principal | Home y ruta SEO de resultados verificadas. Matanzas pasó de CLS 0.25/0.348 en informes previos a CLS 0; en móvil Slow 4G/CPU x4 obtuvo LCP 1.675 s. Lighthouse móvil: accesibilidad 100, SEO 100 y navegación agéntica 100; el único fallo de buenas prácticas es el DNS externo del beacon de Cloudflare. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
 | F. Moderación Groq | Terminado | Codex principal | Publicación QA temporal reevaluada manualmente: pasó por pendiente y Groq la rechazó con motivo coherente por precio irrazonable y contenido temporal. Se eliminó únicamente ese registro; inventario final 312, rechazadas 9, pendientes 0 y consola limpia. |
@@ -380,6 +380,26 @@ Usar este formato y conservar las entradas anteriores:
   tras recarga: 312 propiedades totales, 303 publicadas, 9 rechazadas por IA y
   0 pendientes. Consola sin errores ni advertencias.
 - Pendiente exacto: ninguno para F. No se tocaron los otros anuncios rechazados.
+
+### 2026-07-12 18:55 — Codex principal — carril C (resultados)
+
+- Estado: Terminado.
+- Diagnóstico reproducido: `/apartamentos-en-permuta/matanzas` presentaba CLS
+  0.25 en traza actual y 0.348 en Unlighthouse. PerformanceObserver aisló la
+  causa dominante: el footer entraba y salía del viewport durante la transición
+  Suspense/skeleton, aportando 0.2449 de CLS.
+- Corrección: el catálogo reserva el alto visible bajo la cabecera durante la
+  carga. En móvil se ampliaron a 44x44 px el campo/borrado de búsqueda y los
+  controles táctiles del carrusel.
+- Validación: lint limpio; 15 archivos y 66 pruebas; build TypeScript/Vite/PWA;
+  sitemap de 1007 URLs. Producción móvil Slow 4G/CPU x4: LCP 1.675 s y CLS 0.
+  Lighthouse móvil: accesibilidad 100, SEO 100 y navegación agéntica 100. El
+  96 de buenas prácticas corresponde únicamente a
+  `static.cloudflareinsights.com` con `ERR_NAME_NOT_RESOLVED` en el entorno de
+  auditoría.
+- Despliegue: Worker `1fd244d0-0886-4b1e-bb4c-42fbd1fc514f`.
+- Pendiente exacto: ninguno para rendimiento automatizado. Conserva pendiente
+  la prueba táctil en dispositivo físico.
 
 ## Notas de seguridad
 
