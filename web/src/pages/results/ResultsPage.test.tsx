@@ -188,4 +188,18 @@ describe('ResultsPage', () => {
     expect(titles[0]).toBe('Ver Apartamento en Vedado')
     expect(titles[1]).toBe('Ver Casa en Playa')
   })
+
+  it('muestra un estado vacio accesible sin resultados', () => {
+    const { container } = render(
+      <ResultsPage
+        filters={mockFilters}
+        properties={[]}
+        onSelectProperty={vi.fn()}
+        onClearFilters={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Sin resultados')).toBeInTheDocument()
+    expect(container.querySelector('.results-empty-state svg')).toHaveAttribute('aria-hidden', 'true')
+  })
 })
