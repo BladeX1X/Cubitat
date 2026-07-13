@@ -110,3 +110,4 @@ Cada cambio visual importante debe verificarse con:
 
 - Si se agregan nuevos datos de propiedad, actualizar `Property` y esta documentacion.
 - Mantener la tarjeta escaneable: no mostrar demasiadas amenidades ni texto largo dentro del listado.
+- En resultados, `prioritizeImage` se reserva para la primera tarjeta. Las imágenes Unsplash de catálogo se solicitan a 420 px y calidad 45; las demás usan `loading="lazy"` y `fetchPriority="low"`.

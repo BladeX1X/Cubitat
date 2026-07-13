@@ -490,3 +490,24 @@ Usar este formato y conservar las entradas anteriores:
   autorización específica del usuario.
 - No marcar producción como verificada usando solo resultados locales.
 - No desplegar cambios de otro carril sin revisar su diff y sus validaciones.
+
+### 2026-07-13 17:20 — Codex principal — hardening de imágenes tras Unlighthouse
+
+- Rama: `feature/performance-hardening`, basada en `main` (`0d2577f`), publicada
+  en el PR borrador #11 hacia `main`.
+- La nueva corrida productiva de Unlighthouse completó 400/400 tareas y dejó
+  como cuello principal la descarga de imágenes: total 95, rendimiento 80,
+  accesibilidad 100, buenas prácticas 100 y SEO 100; home marcó LCP 6.2 s y
+  una ruta SEO de resultados LCP 7.4 s bajo las condiciones del informe.
+- Corrección local: el hero usa variantes 480/768/1200 con menor calidad; las
+  provincias bajan de 500/q60 a 420/q45 y dejan de usar carga eager; resultados
+  prioriza solo la primera tarjeta en lugar de las primeras cuatro y reduce las
+  imágenes Unsplash de catálogo a 420/q45.
+- Evidencia local instrumentada en Chrome DevTools, viewport 390x844, Slow 4G
+  y CPU x4: home LCP 868 ms, CLS 0; ruta SEO Holguín LCP 1.795 s, CLS 0. Las
+  trazas confirman URLs AVIF 420/q45 y solo la primera tarjeta con prioridad
+  elevada. Estas cifras son locales y no sustituyen una medición productiva.
+- Validación local: lint limpio; 21 archivos y 82 pruebas aprobadas; build
+  TypeScript/Vite/PWA correcto y sitemap generado con 1007 URLs.
+- Cierre pendiente: fusionar/desplegar y repetir Unlighthouse sin caché para
+  confirmar el impacto real en producción. No se modificaron datos remotos.

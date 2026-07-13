@@ -107,14 +107,14 @@ export function PropertyCard({
                       className="property-photo-slide"
                       src={image}
                       alt=""
-                    loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    fetchPriority={prioritizeImage && index === 0 ? 'high' : 'auto'}
-                    style={{ backgroundColor: property.coverTone }}
-                    onError={(event) => {
-                      event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
-                    }}
-                  />
+                      loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      fetchPriority={prioritizeImage && index === 0 ? 'high' : 'low'}
+                      style={{ backgroundColor: property.coverTone }}
+                      onError={(event) => {
+                        event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                      }}
+                    />
                 ) : (
                   <div
                     className="property-photo-slide property-photo-slide-placeholder"

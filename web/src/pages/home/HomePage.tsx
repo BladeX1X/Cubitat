@@ -37,8 +37,8 @@ export function HomePage({
       <section className="hero">
         <img
           className="hero-media"
-          src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50"
-          srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=45 800w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50 1200w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=55 1600w"
+          src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=45"
+          srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=480&q=38 480w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=768&q=40 768w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=45 1200w"
           sizes="100vw"
           alt=""
           fetchPriority="high"
@@ -109,9 +109,10 @@ export function PopularLocations() {
         <p className="section-description">Compra, venta y renta de inmuebles en toda Cuba.</p>
       </div>
       <div className="location-grid-cards">
-        {randomizedLocations.map(({ province, image }, index) => {
+        {randomizedLocations.map(({ province, image }) => {
           const name = `Departamentos en venta en ${province}`
           const href = `/apartamentos-en-venta/${slugifySeo(province)}`
+          const optimizedImage = image.replace('w=500&q=60', 'w=420&q=45')
           
           return (
             <a
@@ -126,10 +127,11 @@ export function PopularLocations() {
             >
               <img
                 className="location-card-image"
-                src={image}
+                src={optimizedImage}
                 alt={province}
-                loading={index < 8 ? 'eager' : 'lazy'}
+                loading="lazy"
                 decoding="async"
+                fetchPriority="low"
               />
               <div className="location-card-content">
                 <h3>{name}</h3>

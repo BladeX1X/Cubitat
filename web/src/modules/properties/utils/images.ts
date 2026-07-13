@@ -55,8 +55,8 @@ export function optimizePropertyCardImage(image: string): string {
     if (url.hostname !== 'images.unsplash.com') return image
     url.searchParams.set('auto', 'format')
     url.searchParams.set('fit', 'crop')
-    url.searchParams.set('w', '500')
-    url.searchParams.set('q', '55')
+    url.searchParams.set('w', '420')
+    url.searchParams.set('q', '45')
     return url.toString()
   } catch {
     return image

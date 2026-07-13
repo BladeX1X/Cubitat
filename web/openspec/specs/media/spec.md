@@ -34,8 +34,14 @@ El sistema MUST optimizar URLs y atributos de imagen segun contexto de uso.
 #### Scenario: Imagen prioritaria en resultados
 - GIVEN se renderiza la primera pagina de resultados
 - WHEN las primeras tarjetas entran sobre el fold
-- THEN el sistema MAY usar carga prioritaria para sus imagenes principales
-- AND tarjetas posteriores SHOULD usar lazy loading
+- THEN el sistema MAY usar carga prioritaria solo para la imagen principal de la primera tarjeta
+- AND las tarjetas posteriores SHOULD usar lazy loading y prioridad de red baja
+
+#### Scenario: Imagenes comerciales bajo el fold
+- GIVEN home muestra el hero antes de las tarjetas de provincias
+- WHEN se inicia la carga de la portada
+- THEN solo la imagen del hero MUST conservar prioridad alta
+- AND las tarjetas de provincias MUST usar lazy loading y prioridad de red baja
 
 ### Requirement: Resiliencia ante imagenes faltantes
 El sistema MUST mostrar placeholders o fondos seguros cuando falten imagenes.

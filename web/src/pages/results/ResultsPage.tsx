@@ -365,11 +365,11 @@ export function ResultsPage({
                   className="property-catalog-item"
                   data-property-card-id={property.id}
                 >
-                    <PropertyCard
-                      property={property}
-                      isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
-                      onSelect={onSelectProperty}
-                      prioritizeImage={index < 4}
+                  <PropertyCard
+                    property={property}
+                    isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
+                    onSelect={onSelectProperty}
+                    prioritizeImage={index === 0}
                   />
                 </div>
               ))
