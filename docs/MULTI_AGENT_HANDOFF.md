@@ -493,7 +493,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-13 17:20 — Codex principal — hardening de imágenes tras Unlighthouse
 
-- Rama: `feature/performance-hardening`, basada en `main` (`0d2577f`).
+- Rama: `feature/performance-hardening`, basada en `main` (`0d2577f`), publicada
+  en el PR borrador #11 hacia `main`.
 - La nueva corrida productiva de Unlighthouse completó 400/400 tareas y dejó
   como cuello principal la descarga de imágenes: total 95, rendimiento 80,
   accesibilidad 100, buenas prácticas 100 y SEO 100; home marcó LCP 6.2 s y
