@@ -419,7 +419,9 @@ Usar este formato y conservar las entradas anteriores:
   ni advertencias de la aplicación.
 - Rendimiento productivo adicional: detalle real con LCP 783 ms y CLS 0 sin
   throttling; imagen LCP servida como AVIF redimensionado y con caché anual.
-- GitHub/Cloudflare: PR autogenerado #1 cerrado por obsoleto. Se deshabilitaron
+- GitHub/Cloudflare: PR autogenerados #1 y #6 cerrados por obsoletos. Se
+  desconectó la integración Git del Worker legado para impedir nuevos PR y
+  despliegues automáticos. También se deshabilitaron
   la URL productiva `workers.dev` y los previews del Worker estático legado
   `cubitat`; la URL productiva devuelve `404`. No tiene dominio personalizado
   ni bindings y no bloquea `cubitathome.com`, servido por `cubitat1`. Una URL
