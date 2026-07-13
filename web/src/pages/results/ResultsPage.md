@@ -88,3 +88,8 @@ Prueba manual:
 - Confirmar que no aparece hero en `/resultados`.
 - Confirmar que aparecen tarjetas.
 - Confirmar que seleccionar una tarjeta actualiza el estado seleccionado.
+
+## Hardening de imágenes 2026-07-13
+
+- Solo la primera tarjeta del catálogo prioriza su imagen.
+- Las tarjetas restantes usan carga diferida y prioridad de red baja para no competir con el LCP.

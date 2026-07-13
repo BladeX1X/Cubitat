@@ -189,6 +189,30 @@ describe('ResultsPage', () => {
     expect(titles[1]).toBe('Ver Casa en Playa')
   })
 
+  it('prioriza solo la primera imagen visible del catalogo', () => {
+    const propertiesWithImages = mockProperties.map((property, index) => ({
+      ...property,
+      coverImage: `https://images.unsplash.com/photo-${index + 1}?w=900&q=80`,
+    }))
+    const { container } = render(
+      <ResultsPage
+        filters={mockFilters}
+        properties={propertiesWithImages}
+        onSelectProperty={vi.fn()}
+        onClearFilters={vi.fn()}
+      />,
+    )
+
+    const images = container.querySelectorAll<HTMLImageElement>('.property-photo-slide')
+
+    expect(images[0]).toHaveAttribute('loading', 'eager')
+    expect(images[0]).toHaveAttribute('fetchpriority', 'high')
+    expect(images[0].src).toContain('w=420')
+    expect(images[0].src).toContain('q=45')
+    expect(images[1]).toHaveAttribute('loading', 'lazy')
+    expect(images[1]).toHaveAttribute('fetchpriority', 'low')
+  })
+
   it('muestra un estado vacio accesible sin resultados', () => {
     const { container } = render(
       <ResultsPage
