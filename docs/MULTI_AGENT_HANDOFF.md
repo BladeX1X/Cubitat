@@ -54,7 +54,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | C. Rendimiento y responsive | Terminado | Codex principal | Producción medida con Chrome DevTools: móvil frío Slow 4G/CPU x4 con LCP 1.704 s y CLS 0; interacción con INP 51 ms. Lighthouse móvil quedó en 100 para accesibilidad, buenas prácticas, SEO y navegación agéntica, sin fallos. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
-| F. Moderación Groq | Bloqueado | Codex principal | El acceso a archivos ya no es el bloqueo. La pestaña conectada de Chrome abre Cubitat como anónimo; se necesita iniciar sesión allí con la cuenta QA autorizada para crear, reevaluar con Groq y eliminar la publicación temporal. No usar anuncios existentes como sustituto. |
+| F. Moderación Groq | Bloqueado | Codex principal | Cuenta QA admin e imagen temporal verificadas. El envío falló dos veces antes de crear el registro con `TypeError: Failed to fetch`; se borró el borrador del formulario y se confirmó que el inventario conserva únicamente el borrador RLS anterior. Diagnosticar el fallo de escritura/subida sin usar anuncios existentes. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
@@ -348,6 +348,23 @@ Usar este formato y conservar las entradas anteriores:
   intento.
 - Bloqueos G/H: contenido real y cierre legal permanecen bloqueados por decisión
   del usuario.
+
+### 2026-07-12 18:20 — Codex principal — carril F
+
+- Estado: Bloqueado.
+- Prueba ejecutada: formulario QA temporal completado con cuenta admin, imagen
+  sintética, ubicación, descripción, precio y contacto de prueba. Chrome aceptó
+  la imagen y habilitó el envío.
+- Resultado: los dos intentos de `Publicar Propiedad` mostraron alerta y la
+  consola registró `TypeError: Failed to fetch` desde `PublishPage` antes de
+  crear el registro; por ello no existió anuncio pendiente que reevaluar con
+  Groq.
+- Limpieza: borrador del formulario eliminado y archivo visual temporal borrado.
+  `Mis publicaciones` continúa mostrando una sola entrada, el borrador histórico
+  `QA RLS owner isolation 2026-07-12`; no se modificó ni eliminó.
+- Pendiente exacto: diagnosticar el fallo de escritura/subida de publicación en
+  producción y repetir el flujo temporal completo. No reutilizar anuncios
+  existentes ni marcar F como terminado sin reevaluación Groq y eliminación.
 
 ## Notas de seguridad
 
