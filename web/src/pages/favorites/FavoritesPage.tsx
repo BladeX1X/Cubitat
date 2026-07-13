@@ -1,4 +1,3 @@
-import { Heart } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
@@ -62,15 +61,28 @@ export function FavoritesPage({
             </div>
           ) : favoriteProperties.length === 0 ? (
             <div className="py-24 px-6 text-center flex flex-col items-center gap-5">
-              <div className="w-24 h-24 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
-                <Heart className="w-10 h-10" />
-              </div>
+              <svg className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="25" cy="30" r="4" fill="#fda4af" className="animate-ping" style={{ animationDuration: '2.5s' }} />
+                <circle cx="75" cy="25" r="3" fill="#fecdd3" className="animate-ping" style={{ animationDuration: '3s' }} />
+                <circle cx="80" cy="70" r="5" fill="#ffe4e6" className="animate-bounce" style={{ animationDuration: '4s' }} />
+                <g className="animate-bounce" style={{ animationDuration: '2.5s' }}>
+                  <path d="M50 82C50 82 18 56.402 18 36.5C18 22.969 28.522 12 41.5 12C46.883 12 50 15 50 15C50 15 53.117 12 58.5 12C71.478 12 82 22.969 82 36.5C82 56.402 50 82 50 82Z" 
+                        fill="url(#heartGradient)" stroke="#e11d48" strokeWidth="2.5" strokeLinejoin="round" />
+                  <circle cx="36" cy="28" r="5" fill="white" opacity="0.3" />
+                </g>
+                <defs>
+                  <linearGradient id="heartGradient" x1="50" y1="12" x2="50" y2="82" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#f43f5e" />
+                    <stop offset="100%" stopColor="#be123c" />
+                  </linearGradient>
+                </defs>
+              </svg>
               <div className="max-w-sm">
                 <h2 className="text-xl font-extrabold text-neutral-900">
-                  Todavia no tienes favoritos
+                  Todavía no tienes favoritos
                 </h2>
                 <p className="text-sm text-neutral-500 mt-2 leading-relaxed">
-                  Guarda propiedades desde los resultados para encontrarlas rapido despues.
+                  Guarda propiedades desde los resultados para encontrarlas rápido después.
                 </p>
               </div>
               <Button

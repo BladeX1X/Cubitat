@@ -375,6 +375,16 @@ export function ResultsPage({
               ))
             ) : (
               <div className="results-empty-state">
+                <svg className="w-28 h-28 text-neutral-300 mb-4 animate-pulse" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 45L50 20L80 45V80C80 82.2091 78.2091 84 76 84H24C21.7909 84 20 82.2091 20 80V45Z" fill="#f0fdf4" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M42 84V56H58V84" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <g className="animate-bounce" style={{ animationDuration: '3s' }}>
+                    <circle cx="62" cy="48" r="16" fill="white" stroke="#035f53" strokeWidth="3" />
+                    <path d="M73 59L88 74" stroke="#035f53" strokeWidth="4.5" strokeLinecap="round" />
+                    <path d="M57 43L67 53" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M67 43L57 53" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                  </g>
+                </svg>
                 <p className="eyebrow">Sin resultados</p>
                 <h2>
                   {seoRoute

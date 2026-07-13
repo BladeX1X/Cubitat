@@ -5,7 +5,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Building2,
   MapPin,
   Calendar,
   Loader2,
@@ -173,10 +172,19 @@ function LoadingSpinner() {
 function EmptyState({ onPublish }: { onPublish: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center gap-5">
-      {/* Illustration-like circle */}
-      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-        <Building2 className="w-12 h-12 text-[#035f53]" />
-      </div>
+      <svg className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M25 80V30H65" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1="65" y1="30" x2="65" y2="40" stroke="#94a3b8" strokeWidth="2" />
+        <rect x="35" y="45" width="30" height="35" rx="3" fill="#f0fdf4" stroke="#035f53" strokeWidth="2.5" />
+        <rect x="41" y="51" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="53" y="51" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="41" y="63" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="53" y="63" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <g className="animate-bounce" style={{ animationDuration: '3.5s' }}>
+          <circle cx="70" cy="40" r="12" fill="#008f79" />
+          <path d="M70 35V45M65 40H75" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      </svg>
 
       <div className="max-w-sm">
         <h3 className="text-xl font-bold text-neutral-800 mb-2">
