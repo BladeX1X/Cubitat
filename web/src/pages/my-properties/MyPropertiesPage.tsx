@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
+import { useSEO } from '../../shared/hooks/useSEO'
 import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
 
 /* ------------------------------------------------------------------ */
@@ -209,6 +210,10 @@ export function MyPropertiesPage({
   onEditProperty,
   onNewProperty,
 }: MyPropertiesPageProps) {
+  useSEO({
+    title: 'Mis Publicaciones',
+  })
+
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
 

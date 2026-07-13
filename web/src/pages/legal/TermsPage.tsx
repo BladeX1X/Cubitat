@@ -1,10 +1,16 @@
 import { ChevronLeft, FileText } from 'lucide-react'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type TermsPageProps = {
   onBack: () => void
 }
 
 export function TermsPage({ onBack }: TermsPageProps) {
+  useSEO({
+    title: 'Términos de Servicio',
+    description: 'Términos de servicio y condiciones de uso de la plataforma inmobiliaria Cubitat.',
+  })
+
   return (
     <article className="min-h-screen bg-neutral-50/50 py-10 md:py-16">
       <div className="max-w-3xl mx-auto px-4">

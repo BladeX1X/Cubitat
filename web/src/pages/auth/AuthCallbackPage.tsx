@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, MailCheck, TriangleAlert } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams } from './authUrlParams'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type AuthCallbackPageProps = {
   onContinue: () => void
@@ -11,6 +12,10 @@ type AuthCallbackPageProps = {
 type CallbackStatus = 'loading' | 'success' | 'error'
 
 export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
+  useSEO({
+    title: 'Verificando Acceso',
+  })
+
   const [status, setStatus] = useState<CallbackStatus>('loading')
   const [message, setMessage] = useState('Estamos verificando tu enlace de acceso.')
 

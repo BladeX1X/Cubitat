@@ -8,6 +8,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { SearchBar } from '../../modules/search/components/SearchBar'
+import { useSEO } from '../../shared/hooks/useSEO'
 import { slugifySeo } from '../../modules/search/seoRoutes'
 import type { LocationSuggestion, SearchFilters } from '../../modules/search/types'
 
@@ -26,6 +27,11 @@ export function HomePage({
   onClearFilters,
   onSubmitSearch,
 }: HomePageProps) {
+  useSEO({
+    title: 'Cubitat | El portal de propiedades para Cuba',
+    description: 'Encuentra casas, apartamentos y terrenos en venta y renta en toda Cuba. Fotos reales, mapa geográfico interactivo y contacto directo con el anunciante sin intermediarios.',
+  })
+
   return (
     <>
       <section className="hero">

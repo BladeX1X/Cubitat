@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { getEditableProperty } from './editablePropertyRepository'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -247,6 +248,11 @@ type PublishPageProps = {
 
 export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
   const isEditMode = Boolean(editPropertyId)
+
+  useSEO({
+    title: isEditMode ? 'Editar Propiedad' : 'Publicar Propiedad',
+  })
+
   const [step, setStep] = useState<number>(1)
   const [formData, setFormData] = useState<PublishFormData>(initialFormState)
   const [isSubmitting, setIsSubmitting] = useState(false)

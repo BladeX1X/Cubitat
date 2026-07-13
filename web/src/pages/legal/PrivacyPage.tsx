@@ -1,10 +1,16 @@
 import { ChevronLeft, Shield } from 'lucide-react'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type PrivacyPageProps = {
   onBack: () => void
 }
 
 export function PrivacyPage({ onBack }: PrivacyPageProps) {
+  useSEO({
+    title: 'Política de Privacidad',
+    description: 'Consulta la política de privacidad de Cubitat. Conoce cómo recopilamos, protegemos y gestionamos la información de nuestros usuarios.',
+  })
+
   return (
     <article className="min-h-screen bg-neutral-50/50 py-10 md:py-16">
       <div className="max-w-3xl mx-auto px-4">

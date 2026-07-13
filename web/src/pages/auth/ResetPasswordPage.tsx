@@ -4,12 +4,17 @@ import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type ResetPasswordPageProps = {
   onDone: () => void
 }
 
 export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
+  useSEO({
+    title: 'Restablecer Contraseña',
+  })
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)

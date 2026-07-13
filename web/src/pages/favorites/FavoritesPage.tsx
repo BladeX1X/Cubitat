@@ -5,6 +5,7 @@ import { PropertyCardSkeleton } from '../../modules/properties/components/Proper
 import { useSavedProperties } from '../../modules/properties/hooks/useSavedProperties'
 import type { Property } from '../../modules/properties/types'
 import { AccountLayout } from '../account/AccountLayout'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type FavoritesPageProps = {
   properties: Property[]
@@ -23,6 +24,10 @@ export function FavoritesPage({
   onSelectProperty,
   onGoResults,
 }: FavoritesPageProps) {
+  useSEO({
+    title: 'Mis Favoritos',
+  })
+
   const { savedPropertyIds, loading } = useSavedProperties()
   const favoriteProperties = properties.filter((property) =>
     savedPropertyIds.has(property.id),

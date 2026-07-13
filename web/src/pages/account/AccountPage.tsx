@@ -18,6 +18,7 @@ import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
 import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type AccountPageProps = {
   user: User
@@ -34,6 +35,9 @@ export function AccountPage({
   onNavigateFavorites,
   onNavigateMyProperties,
 }: AccountPageProps) {
+  useSEO({
+    title: 'Mi Cuenta',
+  })
   const initialName =
     user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Cubitat'
   const [fullName, setFullName] = useState(initialName)

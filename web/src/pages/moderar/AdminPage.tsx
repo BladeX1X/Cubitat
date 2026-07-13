@@ -3,6 +3,7 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import { Check, X, Loader2, Building2, MapPin, Eye, Trash2, Bot } from 'lucide-react'
 import { fetchAdminMetrics, type AdminMetrics } from './adminMetrics'
+import { useSEO } from '../../shared/hooks/useSEO'
 
 type StatusFilter = 'pending_review' | 'ai_approved' | 'ai_rejected' | 'published' | 'paused' | 'all'
 
@@ -96,6 +97,10 @@ export function AdminPage({
   userRole?: string
   onNavigateHome: () => void
 }) {
+  useSEO({
+    title: 'Panel de Administración',
+  })
+
   const [properties, setProperties] = useState<ModerationProperty[]>([])
   const [reports, setReports] = useState<PropertyReport[]>([])
   const [activeTab, setActiveTab] = useState<'properties' | 'reports' | 'stats'>('properties')
