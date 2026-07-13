@@ -493,8 +493,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-13 17:20 — Codex principal — hardening de imágenes tras Unlighthouse
 
-- Rama: `feature/performance-hardening`, basada en `main` (`0d2577f`), publicada
-  en el PR borrador #11 hacia `main`.
+- Rama `feature/performance-hardening` fusionada mediante el PR #11. Commit
+  resultante en `main`: `cfe841e`.
 - La nueva corrida productiva de Unlighthouse completó 400/400 tareas y dejó
   como cuello principal la descarga de imágenes: total 95, rendimiento 80,
   accesibilidad 100, buenas prácticas 100 y SEO 100; home marcó LCP 6.2 s y
@@ -509,5 +509,9 @@ Usar este formato y conservar las entradas anteriores:
   elevada. Estas cifras son locales y no sustituyen una medición productiva.
 - Validación local: lint limpio; 21 archivos y 82 pruebas aprobadas; build
   TypeScript/Vite/PWA correcto y sitemap generado con 1007 URLs.
-- Cierre pendiente: fusionar/desplegar y repetir Unlighthouse sin caché para
-  confirmar el impacto real en producción. No se modificaron datos remotos.
+- Despliegue verificado en producción: bundle `index-BBdWLWT8.js`; hero con
+  variantes 480/768/1200, provincias 420/q45 en `lazy/low` y resultados con
+  solo la primera imagen `eager/high`. Consola limpia en home y ruta SEO de
+  Holguín. No se modificaron datos remotos.
+- Pendiente: repetir Unlighthouse sin caché para cuantificar el impacto contra
+  la línea base 95/80.
