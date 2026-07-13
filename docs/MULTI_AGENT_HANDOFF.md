@@ -405,7 +405,7 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-13 — Codex principal — endurecimiento posterior a revisión
 
-- Estado: Implementado y verificado en local; pendiente de PR y despliegue.
+- Estado: Implementado y verificado en local; PR #4 abierto hacia `main`, pendiente de revisión, fusión y despliegue.
 - Revisión: se auditaron los cinco commits posteriores a `fcdc86c`. Se detectó
   que la caché de propiedades podía omitir `X-Robots-Tag`, que `useSEO`
   conservaba descripción e imagen de la ruta anterior y que el seed sintético
