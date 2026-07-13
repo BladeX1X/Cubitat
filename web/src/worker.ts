@@ -29,12 +29,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   }));
 }
 
-function withSecurityHeaders(response: Response): Response {
+function withSecurityHeaders(response: Response, hostname?: string): Response {
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  
+  if (hostname && hostname !== 'cubitathome.com' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+  }
+
   if (response.headers.get('Content-Type')?.includes('text/html')) {
     headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org; frame-src 'self' https://www.google.com https://www.openstreetmap.org; media-src 'self' blob:;");
     headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -955,7 +960,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      return withSecurityHeaders(response);
+      return withSecurityHeaders(response, url.hostname);
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
@@ -1066,7 +1071,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 headers: baseHeaders
               });
 
-              const finalResponse = withSecurityHeaders(rawResponse);
+              const finalResponse = withSecurityHeaders(rawResponse, url.hostname);
 
               // Guardar en la caché global de Cloudflare en segundo plano
               ctx.waitUntil(cache.put(request, finalResponse.clone()));
@@ -1112,6 +1117,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       });
     }
 
-    return withSecurityHeaders(response);
+    return withSecurityHeaders(response, url.hostname);
   }
 };
