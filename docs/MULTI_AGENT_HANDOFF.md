@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-12
+Última actualización: 2026-07-13
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -21,17 +21,17 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
-- Rama de trabajo actual: `feature/quality-hardening`.
+- Rama base actual: `main`, commit `60cd5ff` tras fusionar los PR #4 y #5.
 - Migraciones: 40 migraciones sincronizadas con producción; la migración 39
   endurece RLS y la 40 incorpora métricas agregadas admin-only.
-- Validación local más reciente: lint limpio, 14 archivos de pruebas y 65
+- Validación local más reciente: lint limpio, 20 archivos de pruebas y 80
   pruebas aprobadas, build de producción correcto y sitemap de 1007 URLs.
 - Recuperación de contraseña:
   - plantilla remota portable con `token_hash` aplicada mediante Supabase CLI;
   - enlace real probado sin el error PKCE entre navegadores;
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
-- Despliegue activo de Cloudflare: `1825c1df-5d47-4cd0-942e-eb409dc07147`.
+- Despliegue activo de Cloudflare: `cbacb3a6-fa2a-40c7-80ac-570c325666fa`.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación accesible para administrador. Último estado observado:
   0 pendientes, 9 rechazadas por IA y 303 publicadas.
@@ -400,6 +400,32 @@ Usar este formato y conservar las entradas anteriores:
 - Despliegue: Worker `1fd244d0-0886-4b1e-bb4c-42fbd1fc514f`.
 - Pendiente exacto: ninguno para rendimiento automatizado. Conserva pendiente
   la prueba táctil en dispositivo físico.
+
+### 2026-07-13 16:05 — Codex principal — cierre técnico de Fase 1
+
+- Estado: Terminado para el alcance técnico automatizable.
+- Cambios: los PR #4 y #5 se fusionaron en `main`; se endurecieron metadatos
+  SPA y cabeceras de indexación, y se corrigió la lista UUID del fallback de
+  propiedades relacionadas para PostgREST.
+- Validación local: lint limpio; 20 archivos y 80 pruebas; build
+  TypeScript/Vite/PWA; sitemap de 1007 URLs. Revisión independiente sin
+  hallazgos bloqueantes. Advertencia conocida: `vendor-maplibre` supera 500 kB.
+- Evidencia productiva: Worker `cbacb3a6-fa2a-40c7-80ac-570c325666fa`.
+  La consulta relacionada que antes devolvía `400` respondió `200` con
+  `not.in.(uuid1,uuid2)` y completó tres tarjetas. `og:url` excluyó query y
+  fragmento. `/mi-cuenta` y `/moderar` conservaron
+  `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`. Consola sin errores
+  ni advertencias de la aplicación.
+- Rendimiento productivo adicional: detalle real con LCP 783 ms y CLS 0 sin
+  throttling; imagen LCP servida como AVIF redimensionado y con caché anual.
+- GitHub/Cloudflare: PR autogenerado #1 cerrado por obsoleto. El Worker estático
+  legado `cubitat` aún expone su subdominio `workers.dev`; no tiene dominio
+  personalizado ni bindings. Deshabilitar ese subdominio requiere una acción
+  explícita en Cloudflare y no bloquea `cubitathome.com`, servido por `cubitat1`.
+- Pendientes humanos: prueba táctil en dispositivo físico, contenido/fotos
+  reales aprobados y revisión jurídica. Pendientes operativos no bloqueantes:
+  branding OAuth, renovar el token de métricas antes de 2026-08-11, observar
+  KPIs reales y sanear una URL de imagen de contenido cuando se autorice.
 
 ## Notas de seguridad
 
