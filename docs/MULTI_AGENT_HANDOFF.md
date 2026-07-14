@@ -571,3 +571,22 @@ Usar este formato y conservar las entradas anteriores:
   La Habana LCP 4.087 s/CLS 0.00; Matanzas LCP 1.771 s/CLS 0.00. Consola sin
   errores, advertencias ni incidencias relevantes. Falta desplegar y repetir
   la medición productiva antes de registrar el cierre definitivo.
+
+### 2026-07-13 21:15 — Codex principal — cierre productivo de la regresión CLS
+
+- PR #16 fusionado en `main` como `80019b0`. Cloudflare publicó los assets
+  `index-BjCvAHl6.js`, `index-De5yfvOW.css` y `ResultsPage-DmR8CvPr.css`.
+- Trazas productivas móviles (390x844, Slow 4G, CPU x4, caché ignorada):
+  `/apartamentos-en-renta/la-habana` LCP 2.245 s/CLS 0.00 y
+  `/apartamentos-en-permuta/matanzas` LCP 1.724 s/CLS 0.00. No hubo errores,
+  advertencias ni incidencias de consola; no se modificaron datos remotos.
+- Unlighthouse posterior al despliegue completó 400/400 trabajos con tres
+  muestras, `--no-cache`, throttling y móvil: total 97, rendimiento 87,
+  accesibilidad 100, buenas prácticas 100 y SEO 100.
+- Home registró rendimiento 89, FCP 2.1 s, LCP 3.4 s, TBT 0 ms y CLS 0.001.
+  Matanzas registró rendimiento 65, FCP 4.5 s, LCP 7.0 s, TBT 0 ms y
+  CLS 0.009: la regresión de CLS 0.382 queda cerrada, pero el LCP variable de
+  resultados sigue siendo el próximo cuello de rendimiento.
+- El informe conserva la advertencia de IndexedDB almacenado, por lo que las
+  cifras absolutas pueden variar. El siguiente cambio debe atacar el retraso
+  de descubrimiento de la imagen LCP sin volver a aumentar el CSS bloqueante.
