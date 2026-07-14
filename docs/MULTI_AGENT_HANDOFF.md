@@ -60,7 +60,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
-| J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. Guards y comportamiento cubiertos por pruebas. Validación local: lint limpio, 26 archivos/95 pruebas y build correcto. Sin migraciones, despliegue ni cambios de producción. |
+| J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. PR #20 fusionado y Worker `1d8ae4c4-8223-4499-b013-7bd0bfe29099` verificado en producción con sesión admin: tres módulos operativos y consola limpia. Sin migraciones ni cambios de datos. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -668,3 +668,11 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia local: lint limpio, 26 archivos/95 pruebas aprobadas y build
   TypeScript/Vite/PWA correcto. No hubo migraciones, despliegue ni cambios en
   datos de producción.
+- PR #20 fusionado en `main` como `8a0a964`; Worker `cubitat1` desplegado como
+  versión `1d8ae4c4-8223-4499-b013-7bd0bfe29099`, activa al 100 %.
+- Verificación productiva autenticada en Chrome: Propiedades mostró 312 anuncios
+  (303 publicados, 9 rechazados por IA y 0 pendientes); Reportes cargó tres
+  registros descartados; Métricas cargó Supabase, Cloudflare y Google Analytics.
+  La navegación entre módulos no produjo errores ni advertencias de consola.
+- La prueba fue exclusivamente de lectura y navegación; no se aprobaron,
+  rechazaron, eliminaron ni modificaron filas productivas.
