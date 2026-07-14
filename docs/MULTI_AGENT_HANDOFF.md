@@ -60,6 +60,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
+| J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. Guards y comportamiento cubiertos por pruebas. Validación local: lint limpio, 26 archivos/95 pruebas y build correcto. Sin migraciones, despliegue ni cambios de producción. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -653,3 +654,17 @@ Usar este formato y conservar las entradas anteriores:
 - El informe conserva la advertencia de IndexedDB almacenado, por lo que las
   cifras absolutas pueden variar. El siguiente cambio debe atacar el retraso
   de descubrimiento de la imagen LCP sin volver a aumentar el CSS bloqueante.
+
+### 2026-07-14 — Codex principal — carril J, modularización administrativa
+
+- `AdminPage` se redujo de aproximadamente 950 a 97 líneas y conserva solo el
+  guard visual, encabezado y selector de sección. No consulta Supabase.
+- Propiedades, reportes y métricas tienen repositorios, hooks y vistas
+  independientes bajo `web/src/modules/admin`; los estados de carga y error no
+  se comparten entre capacidades.
+- La especificación administrativa y la documentación del componente describen
+  el límite modular para futuras funciones. Una prueba de arquitectura impide
+  volver a concentrar acceso a datos en el shell.
+- Evidencia local: lint limpio, 26 archivos/95 pruebas aprobadas y build
+  TypeScript/Vite/PWA correcto. No hubo migraciones, despliegue ni cambios en
+  datos de producción.

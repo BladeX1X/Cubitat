@@ -135,3 +135,25 @@ El sistema MAY usar revision automatica para ayudar al admin sin reemplazar la d
 - THEN SHOULD evaluar texto, imagenes y datos de contacto contra politicas configuradas
 - AND SHOULD marcar riesgos para revision humana
 - AND MUST evitar publicar decisiones irreversibles sin control humano cuando el riesgo sea ambiguo
+
+### Requirement: Arquitectura modular del panel
+El sistema MUST mantener cada capacidad administrativa aislada para que pueda evolucionar sin modificar las demás.
+
+#### Scenario: La página coordina módulos administrativos
+- GIVEN existen las secciones de propiedades, reportes y métricas
+- WHEN se renderiza `AdminPage`
+- THEN la página MUST limitarse al guard, encabezado, navegación y selección de sección
+- AND MUST delegar datos, estados asíncronos, acciones y presentación a módulos independientes bajo `src/modules/admin`
+- AND MUST conservar el lazy loading y los guards existentes de `/moderar`
+
+#### Scenario: Una sección falla de forma aislada
+- GIVEN una consulta de propiedades, reportes o métricas falla
+- WHEN el módulo representa el error
+- THEN MUST mostrar un estado seguro y permitir reintentar su propia consulta
+- AND MUST evitar compartir estado de carga o error con otra sección administrativa
+
+#### Scenario: La refactorización conserva el comportamiento
+- GIVEN el panel anterior permite listar y moderar propiedades, gestionar reportes y consultar métricas
+- WHEN las capacidades se extraen a módulos
+- THEN MUST conservar las mismas acciones, confirmaciones, filtros, paginación y respuestas visibles
+- AND MUST mantener tipos estrictos sin introducir `any`
