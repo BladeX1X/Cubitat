@@ -776,9 +776,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril M, controles de visibilidad
 
-- Estado: **terminado y verificado en producción**. PR #32 preparado desde
-  `feature/property-visibility-controls`; Worker productivo
-  `acddf26b-aeb2-4187-8724-be5795d00c42`.
+- Estado: **terminado y verificado en producción**. PR #32 fusionado en `main`
+  como `91d4212`; Worker productivo `acddf26b-aeb2-4187-8724-be5795d00c42`.
 - Semántica separada: moderación usa `paused` y puede restaurar; propietario usa
   `owner_hidden` y solo ese propietario puede restaurar. Admin, otro usuario y
   automatización quedan bloqueados por trigger mientras la fila siga en
