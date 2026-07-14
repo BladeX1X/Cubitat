@@ -846,3 +846,19 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia de cierre productivo (2026-07-14): Rodolfo confirmó en móvil como
   usuario anónimo que Favorito → invitación → Iniciar sesión permanece visible
   sobre el mapa y funciona sin fallos visibles ni navegación inesperada.
+
+### 2026-07-14 — Codex principal — selector de cuenta Google OAuth
+
+- Estado: **implementado y verificado en local** en
+  `bugfix/google-account-chooser`; fusión, despliegue y verificación productiva
+  pendientes.
+- Causa confirmada: `LoginModal` iniciaba Google OAuth con
+  `access_type=offline`, pero sin el parámetro `prompt`; Google podía reutilizar
+  silenciosamente la única sesión disponible en el dispositivo.
+- Corrección modular: la llamada existente a `signInWithOAuth` conserva el
+  proveedor, callback y branding, y añade `prompt=select_account` para solicitar
+  siempre el selector de cuenta.
+- Evidencia local: nuevo escenario OpenSpec y prueba de regresión sobre los
+  parámetros enviados a Supabase; lint limpio, 40 archivos/146 pruebas y build
+  TypeScript/Vite/PWA correcto. Advertencia conocida: `vendor-maplibre` supera
+  500 kB.

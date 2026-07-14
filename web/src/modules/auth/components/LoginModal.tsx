@@ -56,6 +56,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
+          prompt: 'select_account',
         },
       },
     })
