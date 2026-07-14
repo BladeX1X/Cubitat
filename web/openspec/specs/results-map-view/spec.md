@@ -34,6 +34,13 @@ El modulo MUST exponer un control simple para alternar entre lista y mapa en vie
 - THEN el modulo MUST solicitar cambio a modo lista
 - AND MUST limpiar seleccion local de pin
 
+#### Scenario: Volver desde el detalle conserva el mapa
+- GIVEN el usuario cambia los resultados a modo `Mapa` y abre una propiedad desde la preview
+- WHEN usa `Atrás` para volver a la misma entrada de resultados
+- THEN `ResultsPage` MUST restaurar el modo `Mapa` desde `window.history.state`
+- AND MUST persistir únicamente valores válidos `list` o `map`
+- AND MUST preservar cualquier otro estado existente en la entrada del historial
+
 ### Requirement: Preview de propiedad en mapa
 El modulo MUST mostrar una preview inferior al seleccionar un pin sin navegar automaticamente.
 
