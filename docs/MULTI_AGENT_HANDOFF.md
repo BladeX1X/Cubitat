@@ -746,3 +746,17 @@ Usar este formato y conservar las entradas anteriores:
   denegación de lectura a usuario normal/anónimo y el rechazo de mutaciones en
   una transacción controlada. No se marca el carril como terminado hasta reunir
   esa evidencia sin alterar eventos productivos.
+
+### 2026-07-14 — Codex principal — retorno al mapa desde detalle
+
+- Estado: corrección implementada y verificada en local en
+  `bugfix/restore-map-on-back`; PR #29 abierto, pendiente de revisión, fusión y
+  despliegue.
+- Causa: `ResultsPage` guardaba `viewMode` solo en estado React; al abrir el
+  detalle la página se desmontaba y al volver se iniciaba siempre en lista.
+- Solución: la entrada actual de resultados conserva únicamente `list|map` en
+  `window.history.state` mediante `replaceState`, preservando cualquier otro
+  estado y sin mover la navegación al shell ni al proveedor del mapa.
+- Evidencia: escenario OpenSpec y prueba de regresión; lint limpio, 33 archivos
+  y 128 pruebas aprobadas, build TypeScript/Vite/PWA correcto y sitemap de 1007
+  URLs. Permanece la advertencia conocida del chunk `vendor-maplibre`.

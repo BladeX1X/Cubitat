@@ -14,7 +14,19 @@ import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-ma
 import './ResultsPage.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
+type ResultsViewMode = 'list' | 'map'
 const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
+const RESULTS_VIEW_MODE_HISTORY_KEY = 'resultsViewMode'
+
+function isHistoryState(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getInitialViewMode(): ResultsViewMode {
+  const state: unknown = window.history.state
+  if (!isHistoryState(state)) return 'list'
+  return state[RESULTS_VIEW_MODE_HISTORY_KEY] === 'map' ? 'map' : 'list'
+}
 
 const sortOptions: Array<{ value: SortOption; label: string; helper: string }> = [
   {
@@ -70,7 +82,7 @@ export function ResultsPage({
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertError, setAlertError] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [viewMode, setViewMode] = useState<ResultsViewMode>(getInitialViewMode)
   const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | null>(null)
   const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
   const [isDesktopViewport, setIsDesktopViewport] = useState(false)
@@ -113,6 +125,17 @@ export function ResultsPage({
     if (viewMode === 'list') {
       setMapScopedPropertyIds(null)
     }
+  }, [viewMode])
+
+  useEffect(() => {
+    const currentState: unknown = window.history.state
+    const preservedState = isHistoryState(currentState) ? currentState : {}
+    if (preservedState[RESULTS_VIEW_MODE_HISTORY_KEY] === viewMode) return
+
+    window.history.replaceState({
+      ...preservedState,
+      [RESULTS_VIEW_MODE_HISTORY_KEY]: viewMode,
+    }, '')
   }, [viewMode])
 
   useEffect(() => {

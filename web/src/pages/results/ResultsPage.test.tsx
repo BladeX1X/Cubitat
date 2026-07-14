@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ResultsPage } from './ResultsPage'
 import type { Property } from '../../modules/properties/types'
@@ -21,6 +21,10 @@ beforeAll(() => {
     disconnect = vi.fn()
   }
   (globalThis as any).IntersectionObserver = MockIntersectionObserver as any
+})
+
+afterEach(() => {
+  window.history.replaceState(null, '', window.location.href)
 })
 
 vi.mock('embla-carousel-react', () => {
@@ -234,5 +238,26 @@ describe('ResultsPage', () => {
 
     expect(screen.getByText('Sin resultados')).toBeInTheDocument()
     expect(container.querySelector('.results-empty-state svg')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('restaura el mapa al volver desde detalle y preserva el estado existente del historial', () => {
+    window.history.replaceState({ searchContext: 'preserved' }, '', window.location.href)
+    const props = {
+      filters: mockFilters,
+      properties: mockProperties,
+      onSelectProperty: vi.fn(),
+      onClearFilters: vi.fn(),
+    }
+    const firstRender = render(<ResultsPage {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
+    expect(window.history.state).toEqual({
+      searchContext: 'preserved',
+      resultsViewMode: 'map',
+    })
+    firstRender.unmount()
+
+    render(<ResultsPage {...props} />)
+    expect(screen.getByRole('button', { name: 'Ocultar mapa' })).toBeInTheDocument()
   })
 })

@@ -70,6 +70,11 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 - El popover de ordenamiento se cierra al seleccionar una opcion para evitar que tape el grid.
 - En movil, `/resultados` usa un layout compacto inspirado en portales inmobiliarios: header mas bajo, filtros en una fila, sin resumen descriptivo y con tarjetas reducidas para que se vea mas contenido desde el primer viewport.
 - En movil, la bottom nav se oculta solo en `/resultados` para no tapar las tarjetas y maximizar el espacio de exploracion.
+- El modo visual `list|map` se conserva en `window.history.state` de la entrada
+  actual. Así, abrir un detalle desde la preview y volver con `Atrás` restaura el
+  mapa sin crear una entrada adicional ni sobrescribir otros datos del historial.
+- Cualquier valor de historial distinto de `list` o `map` se ignora y la página
+  usa la lista como fallback seguro.
 
 ## Verificacion Esperada
 
