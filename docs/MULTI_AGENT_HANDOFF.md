@@ -808,8 +808,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril N, orden de carrusel en clusters
 
-- Estado: **implementado y verificado en local** en
-  `bugfix/map-cluster-carousel-order`; producción pendiente.
+- Estado: **fusionado y desplegado; verificación visual móvil pendiente**. PR
+  #34 fusionado como `6a95ec6`; Worker productivo
+  `240fdd88-a0e2-4ac1-9060-b034ecc0de7b` y `/resultados` responde HTTP 200.
 - Causa confirmada: el cluster elegía `ids[0]` como activo, pero la preview
   reconstruía sus tarjetas con el orden del listado general. Cuando ambos
   órdenes diferían, `scrollIntoView` desplazaba el carrusel hasta una tarjeta
@@ -820,6 +821,8 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia: escenario OpenSpec, prueba de regresión A-B-C frente a C-A, lint
   limpio, 39 archivos/142 pruebas y build TypeScript/Vite/PWA correcto.
   Advertencia conocida: `vendor-maplibre` supera 500 kB.
-- Criterio de cierre productivo: fusionar, desplegar y verificar en móvil que un
-  pin agrupado abre el carrusel desde la primera tarjeta sin desplazamiento
-  inicial ni errores de consola.
+- Bloqueo de cierre: la sesión Chrome existente dejó de responder dos veces al
+  aplicar el viewport temporal 390×844 antes de poder pulsar un cluster. No se
+  sustituyó la sesión ni se consideró evidencia visual. Falta verificar en móvil
+  que un pin agrupado abre el carrusel desde la primera tarjeta sin
+  desplazamiento inicial ni errores de consola.
