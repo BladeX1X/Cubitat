@@ -178,6 +178,25 @@ El sistema MUST permitir al anunciante administrar sus propios anuncios sin acce
 - AND MUST actualizar el estado visible de la publicacion
 - AND MUST impedir que el anuncio siga apareciendo en resultados si queda no publicado
 
+#### Scenario: Propietario oculta y restaura sin cambios
+- GIVEN una publicación propia está `published`
+- WHEN el propietario la oculta
+- THEN MUST pasar a `owner_hidden` y salir de resultados públicos
+- AND solo el mismo propietario MUST poder devolverla a `published`
+
+#### Scenario: Propietario edita una publicación oculta
+- GIVEN una publicación propia está `owner_hidden`
+- WHEN el propietario modifica contenido y guarda
+- THEN MUST pasar a `pending_review`
+- AND MUST ejecutar nuevamente la moderación IA antes de reaparecer
+
+#### Scenario: Moderación oculta y restaura
+- GIVEN un administrador oculta una publicación pública con motivo
+- WHEN confirma la acción
+- THEN MUST pasar a `paused`
+- AND solo el administrador MAY devolver una fila `paused` a `published`
+- AND el administrador MUST NOT publicar una fila `owner_hidden`
+
 ### Requirement: Estados de publicacion
 El sistema MUST manejar estados de anuncio de forma consistente entre resultados, detalle, cuenta y moderacion.
 
@@ -187,7 +206,7 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - THEN el sistema MUST incluirla en la experiencia publica si cumple filtros
 
 #### Scenario: Propiedad pausada u oculta
-- GIVEN una propiedad tiene estado `paused`, `hidden`, `draft` o equivalente no publico
+- GIVEN una propiedad tiene estado `paused`, `owner_hidden`, `hidden`, `draft` o equivalente no publico
 - WHEN se cargan resultados publicos
 - THEN el sistema MUST excluirla
 - AND el propietario o admin MAY verla en areas privadas segun permisos

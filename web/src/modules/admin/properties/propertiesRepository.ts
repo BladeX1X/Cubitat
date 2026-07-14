@@ -8,7 +8,7 @@ type ProfileSummary = { id: string; full_name: string | null; email: string | nu
 
 export async function fetchStatusCounts(): Promise<StatusCounts> {
   const statuses: Array<Exclude<StatusFilter, 'all'>> = [
-    'pending_review', 'ai_approved', 'ai_rejected', 'published', 'paused',
+    'pending_review', 'ai_approved', 'ai_rejected', 'published', 'paused', 'owner_hidden',
   ]
   const [allResult, ...statusResults] = await Promise.all([
     supabase.from('properties').select('id', { count: 'exact', head: true }),
@@ -28,6 +28,7 @@ export async function fetchStatusCounts(): Promise<StatusCounts> {
     ai_rejected: statusResults[2]?.count ?? 0,
     published: statusResults[3]?.count ?? 0,
     paused: statusResults[4]?.count ?? 0,
+    owner_hidden: statusResults[5]?.count ?? 0,
   }
 }
 
@@ -79,6 +80,28 @@ export async function updateModerationPropertyStatus(
     .from('properties')
     .update({ status, moderation_message: moderationMessage })
     .eq('id', id)
+  if (error) throw error
+}
+
+export async function hideModerationProperty(id: string, reason: string) {
+  const { error } = await supabase
+    .from('properties')
+    .update({ status: 'paused', moderation_message: reason })
+    .eq('id', id)
+    .eq('status', 'published')
+    .select('id')
+    .single()
+  if (error) throw error
+}
+
+export async function restoreModerationProperty(id: string) {
+  const { error } = await supabase
+    .from('properties')
+    .update({ status: 'published', moderation_message: null })
+    .eq('id', id)
+    .eq('status', 'paused')
+    .select('id')
+    .single()
   if (error) throw error
 }
 

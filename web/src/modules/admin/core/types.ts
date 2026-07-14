@@ -6,6 +6,7 @@ export type StatusFilter =
   | 'ai_rejected'
   | 'published'
   | 'paused'
+  | 'owner_hidden'
   | 'all'
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'

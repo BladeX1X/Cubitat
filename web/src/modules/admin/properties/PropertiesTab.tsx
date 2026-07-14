@@ -51,6 +51,13 @@ export function PropertiesTab() {
             const reason = window.prompt('Escribe el motivo del rechazo. El usuario lo verá en su propiedad.')?.trim()
             if (reason) void state.changeStatus(property.id, 'paused', reason)
           }}
+          onHide={() => {
+            const reason = window.prompt('Escribe el motivo del ocultamiento. El propietario lo verá en su publicación.')?.trim()
+            if (reason) void state.hide(property.id, reason)
+          }}
+          onRestore={() => {
+            if (window.confirm('¿Volver a publicar esta propiedad ocultada por moderación?')) void state.restore(property.id)
+          }}
           onReevaluate={() => void state.reevaluate(property)}
           onDelete={() => {
             if (window.confirm('¿Eliminar esta propiedad? Esta acción no se puede deshacer.')) void state.remove(property.id)

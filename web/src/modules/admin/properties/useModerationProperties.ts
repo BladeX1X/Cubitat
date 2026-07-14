@@ -5,7 +5,9 @@ import {
   deleteModerationProperty,
   fetchModerationProperties,
   fetchStatusCounts,
+  hideModerationProperty,
   requestAiReevaluation,
+  restoreModerationProperty,
   updateModerationPropertyStatus,
 } from './propertiesRepository'
 
@@ -15,6 +17,7 @@ const EMPTY_COUNTS: StatusCounts = {
   ai_rejected: 0,
   published: 0,
   paused: 0,
+  owner_hidden: 0,
   all: 0,
 }
 
@@ -91,6 +94,46 @@ export function useModerationProperties() {
     }
   }, [refreshCounts])
 
+  const hide = useCallback(async (id: string, reason: string) => {
+    setActionLoading(id)
+    setNotice(null)
+    try {
+      await hideModerationProperty(id, reason)
+      setProperties((current) => current.map((property) => (
+        property.id === id
+          ? { ...property, status: 'paused', moderation_message: reason }
+          : property
+      )))
+      setNotice('La publicación quedó oculta por moderación.')
+      await refreshCounts()
+    } catch (caughtReason) {
+      console.error('Error hiding property:', caughtReason)
+      setNotice('No se pudo ocultar la publicación.')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [refreshCounts])
+
+  const restore = useCallback(async (id: string) => {
+    setActionLoading(id)
+    setNotice(null)
+    try {
+      await restoreModerationProperty(id)
+      setProperties((current) => current.map((property) => (
+        property.id === id
+          ? { ...property, status: 'published', moderation_message: null }
+          : property
+      )))
+      setNotice('La publicación volvió a estar visible.')
+      await refreshCounts()
+    } catch (caughtReason) {
+      console.error('Error restoring property:', caughtReason)
+      setNotice('No se pudo volver a publicar. Verifica que fue ocultada por moderación.')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [refreshCounts])
+
   const reevaluate = useCallback(async (property: ModerationProperty) => {
     setActionLoading(property.id)
     try {
@@ -125,6 +168,8 @@ export function useModerationProperties() {
     clearNotice: () => setNotice(null),
     load,
     changeStatus,
+    hide,
+    restore,
     remove,
     reevaluate,
   }

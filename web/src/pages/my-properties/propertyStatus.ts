@@ -2,6 +2,7 @@ export type PropertyStatus =
   | 'published'
   | 'pending_review'
   | 'paused'
+  | 'owner_hidden'
   | 'draft'
   | 'local_draft'
   | 'ai_approved'
@@ -24,10 +25,16 @@ const STATUS_CONFIG: Record<
     dot: 'bg-amber-500',
   },
   paused: {
-    label: 'Oculta',
+    label: 'Oculta por moderación',
     bg: 'bg-neutral-100',
     text: 'text-neutral-500',
     dot: 'bg-neutral-400',
+  },
+  owner_hidden: {
+    label: 'Oculta por ti',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    dot: 'bg-amber-500',
   },
   draft: {
     label: 'Borrador',
