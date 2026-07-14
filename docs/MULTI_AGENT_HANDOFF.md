@@ -749,9 +749,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — retorno al mapa desde detalle
 
-- Estado: corrección implementada y verificada en local en
-  `bugfix/restore-map-on-back`; PR #29 abierto, pendiente de revisión, fusión y
-  despliegue.
+- Estado: terminado y verificado en producción. PR #29 fusionado en `main`
+  como `5de3ead`; Worker `cubitat1` desplegado directamente como
+  `be21f08f-f473-455e-b6c2-d754a8b35813`.
 - Causa: `ResultsPage` guardaba `viewMode` solo en estado React; al abrir el
   detalle la página se desmontaba y al volver se iniciaba siempre en lista.
 - Solución: la entrada actual de resultados conserva únicamente `list|map` en
@@ -760,3 +760,7 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia: escenario OpenSpec y prueba de regresión; lint limpio, 33 archivos
   y 128 pruebas aprobadas, build TypeScript/Vite/PWA correcto y sitemap de 1007
   URLs. Permanece la advertencia conocida del chunk `vendor-maplibre`.
+- Producción móvil 390×844: `/resultados` abrió el mapa, el grupo de La Habana
+  mostró la preview, el primer inmueble abrió su detalle y `Atrás` restauró
+  `/resultados` con el diálogo `Vista de mapa` y el botón `Ocultar mapa`
+  activos. Consola sin errores ni advertencias.

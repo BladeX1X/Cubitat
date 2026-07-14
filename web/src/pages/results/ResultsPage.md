@@ -75,6 +75,10 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
   mapa sin crear una entrada adicional ni sobrescribir otros datos del historial.
 - Cualquier valor de historial distinto de `list` o `map` se ignora y la página
   usa la lista como fallback seguro.
+- Verificado en producción el 2026-07-14 tras PR #29 / `5de3ead`: en viewport
+  390×844, mapa → grupo de La Habana → primer detalle → Atrás restauró el
+  diálogo de mapa y `Ocultar mapa`; consola limpia. Worker verificado
+  `be21f08f-f473-455e-b6c2-d754a8b35813`.
 
 ## Verificacion Esperada
 
