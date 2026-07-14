@@ -849,9 +849,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — selector de cuenta Google OAuth
 
-- Estado: **implementado y verificado en local** en
-  `bugfix/google-account-chooser`; fusión, despliegue y verificación productiva
-  pendientes.
+- Estado: **fusionado y desplegado; verificación visual pendiente**. PR #39
+  fusionado como `ab031ed`; Worker productivo
+  `dce33dc8-d0c7-424c-980b-5bbb58c61742` y la portada responde HTTP 200.
 - Causa confirmada: `LoginModal` iniciaba Google OAuth con
   `access_type=offline`, pero sin el parámetro `prompt`; Google podía reutilizar
   silenciosamente la única sesión disponible en el dispositivo.
@@ -862,3 +862,5 @@ Usar este formato y conservar las entradas anteriores:
   parámetros enviados a Supabase; lint limpio, 40 archivos/146 pruebas y build
   TypeScript/Vite/PWA correcto. Advertencia conocida: `vendor-maplibre` supera
   500 kB.
+- Criterio restante: cerrar sesión con autorización del usuario y confirmar en
+  Chrome que Google presenta el selector sin completar ni modificar cuentas.
