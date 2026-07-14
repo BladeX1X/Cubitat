@@ -9,6 +9,7 @@
 - [x] Integrar solo navegación/render en `AdminPage`.
 - [x] Ejecutar lint, pruebas y build.
 - [x] Actualizar documentación técnica, handoff y notas afectadas del vault.
-- [ ] Cerrar verificación productiva por roles: migración aplicada y lectura
-  admin comprobada; faltan denegación específica a usuario normal/anónimo y
-  rechazo transaccional de mutaciones sin conservar cambios.
+- [x] Cerrar verificación productiva por roles: transacción vinculada con
+  `ROLLBACK`; anónimo denegado, usuario normal con 0 filas, admin con lectura,
+  mutaciones API bloqueadas y guard de inmutabilidad comprobado. Consulta
+  posterior: 0 filas QA persistidas.
