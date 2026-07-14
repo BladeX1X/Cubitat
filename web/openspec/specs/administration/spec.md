@@ -157,3 +157,26 @@ El sistema MUST mantener cada capacidad administrativa aislada para que pueda ev
 - WHEN las capacidades se extraen a módulos
 - THEN MUST conservar las mismas acciones, confirmaciones, filtros, paginación y respuestas visibles
 - AND MUST mantener tipos estrictos sin introducir `any`
+
+### Requirement: Contexto operativo del anunciante
+El sistema MUST ofrecer al administrador contexto mínimo y verificable sobre el anunciante sin exponer datos sensibles innecesarios.
+
+#### Scenario: Admin abre el detalle de una propiedad
+- GIVEN un administrador revisa una propiedad
+- WHEN abre su detalle
+- THEN el sistema MUST cargar bajo demanda la antigüedad de la cuenta, el resumen de publicaciones y los reportes asociados a sus anuncios
+- AND MUST representar estados de carga, error y ausencia de datos sin bloquear el resto del detalle
+- AND MUST evitar mostrar tokens, credenciales, metadatos de sesión o nuevos datos de contacto
+
+#### Scenario: El anunciante presenta señales de riesgo
+- GIVEN existen reportes pendientes, rechazos repetidos o una cuenta reciente
+- WHEN el contexto se resume
+- THEN el sistema MUST mostrar señales determinísticas y explicables
+- AND MUST evitar decisiones automáticas irreversibles sobre el usuario o sus anuncios
+
+#### Scenario: El contexto permanece modular
+- GIVEN el contexto del anunciante es una capacidad administrativa independiente
+- WHEN se integra en el detalle de propiedad
+- THEN MUST vivir bajo `src/modules/admin/advertiser-context`
+- AND MUST encapsular sus consultas, estado asíncrono, reglas derivadas y presentación
+- AND MUST recibir únicamente el identificador del anunciante desde el módulo de propiedades

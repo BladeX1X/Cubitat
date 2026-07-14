@@ -676,3 +676,26 @@ Usar este formato y conservar las entradas anteriores:
   La navegación entre módulos no produjo errores ni advertencias de consola.
 - La prueba fue exclusivamente de lectura y navegación; no se aprobaron,
   rechazaron, eliminaron ni modificaron filas productivas.
+
+### 2026-07-14 — Codex principal — carril K, contexto del anunciante
+
+- Estado: implementación terminada y verificada en local en la rama
+  `feature/admin-advertiser-context`; pendiente de revisión, fusión, despliegue
+  y comprobación productiva.
+- Se añadió `src/modules/admin/advertiser-context` como capacidad independiente:
+  repositorio de solo lectura, hook asíncrono, reglas deterministas y panel UI.
+  El módulo se monta únicamente cuando el administrador expande el detalle de
+  una publicación y recibe solo `userId`.
+- Muestra antigüedad de cuenta, publicaciones por estado, reportes totales y
+  pendientes, última publicación y señales explicables de cuenta reciente,
+  rechazos o reportes. No muestra tokens, metadatos de sesión ni nuevos datos de
+  contacto; ninguna señal toma decisiones automáticas.
+- No hubo migraciones ni cambios remotos. Las consultas reutilizan las políticas
+  RLS administrativas vigentes para `profiles`, `properties` y
+  `property_reports`; no existen botones de mutación en esta capacidad.
+- TDD: se confirmó primero el fallo por módulos ausentes. Resultado final: lint
+  limpio, 28 archivos/101 pruebas, build TypeScript/Vite/PWA correcto, sitemap
+  de 1007 URLs y React Doctor sin incidencias.
+- Pendiente exacto: revisar/fusionar el PR y, tras el despliegue, abrir una
+  publicación con sesión admin para verificar carga real, responsive y consola
+  sin errores. No marcar producción antes de esa evidencia.

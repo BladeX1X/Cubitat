@@ -1,5 +1,6 @@
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
+import { AdvertiserContextPanel } from '../advertiser-context/AdvertiserContextPanel'
 
 export function PropertyDetails({ property }: { property: ModerationProperty }) {
   return (
@@ -29,6 +30,7 @@ export function PropertyDetails({ property }: { property: ModerationProperty }) 
           <p>Teléfono: {property.contact_info.phone || 'N/D'}</p>
         </div>
       )}
+      <AdvertiserContextPanel userId={property.user_id} />
       {property.amenities && property.amenities.length > 0 && (
         <div>
           <h4 className="text-sm font-bold text-neutral-800 mb-2">Amenidades</h4>
