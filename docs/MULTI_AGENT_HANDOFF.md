@@ -33,9 +33,9 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
   - enlace real probado sin el error PKCE entre navegadores;
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
-- Despliegue activo de Cloudflare: versiones `e3ba3db1-c7e5-419f-9348-e5f6b290ffb8`
-  y `f7c6cddb-e56a-4aff-99cb-a60fafaacf42`, publicadas en la misma secuencia
-  de despliegue del Worker `cubitat1` el 2026-07-14.
+- Despliegue activo de Cloudflare: versión
+  `f7c6cddb-e56a-4aff-99cb-a60fafaacf42` del Worker `cubitat1`, publicada el
+  2026-07-14 tras la carga inmediatamente anterior `e3ba3db1-c7e5-419f-9348-e5f6b290ffb8`.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación accesible para administrador. Último estado observado:
   0 pendientes, 9 rechazadas por IA y 303 publicadas.
