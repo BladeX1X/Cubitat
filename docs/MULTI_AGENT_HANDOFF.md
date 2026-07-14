@@ -750,7 +750,8 @@ Usar este formato y conservar las entradas anteriores:
 ### 2026-07-14 — Codex principal — retorno al mapa desde detalle
 
 - Estado: corrección implementada y verificada en local en
-  `bugfix/restore-map-on-back`; pendiente de revisión, fusión y despliegue.
+  `bugfix/restore-map-on-back`; PR #29 abierto, pendiente de revisión, fusión y
+  despliegue.
 - Causa: `ResultsPage` guardaba `viewMode` solo en estado React; al abrir el
   detalle la página se desmontaba y al volver se iniciaba siempre en lista.
 - Solución: la entrada actual de resultados conserva únicamente `list|map` en
