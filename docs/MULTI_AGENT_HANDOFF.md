@@ -459,6 +459,11 @@ Usar este formato y conservar las entradas anteriores:
   TypeScript/Vite/PWA y sitemap de 1007 URLs correctos. `supabase db push
   --linked --dry-run` reconoce solo la migración 41 y confirma que no fue
   aplicada durante esta tarea.
+- GitHub: commit `29fa734` publicado en
+  `origin/feature/security-hardening-phase1`. El PR borrador no pudo crearse:
+  el conector devolvió `404` y dos intentos autenticados con `gh` quedaron sin
+  respuesta; `gh pr list --head feature/security-hardening-phase1` confirmó
+  que no existe un PR duplicado. Reintentar cuando la API de GitHub responda.
 - Pendientes que requieren operación/configuración: matricular TOTP y exigir
   MFA a administradores sin bloquear la cuenta QA; Turnstile en formularios
   públicos; bitácora inmutable de moderación. No se marcan como completados.
