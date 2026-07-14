@@ -829,7 +829,7 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril O, login de favoritos sobre mapa
 
-- Estado: **fusionado y desplegado; verificación visual móvil pendiente**. PR
+- Estado: **terminado y verificado en producción móvil**. PR
   #36 fusionado como `d666ee0`; Worker productivo
   `14af320c-2f19-4f33-9852-890c9da78a2e` y `/resultados` responde HTTP 200.
 - Causa confirmada: el mapa a pantalla completa estaba en la capa `9999`, la
@@ -843,6 +843,6 @@ Usar este formato y conservar las entradas anteriores:
   capas, portal del aviso y portal del login; lint limpio, 40 archivos/145
   pruebas y build TypeScript/Vite/PWA correcto. Advertencia conocida:
   `vendor-maplibre` supera 500 kB.
-- Criterio de cierre productivo restante: verificar en móvil como usuario
-  anónimo que Favorito → invitación → Iniciar sesión permanece visible sobre el
-  mapa, sin navegación inesperada ni errores de consola.
+- Evidencia de cierre productivo (2026-07-14): Rodolfo confirmó en móvil como
+  usuario anónimo que Favorito → invitación → Iniciar sesión permanece visible
+  sobre el mapa y funciona sin fallos visibles ni navegación inesperada.
