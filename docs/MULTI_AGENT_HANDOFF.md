@@ -528,8 +528,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-13 19:35 — Codex principal — CSS por ruta y segundo candidato LCP
 
-- Estado: implementado y verificado en local en `feature/results-critical-css`;
-  pendiente de PR, fusión, despliegue y nueva corrida productiva de Unlighthouse.
+- Estado: PR #14 fusionado en `main` como `becad84`; despliegue funcional
+  verificado en producción. Pendiente solo la nueva corrida de Unlighthouse.
 - Cambio: las dos primeras tarjetas de resultados usan `eager/high` solo en su
   imagen principal y `CubitatApp` inserta hasta dos preloads optimizados. Desde
   la tercera tarjeta se conserva `lazy/low`.
@@ -545,3 +545,8 @@ Usar este formato y conservar las entradas anteriores:
   pendiente por render blocking. Estas cifras locales no sustituyen producción.
 - Calidad: lint limpio; 21 archivos y 82 pruebas aprobadas; build
   TypeScript/Vite/PWA correcto y sitemap de 1007 URLs.
+- Producción: Home carga únicamente `index-Qok1kUM6.css`; la ruta SEO añade
+  `ResultsPage-BR-_O-eB.css`. Chrome confirmó dos preloads, tarjetas 1-2
+  `eager/high`, tarjeta 3 `lazy/low`, una columna móvil sin overflow y consola
+  limpia. No se modificaron datos remotos. Falta comparar un Unlighthouse
+  400/400 contra rendimiento 65, FCP 4.6 s y LCP 6.9 s.
