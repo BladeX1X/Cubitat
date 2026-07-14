@@ -88,13 +88,31 @@ El sistema MUST permitir revisar usuarios solo a roles autorizados y con exposic
 - AND MUST evitar aplicar cambios a usuarios fuera del alcance autorizado
 
 ### Requirement: Auditoria y trazabilidad
-El sistema SHOULD dejar trazabilidad de acciones administrativas sensibles.
+El sistema MUST dejar trazabilidad atómica de acciones administrativas sensibles.
 
 #### Scenario: Registrar accion administrativa
 - GIVEN un admin oculta, elimina o modifica estado de una publicacion
 - WHEN la accion se completa
-- THEN el sistema SHOULD registrar admin, entidad afectada, accion, razon y timestamp
+- THEN el sistema MUST registrar admin, entidad afectada, accion, razon y timestamp en la misma transacción
 - AND MUST mostrar errores si no se pudo completar la accion
+
+#### Scenario: La evidencia permanece inmutable
+- GIVEN existe un evento de moderación registrado
+- WHEN cualquier cliente intenta modificarlo o eliminarlo
+- THEN el sistema MUST rechazar la operación
+- AND MUST conservar el evento aunque la propiedad o el actor ya no existan
+
+#### Scenario: Usuario no administrador consulta la bitácora
+- GIVEN un usuario anónimo o autenticado sin rol admin
+- WHEN consulta eventos de moderación
+- THEN el sistema MUST devolver cero filas o denegar la operación de forma segura
+
+#### Scenario: Admin consulta la bitácora
+- GIVEN un administrador autorizado abre la sección Bitácora
+- WHEN existen eventos de moderación
+- THEN el sistema MUST mostrar acción, propiedad, actor, transición, motivo y fecha
+- AND MUST manejar carga, error, vacío, filtros y paginación de forma aislada
+- AND MUST conservar una presentación legible en móvil sin desplazamiento horizontal obligatorio
 
 ### Requirement: Métricas administrativas
 El sistema MUST limitar las métricas operativas al administrador y representar cada proveedor de forma independiente.
@@ -135,6 +153,13 @@ El sistema MAY usar revision automatica para ayudar al admin sin reemplazar la d
 - THEN SHOULD evaluar texto, imagenes y datos de contacto contra politicas configuradas
 - AND SHOULD marcar riesgos para revision humana
 - AND MUST evitar publicar decisiones irreversibles sin control humano cuando el riesgo sea ambiguo
+
+#### Scenario: Worker aplica el resultado automático
+- GIVEN el Worker completó un análisis válido
+- WHEN actualiza el estado de moderación IA
+- THEN MUST usar un RPC exclusivo de `service_role`
+- AND MUST comprobar la respuesta remota antes de considerar la operación completada
+- AND MUST registrar el evento como automatización sin aceptar un actor enviado por el cliente
 
 ### Requirement: Arquitectura modular del panel
 El sistema MUST mantener cada capacidad administrativa aislada para que pueda evolucionar sin modificar las demás.

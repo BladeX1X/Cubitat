@@ -197,4 +197,14 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     })
     expect(mockRpc).toHaveBeenCalledTimes(2)
   })
+
+  it('abre la bitácora como una sección administrativa aislada', async () => {
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Bitácora' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Bitácora de moderación' })).toBeInTheDocument()
+      expect(screen.getByText(/Evidencia de solo lectura/)).toBeInTheDocument()
+    })
+  })
 })

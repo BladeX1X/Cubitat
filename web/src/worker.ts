@@ -565,25 +565,46 @@ export default {
       }
 
       // Proceso de fondo para no colgar el cliente
-      async function moderateBackground(body: any, authHeader: string, env: Env) {
+      async function moderateBackground(body: any, env: Env) {
         try {
           if (!body.property_id) return; // Si no hay ID, no podemos actualizar
-          
-          if (!env.GROQ_API_KEY) {
-            await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/set_property_ai_moderation`, {
+
+          const applyTrustedModeration = async (
+            status: string,
+            message: string,
+            provider: 'groq' | null
+          ) => {
+            if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+              throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured.');
+            }
+
+            const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/set_property_ai_moderation_trusted`, {
               method: 'POST',
               headers: {
-                'apikey': env.VITE_SUPABASE_ANON_KEY,
-                'Authorization': authHeader,
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
                 'Content-Type': 'application/json',
                 'Prefer': 'return=minimal'
               },
               body: JSON.stringify({
                 p_property_id: body.property_id,
-                p_status: 'pending_review',
-                p_message: 'IA deshabilitada. Pendiente de revisión manual.'
+                p_status: status,
+                p_message: message,
+                p_provider: provider
               })
             });
+
+            if (!response.ok) {
+              throw new Error(`Trusted moderation RPC failed with status ${response.status}.`);
+            }
+          };
+
+          if (!env.GROQ_API_KEY) {
+            await applyTrustedModeration(
+              'pending_review',
+              'IA deshabilitada. Pendiente de revisión manual.',
+              null
+            );
             return;
           }
           
@@ -694,27 +715,14 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             finalReason = 'Fallo de conexión con IA. Pendiente de revisión manual.';
           }
 
-          await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/set_property_ai_moderation`, {
-            method: 'POST',
-            headers: {
-              'apikey': env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': authHeader,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              p_property_id: body.property_id,
-              p_status: finalStatus,
-              p_message: finalReason
-            })
-          });
+          await applyTrustedModeration(finalStatus, finalReason, 'groq');
 
         } catch (error) {
           console.error("Error en moderateBackground:", error);
         }
       }
 
-      ctx.waitUntil(moderateBackground(body, authHeader, env));
+      ctx.waitUntil(moderateBackground(body, env));
 
       return new Response(JSON.stringify({ status: 'processing', reason: 'Moderación iniciada en segundo plano.' }), { 
         status: 202, 

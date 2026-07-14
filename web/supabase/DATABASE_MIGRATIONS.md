@@ -88,10 +88,22 @@ exactamente el orden cronológico de los archivos.
 
 41. `20260713000000_security_hardening.sql`: limita `property_images` y `avatars` a WebP con tamaño acotado, reconcilia políticas Storage por carpeta/propietario y corrige la volatilidad declarada de `get_admin_metrics`.
 
+### Auditoría de moderación — 2026-07-14
+
+42. `20260714000000_create_property_moderation_audit.sql`: crea la bitácora
+    append-only de cambios y eliminaciones de propiedades, RLS de lectura solo
+    para admin, captura atómica, guard de inmutabilidad y RPC IA exclusivo de
+    `service_role`.
+
 Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculado;
 `migration list` sincronizado, `db lint` sin errores y dry-run posterior sin
 migraciones pendientes. No se cargaron ni eliminaron objetos para esta
 verificación.
+
+Estado local 2026-07-14: la migración 42 está versionada pero no aplicada. El
+dry-run contra el proyecto vinculado la enumera como única migración pendiente.
+La base local de Supabase no estaba iniciada, por lo que falta ejecutar el SQL
+en PostgreSQL antes de autorizar producción.
 
 ## Verificación después de aplicar
 
