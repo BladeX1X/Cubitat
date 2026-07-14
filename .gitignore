@@ -6,7 +6,7 @@
 .playwright-cli/
 %TEMP%/
 scratch/
-reports/
+/reports/
 test-results/
 temp_supa/
 node_modules/
