@@ -65,7 +65,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
 | J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. PR #20 fusionado y Worker `1d8ae4c4-8223-4499-b013-7bd0bfe29099` verificado en producción con sesión admin: tres módulos operativos y consola limpia. Sin migraciones ni cambios de datos. |
 | K. Contexto del anunciante | Terminado | Codex principal | PR #22 fusionado y desplegado; contexto real cargado bajo demanda con sesión admin, guard conservado y consola limpia. Inspección visual móvil real queda como pendiente no bloqueante. |
-| L. Bitácora de moderación | En curso | Codex principal | Implementada y validada en local: captura append-only atómica, RLS admin-only, RPC IA confiable y módulo `admin/audit-log`. Cierre requiere aplicar migración 42, desplegar y verificar por roles sin alterar eventos. |
+| L. Bitácora de moderación | En curso | Codex principal | PR #26 fusionado y desplegado; migración 42 sincronizada y bitácora admin verificada en producción con consola limpia. Falta evidencia productiva específica de denegación para usuario normal/anónimo y del rechazo de mutaciones antes de marcar terminado. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -713,8 +713,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril L, bitácora de moderación
 
-- Estado: implementado y verificado en local en
-  `feature/admin-moderation-audit`; no aplicado ni desplegado.
+- Estado: PR #26 fusionado en `main` como `e9e3ea9`, migración 42 aplicada al
+  proyecto vinculado y Worker `cubitat1` desplegado como
+  `c5441ac5-be9e-470a-8f48-b1e2fc868bd7`.
 - Backend: migración 42 con `property_moderation_audit` append-only, datos
   mínimos sin contacto ni fila completa, RLS de lectura solo para admin,
   captura atómica de estado/motivo/eliminación y bloqueo de mutaciones incluso
@@ -730,9 +731,14 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia: lint limpio; 33 archivos y 127 pruebas; build TypeScript/Vite/PWA
   correcto; sitemap de 1007 URLs. Única advertencia conocida: chunk
   `vendor-maplibre` mayor de 500 kB.
-- Supabase: `db push --dry-run --linked` enumera únicamente
-  `20260714000000_create_property_moderation_audit.sql`. La base local estaba
-  detenida, por lo que el SQL aún requiere ejecución real controlada.
-- Pendiente exacto: autorizar aplicación de migración 42; luego desplegar,
-  comprobar lectura admin, denegación a usuario normal/anónimo e inmutabilidad
-  sin modificar eventos productivos existentes.
+- Supabase: `migration list --linked` confirma 42 migraciones sincronizadas;
+  `db lint --linked` no reporta errores y el dry-run posterior no muestra
+  migraciones pendientes.
+- Producción: sesión admin existente abrió `/moderar`, conservó el guard y
+  navegó Propiedades, Reportes, Métricas y Bitácora. La bitácora devolvió el
+  estado vacío esperado y la consola quedó sin errores ni advertencias. La
+  prueba fue solo de lectura y no generó eventos ni modificó datos.
+- Pendiente exacto: comprobar específicamente sobre la tabla nueva la
+  denegación de lectura a usuario normal/anónimo y el rechazo de mutaciones en
+  una transacción controlada. No se marca el carril como terminado hasta reunir
+  esa evidencia sin alterar eventos productivos.

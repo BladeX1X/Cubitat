@@ -9,4 +9,6 @@
 - [x] Integrar solo navegación/render en `AdminPage`.
 - [x] Ejecutar lint, pruebas y build.
 - [x] Actualizar documentación técnica, handoff y notas afectadas del vault.
-- [ ] Aplicar migración y verificar roles en producción únicamente tras autorización.
+- [ ] Cerrar verificación productiva por roles: migración aplicada y lectura
+  admin comprobada; faltan denegación específica a usuario normal/anónimo y
+  rechazo transaccional de mutaciones sin conservar cambios.
