@@ -13,6 +13,8 @@ import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { readPublicationDraft, removePublicationDraft } from '../publish/draftStorage'
 import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
+import { PropertyVisibilityActions } from './PropertyVisibilityActions'
+import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -90,10 +92,16 @@ function PropertyCard({
   property,
   onEdit,
   onDelete,
+  onHide,
+  onRestore,
+  actionLoading,
 }: {
   property: Property
   onEdit: () => void
   onDelete: () => void
+  onHide: () => void
+  onRestore: () => void
+  actionLoading: boolean
 }) {
   return (
     <div className="rounded-2xl shadow-md border border-neutral-100 overflow-hidden bg-white hover:shadow-lg transition-shadow group">
@@ -137,21 +145,29 @@ function PropertyCard({
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 mt-1 pt-3 border-t border-neutral-100">
+        <div className="flex flex-wrap gap-2 mt-1 pt-3 border-t border-neutral-100">
           <Button
             variant="outline"
             size="sm"
             className="flex-1 rounded-xl text-xs"
             onClick={onEdit}
+            disabled={actionLoading}
           >
             <Pencil className="w-3.5 h-3.5" />
             Editar
           </Button>
+          <PropertyVisibilityActions
+            status={property.status}
+            loading={actionLoading}
+            onHide={onHide}
+            onRestore={onRestore}
+          />
           <Button
             variant="ghost"
             size="sm"
             className="flex-1 rounded-xl text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
             onClick={onDelete}
+            disabled={actionLoading}
           >
             <Trash2 className="w-3.5 h-3.5" />
             Eliminar
@@ -227,6 +243,11 @@ export function MyPropertiesPage({
 
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(null)
+  const [visibilityMessage, setVisibilityMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   /* ---- fetch ---- */
   useEffect(() => {
@@ -313,6 +334,39 @@ export function MyPropertiesPage({
     }
   }
 
+  async function handleVisibility(property: Property, nextStatus: 'owner_hidden' | 'published') {
+    const hiding = nextStatus === 'owner_hidden'
+    const confirmed = window.confirm(hiding
+      ? '¿Ocultar esta publicación? Dejará de aparecer públicamente y solo tú podrás volver a publicarla.'
+      : '¿Volver a publicar esta propiedad? Volverá a aparecer en los resultados públicos.')
+    if (!confirmed) return
+
+    setVisibilityLoadingId(property.id)
+    setVisibilityMessage(null)
+    try {
+      if (hiding) await hideOwnProperty(property.id, userId)
+      else await restoreOwnProperty(property.id, userId)
+
+      setProperties((current) => current.map((item) => (
+        item.id === property.id
+          ? { ...item, status: nextStatus, moderation_message: null }
+          : item
+      )))
+      setVisibilityMessage({
+        type: 'success',
+        text: hiding ? 'La publicación quedó oculta.' : 'La propiedad volvió a publicarse.',
+      })
+    } catch (reason) {
+      console.error('Error updating owner property visibility:', reason)
+      setVisibilityMessage({
+        type: 'error',
+        text: 'No se pudo cambiar la visibilidad. Actualiza la página e inténtalo de nuevo.',
+      })
+    } finally {
+      setVisibilityLoadingId(null)
+    }
+  }
+
   /* ---- render ---- */
   return (
     <AccountLayout
@@ -356,6 +410,17 @@ export function MyPropertiesPage({
             </div>
           )}
 
+          {visibilityMessage && (
+            <div
+              role={visibilityMessage.type === 'error' ? 'alert' : 'status'}
+              className={`mb-5 rounded-xl border p-3 text-sm font-medium ${visibilityMessage.type === 'error'
+                ? 'border-red-200 bg-red-50 text-red-800'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}
+            >
+              {visibilityMessage.text}
+            </div>
+          )}
+
           {/* States */}
           {loading ? (
             <LoadingSpinner />
@@ -369,6 +434,9 @@ export function MyPropertiesPage({
                   property={property}
                   onEdit={() => property.id === 'local_draft_id' ? onNewProperty(true) : onEditProperty(property.id)}
                   onDelete={() => handleDelete(property.id)}
+                  onHide={() => void handleVisibility(property, 'owner_hidden')}
+                  onRestore={() => void handleVisibility(property, 'published')}
+                  actionLoading={visibilityLoadingId === property.id}
                 />
               ))}
             </div>

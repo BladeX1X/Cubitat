@@ -1,4 +1,4 @@
-import { Bot, Check, Eye, Loader2, MapPin, Trash2, X } from 'lucide-react'
+import { Bot, Check, Eye, EyeOff, Loader2, MapPin, RotateCcw, Trash2, X } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { formatDate, formatPrice } from '../core/formatters'
 import { STATUS_LABELS } from '../core/constants'
@@ -12,12 +12,14 @@ type Props = {
   onToggle: () => void
   onApprove: () => void
   onReject: () => void
+  onHide: () => void
+  onRestore: () => void
   onReevaluate: () => void
   onDelete: () => void
 }
 
 export function PropertyModerationCard({
-  property, expanded, actionLoading, onToggle, onApprove, onReject, onReevaluate, onDelete,
+  property, expanded, actionLoading, onToggle, onApprove, onReject, onHide, onRestore, onReevaluate, onDelete,
 }: Props) {
   const canReview = ['pending_review', 'ai_approved', 'ai_rejected'].includes(property.status)
   return (
@@ -70,6 +72,16 @@ export function PropertyModerationCard({
                   <Bot className="w-3.5 h-3.5" /> Reevaluar con IA
                 </Button>
               </>
+            )}
+            {property.status === 'published' && (
+              <Button variant="outline" className="rounded-xl text-xs text-amber-700 border-amber-200 hover:bg-amber-50" onClick={onHide} disabled={actionLoading}>
+                <EyeOff className="w-3.5 h-3.5" /> Ocultar con motivo
+              </Button>
+            )}
+            {property.status === 'paused' && (
+              <Button className="rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onRestore} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} Volver a publicar
+              </Button>
             )}
             <Button variant="ghost" className="rounded-xl text-xs text-red-600 hover:bg-red-50" onClick={onDelete} disabled={actionLoading}>
               <Trash2 className="w-3.5 h-3.5" /> Eliminar

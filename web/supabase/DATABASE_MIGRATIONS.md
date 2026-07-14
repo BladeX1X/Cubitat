@@ -95,6 +95,20 @@ exactamente el orden cronológico de los archivos.
     para admin, captura atómica, guard de inmutabilidad y RPC IA exclusivo de
     `service_role`.
 
+### Controles de visibilidad — 2026-07-14
+
+43. `20260714001000_add_owner_hidden_status.sql`: añade `owner_hidden` como
+    estado no público separado del ocultamiento administrativo `paused`.
+44. `20260714002000_property_visibility_controls.sql`: incorpora RPCs
+    exclusivos del propietario para ocultar/restaurar, amplía su política RLS,
+    bloquea mediante trigger que admin, otro usuario o automatización saquen
+    una fila de `owner_hidden` y conserva `pending_review` al editar para repetir
+    la moderación IA.
+
+Estado local 2026-07-14: ambas migraciones detectadas por
+`supabase db push --linked --dry-run`; aplicación y verificación productiva
+pendientes hasta fusionar y desplegar el cambio funcional.
+
 Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculado;
 `migration list` sincronizado, `db lint` sin errores y dry-run posterior sin
 migraciones pendientes. No se cargaron ni eliminaron objetos para esta

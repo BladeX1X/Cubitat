@@ -773,3 +773,23 @@ Usar este formato y conservar las entradas anteriores:
   mostró la preview, el primer inmueble abrió su detalle y `Atrás` restauró
   `/resultados` con el diálogo `Vista de mapa` y el botón `Ocultar mapa`
   activos. Consola sin errores ni advertencias.
+
+### 2026-07-14 — Codex principal — carril M, controles de visibilidad
+
+- Estado: implementación local completa en `feature/property-visibility-controls`.
+- Semántica separada: moderación usa `paused` y puede restaurar; propietario usa
+  `owner_hidden` y solo ese propietario puede restaurar. Admin, otro usuario y
+  automatización quedan bloqueados por trigger mientras la fila siga en
+  `owner_hidden`.
+- Edición segura: si el propietario modifica una fila `owner_hidden`, el flujo
+  existente la guarda como `pending_review` y vuelve a ejecutar moderación IA;
+  restaurar sin cambios sí puede devolverla directamente a `published`.
+- Frontend: filtros/etiquetas independientes en moderación, acciones reversibles
+  en `Mis publicaciones`, carga por tarjeta, confirmaciones y errores visibles;
+  eliminación permanece como acción destructiva separada.
+- Evidencia local: 38 archivos y 141 pruebas aprobadas, build
+  TypeScript/Vite/PWA correcto y dry-run remoto detecta únicamente migraciones
+  43 y 44. Advertencia conocida: `vendor-maplibre` supera 500 kB.
+- Pendiente exacto: aplicar migraciones, desplegar, comprobar UI productiva sin
+  ejecutar acciones sobre contenido real y cerrar transiciones con prueba SQL
+  transaccional/`ROLLBACK`. No marcar terminado antes de esa evidencia.
