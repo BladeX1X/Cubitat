@@ -7,6 +7,7 @@ import { PropertyMap } from '../maps/components/PropertyMap'
 import { formatPrice } from '../../shared/lib/formatPrice'
 import { FilterBar } from '../search/components/FilterBar'
 import type { FilterBarProps } from '../search/components/FilterBar'
+import { orderPropertiesByIds } from './carouselOrder'
 
 const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartamento: 'DEPARTAMENTO',
@@ -180,8 +181,7 @@ function MapOverlay({
 
   const carouselProperties = useMemo(() => {
     if (!carouselPropertyIds || carouselPropertyIds.length === 0) return []
-    const idSet = new Set(carouselPropertyIds)
-    return properties.filter((property) => idSet.has(property.id))
+    return orderPropertiesByIds(properties, carouselPropertyIds)
   }, [carouselPropertyIds, properties])
 
   const hasCarousel = carouselProperties.length > 0

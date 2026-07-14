@@ -56,6 +56,12 @@ El modulo MUST mostrar una preview inferior al seleccionar un pin sin navegar au
 - THEN el sistema MUST navegar al detalle usando el callback externo
 - AND MUST preservar la responsabilidad de navegacion fuera del modulo
 
+#### Scenario: Cluster con varias propiedades
+- GIVEN un cluster contiene varias propiedades en un orden distinto al listado general
+- WHEN el usuario pulsa el cluster
+- THEN el carrusel MUST conservar el orden de ids entregado por el mapa
+- AND la propiedad activa MUST aparecer como primera tarjeta sin desplazamiento inicial
+
 ### Requirement: Acciones flotantes
 El modulo MUST mostrar acciones flotantes utiles y limitadas.
 
