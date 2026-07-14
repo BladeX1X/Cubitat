@@ -191,8 +191,41 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff')
     expect(response.headers.get('X-Frame-Options')).toBe('DENY')
     expect(response.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin')
-    expect(response.headers.get('Content-Security-Policy')).toContain("default-src 'self'")
+    expect(response.headers.get('Strict-Transport-Security')).toBe('max-age=31536000; includeSubDomains')
+    const csp = response.headers.get('Content-Security-Policy') || ''
+    expect(csp).toContain("default-src 'self'")
+    expect(csp).toContain("object-src 'none'")
+    expect(csp).toContain("base-uri 'self'")
+    expect(csp).toContain("form-action 'self'")
+    expect(csp).toContain("frame-ancestors 'none'")
+    expect(csp.match(/script-src[^;]*/)?.[0]).not.toContain("'unsafe-inline'")
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate')
+  })
+
+  it('forwards only explicitly allowed request headers to Supabase', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => (
+      new Response('[]', { status: 200 })
+    ))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/properties?select=id', {
+        headers: {
+          Authorization: 'Bearer user-token',
+          Cookie: 'private-cookie=must-not-leave-origin',
+          'X-Untrusted-Header': 'must-not-be-forwarded',
+          Prefer: 'return=minimal',
+        },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    const forwardedHeaders = new Headers(fetchMock.mock.calls[0]?.[1]?.headers)
+    expect(forwardedHeaders.get('Authorization')).toBe('Bearer user-token')
+    expect(forwardedHeaders.get('Prefer')).toBe('return=minimal')
+    expect(forwardedHeaders.has('Cookie')).toBe(false)
+    expect(forwardedHeaders.has('X-Untrusted-Header')).toBe(false)
   })
 
   it('marks non-canonical environments as non-indexable', async () => {

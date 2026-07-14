@@ -2,6 +2,16 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { getEditableProperty } from './editablePropertyRepository'
 import { useSEO } from '../../shared/hooks/useSEO'
+import {
+  PROPERTY_IMAGE_RULES,
+  validateImageDimensions,
+  validateImageFile,
+} from '../../shared/lib/imageSecurity'
+import {
+  readPublicationDraft,
+  removePublicationDraft,
+  savePublicationDraft,
+} from './draftStorage'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -241,12 +251,13 @@ const cubanMunicipalities: Record<string, string[]> = {
 }
 
 type PublishPageProps = {
+  userId: string
   onBack: () => void
   onSubmitSuccess: () => void
   editPropertyId?: string // When set, the form loads and updates an existing property
 }
 
-export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
+export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
   const isEditMode = Boolean(editPropertyId)
 
   useSEO({
@@ -270,9 +281,8 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('load_draft=true')) {
       try {
-        const savedDraft = localStorage.getItem('cubitat_publish_draft')
-        if (savedDraft) {
-          const parsed = JSON.parse(savedDraft)
+        const parsed = readPublicationDraft(userId)
+        if (parsed) {
           if (parsed && typeof parsed === 'object') {
             setFormData((prev) => ({ ...prev, ...parsed }))
           }
@@ -281,7 +291,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         console.error('Error al cargar borrador automático:', err)
       }
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     if (isEditMode) return
@@ -437,7 +447,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   // Guardar borrador manualmente al pulsar el botón
   function handleSaveDraftManual() {
     try {
-      localStorage.setItem('cubitat_publish_draft', JSON.stringify(formData))
+      savePublicationDraft(userId, formData)
       setShowSaveFeedback(true)
       setTimeout(() => setShowSaveFeedback(false), 2500)
     } catch (err) {
@@ -469,7 +479,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       setImages([])
       setStep(1)
       try {
-        localStorage.removeItem('cubitat_publish_draft')
+        removePublicationDraft(userId)
       } catch (err) {
         console.warn('No se pudo remover el borrador de localStorage:', err)
       }
@@ -486,11 +496,26 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       return
     }
 
+    const validFiles: File[] = []
+    let rejectedFiles = 0
+    for (const file of files) {
+      if (validateImageFile(file, PROPERTY_IMAGE_RULES)) {
+        rejectedFiles++
+      } else {
+        validFiles.push(file)
+      }
+    }
+
+    if (rejectedFiles > 0) {
+      alert(`${rejectedFiles} imágenes fueron rechazadas. Usa JPG, PNG o WebP de hasta 10 MB.`)
+    }
+    if (validFiles.length === 0) return
+
     setIsCompressing(true)
     const newCompressed: typeof images = []
 
     let uploadFailures = 0
-    for (const file of files) {
+    for (const file of validFiles) {
       try {
         const result = await compressToWebP(file)
         newCompressed.push({
@@ -680,7 +705,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       }
       
       setSubmitted(true)
-      localStorage.removeItem('cubitat_publish_draft')
+      removePublicationDraft(userId)
       setTimeout(() => {
         onSubmitSuccess()
       }, 3000)
@@ -1932,12 +1957,20 @@ function PublishSuccessCard() {
 
 /* Compresor WebP offline con Canvas */
 async function compressToWebP(file: File): Promise<{ dataUrl: string; size: number }> {
+  const fileValidationError = validateImageFile(file, PROPERTY_IMAGE_RULES)
+  if (fileValidationError) throw new Error(fileValidationError)
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
       img.onload = () => {
         try {
+          const dimensionError = validateImageDimensions(img.width, img.height, PROPERTY_IMAGE_RULES)
+          if (dimensionError) {
+            reject(new Error(dimensionError))
+            return
+          }
           const canvas = document.createElement('canvas')
           let width = img.width
           let height = img.height

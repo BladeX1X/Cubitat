@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { readPublicationDraft, removePublicationDraft } from '../publish/draftStorage'
 import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
 
 /* ------------------------------------------------------------------ */
@@ -30,6 +31,7 @@ type Property = {
 }
 
 export type MyPropertiesPageProps = {
+  userId: string
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
@@ -212,6 +214,7 @@ export function MyPropertiesEmptyState({ onPublish }: { onPublish: () => void })
 /* ------------------------------------------------------------------ */
 
 export function MyPropertiesPage({
+  userId,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
@@ -249,18 +252,22 @@ export function MyPropertiesPage({
 
         // Cargar borrador local si existe en localStorage
         try {
-          const savedDraft = localStorage.getItem('cubitat_publish_draft')
-          if (savedDraft) {
-            const parsed = JSON.parse(savedDraft)
-            if (parsed && typeof parsed === 'object') {
+          const parsed = readPublicationDraft(userId)
+          if (parsed) {
+              const municipality = typeof parsed.municipality === 'string' ? parsed.municipality : ''
+              const neighborhood = typeof parsed.neighborhood === 'string' ? parsed.neighborhood : ''
+              const province = typeof parsed.province === 'string' ? parsed.province : 'Cuba'
+              const location = typeof parsed.location === 'string'
+                ? parsed.location
+                : `${municipality}, ${province}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
               const propertyTypeName = parsed.propertyType === 'apartamento' ? 'Departamento' : parsed.propertyType === 'casa' ? 'Casa' : 'Terreno'
               const operationName = parsed.operation === 'alquiler' ? 'en renta' : parsed.operation === 'venta' ? 'en venta' : 'en permuta'
-              const draftTitle = `${propertyTypeName} ${operationName} en ${parsed.municipality || parsed.neighborhood || 'Cuba'} (Borrador)`
+              const draftTitle = `${propertyTypeName} ${operationName} en ${municipality || neighborhood || 'Cuba'} (Borrador)`
               
               const localDraftProp: Property = {
                 id: 'local_draft_id',
                 title: draftTitle,
-                location: parsed.location || `${parsed.municipality || ''}, ${parsed.province || 'Cuba'}`.replace(/^,\s*/, '').replace(/,\s*$/, ''),
+                location,
                 price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
                 cover_image: null,
                 status: 'local_draft',
@@ -269,7 +276,6 @@ export function MyPropertiesPage({
                 user_id: user.id,
               }
               finalProperties = [localDraftProp, ...finalProperties]
-            }
           }
         } catch (e) {
           console.error('Error al parsear el borrador local:', e)
@@ -281,7 +287,7 @@ export function MyPropertiesPage({
       }
     }
     load()
-  }, [])
+  }, [userId])
 
   /* ---- delete handler ---- */
   async function handleDelete(propertyId: string) {
@@ -290,7 +296,7 @@ export function MyPropertiesPage({
         '¿Estás seguro de que deseas eliminar este borrador local? Se perderán todos los datos guardados en tu navegador.',
       )
       if (!confirmed) return
-      localStorage.removeItem('cubitat_publish_draft')
+      removePublicationDraft(userId)
       setProperties((prev) => prev.filter((p) => p.id !== 'local_draft_id'))
       return
     }

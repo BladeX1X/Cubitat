@@ -73,6 +73,13 @@ El sistema MUST validar tipo, cantidad y peso de imagenes antes de subir o persi
 - THEN MUST aceptar solo hasta el limite definido
 - AND MUST informar cuantas imagenes quedaron fuera
 
+#### Scenario: Archivo excesivo o imagen de resolucion peligrosa
+- GIVEN un usuario selecciona una imagen para una propiedad o avatar
+- WHEN el archivo supera el limite de entrada o sus dimensiones exceden el maximo seguro
+- THEN el sistema MUST rechazarlo antes de dibujarlo en canvas cuando sea posible
+- AND Storage MUST aceptar solo WebP optimizado con limite de bytes por bucket
+- AND las escrituras MUST quedar aisladas en la carpeta del usuario autenticado
+
 ### Requirement: Seguridad de URLs de imagen
 El sistema MUST tratar URLs de imagen como datos no confiables hasta normalizarlas.
 

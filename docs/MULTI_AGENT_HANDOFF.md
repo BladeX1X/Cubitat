@@ -434,6 +434,35 @@ Usar este formato y conservar las entradas anteriores:
 
 ## Notas de seguridad
 
+### 2026-07-13 22:40 — Codex principal — hardening de seguridad local
+
+- Estado: implementado y verificado en local en
+  `feature/security-hardening-phase1`; pendiente revisión, migración 41,
+  despliegue y comprobación productiva.
+- HTTP/Worker: HSTS anual con `includeSubDomains`; `script-src` elimina
+  `unsafe-inline` y autoriza el JSON-LD estático mediante hash; CSP agrega
+  `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` y
+  `frame-ancestors 'none'`. El proxy de Supabase reenvía solo cabeceras de una
+  lista permitida, con excepciones WebSocket acotadas para Realtime.
+- Storage/media: migración `20260713000000_security_hardening.sql` pendiente de
+  producción. Limita nuevas cargas a WebP (5 MiB en `property_images`, 1 MiB en
+  `avatars`), versiona el bucket de avatares y consolida RLS por carpeta y
+  propietario. El cliente rechaza JPG/PNG/WebP de entrada que excedan 10 MiB
+  para propiedades, 5 MiB para avatar o resoluciones excesivas antes del
+  canvas cuando es posible.
+- Privacidad local: los borradores quedan separados por `user.id`, el formato
+  legado se migra una sola vez, la caché offline omite `contact_info` y se
+  limpia al cerrar sesión.
+- SQL: la migración cambia `get_admin_metrics()` a `VOLATILE`, corrigiendo la
+  advertencia de `supabase db lint --linked` una vez aplicada.
+- Validación: lint limpio; 25 archivos y 93 pruebas; build
+  TypeScript/Vite/PWA y sitemap de 1007 URLs correctos. `supabase db push
+  --linked --dry-run` reconoce solo la migración 41 y confirma que no fue
+  aplicada durante esta tarea.
+- Pendientes que requieren operación/configuración: matricular TOTP y exigir
+  MFA a administradores sin bloquear la cuenta QA; Turnstile en formularios
+  públicos; bitácora inmutable de moderación. No se marcan como completados.
+
 ### 2026-07-13 — Codex principal — endurecimiento posterior a revisión
 
 - Estado: Implementado y verificado en local; PR #4 abierto hacia `main`, pendiente de revisión, fusión y despliegue.

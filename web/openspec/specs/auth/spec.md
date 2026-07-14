@@ -96,6 +96,8 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - WHEN el usuario hace clic en "Cerrar sesión"
 - THEN el sistema MUST invalidar el token de autenticación en Supabase Auth
 - AND el sistema MUST limpiar el estado de sesión local
+- AND el sistema MUST limpiar la cache offline que pueda conservar datos de la sesion anterior
+- AND MUST eliminar cualquier borrador legado no asociado a un usuario
 - AND el sistema MUST redirigir a la página de inicio (/)
 
 #### Scenario: Recuperación de contraseña
