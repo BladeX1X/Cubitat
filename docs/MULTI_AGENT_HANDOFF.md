@@ -714,8 +714,10 @@ Usar este formato y conservar las entradas anteriores:
 ### 2026-07-14 — Codex principal — carril L, bitácora de moderación
 
 - Estado: PR #26 fusionado en `main` como `e9e3ea9`, migración 42 aplicada al
-  proyecto vinculado y Worker `cubitat1` desplegado como
-  `c5441ac5-be9e-470a-8f48-b1e2fc868bd7`.
+  proyecto vinculado y Worker `cubitat1` desplegado directamente como
+  `c5441ac5-be9e-470a-8f48-b1e2fc868bd7`; el despliegue automático posterior
+  produjo el artefacto funcional verificado
+  `61c9067b-7e08-4328-8463-183d8d5526d7`.
 - Backend: migración 42 con `property_moderation_audit` append-only, datos
   mínimos sin contacto ni fila completa, RLS de lectura solo para admin,
   captura atómica de estado/motivo/eliminación y bloqueo de mutaciones incluso
@@ -738,6 +740,8 @@ Usar este formato y conservar las entradas anteriores:
   navegó Propiedades, Reportes, Métricas y Bitácora. La bitácora devolvió el
   estado vacío esperado y la consola quedó sin errores ni advertencias. La
   prueba fue solo de lectura y no generó eventos ni modificó datos.
+- Los despliegues automáticos posteriores que solo cambien documentación pueden
+  rotar el ID activo sin cambiar el código web verificado.
 - Pendiente exacto: comprobar específicamente sobre la tabla nueva la
   denegación de lectura a usuario normal/anónimo y el rechazo de mutaciones en
   una transacción controlada. No se marca el carril como terminado hasta reunir
