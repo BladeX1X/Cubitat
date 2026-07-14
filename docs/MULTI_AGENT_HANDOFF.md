@@ -680,8 +680,8 @@ Usar este formato y conservar las entradas anteriores:
 ### 2026-07-14 — Codex principal — carril K, contexto del anunciante
 
 - Estado: implementación terminada y verificada en local en la rama
-  `feature/admin-advertiser-context`; pendiente de revisión, fusión, despliegue
-  y comprobación productiva.
+  `feature/admin-advertiser-context`; PR #22 abierto hacia `main`, pendiente de
+  revisión, fusión, despliegue y comprobación productiva.
 - Se añadió `src/modules/admin/advertiser-context` como capacidad independiente:
   repositorio de solo lectura, hook asíncrono, reglas deterministas y panel UI.
   El módulo se monta únicamente cuando el administrador expande el detalle de
