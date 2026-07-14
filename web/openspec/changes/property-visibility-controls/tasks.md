@@ -8,4 +8,4 @@
 - [x] Implementar ocultar/restaurar en Mis publicaciones.
 - [x] Ejecutar lint, pruebas, build y dry-run de Supabase.
 - [x] Actualizar documentación técnica, handoff y vault con estado local.
-- [ ] Aplicar migración, desplegar y verificar producción sin alterar datos reales.
+- [x] Aplicar migración, desplegar y verificar producción sin alterar datos reales.

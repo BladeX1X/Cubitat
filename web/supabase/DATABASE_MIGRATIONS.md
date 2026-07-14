@@ -105,9 +105,15 @@ exactamente el orden cronológico de los archivos.
     una fila de `owner_hidden` y conserva `pending_review` al editar para repetir
     la moderación IA.
 
-Estado local 2026-07-14: ambas migraciones detectadas por
-`supabase db push --linked --dry-run`; aplicación y verificación productiva
-pendientes hasta fusionar y desplegar el cambio funcional.
+Verificación productiva 2026-07-14: migraciones 43 y 44 aplicadas al proyecto
+vinculado. `migration list --linked` confirma 44 migraciones sincronizadas,
+`db lint --linked` no reporta errores y el dry-run posterior indica que la base
+remota está actualizada. Una prueba SQL transaccional con `ROLLBACK` verificó
+los ciclos `published → owner_hidden → published`,
+`owner_hidden → pending_review` y `published → paused → published`; también
+confirmó que anónimo, otro usuario, admin y `service_role` no pueden restaurar
+el ocultamiento del propietario. Una consulta independiente posterior confirmó
+0 filas del marcador QA, por lo que no se modificó contenido productivo.
 
 Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculado;
 `migration list` sincronizado, `db lint` sin errores y dry-run posterior sin

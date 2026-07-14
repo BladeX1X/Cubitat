@@ -776,7 +776,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril M, controles de visibilidad
 
-- Estado: implementación local completa en `feature/property-visibility-controls`.
+- Estado: **terminado y verificado en producción**. PR #32 preparado desde
+  `feature/property-visibility-controls`; Worker productivo
+  `acddf26b-aeb2-4187-8724-be5795d00c42`.
 - Semántica separada: moderación usa `paused` y puede restaurar; propietario usa
   `owner_hidden` y solo ese propietario puede restaurar. Admin, otro usuario y
   automatización quedan bloqueados por trigger mientras la fila siga en
@@ -787,9 +789,20 @@ Usar este formato y conservar las entradas anteriores:
 - Frontend: filtros/etiquetas independientes en moderación, acciones reversibles
   en `Mis publicaciones`, carga por tarjeta, confirmaciones y errores visibles;
   eliminación permanece como acción destructiva separada.
-- Evidencia local: 38 archivos y 141 pruebas aprobadas, build
-  TypeScript/Vite/PWA correcto y dry-run remoto detecta únicamente migraciones
-  43 y 44. Advertencia conocida: `vendor-maplibre` supera 500 kB.
-- Pendiente exacto: aplicar migraciones, desplegar, comprobar UI productiva sin
-  ejecutar acciones sobre contenido real y cerrar transiciones con prueba SQL
-  transaccional/`ROLLBACK`. No marcar terminado antes de esa evidencia.
+- Evidencia de calidad: lint limpio, 38 archivos y 141 pruebas aprobadas y build
+  TypeScript/Vite/PWA correcto. Advertencia conocida: `vendor-maplibre` supera
+  500 kB.
+- Evidencia Supabase productiva: migraciones 43/44 aplicadas; 44 migraciones
+  locales/remotas sincronizadas, `db lint --linked` sin errores y dry-run sin
+  pendientes. Prueba SQL transaccional con `ROLLBACK` confirmó que anónimo y
+  otro usuario no pueden usar los RPC del propietario; el propietario puede
+  ocultar/restaurar y editar hacia `pending_review`; admin y `service_role` no
+  pueden sacar una fila de `owner_hidden`; admin sí puede completar
+  `published → paused → published`. Consulta independiente posterior: 0 filas
+  QA persistidas.
+- Evidencia UI productiva en la sesión Chrome existente: `/moderar` muestra
+  filtros separados `Ocultas por moderación` y `Ocultas por propietario`; las
+  publicadas ofrecen `Ocultar con motivo` y `Eliminar` como acciones distintas;
+  `/mis-propiedades` ofrece `Ocultar` al propietario. No se accionó ningún
+  control mutante. Consola de Cubitat sin errores ni avisos relevantes; el único
+  warning observado pertenece a una extensión de Chrome ajena al sitio.
