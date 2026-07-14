@@ -131,6 +131,12 @@ El sistema MUST permitir el registro e inicio de sesión rápido utilizando prov
 - AND tras la autenticación exitosa, el sistema MUST crear o sincronizar automáticamente el perfil del usuario en la tabla `profiles` con el rol `user` por defecto
 - AND el sistema MUST redirigir al usuario al `/auth/callback` para establecer la sesión y finalmente llevarlo a su panel.
 
+#### Scenario: Google solicita elegir la cuenta
+- GIVEN un usuario con una o varias sesiones de Google disponibles en el navegador
+- WHEN inicia el flujo mediante el boton de Google
+- THEN el sistema MUST solicitar al proveedor que muestre el selector de cuenta
+- AND MUST evitar elegir silenciosamente la unica cuenta abierta en el dispositivo
+
 ### Requirement: Resiliencia de Red y Sesiones (Offline & Refresh)
 El sistema MUST reaccionar adecuadamente ante la pérdida de conectividad y expirar/renovar tokens de forma transparente.
 
