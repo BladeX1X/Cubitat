@@ -513,5 +513,15 @@ Usar este formato y conservar las entradas anteriores:
   variantes 480/768/1200, provincias 420/q45 en `lazy/low` y resultados con
   solo la primera imagen `eager/high`. Consola limpia en home y ruta SEO de
   Holguín. No se modificaron datos remotos.
-- Pendiente: repetir Unlighthouse sin caché para cuantificar el impacto contra
-  la línea base 95/80.
+- Unlighthouse posterior al despliegue completado el 2026-07-13 (400/400):
+  total 95, rendimiento 82, accesibilidad 100, buenas prácticas 100 y SEO 100.
+  Home pasó de rendimiento 66 a 91, FCP 4.6 s a 2.1 s y LCP 6.2 s a 3.3 s;
+  TBT 0 ms y CLS 0.001. El ahorro estimado de imágenes bajó de ~190 KiB a
+  30 KiB y el bloqueo estimado de CSS en home de 740 ms a 140 ms.
+- Las rutas de resultados mejoraron menos: las peores observadas quedaron en
+  rendimiento 65, FCP 4.6 s y LCP 6.9 s (antes 7.4 s). Conservan CSS global de
+  159 KiB con ahorro estimado de FCP de 740 ms y 42-47 KiB de imágenes.
+- Hallazgo para el siguiente cambio: en móvil la segunda tarjeta puede ser el
+  elemento LCP, pero recibe `loading="lazy"` y `fetchpriority="low"`; evaluar
+  priorizar las primeras dos tarjetas y dividir CSS por ruta. El informe avisa
+  que IndexedDB almacenado puede afectar la variabilidad de las muestras.
