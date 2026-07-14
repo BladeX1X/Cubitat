@@ -64,6 +64,8 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
 | J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. PR #20 fusionado y Worker `1d8ae4c4-8223-4499-b013-7bd0bfe29099` verificado en producción con sesión admin: tres módulos operativos y consola limpia. Sin migraciones ni cambios de datos. |
+| K. Contexto del anunciante | Terminado | Codex principal | PR #22 fusionado y desplegado; contexto real cargado bajo demanda con sesión admin, guard conservado y consola limpia. Inspección visual móvil real queda como pendiente no bloqueante. |
+| L. Bitácora de moderación | En curso | Codex principal | Implementada y validada en local: captura append-only atómica, RLS admin-only, RPC IA confiable y módulo `admin/audit-log`. Cierre requiere aplicar migración 42, desplegar y verificar por roles sin alterar eventos. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -708,3 +710,29 @@ Usar este formato y conservar las entradas anteriores:
 - Pendiente no bloqueante: repetir únicamente la inspección visual responsive
   en un móvil real; la carga, los datos, el guard y la consola ya quedaron
   verificados en producción.
+
+### 2026-07-14 — Codex principal — carril L, bitácora de moderación
+
+- Estado: implementado y verificado en local en
+  `feature/admin-moderation-audit`; no aplicado ni desplegado.
+- Backend: migración 42 con `property_moderation_audit` append-only, datos
+  mínimos sin contacto ni fila completa, RLS de lectura solo para admin,
+  captura atómica de estado/motivo/eliminación y bloqueo de mutaciones incluso
+  para operaciones normales con `service_role`.
+- Moderación IA: nuevo RPC `set_property_ai_moderation_trusted` exclusivo de
+  `service_role`; el Worker usa el secreto servidor, valida la respuesta y solo
+  identifica Groq cuando hubo un intento real. Corrige el posible fallo
+  silencioso del RPC anterior con JWT de propietario.
+- Frontend: módulo independiente `src/modules/admin/audit-log` con repositorio,
+  hook, filtros en servidor, paginación, respuestas obsoletas ignoradas,
+  tarjetas mobile-first y estados de carga/error/vacío. `AdminPage` conserva
+  guard y solo añade navegación/render.
+- Evidencia: lint limpio; 33 archivos y 127 pruebas; build TypeScript/Vite/PWA
+  correcto; sitemap de 1007 URLs. Única advertencia conocida: chunk
+  `vendor-maplibre` mayor de 500 kB.
+- Supabase: `db push --dry-run --linked` enumera únicamente
+  `20260714000000_create_property_moderation_audit.sql`. La base local estaba
+  detenida, por lo que el SQL aún requiere ejecución real controlada.
+- Pendiente exacto: autorizar aplicación de migración 42; luego desplegar,
+  comprobar lectura admin, denegación a usuario normal/anónimo e inmutabilidad
+  sin modificar eventos productivos existentes.

@@ -114,6 +114,117 @@ describe('Cloudflare Worker security contract', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Invalid JSON' })
   })
 
+  it('applies AI moderation through the trusted RPC with service-role credentials', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    expect(response.status).toBe(202)
+    const backgroundPromise = context.waitUntil.mock.calls[0]?.[0] as Promise<void>
+    await backgroundPromise
+
+    expect(fetchMock).toHaveBeenNthCalledWith(3,
+      'https://example.supabase.co/rest/v1/rpc/set_property_ai_moderation_trusted',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    const rpcHeaders = new Headers(fetchMock.mock.calls[2]?.[1]?.headers)
+    expect(rpcHeaders.get('apikey')).toBe('server-only-service-role-key')
+    expect(rpcHeaders.get('Authorization')).toBe('Bearer server-only-service-role-key')
+    expect(rpcHeaders.get('Authorization')).not.toBe('Bearer owner-token')
+    expect(JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))).toMatchObject({
+      p_provider: null,
+    })
+  })
+
+  it('marks Groq as provider only after a real Groq moderation attempt', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ status: 'ai_approved', reason: 'Cumple.' }) } }],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      {
+        ...createEnv(),
+        GROQ_API_KEY: 'groq-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
+      p_status: 'ai_approved',
+      p_provider: 'groq',
+    })
+  })
+
+  it('reports a failed trusted moderation RPC instead of accepting it silently', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('database unavailable', { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error en moderateBackground:',
+      expect.objectContaining({ message: expect.stringContaining('503') }),
+    )
+  })
+
   it.each([
     ['POST', '/api/ai-moderate', JSON.stringify({ property_id: crypto.randomUUID() })],
     ['GET', '/api/metrics', undefined],

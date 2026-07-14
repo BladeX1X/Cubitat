@@ -20,6 +20,9 @@ Cada capacidad vive bajo `src/modules/admin`:
 - `advertiser-context`: resumen de actividad y señales explicables del
   anunciante, cargado únicamente al expandir una publicación. Recibe solo el
   identificador del usuario y no ejecuta mutaciones.
+- `audit-log`: consulta paginada y de solo lectura de cambios/eliminaciones de
+  propiedades. Encapsula filtros, estado asíncrono, formateo y tarjetas
+  mobile-first sin depender de los módulos de propiedades, reportes o métricas.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.
@@ -47,6 +50,8 @@ y no contienen reglas específicas de otro módulo.
 - Métricas de Supabase, Cloudflare y Analytics con errores aislados.
 - Contexto del anunciante bajo demanda: antigüedad, publicaciones, reportes y
   señales orientativas que siempre requieren revisión humana.
+- Bitácora administrativa con filtros por acción/origen, búsqueda de propiedad,
+  orden estable y estados de carga, error y vacío aislados.
 
 ## Verificación
 
@@ -57,3 +62,5 @@ los flujos visibles principales.
 El contexto del anunciante añade pruebas unitarias para sus reglas, estados de
 carga/error y contrato de integración sin acceso directo a Supabase desde
 `PropertyDetails`.
+La bitácora añade pruebas de repositorio, hook, formateadores, tarjetas y shell;
+la prueba arquitectónica impide que importe detalles internos de otros módulos.

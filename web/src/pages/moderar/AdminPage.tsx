@@ -3,6 +3,7 @@ import { Building2, Loader2 } from 'lucide-react'
 import { MetricsTab } from '../../modules/admin/metrics/MetricsTab'
 import { PropertiesTab } from '../../modules/admin/properties/PropertiesTab'
 import { ReportsTab } from '../../modules/admin/reports/ReportsTab'
+import { AuditLogTab } from '../../modules/admin/audit-log/AuditLogTab'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
@@ -15,6 +16,7 @@ type AdminPageProps = {
 const SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'properties', label: 'Propiedades' },
   { id: 'reports', label: 'Reportes' },
+  { id: 'audit', label: 'Bitácora' },
   { id: 'metrics', label: 'Métricas' },
 ]
 
@@ -64,14 +66,14 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
           </p>
         </div>
 
-        <nav aria-label="Secciones de moderación" className="flex h-fit w-fit shrink-0 gap-2 rounded-full bg-neutral-100 p-1.5">
+        <nav aria-label="Secciones de moderación" className="flex h-fit w-full gap-2 overflow-x-auto rounded-xl bg-neutral-100 p-1.5 sm:w-fit sm:rounded-full">
           {SECTIONS.map((section) => (
             <button
               key={section.id}
               type="button"
               aria-current={activeSection === section.id ? 'page' : undefined}
               onClick={() => setActiveSection(section.id)}
-              className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
                 activeSection === section.id
                   ? 'bg-[#035f53] text-white shadow-sm'
                   : 'text-neutral-600 hover:text-neutral-900'
@@ -86,6 +88,7 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
       {activeSection === 'properties' && <PropertiesTab />}
       {activeSection === 'reports' && <ReportsTab />}
       {activeSection === 'metrics' && <MetricsTab />}
+      {activeSection === 'audit' && <AuditLogTab />}
     </div>
   )
 }
