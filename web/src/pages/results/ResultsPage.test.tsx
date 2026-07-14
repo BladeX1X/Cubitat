@@ -189,8 +189,15 @@ describe('ResultsPage', () => {
     expect(titles[1]).toBe('Ver Casa en Playa')
   })
 
-  it('prioriza solo la primera imagen visible del catalogo', () => {
-    const propertiesWithImages = mockProperties.map((property, index) => ({
+  it('prioriza las dos primeras imagenes visibles y difiere las siguientes', () => {
+    const propertiesWithImages = [
+      ...mockProperties,
+      {
+        ...mockProperties[0],
+        id: 'prop-3',
+        title: 'Casa en Centro Habana',
+      },
+    ].map((property, index) => ({
       ...property,
       coverImage: `https://images.unsplash.com/photo-${index + 1}?w=900&q=80`,
     }))
@@ -209,8 +216,10 @@ describe('ResultsPage', () => {
     expect(images[0]).toHaveAttribute('fetchpriority', 'high')
     expect(images[0].src).toContain('w=420')
     expect(images[0].src).toContain('q=45')
-    expect(images[1]).toHaveAttribute('loading', 'lazy')
-    expect(images[1]).toHaveAttribute('fetchpriority', 'low')
+    expect(images[1]).toHaveAttribute('loading', 'eager')
+    expect(images[1]).toHaveAttribute('fetchpriority', 'high')
+    expect(images[2]).toHaveAttribute('loading', 'lazy')
+    expect(images[2]).toHaveAttribute('fetchpriority', 'low')
   })
 
   it('muestra un estado vacio accesible sin resultados', () => {

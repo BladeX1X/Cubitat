@@ -525,3 +525,23 @@ Usar este formato y conservar las entradas anteriores:
   elemento LCP, pero recibe `loading="lazy"` y `fetchpriority="low"`; evaluar
   priorizar las primeras dos tarjetas y dividir CSS por ruta. El informe avisa
   que IndexedDB almacenado puede afectar la variabilidad de las muestras.
+
+### 2026-07-13 19:35 — Codex principal — CSS por ruta y segundo candidato LCP
+
+- Estado: implementado y verificado en local en `feature/results-critical-css`;
+  pendiente de PR, fusión, despliegue y nueva corrida productiva de Unlighthouse.
+- Cambio: las dos primeras tarjetas de resultados usan `eager/high` solo en su
+  imagen principal y `CubitatApp` inserta hasta dos preloads optimizados. Desde
+  la tercera tarjeta se conserva `lazy/low`.
+- CSS: los estilos exclusivos de catálogo, filtros móviles y mapa se extrajeron
+  a `ResultsPage.css`, cargado junto con la ruta lazy. El CSS global minificado
+  bajó de 158.41 KiB a 124.47 KiB; el chunk de resultados mide 33.96 KiB.
+- Verificación funcional: Home solo solicitó el CSS global; resultados solicitó
+  ambos chunks. Chrome confirmó dos preloads, las dos primeras tarjetas
+  `eager/high`, la tercera `lazy/low`, layout móvil de una columna y consola
+  sin errores ni advertencias relevantes.
+- Evidencia local instrumentada (390x844, Slow 4G, CPU x4): Home LCP 836 ms y
+  CLS 0; resultados LCP 1.392 s y CLS 0. El análisis estimó 0 ms de ahorro
+  pendiente por render blocking. Estas cifras locales no sustituyen producción.
+- Calidad: lint limpio; 21 archivos y 82 pruebas aprobadas; build
+  TypeScript/Vite/PWA correcto y sitemap de 1007 URLs.

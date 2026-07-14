@@ -34,7 +34,7 @@ El sistema MUST optimizar URLs y atributos de imagen segun contexto de uso.
 #### Scenario: Imagen prioritaria en resultados
 - GIVEN se renderiza la primera pagina de resultados
 - WHEN las primeras tarjetas entran sobre el fold
-- THEN el sistema MAY usar carga prioritaria solo para la imagen principal de la primera tarjeta
+- THEN el sistema MAY usar carga prioritaria solo para la imagen principal de las dos primeras tarjetas
 - AND las tarjetas posteriores SHOULD usar lazy loading y prioridad de red baja
 
 #### Scenario: Imagenes comerciales bajo el fold

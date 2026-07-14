@@ -398,19 +398,22 @@ export function CubitatApp() {
   useEffect(() => {
     if (pageMode !== 'results') return
 
-    const firstImage = visibleProperties[0]?.coverImage
-      ? optimizePropertyCardImage(visibleProperties[0].coverImage)
-      : undefined
-    if (!firstImage) return
+    const priorityImages = visibleProperties
+      .slice(0, 2)
+      .map((property) => property.coverImage ? optimizePropertyCardImage(property.coverImage) : undefined)
+      .filter((image): image is string => Boolean(image))
 
-    const link = document.createElement('link')
-    link.rel = 'preload'
-    link.as = 'image'
-    link.href = firstImage
-    link.fetchPriority = 'high'
-    document.head.appendChild(link)
+    const links = priorityImages.map((image) => {
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.href = image
+      link.fetchPriority = 'high'
+      document.head.appendChild(link)
+      return link
+    })
 
-    return () => { link.remove() }
+    return () => { links.forEach((link) => link.remove()) }
   }, [pageMode, visibleProperties])
 
   const selectedProperty = properties.find(

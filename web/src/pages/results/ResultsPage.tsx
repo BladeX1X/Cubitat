@@ -11,6 +11,7 @@ import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
+import './ResultsPage.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
 const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
@@ -369,7 +370,7 @@ export function ResultsPage({
                     property={property}
                     isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
                     onSelect={onSelectProperty}
-                    prioritizeImage={index === 0}
+                    prioritizeImage={index < 2}
                   />
                 </div>
               ))

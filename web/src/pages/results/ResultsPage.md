@@ -89,7 +89,11 @@ Prueba manual:
 - Confirmar que aparecen tarjetas.
 - Confirmar que seleccionar una tarjeta actualiza el estado seleccionado.
 
-## Hardening de imágenes 2026-07-13
+## Hardening de imágenes y CSS 2026-07-13
 
-- Solo la primera tarjeta del catálogo prioriza su imagen.
-- Las tarjetas restantes usan carga diferida y prioridad de red baja para no competir con el LCP.
+- Las dos primeras tarjetas del catálogo priorizan solo su imagen principal,
+  porque cualquiera de ellas puede convertirse en LCP según el viewport.
+- Desde la tercera tarjeta, las imágenes usan carga diferida y prioridad de red
+  baja para no competir con el contenido sobre el fold.
+- `ResultsPage.css` se carga con la ruta lazy de resultados; los estilos
+  exclusivos del catálogo, filtros móviles y mapa no bloquean la portada.
