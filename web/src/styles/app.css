@@ -1886,7 +1886,6 @@ h2 {
 .login-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 220;
   display: block;
   background: #fff;
   overflow-y: auto;

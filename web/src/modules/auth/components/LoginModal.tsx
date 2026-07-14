@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
+import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { getAuthRedirectUrl } from '../utils/authRedirects'
 
@@ -247,6 +248,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
   return createPortal(
     <div
       className={`login-modal-overlay ${isClosing ? 'closing' : ''}`}
+      style={MODAL_LAYER_STYLE}
       id="login"
       aria-label="Inicio de sesion"
       role="dialog"

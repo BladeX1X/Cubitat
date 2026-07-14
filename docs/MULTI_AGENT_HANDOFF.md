@@ -826,3 +826,22 @@ Usar este formato y conservar las entradas anteriores:
   sustituyó la sesión ni se consideró evidencia visual. Falta verificar en móvil
   que un pin agrupado abre el carrusel desde la primera tarjeta sin
   desplazamiento inicial ni errores de consola.
+
+### 2026-07-14 — Codex principal — carril O, login de favoritos sobre mapa
+
+- Estado: **implementado y verificado en local** en
+  `bugfix/map-favorite-login-layer`; producción pendiente.
+- Causa confirmada: el mapa a pantalla completa estaba en la capa `9999`, la
+  invitación de favoritos en `100` y el login en `220`; el estado se abría, pero
+  ambos diálogos quedaban visualmente detrás del portal del mapa.
+- Corrección modular: `shared/ui/layers.ts` define las capas de mapa y modal. La
+  invitación de favoritos ahora usa portal directo a `document.body`, semántica
+  accesible de diálogo y la misma capa `10030` que `LoginModal`; el mapa conserva
+  la capa `9999`.
+- Evidencia: escenario OpenSpec y tres pruebas de regresión para relación de
+  capas, portal del aviso y portal del login; lint limpio, 40 archivos/145
+  pruebas y build TypeScript/Vite/PWA correcto. Advertencia conocida:
+  `vendor-maplibre` supera 500 kB.
+- Criterio de cierre productivo: fusionar, desplegar y verificar como usuario
+  anónimo que Favorito → invitación → Iniciar sesión permanece visible sobre el
+  mapa, sin navegación inesperada ni errores de consola.

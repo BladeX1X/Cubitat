@@ -7,6 +7,7 @@ import { PropertyMap } from '../maps/components/PropertyMap'
 import { formatPrice } from '../../shared/lib/formatPrice'
 import { FilterBar } from '../search/components/FilterBar'
 import type { FilterBarProps } from '../search/components/FilterBar'
+import { MAP_FULLSCREEN_LAYER_STYLE } from '../../shared/ui/layers'
 import { orderPropertiesByIds } from './carouselOrder'
 
 const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
@@ -206,7 +207,12 @@ function MapOverlay({
   }, [])
 
   return createPortal(
-    <div className="map-fullscreen-overlay" role="dialog" aria-label="Vista de mapa">
+    <div
+      className="map-fullscreen-overlay"
+      style={MAP_FULLSCREEN_LAYER_STYLE}
+      role="dialog"
+      aria-label="Vista de mapa"
+    >
       <div className="map-overlay-filterbar">
         <FilterBar {...filterBarProps} isSticky={false} />
       </div>

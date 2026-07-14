@@ -27,6 +27,13 @@ El sistema MUST permitir guardar propiedades desde catalogo, detalle y previews 
 - THEN el sistema MUST aplicar el mismo flujo de favorito que en catalogo y detalle
 - AND MUST mantener al usuario en la vista de mapa
 
+#### Scenario: Usuario anonimo guarda desde mapa a pantalla completa
+- GIVEN un usuario sin sesion ve una preview dentro del mapa a pantalla completa
+- WHEN pulsa el boton de favorito
+- THEN la invitacion de inicio de sesion MUST renderizarse por encima del mapa
+- AND al continuar el modal de autenticacion MUST permanecer por encima del mapa
+- AND ambos modales MUST montarse directamente en `document.body`
+
 ### Requirement: Consultar favoritos
 El sistema MUST mostrar una pagina privada con propiedades guardadas.
 
