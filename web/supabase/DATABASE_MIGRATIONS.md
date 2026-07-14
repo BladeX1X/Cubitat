@@ -100,10 +100,11 @@ Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculad
 migraciones pendientes. No se cargaron ni eliminaron objetos para esta
 verificación.
 
-Estado local 2026-07-14: la migración 42 está versionada pero no aplicada. El
-dry-run contra el proyecto vinculado la enumera como única migración pendiente.
-La base local de Supabase no estaba iniciada, por lo que falta ejecutar el SQL
-en PostgreSQL antes de autorizar producción.
+Verificación productiva 2026-07-14: la migración 42 fue aplicada directamente
+con Supabase CLI sin depender de Docker. `migration list --linked` confirma las
+42 migraciones sincronizadas, `db lint --linked` no reporta errores y el
+dry-run posterior indica que la base remota está actualizada. La lectura admin
+de la bitácora se verificó en producción sin crear ni modificar eventos.
 
 ## Verificación después de aplicar
 
