@@ -913,28 +913,28 @@ export function CubitatApp() {
   )
 }
 
-function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
+export function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
   if (pageMode === 'results') {
     return (
-      <section className="workspace-catalog results-loading-shell" aria-label="Cargando resultados">
-        <div className="results-toolbar-full results-loading-toolbar" />
-        <div className="catalog-container">
-          <div className="results-heading results-loading-heading">
+      <section className="results-route-fallback" aria-label="Cargando resultados">
+        <div className="results-route-fallback__toolbar" />
+        <div className="results-route-fallback__content">
+          <div className="results-route-fallback__heading">
             <div>
-              <div className="loading-line loading-line-eyebrow" />
-              <div className="loading-line loading-line-title" />
+              <div className="results-route-fallback__line results-route-fallback__line--eyebrow" />
+              <div className="results-route-fallback__line results-route-fallback__line--title" />
             </div>
-            <div className="loading-pill" />
+            <div className="results-route-fallback__pill" />
           </div>
-          <div className="loading-line loading-line-summary" />
-          <div className="property-catalog-grid">
+          <div className="results-route-fallback__line results-route-fallback__line--summary" />
+          <div className="results-route-fallback__grid">
             {Array.from({ length: 8 }).map((_, index) => (
-              <div className="property-card property-card-loading" key={index}>
-                <div className="property-photo" />
-                <div className="property-info">
-                  <div className="loading-line loading-line-price" />
-                  <div className="loading-line loading-line-card-title" />
-                  <div className="loading-line loading-line-card-meta" />
+              <div className="results-route-fallback__card" key={index}>
+                <div className="results-route-fallback__photo" />
+                <div className="results-route-fallback__info">
+                  <div className="results-route-fallback__line results-route-fallback__line--price" />
+                  <div className="results-route-fallback__line results-route-fallback__line--card-title" />
+                  <div className="results-route-fallback__line results-route-fallback__line--card-meta" />
                 </div>
               </div>
             ))}
