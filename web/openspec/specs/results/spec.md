@@ -131,3 +131,18 @@ El sistema MUST mantener paginacion clara y accesible cuando hay multiples pagin
 - THEN el sistema MUST renderizar la pagina solicitada
 - AND MUST desplazar el viewport al inicio de resultados
 - AND MUST deshabilitar anterior o siguiente cuando no aplican
+
+### Requirement: CSS exclusivo de resultados
+El sistema SHOULD evitar cargar en la portada los estilos que solo usa la ruta de resultados.
+
+#### Scenario: Abrir la portada
+- GIVEN un usuario abre `/`
+- WHEN se carga el CSS inicial
+- THEN el navegador MUST cargar los estilos globales compartidos
+- AND SHOULD NO descargar el chunk CSS exclusivo de resultados
+
+#### Scenario: Abrir resultados
+- GIVEN un usuario abre una ruta de resultados
+- WHEN se resuelve el modulo lazy de `ResultsPage`
+- THEN el navegador MUST cargar su chunk CSS exclusivo
+- AND MUST conservar el layout responsive de una columna en movil
