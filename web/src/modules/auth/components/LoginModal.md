@@ -47,7 +47,7 @@ El modal se compone de dos zonas principales:
 - **OAuth Google:** El boton Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })` y redirige a `/auth/callback?flow=oauth` para que el callback cierre sesion de OAuth directo al inicio sin mostrar pantalla de correo confirmado.
 - **Metadata en el Registro:** El flujo de registro envía `options.data` con el nombre completo y el rol del usuario (`buyer`, `seller` o `agent`).
 - **Trigger en Base de Datos (PostgreSQL):** Al crear una cuenta en la nube, el disparador automático `on_auth_user_created` captura el registro en `auth.users` y propaga los metadatos para inicializar automáticamente la ficha del usuario en la tabla pública `profiles` en la nube.
-- **Portales de React:** Se utiliza `createPortal` hacia `document.body` para garantizar que la superposición z-index funcione perfectamente sobre mapas y galerías.
+- **Portales de React:** `LoginModal` y la invitación previa de favoritos usan `createPortal` hacia `document.body`. Ambos comparten `MODAL_LAYER_STYLE` (`z-index: 10030`), por encima de `MAP_FULLSCREEN_LAYER_STYLE` (`z-index: 9999`), para permanecer visibles sobre mapas y galerías a pantalla completa.
 - **Accesibilidad:** Se mantiene el atributo `aria-modal="true"`, `role="dialog"` y el control de cierre mediante escape.
 
 ## Responsive
