@@ -805,3 +805,21 @@ Usar este formato y conservar las entradas anteriores:
   `/mis-propiedades` ofrece `Ocultar` al propietario. No se accionó ningún
   control mutante. Consola de Cubitat sin errores ni avisos relevantes; el único
   warning observado pertenece a una extensión de Chrome ajena al sitio.
+
+### 2026-07-14 — Codex principal — carril N, orden de carrusel en clusters
+
+- Estado: **implementado y verificado en local** en
+  `bugfix/map-cluster-carousel-order`; producción pendiente.
+- Causa confirmada: el cluster elegía `ids[0]` como activo, pero la preview
+  reconstruía sus tarjetas con el orden del listado general. Cuando ambos
+  órdenes diferían, `scrollIntoView` desplazaba el carrusel hasta una tarjeta
+  intermedia.
+- Corrección modular: `orderPropertiesByIds` conserva el orden de IDs entregado
+  por MapLibre, omite IDs inexistentes y evita duplicados. La tarjeta activa del
+  cluster queda renderizada en la primera posición.
+- Evidencia: escenario OpenSpec, prueba de regresión A-B-C frente a C-A, lint
+  limpio, 39 archivos/142 pruebas y build TypeScript/Vite/PWA correcto.
+  Advertencia conocida: `vendor-maplibre` supera 500 kB.
+- Criterio de cierre productivo: fusionar, desplegar y verificar en móvil que un
+  pin agrupado abre el carrusel desde la primera tarjeta sin desplazamiento
+  inicial ni errores de consola.
