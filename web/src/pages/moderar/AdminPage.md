@@ -17,6 +17,9 @@ Cada capacidad vive bajo `src/modules/admin`:
 - `properties`: listado, filtros, paginación y moderación de publicaciones.
 - `reports`: listado, filtros, paginación y resolución de reportes.
 - `metrics`: métricas locales de Supabase y métricas externas disponibles.
+- `advertiser-context`: resumen de actividad y señales explicables del
+  anunciante, cargado únicamente al expandir una publicación. Recibe solo el
+  identificador del usuario y no ejecuta mutaciones.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.
@@ -42,6 +45,8 @@ y no contienen reglas específicas de otro módulo.
 - Gestión de reportes.
 - Filtros y paginación independientes por sección.
 - Métricas de Supabase, Cloudflare y Analytics con errores aislados.
+- Contexto del anunciante bajo demanda: antigüedad, publicaciones, reportes y
+  señales orientativas que siempre requieren revisión humana.
 
 ## Verificación
 
@@ -49,3 +54,6 @@ y no contienen reglas específicas de otro módulo.
 directo a Supabase desde el shell y exige que las tres capacidades existentes
 se mantengan en módulos independientes. `AdminPage.test.tsx` cubre el guard y
 los flujos visibles principales.
+El contexto del anunciante añade pruebas unitarias para sus reglas, estados de
+carga/error y contrato de integración sin acceso directo a Supabase desde
+`PropertyDetails`.
