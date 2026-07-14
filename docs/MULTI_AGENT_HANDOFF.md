@@ -471,7 +471,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — cierre productivo del hardening de seguridad
 
-- Estado: desplegado y verificado en producción. PR #18 creado hacia `main`.
+- Estado: desplegado y verificado en producción. PR #18 fusionado en `main`
+  como `c9cdde3`.
 - Supabase: `20260713000000_security_hardening.sql` aplicada mediante el
   proyecto vinculado. `supabase migration list --linked` muestra las 41
   migraciones sincronizadas, `supabase db lint --linked` no encontró errores y
