@@ -23,8 +23,9 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 - Rama base actual: `main`; commit funcional `60cd5ff` tras fusionar los PR #4
   y #5. Los commits documentales posteriores no cambian el artefacto desplegado.
-- Migraciones: 40 migraciones sincronizadas con producción; la migración 39
-  endurece RLS y la 40 incorpora métricas agregadas admin-only.
+- Migraciones: 41 migraciones sincronizadas con producción; la migración 39
+  endurece RLS, la 40 incorpora métricas agregadas admin-only y la 41 limita
+  tipos/tamaños de Storage y reconcilia sus políticas por propietario.
 - Validación local más reciente: lint limpio, 20 archivos de pruebas y 80
   pruebas aprobadas, build de producción correcto y sitemap de 1007 URLs.
 - Recuperación de contraseña:
@@ -467,6 +468,33 @@ Usar este formato y conservar las entradas anteriores:
 - Pendientes que requieren operación/configuración: matricular TOTP y exigir
   MFA a administradores sin bloquear la cuenta QA; Turnstile en formularios
   públicos; bitácora inmutable de moderación. No se marcan como completados.
+
+### 2026-07-14 — Codex principal — cierre productivo del hardening de seguridad
+
+- Estado: desplegado y verificado en producción. PR #18 creado hacia `main`.
+- Supabase: `20260713000000_security_hardening.sql` aplicada mediante el
+  proyecto vinculado. `supabase migration list --linked` muestra las 41
+  migraciones sincronizadas, `supabase db lint --linked` no encontró errores y
+  el dry-run posterior confirmó que la base remota está actualizada.
+- Cloudflare: `wrangler deploy --keep-vars` publicó el Worker `cubitat1`, versión
+  `bbdc1b05-9f30-4627-b537-b5dbdf4e0b3f`, con el bundle
+  `assets/index-B1nbIL1w.js`. Producción entrega HSTS anual con
+  `includeSubDomains` y CSP sin `unsafe-inline` en `script-src`, con el hash del
+  JSON-LD y las restricciones `object-src`, `base-uri`, `form-action` y
+  `frame-ancestors` previstas. `/api/metrics` conserva autenticación y devuelve
+  `401` ante una credencial de prueba inválida.
+- Verificación de rol y guards: en la sesión autenticada existente de Chrome,
+  `/moderar` conservó la ruta y mostró el panel administrativo con propiedades,
+  reportes y métricas. La matriz RLS del carril D permanece vigente: propietario
+  aislado a sus datos, segundo usuario sin acceso a datos ajenos ni administración
+  y administrador con acceso de lectura/moderación. La consola quedó sin errores
+  ni advertencias relevantes. No se modificaron filas ni objetos de producción.
+- Storage: la definición y políticas están aplicadas y sincronizadas; no se hizo
+  una carga destructiva para comprobar el rechazo de MIME/tamaño porque la
+  autorización temporal anterior venció. Ese ensayo controlado queda separado
+  de la activación productiva de las restricciones.
+- Pendientes posteriores: MFA obligatorio para administradores, Turnstile y
+  bitácora inmutable de moderación. No forman parte del PR #18.
 
 ### 2026-07-13 — Codex principal — endurecimiento posterior a revisión
 

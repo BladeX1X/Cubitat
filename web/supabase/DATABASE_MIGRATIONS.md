@@ -88,6 +88,11 @@ exactamente el orden cronológico de los archivos.
 
 41. `20260713000000_security_hardening.sql`: limita `property_images` y `avatars` a WebP con tamaño acotado, reconcilia políticas Storage por carpeta/propietario y corrige la volatilidad declarada de `get_admin_metrics`.
 
+Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculado;
+`migration list` sincronizado, `db lint` sin errores y dry-run posterior sin
+migraciones pendientes. No se cargaron ni eliminaron objetos para esta
+verificación.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
