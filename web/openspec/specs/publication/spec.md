@@ -108,6 +108,8 @@ El sistema MUST proteger el progreso del usuario mediante borradores locales aut
 - THEN el sistema SHOULD persistir el progreso en `localStorage` o `IndexedDB` automáticamente en tiempo real
 - AND el usuario MUST poder guardar manualmente el borrador
 - AND al volver con `load_draft=true` el sistema MUST ofrecer recuperar el borrador
+- AND la clave local MUST quedar asociada al identificador del usuario autenticado
+- AND otro usuario que use el mismo navegador MUST NOT recuperar ese borrador
 
 #### Scenario: Visualización de banner de borrador en Dashboard
 - GIVEN un usuario con sesión activa ingresa a su panel de usuario

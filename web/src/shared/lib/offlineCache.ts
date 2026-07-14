@@ -4,6 +4,11 @@ const DB_NAME = 'cubitat_offline_db'
 const DB_VERSION = 1
 const STORE_NAME = 'properties_store'
 
+function withoutContactInfo(property: Property): Property {
+  const { contact_info: _contactInfo, ...safeProperty } = property
+  return safeProperty
+}
+
 function getDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
@@ -31,7 +36,7 @@ export async function saveCachedProperties(properties: Property[]): Promise<void
 
     // Save new properties
     for (const property of properties) {
-      store.put(property)
+      store.put(withoutContactInfo(property))
     }
 
     return new Promise((resolve, reject) => {
@@ -65,7 +70,7 @@ export async function saveSingleCachedProperty(property: Property): Promise<void
     const db = await getDB()
     const transaction = db.transaction(STORE_NAME, 'readwrite')
     const store = transaction.objectStore(STORE_NAME)
-    store.put(property)
+    store.put(withoutContactInfo(property))
 
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve()
@@ -90,5 +95,20 @@ export async function getCachedProperty(id: string): Promise<Property | null> {
   } catch (error) {
     console.warn('Fallo al leer propiedad individual de IndexedDB:', error)
     return null
+  }
+}
+
+export async function clearCachedProperties(): Promise<void> {
+  try {
+    const db = await getDB()
+    const transaction = db.transaction(STORE_NAME, 'readwrite')
+    transaction.objectStore(STORE_NAME).clear()
+
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+    })
+  } catch (error) {
+    console.warn('Fallo al limpiar la caché offline de IndexedDB:', error)
   }
 }

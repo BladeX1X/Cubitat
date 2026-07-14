@@ -19,6 +19,11 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
 import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
 import { useSEO } from '../../shared/hooks/useSEO'
+import {
+  AVATAR_IMAGE_RULES,
+  validateImageDimensions,
+  validateImageFile,
+} from '../../shared/lib/imageSecurity'
 
 type AccountPageProps = {
   user: User
@@ -147,8 +152,9 @@ export function AccountPage({
   async function handleAvatarFile(file: File | undefined) {
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      setAvatarMessage('Selecciona una imagen valida.')
+    const validationError = validateImageFile(file, AVATAR_IMAGE_RULES)
+    if (validationError) {
+      setAvatarMessage(validationError)
       return
     }
 
@@ -681,12 +687,20 @@ function StatusPill({ status }: { status: 'verified' | 'pending' | 'missing' }) 
 
 /* Helper to compress avatar image to WebP offline with Canvas */
 async function compressAvatarToWebP(file: File): Promise<Blob> {
+  const fileValidationError = validateImageFile(file, AVATAR_IMAGE_RULES)
+  if (fileValidationError) throw new Error(fileValidationError)
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
       img.onload = () => {
         try {
+          const dimensionError = validateImageDimensions(img.width, img.height, AVATAR_IMAGE_RULES)
+          if (dimensionError) {
+            reject(new Error(dimensionError))
+            return
+          }
           const canvas = document.createElement('canvas')
           let width = img.width
           let height = img.height

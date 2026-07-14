@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-07-12.
+Última revisión documental: 2026-07-13.
 
 ## Aplicación segura
 
@@ -84,6 +84,15 @@ exactamente el orden cronológico de los archivos.
 39. `20260711002000_harden_profiles_contacts_reports.sql`: restringe perfiles a dueño/admin, valida formularios públicos, fija el `search_path` del trigger de contactos y agrega índices de auditoría.
 40. `20260712000000_create_admin_metrics_rpc.sql`: crea una función admin-only para consultar tamaño de base de datos, Storage y conteos operativos sin exponer filas.
 
+### Endurecimiento de carga y Storage — 2026-07-13
+
+41. `20260713000000_security_hardening.sql`: limita `property_images` y `avatars` a WebP con tamaño acotado, reconcilia políticas Storage por carpeta/propietario y corrige la volatilidad declarada de `get_admin_metrics`.
+
+Verificación productiva 2026-07-14: migración 41 aplicada al proyecto vinculado;
+`migration list` sincronizado, `db lint` sin errores y dry-run posterior sin
+migraciones pendientes. No se cargaron ni eliminaron objetos para esta
+verificación.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
@@ -94,4 +103,5 @@ exactamente el orden cronológico de los archivos.
 - Probar inserción de contactos y generación de su notificación.
 - Probar que un usuario no pueda elevar su rol ni marcar su teléfono como verificado.
 - Probar subida y borrado de imágenes dentro de la carpeta autorizada del propietario.
+- Probar rechazo de MIME distinto de WebP y de objetos que superen 5 MiB en `property_images` o 1 MiB en `avatars`.
 - Registrar cualquier migración nueva en este inventario dentro del mismo cambio.

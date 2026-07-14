@@ -15,7 +15,8 @@ import { initAnalytics, trackPageView } from '../shared/lib/analytics'
 import { Header } from '../components/layout/Header'
 import { SiteFooter } from '../components/layout/SiteFooter'
 import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
-import { saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
+import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
+import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -571,6 +572,8 @@ export function CubitatApp() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
+    await clearCachedProperties()
+    removeLegacyPublicationDraft()
     navigateHome()
   }
 
@@ -808,8 +811,9 @@ export function CubitatApp() {
           </div>
         )}
 
-        {pageMode === 'publish' && (
+        {pageMode === 'publish' && user && (
           <PublishPage
+            userId={user.id}
             onBack={navigateHome}
             onSubmitSuccess={() => {
               setRefreshCounter((prev) => prev + 1)
@@ -818,8 +822,9 @@ export function CubitatApp() {
           />
         )}
 
-        {pageMode === 'edit' && editPropertyId && (
+        {pageMode === 'edit' && editPropertyId && user && (
           <PublishPage
+            userId={user.id}
             editPropertyId={editPropertyId}
             onBack={navigateMyProperties}
             onSubmitSuccess={() => {
@@ -829,8 +834,9 @@ export function CubitatApp() {
           />
         )}
 
-        {pageMode === 'my-properties' && (
+        {pageMode === 'my-properties' && user && (
           <MyPropertiesPage
+            userId={user.id}
             onBack={navigateHome}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}

@@ -23,8 +23,9 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 - Rama base actual: `main`; commit funcional `60cd5ff` tras fusionar los PR #4
   y #5. Los commits documentales posteriores no cambian el artefacto desplegado.
-- Migraciones: 40 migraciones sincronizadas con producción; la migración 39
-  endurece RLS y la 40 incorpora métricas agregadas admin-only.
+- Migraciones: 41 migraciones sincronizadas con producción; la migración 39
+  endurece RLS, la 40 incorpora métricas agregadas admin-only y la 41 limita
+  tipos/tamaños de Storage y reconcilia sus políticas por propietario.
 - Validación local más reciente: lint limpio, 20 archivos de pruebas y 80
   pruebas aprobadas, build de producción correcto y sitemap de 1007 URLs.
 - Recuperación de contraseña:
@@ -433,6 +434,67 @@ Usar este formato y conservar las entradas anteriores:
   KPIs reales y sanear una URL de imagen de contenido cuando se autorice.
 
 ## Notas de seguridad
+
+### 2026-07-13 22:40 — Codex principal — hardening de seguridad local
+
+- Estado: implementado y verificado en local en
+  `feature/security-hardening-phase1`; pendiente revisión, migración 41,
+  despliegue y comprobación productiva.
+- HTTP/Worker: HSTS anual con `includeSubDomains`; `script-src` elimina
+  `unsafe-inline` y autoriza el JSON-LD estático mediante hash; CSP agrega
+  `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` y
+  `frame-ancestors 'none'`. El proxy de Supabase reenvía solo cabeceras de una
+  lista permitida, con excepciones WebSocket acotadas para Realtime.
+- Storage/media: migración `20260713000000_security_hardening.sql` pendiente de
+  producción. Limita nuevas cargas a WebP (5 MiB en `property_images`, 1 MiB en
+  `avatars`), versiona el bucket de avatares y consolida RLS por carpeta y
+  propietario. El cliente rechaza JPG/PNG/WebP de entrada que excedan 10 MiB
+  para propiedades, 5 MiB para avatar o resoluciones excesivas antes del
+  canvas cuando es posible.
+- Privacidad local: los borradores quedan separados por `user.id`, el formato
+  legado se migra una sola vez, la caché offline omite `contact_info` y se
+  limpia al cerrar sesión.
+- SQL: la migración cambia `get_admin_metrics()` a `VOLATILE`, corrigiendo la
+  advertencia de `supabase db lint --linked` una vez aplicada.
+- Validación: lint limpio; 25 archivos y 93 pruebas; build
+  TypeScript/Vite/PWA y sitemap de 1007 URLs correctos. `supabase db push
+  --linked --dry-run` reconoce solo la migración 41 y confirma que no fue
+  aplicada durante esta tarea.
+- GitHub: commit `29fa734` publicado en
+  `origin/feature/security-hardening-phase1`. El PR borrador no pudo crearse:
+  el conector devolvió `404` y dos intentos autenticados con `gh` quedaron sin
+  respuesta; `gh pr list --head feature/security-hardening-phase1` confirmó
+  que no existe un PR duplicado. Reintentar cuando la API de GitHub responda.
+- Pendientes que requieren operación/configuración: matricular TOTP y exigir
+  MFA a administradores sin bloquear la cuenta QA; Turnstile en formularios
+  públicos; bitácora inmutable de moderación. No se marcan como completados.
+
+### 2026-07-14 — Codex principal — cierre productivo del hardening de seguridad
+
+- Estado: desplegado y verificado en producción. PR #18 creado hacia `main`.
+- Supabase: `20260713000000_security_hardening.sql` aplicada mediante el
+  proyecto vinculado. `supabase migration list --linked` muestra las 41
+  migraciones sincronizadas, `supabase db lint --linked` no encontró errores y
+  el dry-run posterior confirmó que la base remota está actualizada.
+- Cloudflare: `wrangler deploy --keep-vars` publicó el Worker `cubitat1`, versión
+  `bbdc1b05-9f30-4627-b537-b5dbdf4e0b3f`, con el bundle
+  `assets/index-B1nbIL1w.js`. Producción entrega HSTS anual con
+  `includeSubDomains` y CSP sin `unsafe-inline` en `script-src`, con el hash del
+  JSON-LD y las restricciones `object-src`, `base-uri`, `form-action` y
+  `frame-ancestors` previstas. `/api/metrics` conserva autenticación y devuelve
+  `401` ante una credencial de prueba inválida.
+- Verificación de rol y guards: en la sesión autenticada existente de Chrome,
+  `/moderar` conservó la ruta y mostró el panel administrativo con propiedades,
+  reportes y métricas. La matriz RLS del carril D permanece vigente: propietario
+  aislado a sus datos, segundo usuario sin acceso a datos ajenos ni administración
+  y administrador con acceso de lectura/moderación. La consola quedó sin errores
+  ni advertencias relevantes. No se modificaron filas ni objetos de producción.
+- Storage: la definición y políticas están aplicadas y sincronizadas; no se hizo
+  una carga destructiva para comprobar el rechazo de MIME/tamaño porque la
+  autorización temporal anterior venció. Ese ensayo controlado queda separado
+  de la activación productiva de las restricciones.
+- Pendientes posteriores: MFA obligatorio para administradores, Turnstile y
+  bitácora inmutable de moderación. No forman parte del PR #18.
 
 ### 2026-07-13 — Codex principal — endurecimiento posterior a revisión
 

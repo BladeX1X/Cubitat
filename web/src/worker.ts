@@ -58,13 +58,14 @@ function withSecurityHeaders(response: Response, url?: URL): Response {
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
   if (shouldDisallowIndexing(url)) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
   }
 
   if (response.headers.get('Content-Type')?.includes('text/html')) {
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org; frame-src 'self' https://www.google.com https://www.openstreetmap.org; media-src 'self' blob:;");
+    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org; frame-src 'self' https://www.google.com https://www.openstreetmap.org; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
     headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     headers.set('Pragma', 'no-cache');
     headers.set('Expires', '0');
@@ -945,8 +946,31 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      const headers = new Headers(request.headers);
-      headers.delete('host');
+      const headers = new Headers();
+      const allowedRequestHeaders = [
+        'accept',
+        'accept-profile',
+        'apikey',
+        'authorization',
+        'content-profile',
+        'content-type',
+        'prefer',
+        'range',
+        'range-unit',
+        'x-client-info',
+        'x-supabase-api-version',
+      ];
+      for (const headerName of allowedRequestHeaders) {
+        const value = request.headers.get(headerName);
+        if (value) headers.set(headerName, value);
+      }
+
+      if (subPath.startsWith('/realtime/')) {
+        for (const headerName of ['connection', 'sec-websocket-key', 'sec-websocket-protocol', 'sec-websocket-version', 'upgrade']) {
+          const value = request.headers.get(headerName);
+          if (value) headers.set(headerName, value);
+        }
+      }
 
       // Inyectar la Anon Key real si falta o es la clave dummy en el cliente
       const apiKeyHeader = headers.get('apikey');

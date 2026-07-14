@@ -855,13 +855,26 @@ Esperado:
 401
 ```
 
+Validar cabeceras defensivas en HTML:
+
+```powershell
+$headers = Invoke-WebRequest -Uri 'https://cubitathome.com/' -Method Head
+$headers.Headers['Strict-Transport-Security']
+$headers.Headers['Content-Security-Policy']
+```
+
+Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
+`unsafe-inline` dentro de `script-src` y con `object-src 'none'`,
+`base-uri 'self'`, `form-action 'self'` y `frame-ancestors 'none'`.
+
 ## 14. Checklist De Produccion
 
 - GitHub repo actualizado en `main`.
 - `npm run build` pasa.
 - Supabase migraciones aplicadas.
 - Supabase Auth URLs configuradas.
-- Supabase Storage `property_images` listo.
+- Supabase Storage `property_images` y `avatars` listos, con WebP, límites de
+  5 MiB/1 MiB y escrituras aisladas en la carpeta del usuario.
 - RLS activo y probado.
 - Resend dominio verificado.
 - Supabase SMTP con Resend activo.
@@ -875,6 +888,7 @@ Esperado:
 - PWA instalable.
 - `robots.txt` apunta al sitemap.
 - No hay secretos en git.
+- HSTS y CSP endurecida verificadas en la respuesta productiva.
 
 ## 15. Operacion Y Rollback
 
