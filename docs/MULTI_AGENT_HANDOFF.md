@@ -33,7 +33,9 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
   - enlace real probado sin el error PKCE entre navegadores;
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
-- Despliegue activo de Cloudflare: `cbacb3a6-fa2a-40c7-80ac-570c325666fa`.
+- Despliegue activo de Cloudflare: versiones `e3ba3db1-c7e5-419f-9348-e5f6b290ffb8`
+  y `f7c6cddb-e56a-4aff-99cb-a60fafaacf42`, publicadas en la misma secuencia
+  de despliegue del Worker `cubitat1` el 2026-07-14.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación accesible para administrador. Último estado observado:
   0 pendientes, 9 rechazadas por IA y 303 publicadas.
@@ -679,9 +681,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril K, contexto del anunciante
 
-- Estado: implementación terminada y verificada en local en la rama
-  `feature/admin-advertiser-context`; PR #22 abierto hacia `main`, pendiente de
-  revisión, fusión, despliegue y comprobación productiva.
+- Estado: terminado y verificado en producción. PR #22 fusionado en `main`
+  como `efad214` y Worker `cubitat1` desplegado el 2026-07-14.
 - Se añadió `src/modules/admin/advertiser-context` como capacidad independiente:
   repositorio de solo lectura, hook asíncrono, reglas deterministas y panel UI.
   El módulo se monta únicamente cuando el administrador expande el detalle de
@@ -696,6 +697,13 @@ Usar este formato y conservar las entradas anteriores:
 - TDD: se confirmó primero el fallo por módulos ausentes. Resultado final: lint
   limpio, 28 archivos/101 pruebas, build TypeScript/Vite/PWA correcto, sitemap
   de 1007 URLs y React Doctor sin incidencias.
-- Pendiente exacto: revisar/fusionar el PR y, tras el despliegue, abrir una
-  publicación con sesión admin para verificar carga real, responsive y consola
-  sin errores. No marcar producción antes de esa evidencia.
+- Evidencia productiva de solo lectura en la sesión admin existente de Chrome:
+  `/moderar` conservó su guard, se expandió una publicación publicada y el
+  panel mostró una cuenta de 13 días, 295 publicaciones públicas de 295,
+  0 reportes y última publicación del 2026-07-11. También mostró la señal
+  explicable de cuenta reciente y el aviso de revisión humana.
+- Consola sin errores ni advertencias relevantes. No se aprobaron, ocultaron,
+  reevaluaron, eliminaron ni modificaron datos de producción.
+- Pendiente no bloqueante: repetir únicamente la inspección visual responsive
+  en un móvil real; la carga, los datos, el guard y la consola ya quedaron
+  verificados en producción.
