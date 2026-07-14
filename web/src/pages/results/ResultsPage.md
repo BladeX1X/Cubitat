@@ -97,3 +97,14 @@ Prueba manual:
   baja para no competir con el contenido sobre el fold.
 - `ResultsPage.css` se carga con la ruta lazy de resultados; los estilos
   exclusivos del catálogo, filtros móviles y mapa no bloquean la portada.
+
+## Fallback crítico de la ruta 2026-07-13
+
+- El fallback de `Suspense` de resultados usa clases autónomas
+  `results-route-fallback*` definidas en el CSS global de entrada.
+- No debe reutilizar clases de `ResultsPage.css`: ese archivo llega junto con
+  el módulo lazy y aplicarlo después del primer render provoca cambios de layout.
+- El fallback reserva la misma estructura responsive del catálogo: cuatro,
+  tres, dos o una columna según el viewport, y 154 px de imagen en móvil.
+- La regresión queda cubierta por `PageLoadingState.test.tsx` y por una traza
+  móvil con red y CPU limitadas antes de desplegar.

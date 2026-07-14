@@ -550,3 +550,24 @@ Usar este formato y conservar las entradas anteriores:
   `eager/high`, tarjeta 3 `lazy/low`, una columna móvil sin overflow y consola
   limpia. No se modificaron datos remotos. Falta comparar un Unlighthouse
   400/400 contra rendimiento 65, FCP 4.6 s y LCP 6.9 s.
+
+### 2026-07-13 20:40 — Codex principal — corrección de CLS del fallback lazy
+
+- La corrida productiva posterior al PR #14 terminó 400/400 tareas: total 88,
+  rendimiento 53, accesibilidad 100, buenas prácticas 100 y SEO 100. Home
+  registró rendimiento 66, FCP 4.8 s, LCP 6.0 s y CLS 0.001; La Habana y
+  Matanzas registraron rendimiento 47, FCP 4.4 s, LCP 6.9-7.0 s y CLS 0.382.
+- Diagnóstico: las prioridades de las dos primeras imágenes sí se aplicaron,
+  pero el fallback de `Suspense` reutilizaba clases trasladadas al CSS lazy de
+  resultados. La llegada tardía de ese chunk cambiaba la geometría del
+  catálogo y generaba dos desplazamientos acumulados de 0.336 y 0.046.
+- Corrección local en `bugfix/results-loading-cls`: fallback autónomo en el CSS
+  inicial, con grid y alturas responsive estables; se eliminó el bloque de
+  skeleton duplicado del chunk de resultados y se añadió prueba de regresión.
+- Calidad local: lint limpio, 22 archivos/83 pruebas y build
+  TypeScript/Vite/PWA correcto; sitemap de 1007 URLs. CSS global 127.48 kB y
+  chunk de resultados 32.83 kB minificados.
+- Evidencia local móvil (390x844, Slow 4G, CPU x4): Home LCP 943 ms/CLS 0.00;
+  La Habana LCP 4.087 s/CLS 0.00; Matanzas LCP 1.771 s/CLS 0.00. Consola sin
+  errores, advertencias ni incidencias relevantes. Falta desplegar y repetir
+  la medición productiva antes de registrar el cierre definitivo.

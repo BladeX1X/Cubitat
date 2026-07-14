@@ -146,3 +146,10 @@ El sistema SHOULD evitar cargar en la portada los estilos que solo usa la ruta d
 - WHEN se resuelve el modulo lazy de `ResultsPage`
 - THEN el navegador MUST cargar su chunk CSS exclusivo
 - AND MUST conservar el layout responsive de una columna en movil
+
+#### Scenario: Esperar el modulo lazy sin cambio de layout
+- GIVEN un usuario abre directamente una ruta de resultados con red lenta
+- WHEN `ResultsPage` y su CSS exclusivo todavia no han terminado de cargar
+- THEN el fallback MUST usar estilos criticos incluidos en el CSS inicial
+- AND MUST reservar la geometria responsive del catalogo
+- AND MUST NO depender de clases definidas solo en `ResultsPage.css`
