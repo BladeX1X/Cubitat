@@ -742,10 +742,19 @@ Usar este formato y conservar las entradas anteriores:
   prueba fue solo de lectura y no generó eventos ni modificó datos.
 - Los despliegues automáticos posteriores que solo cambien documentación pueden
   rotar el ID activo sin cambiar el código web verificado.
-- Pendiente exacto: comprobar específicamente sobre la tabla nueva la
-  denegación de lectura a usuario normal/anónimo y el rechazo de mutaciones en
-  una transacción controlada. No se marca el carril como terminado hasta reunir
-  esa evidencia sin alterar eventos productivos.
+- Cierre productivo 2026-07-14: una prueba SQL vinculada y completamente
+  transaccional creó un evento sintético solo dentro de `BEGIN`/`ROLLBACK`.
+  El rol anónimo recibió denegación de lectura; un perfil normal existente vio
+  0 filas; un perfil administrador existente vio exactamente el evento QA.
+  No se mostraron identificadores, credenciales ni datos de los perfiles.
+- Mutaciones: el administrador autenticado no pudo insertar; `service_role` no
+  pudo ejecutar `INSERT`, `UPDATE`, `DELETE` ni `TRUNCATE`; el guard de
+  inmutabilidad rechazó además `UPDATE` y `DELETE` incluso con ejecución
+  privilegiada. Una consulta independiente posterior confirmó 0 filas con el
+  marcador QA, por lo que no persistió ningún cambio.
+- Validación final: 42 migraciones locales/remotas sincronizadas, `db lint`
+  sin errores y `db push --dry-run` con base remota actualizada. Carril L:
+  **terminado con evidencia completa**.
 
 ### 2026-07-14 — Codex principal — retorno al mapa desde detalle
 

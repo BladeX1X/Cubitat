@@ -106,6 +106,14 @@ con Supabase CLI sin depender de Docker. `migration list --linked` confirma las
 dry-run posterior indica que la base remota está actualizada. La lectura admin
 de la bitácora se verificó en producción sin crear ni modificar eventos.
 
+Cierre RLS/inmutabilidad 2026-07-14: prueba vinculada dentro de una transacción
+con `ROLLBACK`. Anónimo sin lectura; usuario normal con 0 filas visibles; admin
+con acceso al único evento sintético; administrador autenticado sin `INSERT` y
+`service_role` sin `INSERT`, `UPDATE`, `DELETE` ni `TRUNCATE`. El trigger de
+inmutabilidad rechazó también `UPDATE` y `DELETE` privilegiados. Una consulta
+independiente posterior confirmó 0 filas del marcador QA. No persistieron
+cambios ni se expusieron datos de cuentas.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
