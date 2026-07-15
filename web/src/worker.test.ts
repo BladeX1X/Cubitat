@@ -393,6 +393,8 @@ describe('Cloudflare Worker security contract', () => {
 
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
     const cacheRequest = cacheMatch.mock.calls[0]?.[0] as Request
-    expect(new URL(cacheRequest.url).searchParams.get('__cubitat_worker_version')).toBe('test-worker-version')
+    expect(new URL(cacheRequest.url).pathname).toBe(
+      '/__cubitat_property_html/test-worker-version/propiedad/casa-00000000-0000-0000-0000-000000000001',
+    )
   })
 })
