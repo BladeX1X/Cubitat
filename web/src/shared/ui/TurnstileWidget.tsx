@@ -22,6 +22,15 @@ export function TurnstileWidget({
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const onVerifyRef = useRef(onVerify);
+  const onExpireRef = useRef(onExpire);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+    onExpireRef.current = onExpire;
+    onErrorRef.current = onError;
+  }, [onVerify, onExpire, onError]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -47,13 +56,13 @@ export function TurnstileWidget({
           action,
           theme,
           callback: (token: string) => {
-            if (active && onVerify) onVerify(token);
+            if (active) onVerifyRef.current?.(token);
           },
           'expired-callback': () => {
-            if (active && onExpire) onExpire();
+            if (active) onExpireRef.current?.();
           },
           'error-callback': () => {
-            if (active && onError) onError();
+            if (active) onErrorRef.current?.();
           },
         });
       } catch (err) {
@@ -85,7 +94,7 @@ export function TurnstileWidget({
         }
       }
     };
-  }, [action, onVerify, onExpire, onError, theme]);
+  }, [action, theme]);
 
   return (
     <div 
