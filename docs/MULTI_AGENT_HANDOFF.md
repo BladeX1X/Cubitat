@@ -926,8 +926,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — envio de contacto tras Turnstile
 
-- Estado: **corregido, fusionado y desplegado; reintento real pendiente de
-  Rodolfo**. PR #46 corrige el submit y PR #49 elimina la cache HTML obsoleta;
+- Estado: **terminado y verificado en produccion**. PR #46 corrige el submit y
+  PR #49 elimina la cache HTML obsoleta;
   Worker activo `2ebd9a92-78eb-4828-9b97-a4112faac0d3`.
 - Evidencia productiva del fallo: Turnstile terminaba en `¡Operación exitosa!`,
   pero el boton quedaba en `Enviando mensaje...` y la consola registraba
@@ -957,6 +957,7 @@ Usar este formato y conservar las entradas anteriores:
   Worker de la pestaña, la aplicacion cargo la version nueva, Turnstile termino
   en `¡Operacion exitosa!`, el boton quedo habilitado y no aparecieron errores
   nuevos de consola. No se envio el formulario ni se modificaron datos.
-- Criterio de cierre productivo restante: Rodolfo debe realizar un unico
-  reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de carga
-  y no generar errores relevantes de consola.
+- Evidencia de cierre productivo (2026-07-14): Rodolfo realizo un envio real en
+  una segunda propiedad y la interfaz mostro `¡Mensaje enviado! Tu solicitud
+  ha sido procesada.`; el formulario salio del estado de carga y la consola
+  permanecio sin errores. No quedan criterios pendientes en este incidente.
