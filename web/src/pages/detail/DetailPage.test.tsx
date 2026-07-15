@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DetailPage } from './DetailPage'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -17,6 +17,22 @@ vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
 vi.mock('../../shared/hooks/useSEO', () => ({
   useSEO: vi.fn(),
 }))
+
+vi.mock('../../shared/ui/TurnstileWidget', async () => {
+  const { useEffect, useRef } = await import('react')
+
+  return {
+    TurnstileWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
+      const onVerifyRef = useRef(onVerify)
+
+      useEffect(() => {
+        onVerifyRef.current('test-turnstile-token')
+      }, [])
+
+      return null
+    },
+  }
+})
 
 // Mock SupabaseClient
 const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
@@ -92,6 +108,11 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
   beforeEach(() => {
     localStorage.clear()
     mockInsert.mockClear()
@@ -230,6 +251,37 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
     expect(localStorage.getItem('cubitat_contact_sent_prop-detail-1')).toBeTruthy()
+  })
+
+  it('conserva los datos del formulario durante la verificación asíncrona', async () => {
+    vi.stubEnv('MODE', 'production')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    }))
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Rodolfo QA' } })
+    fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51111111' } })
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        property_id: 'prop-detail-1',
+        contact_name: 'Rodolfo QA',
+        contact_phone: '+53 51111111',
+      }))
+    })
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
   })
 
   it('debería bloquear contactos repetidos durante cinco minutos', () => {

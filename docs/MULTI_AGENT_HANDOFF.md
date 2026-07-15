@@ -923,3 +923,25 @@ Usar este formato y conservar las entradas anteriores:
   cookies ni valores de autenticación.
 - Artefactos locales fuera de Git: `.unlighthouse/` y `tmp/` se conservaron sin
   incluirlos en los PR.
+
+### 2026-07-14 — Codex principal — envio de contacto tras Turnstile
+
+- Estado: **corregido y verificado en local; reintento productivo pendiente de
+  Rodolfo**.
+- Evidencia productiva del fallo: Turnstile terminaba en `¡Operación exitosa!`,
+  pero el boton quedaba en `Enviando mensaje...` y la consola registraba
+  `Failed to construct 'FormData': parameter 1 is not of type
+  'HTMLFormElement'`.
+- Causa confirmada: `handleContactSubmit` consultaba `e.currentTarget` despues
+  del `await` de `verifyTurnstile`; React ya no garantizaba la referencia al
+  formulario en ese punto.
+- Correccion modular: nombre, telefono y mensaje se capturan sincronamente al
+  recibir el submit, antes de cualquier espera, sin modificar Turnstile ni la
+  insercion existente en `contacts`.
+- Evidencia local: nueva prueba de regresion en modo productivo con verificacion
+  asincrona; lint limpio, 41 archivos/148 pruebas y build
+  TypeScript/Vite/PWA correcto. Advertencia conocida: `vendor-maplibre` supera
+  500 kB.
+- Criterio de cierre productivo: desplegar la correccion y pedir a Rodolfo un
+  unico reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de
+  carga y no generar errores relevantes de consola.

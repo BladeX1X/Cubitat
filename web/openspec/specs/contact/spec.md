@@ -54,6 +54,13 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - AND MUST evitar reiniciar el desafio por cambios de callbacks de React
 - AND el envio MUST continuar solo despues de validar el token mediante el Worker `siteverify`
 
+#### Scenario: Conservar datos durante la verificacion anti-bot
+- GIVEN el usuario completa el formulario publico de contacto
+- WHEN el envio espera la validacion asincrona del token Turnstile
+- THEN el sistema MUST conservar una instantanea valida del formulario enviado
+- AND MUST registrar la consulta con los valores capturados antes de la espera
+- AND MUST finalizar el estado de carga tanto ante exito como ante error
+
 #### Scenario: Consulta desde boton principal
 - GIVEN un usuario pulsa `Consultar` o accion equivalente en detalle
 - WHEN existe formulario o modal de contacto
