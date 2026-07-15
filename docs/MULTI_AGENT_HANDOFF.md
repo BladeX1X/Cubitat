@@ -942,6 +942,14 @@ Usar este formato y conservar las entradas anteriores:
   asincrona; lint limpio, 41 archivos/148 pruebas y build
   TypeScript/Vite/PWA correcto. Advertencia conocida: `vendor-maplibre` supera
   500 kB.
+- Bloqueo de despliegue detectado: la Cache API del Worker seguia entregando el
+  HTML de la propiedad con el bundle anterior aunque los assets nuevos ya
+  estaban publicados. La clave solo dependia de la URL y sobrevivía a nuevas
+  versiones durante hasta 24 horas.
+- Hardening de cache preparado: `CF_VERSION_METADATA.id` forma parte de la clave
+  privada de cache para HTML dinamico de propiedades. Cada despliegue empieza
+  una particion nueva sin purgar ni borrar datos y deja de referenciar bundles
+  anteriores; la prueba del Worker verifica la version incluida en la clave.
 - Criterio de cierre productivo: desplegar la correccion y pedir a Rodolfo un
   unico reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de
   carga y no generar errores relevantes de consola.

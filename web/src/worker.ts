@@ -18,6 +18,11 @@ export interface Env {
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
+  CF_VERSION_METADATA?: {
+    id: string;
+    tag: string;
+    timestamp: string;
+  };
   RATE_LIMITER: any;
 }
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1046,7 +1051,13 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       if (uuidRegex.test(propertyId)) {
         try {
           const cache = (caches as any).default;
-          const cachedResponse = await cache.match(request);
+          const cacheUrl = new URL(request.url);
+          cacheUrl.searchParams.set(
+            '__cubitat_worker_version',
+            env.CF_VERSION_METADATA?.id || 'local',
+          );
+          const versionedCacheRequest = new Request(cacheUrl.toString(), request);
+          const cachedResponse = await cache.match(versionedCacheRequest);
           if (cachedResponse) {
             return withSecurityHeaders(cachedResponse, url);
           }
@@ -1145,7 +1156,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
               const finalResponse = withSecurityHeaders(rawResponse, url);
 
               // Guardar en la caché global de Cloudflare en segundo plano
-              ctx.waitUntil(cache.put(request, finalResponse.clone()));
+              ctx.waitUntil(cache.put(versionedCacheRequest, finalResponse.clone()));
 
               return finalResponse;
             }
