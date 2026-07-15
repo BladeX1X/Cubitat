@@ -808,7 +808,7 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — carril N, orden de carrusel en clusters
 
-- Estado: **fusionado y desplegado; verificación visual móvil pendiente**. PR
+- Estado: **terminado y verificado en producción móvil**. PR
   #34 fusionado como `6a95ec6`; Worker productivo
   `240fdd88-a0e2-4ac1-9060-b034ecc0de7b` y `/resultados` responde HTTP 200.
 - Causa confirmada: el cluster elegía `ids[0]` como activo, pero la preview
@@ -821,11 +821,9 @@ Usar este formato y conservar las entradas anteriores:
 - Evidencia: escenario OpenSpec, prueba de regresión A-B-C frente a C-A, lint
   limpio, 39 archivos/142 pruebas y build TypeScript/Vite/PWA correcto.
   Advertencia conocida: `vendor-maplibre` supera 500 kB.
-- Bloqueo de cierre: la sesión Chrome existente dejó de responder dos veces al
-  aplicar el viewport temporal 390×844 antes de poder pulsar un cluster. No se
-  sustituyó la sesión ni se consideró evidencia visual. Falta verificar en móvil
-  que un pin agrupado abre el carrusel desde la primera tarjeta sin
-  desplazamiento inicial ni errores de consola.
+- Evidencia de cierre productivo (2026-07-14): Rodolfo confirmó en móvil que un
+  pin agrupado abre el carrusel desde la primera tarjeta, sin desplazamiento
+  inicial ni fallos visibles.
 
 ### 2026-07-14 — Codex principal — carril O, login de favoritos sobre mapa
 
