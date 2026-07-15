@@ -47,6 +47,13 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - AND MUST registrar o enviar la consulta por el canal configurado
 - AND MUST mostrar confirmacion o error entendible
 
+#### Scenario: Verificacion anti-bot estable
+- GIVEN el formulario publico de contacto muestra un desafio Turnstile
+- WHEN Turnstile entrega un token valido y el formulario actualiza su estado
+- THEN el widget MUST conservar la misma instancia aprobada
+- AND MUST evitar reiniciar el desafio por cambios de callbacks de React
+- AND el envio MUST continuar solo despues de validar el token mediante el Worker `siteverify`
+
 #### Scenario: Consulta desde boton principal
 - GIVEN un usuario pulsa `Consultar` o accion equivalente en detalle
 - WHEN existe formulario o modal de contacto

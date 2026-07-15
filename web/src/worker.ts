@@ -65,7 +65,7 @@ function withSecurityHeaders(response: Response, url?: URL): Response {
   }
 
   if (response.headers.get('Content-Type')?.includes('text/html')) {
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org; frame-src 'self' https://www.google.com https://www.openstreetmap.org; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
+    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org https://challenges.cloudflare.com https://*.workers.dev; frame-src 'self' https://www.google.com https://www.openstreetmap.org https://challenges.cloudflare.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
     headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     headers.set('Pragma', 'no-cache');
     headers.set('Expires', '0');
@@ -845,7 +845,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties'];
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
       const allowedAuthenticatedRpcs = ['get_admin_metrics'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
@@ -881,6 +881,22 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         if (await isRateLimited(env, key, 3, 300000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de denuncias excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '300'
+              }
+            }
+          );
+        }
+      }
+      // 1b. Contactos (POST a contacts) - Máximo 5 cada 5 minutos
+      else if (method === 'POST' && tableName === 'contacts') {
+        const key = `${clientIp}:contacts`;
+        if (await isRateLimited(env, key, 5, 300000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de mensajes excedido. Por favor, intenta de nuevo más tarde.' }),
             {
               status: 429,
               headers: {

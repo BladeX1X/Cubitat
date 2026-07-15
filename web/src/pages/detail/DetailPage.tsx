@@ -41,6 +41,8 @@ import { Button } from '../../shared/ui/button'
 import { Card, CardContent } from '../../shared/ui/card'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
+import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
+import { verifyTurnstile } from '../../shared/lib/turnstile'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -76,6 +78,7 @@ export function DetailPage({
   const [reportLoading, setReportLoading] = useState(false)
   const [reportSuccess, setReportSuccess] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
+  const [reportTurnstileToken, setReportTurnstileToken] = useState<string | null>(null)
 
   const isAdmin = userRole === 'admin'
 
@@ -94,6 +97,22 @@ export function DetailPage({
     setReportLoading(true)
     setReportError(null)
 
+    const isTest = (import.meta as any).env?.MODE === 'test'
+    if (!isTest) {
+      if (!reportTurnstileToken) {
+        setReportError('Por favor, completa la verificación de seguridad.')
+        setReportLoading(false)
+        return
+      }
+
+      const isHuman = await verifyTurnstile(reportTurnstileToken)
+      if (!isHuman) {
+        setReportError('La verificación de seguridad falló. Por favor intenta de nuevo.')
+        setReportLoading(false)
+        return
+      }
+    }
+
     try {
       const { error: insertError } = await supabase
         .from('property_reports')
@@ -109,6 +128,7 @@ export function DetailPage({
       setReportSuccess(true)
       setReportReason('')
       setReportDescription('')
+      setReportTurnstileToken(null)
     } catch (err: any) {
       console.error('Error submitting report:', err)
       setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
@@ -744,6 +764,13 @@ export function DetailPage({
                   />
                 </div>
 
+                <TurnstileWidget
+                  action="report-property"
+                  onVerify={(token) => setReportTurnstileToken(token)}
+                  onExpire={() => setReportTurnstileToken(null)}
+                  onError={() => setReportTurnstileToken(null)}
+                />
+
                 {reportError && (
                   <p className="text-xs text-red-600 font-semibold">{reportError}</p>
                 )}
@@ -1047,6 +1074,7 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [contactTurnstileToken, setContactTurnstileToken] = useState<string | null>(null)
 
   async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -1060,6 +1088,22 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
       if (diff < 300000) {
         const remaining = Math.ceil((300000 - diff) / 1000)
         setError(`Has enviado un mensaje recientemente. Espera ${remaining} segundos.`)
+        setLoading(false)
+        return
+      }
+    }
+
+    const isTest = (import.meta as any).env?.MODE === 'test'
+    if (!isTest) {
+      if (!contactTurnstileToken) {
+        setError('Por favor, completa la verificación de seguridad.')
+        setLoading(false)
+        return
+      }
+
+      const isHuman = await verifyTurnstile(contactTurnstileToken)
+      if (!isHuman) {
+        setError('La verificación de seguridad falló. Por favor intenta de nuevo.')
         setLoading(false)
         return
       }
@@ -1160,6 +1204,13 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
                 className="text-xs" 
               />
             </div>
+
+            <TurnstileWidget
+              action="contact-owner"
+              onVerify={(token) => setContactTurnstileToken(token)}
+              onExpire={() => setContactTurnstileToken(null)}
+              onError={() => setContactTurnstileToken(null)}
+            />
 
             <Button
               type="submit"

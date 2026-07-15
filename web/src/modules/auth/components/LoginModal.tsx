@@ -15,6 +15,8 @@ import { Input } from '../../../shared/ui/input'
 import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { getAuthRedirectUrl } from '../utils/authRedirects'
+import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
+import { verifyTurnstile } from '../../../shared/lib/turnstile'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -38,6 +40,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [canResendConfirmation, setCanResendConfirmation] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTurnstileToken(null)
+  }, [isRegistering, isResettingPassword])
 
   async function handleGoogleSignIn() {
     if (!navigator.onLine) {
@@ -118,13 +125,27 @@ export function LoginModal({ onClose }: LoginModalProps) {
     const cleanEmail = email.trim().toLowerCase()
 
     if (isResettingPassword) {
-      setLoading(true)
+      const isTest = (import.meta as any).env?.MODE === 'test'
+      if (!isTest) {
+        if (!turnstileToken) {
+          setErrorMsg('Por favor, completa la verificación de seguridad.')
+          return
+        }
+        setLoading(true)
+        const isHuman = await verifyTurnstile(turnstileToken)
+        if (!isHuman) {
+          setErrorMsg('La verificación de seguridad falló. Por favor intenta de nuevo.')
+          setLoading(false)
+          return
+        }
+      }
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
         })
         if (error) throw error
         setSuccessMsg('Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.')
+        setTurnstileToken(null)
       } catch (err: any) {
         setErrorMsg(err?.message || 'No pudimos enviar el correo de recuperacion.')
       } finally {
@@ -150,7 +171,22 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     }
 
-    setLoading(true)
+    const isTest = (import.meta as any).env?.MODE === 'test'
+    if (isRegistering && !isTest) {
+      if (!turnstileToken) {
+        setErrorMsg('Por favor, completa la verificación de seguridad.')
+        return
+      }
+      setLoading(true)
+      const isHuman = await verifyTurnstile(turnstileToken)
+      if (!isHuman) {
+        setErrorMsg('La verificación de seguridad falló. Por favor intenta de nuevo.')
+        setLoading(false)
+        return
+      }
+    } else {
+      setLoading(true)
+    }
 
     try {
       if (isRegistering) {
@@ -175,6 +211,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         )
         setCanResendConfirmation(true)
         setConfirmPassword('')
+        setTurnstileToken(null)
       } else {
         // Sign In
         const { error } = await supabase.auth.signInWithPassword({
@@ -446,6 +483,15 @@ export function LoginModal({ onClose }: LoginModalProps) {
                   Olvide mi contrasena
                 </button>
               </div>
+            )}
+
+            {(isRegistering || isResettingPassword) && (
+              <TurnstileWidget
+                action={isResettingPassword ? "forgot-password" : "register-user"}
+                onVerify={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
             )}
 
             <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
