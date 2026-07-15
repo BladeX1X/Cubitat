@@ -946,10 +946,11 @@ Usar este formato y conservar las entradas anteriores:
   HTML de la propiedad con el bundle anterior aunque los assets nuevos ya
   estaban publicados. La clave solo dependia de la URL y sobrevivía a nuevas
   versiones durante hasta 24 horas.
-- Hardening de cache preparado: `CF_VERSION_METADATA.id` forma parte de la clave
-  privada de cache para HTML dinamico de propiedades. Cada despliegue empieza
-  una particion nueva sin purgar ni borrar datos y deja de referenciar bundles
-  anteriores; la prueba del Worker verifica la version incluida en la clave.
+- Hardening de cache preparado: el HTML dinamico de propiedades deja de usar la
+  Cache API manual y conserva `no-cache, no-store, must-revalidate`. Los assets
+  con hash siguen cacheados normalmente, pero cada documento vuelve a tomar el
+  manifiesto vigente; la prueba del Worker verifica que no se consulta la cache
+  HTML obsoleta.
 - Criterio de cierre productivo: desplegar la correccion y pedir a Rodolfo un
   unico reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de
   carga y no generar errores relevantes de consola.

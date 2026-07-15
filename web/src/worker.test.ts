@@ -10,11 +10,6 @@ function createEnv(assetResponse = new Response('<!doctype html><html></html>', 
     },
     VITE_SUPABASE_URL: 'https://example.supabase.co',
     VITE_SUPABASE_ANON_KEY: 'public-anon-key',
-    CF_VERSION_METADATA: {
-      id: 'test-worker-version',
-      tag: '',
-      timestamp: '2026-07-14T00:00:00.000Z',
-    },
     RATE_LIMITER: {
       idFromName: vi.fn(),
       get: vi.fn(() => ({
@@ -374,16 +369,15 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('X-Robots-Tag')).toBeNull()
   })
 
-  it('reapplies noindex headers to cached property HTML on staging', async () => {
-    const cacheMatch = vi.fn(async (_request: Request) => new Response('<!doctype html><html></html>', {
-      headers: { 'Content-Type': 'text/html' },
-    }))
+  it('does not reuse cached property HTML across deployments', async () => {
+    const cacheMatch = vi.fn()
     vi.stubGlobal('caches', {
       default: {
         match: cacheMatch,
         put: vi.fn(),
       },
     })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 503 })))
 
     const response = await worker.fetch(
       new Request('https://preview.cubitat.workers.dev/propiedad/casa-00000000-0000-0000-0000-000000000001'),
@@ -392,9 +386,7 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
-    const cacheRequest = cacheMatch.mock.calls[0]?.[0] as Request
-    expect(new URL(cacheRequest.url).pathname).toBe(
-      '/__cubitat_property_html/test-worker-version/propiedad/casa-00000000-0000-0000-0000-000000000001',
-    )
+    expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate')
+    expect(cacheMatch).not.toHaveBeenCalled()
   })
 })
