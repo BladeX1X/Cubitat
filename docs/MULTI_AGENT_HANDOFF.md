@@ -926,8 +926,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-14 — Codex principal — envio de contacto tras Turnstile
 
-- Estado: **corregido y verificado en local; reintento productivo pendiente de
-  Rodolfo**.
+- Estado: **corregido, fusionado y desplegado; reintento real pendiente de
+  Rodolfo**. PR #46 corrige el submit y PR #49 elimina la cache HTML obsoleta;
+  Worker activo `2ebd9a92-78eb-4828-9b97-a4112faac0d3`.
 - Evidencia productiva del fallo: Turnstile terminaba en `¡Operación exitosa!`,
   pero el boton quedaba en `Enviando mensaje...` y la consola registraba
   `Failed to construct 'FormData': parameter 1 is not of type
@@ -946,11 +947,16 @@ Usar este formato y conservar las entradas anteriores:
   HTML de la propiedad con el bundle anterior aunque los assets nuevos ya
   estaban publicados. La clave solo dependia de la URL y sobrevivía a nuevas
   versiones durante hasta 24 horas.
-- Hardening de cache preparado: el HTML dinamico de propiedades deja de usar la
+- Hardening de cache desplegado: el HTML dinamico de propiedades deja de usar la
   Cache API manual y conserva `no-cache, no-store, must-revalidate`. Los assets
   con hash siguen cacheados normalmente, pero cada documento vuelve a tomar el
   manifiesto vigente; la prueba del Worker verifica que no se consulta la cache
   HTML obsoleta.
-- Criterio de cierre productivo: desplegar la correccion y pedir a Rodolfo un
-  unico reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de
-  carga y no generar errores relevantes de consola.
+- Evidencia segura en produccion: la URL canonica paso del bundle antiguo
+  `index-Bq53CVzk.js` al vigente `index-B97Pc6pl.js`; tras liberar el Service
+  Worker de la pestaña, la aplicacion cargo la version nueva, Turnstile termino
+  en `¡Operacion exitosa!`, el boton quedo habilitado y no aparecieron errores
+  nuevos de consola. No se envio el formulario ni se modificaron datos.
+- Criterio de cierre productivo restante: Rodolfo debe realizar un unico
+  reintento real; debe aparecer `¡Mensaje enviado!`, salir del estado de carga
+  y no generar errores relevantes de consola.
