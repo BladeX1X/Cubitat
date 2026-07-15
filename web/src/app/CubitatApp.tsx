@@ -273,9 +273,26 @@ export function CubitatApp() {
 
   // Fetch properties from Supabase on mount
   useEffect(() => {
+    let active = true
+
     async function loadProperties() {
+      // 1. Cargar cache local de forma inmediata
       try {
-        setLoading(true)
+        const cached = await getCachedProperties()
+        if (active && cached && cached.length > 0) {
+          setProperties(cached)
+          setLoading(false) // Ocultar el esqueleto ya que tenemos datos en caché
+        }
+      } catch (cacheErr) {
+        console.warn('Error cargando caché local en inicio:', cacheErr)
+      }
+
+      // 2. Ejecutar la llamada de red en segundo plano (SWR)
+      try {
+        // Si aún no tenemos propiedades de la caché, mantener el loading activo
+        if (properties.length === 0) {
+          setLoading(true)
+        }
         setError(null)
         const { data, error } = await supabase
           .from('properties')
@@ -284,7 +301,7 @@ export function CubitatApp() {
         
         if (error) throw error
 
-        if (data) {
+        if (data && active) {
           // Map snake_case keys from DB to camelCase keys expected by Property type
           const mapped: Property[] = data.map((item: any) => ({
             id: item.id,
@@ -315,18 +332,28 @@ export function CubitatApp() {
         }
       } catch (err: any) {
         console.error('Error loading properties from Supabase, attempting offline fallback:', err)
-        const cached = await getCachedProperties()
-        if (cached && cached.length > 0) {
-          setProperties(cached)
-        } else {
-          setError(err.message || 'Error al conectar con el servidor.')
+        // Solo mostramos el error si no hay absolutamente ningún dato en memoria
+        if (active && properties.length === 0) {
+          const cached = await getCachedProperties()
+          if (cached && cached.length > 0) {
+            setProperties(cached)
+          } else {
+            setError(err.message || 'Error al conectar con el servidor.')
+          }
         }
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadProperties()
+
+    return () => {
+      active = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshCounter])
 
   // Fetch a single property on demand if not found in preloaded properties array (e.g., drafts/pending_review)
@@ -921,26 +948,42 @@ export function CubitatApp() {
 
 export function PageLoadingState({ pageMode }: { pageMode?: PageMode }) {
   if (pageMode === 'results') {
+    const textStyle: React.CSSProperties = { color: 'transparent', userSelect: 'none' }
+
     return (
       <section className="results-route-fallback" aria-label="Cargando resultados">
         <div className="results-route-fallback__toolbar" />
         <div className="results-route-fallback__content">
           <div className="results-route-fallback__heading">
             <div>
-              <div className="results-route-fallback__line results-route-fallback__line--eyebrow" />
-              <div className="results-route-fallback__line results-route-fallback__line--title" />
+              <div className="results-route-fallback__line results-route-fallback__line--eyebrow" style={textStyle}>
+                Cargando
+              </div>
+              <div className="results-route-fallback__line results-route-fallback__line--title" style={textStyle}>
+                Cargando listado de propiedades
+              </div>
             </div>
-            <div className="results-route-fallback__pill" />
+            <div className="results-route-fallback__pill" style={textStyle}>
+              Filtrar
+            </div>
           </div>
-          <div className="results-route-fallback__line results-route-fallback__line--summary" />
+          <div className="results-route-fallback__line results-route-fallback__line--summary" style={textStyle}>
+            Buscando y filtrando los anuncios disponibles en Cuba...
+          </div>
           <div className="results-route-fallback__grid">
             {Array.from({ length: 8 }).map((_, index) => (
               <div className="results-route-fallback__card" key={index}>
                 <div className="results-route-fallback__photo" />
                 <div className="results-route-fallback__info">
-                  <div className="results-route-fallback__line results-route-fallback__line--price" />
-                  <div className="results-route-fallback__line results-route-fallback__line--card-title" />
-                  <div className="results-route-fallback__line results-route-fallback__line--card-meta" />
+                  <div className="results-route-fallback__line results-route-fallback__line--price" style={textStyle}>
+                    $0,000
+                  </div>
+                  <div className="results-route-fallback__line results-route-fallback__line--card-title" style={textStyle}>
+                    Cargando titulo del anuncio y ubicacion
+                  </div>
+                  <div className="results-route-fallback__line results-route-fallback__line--card-meta" style={textStyle}>
+                    Cargando especificaciones
+                  </div>
                 </div>
               </div>
             ))}
