@@ -1078,6 +1078,13 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
 
   async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    // React no garantiza que currentTarget siga disponible después de un await.
+    // Capturamos los valores enviados antes de verificar Turnstile.
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('contact-name') as string
+    const phone = formData.get('contact-phone') as string
+    const message = formData.get('contact-message') as string
+
     setLoading(true)
     setError(null)
 
@@ -1108,11 +1115,6 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
         return
       }
     }
-
-    const formData = new FormData(e.currentTarget)
-    const name = formData.get('contact-name') as string
-    const phone = formData.get('contact-phone') as string
-    const message = formData.get('contact-message') as string
 
     try {
       const { error: insertError } = await supabase
