@@ -862,3 +862,35 @@ Usar este formato y conservar las entradas anteriores:
   500 kB.
 - Evidencia de cierre productivo (2026-07-14): Rodolfo cerró sesión y confirmó
   que Google presenta el selector de cuenta y que el flujo funciona bien.
+
+### 2026-07-14 — Codex principal — handoff de Turnstile
+
+- Estado: **bloqueado antes de crear recursos**. No se creó ningún widget,
+  Worker, secreto ni cambio de código de Turnstile.
+- Objetivo siguiente: integrar Cloudflare Turnstile de extremo a extremo en los
+  formularios públicos mediante el skill
+  `C:\Users\Jorba\.codex\skills\turnstile-spin\SKILL.md`, manteniendo cada
+  inserción modular y sin reemplazar la lógica actual de los formularios.
+- Preparación comprobada: `npx wrangler --version` devuelve `4.107.0`. WSL no
+  puede arrancar porque la virtualización está deshabilitada; ejecutar los
+  scripts con `C:\Program Files\Git\bin\bash.exe`.
+- Bloqueo exacto: `auth-probe.sh` devolvió
+  `{"status":"missing_token","reason":"no_env_var"}` porque
+  `CLOUDFLARE_API_TOKEN` no está configurado. No se leyó ni mostró ningún token.
+- Permisos necesarios del token personalizado: `Account.Turnstile:Edit` y
+  `Account.Workers Scripts:Edit`, limitado a la cuenta de Cubitat. El usuario
+  debe entregarlo preferentemente mediante variable de entorno o archivo local
+  con permisos de usuario; no guardarlo en el repositorio ni en Obsidian.
+- Secuencia para continuar: volver a `main`, crear una rama `feature/`, cargar
+  el token solo en el proceso, ejecutar `auth-probe.sh` con Git Bash, resolver
+  selección de cuenta si aparece, confirmar dominios (`localhost`,
+  `127.0.0.1`, `cubitathome.com` y el tratamiento de `www.cubitathome.com`),
+  escanear candidatos, presentar el plan de inserción a Rodolfo y esperar su
+  confirmación antes de crear el widget.
+- Después de la confirmación: crear widget administrado, desplegar el Worker
+  `siteverify` del skill en la misma cuenta, añadir el gate sin sustituir los
+  handlers existentes, validar con `validate.sh`, ejecutar lint/pruebas/build,
+  documentar, abrir PR, fusionar y desplegar. Nunca llamar `siteverify` desde el
+  navegador ni escribir el secreto de Turnstile en disco.
+- Estado Git al entregar: `main` está sincronizado en `ba98661`; el único
+  elemento local ajeno al trabajo es `.unlighthouse/`, que debe conservarse.
