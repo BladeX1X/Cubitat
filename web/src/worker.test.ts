@@ -10,6 +10,11 @@ function createEnv(assetResponse = new Response('<!doctype html><html></html>', 
     },
     VITE_SUPABASE_URL: 'https://example.supabase.co',
     VITE_SUPABASE_ANON_KEY: 'public-anon-key',
+    CF_VERSION_METADATA: {
+      id: 'test-worker-version',
+      tag: '',
+      timestamp: '2026-07-14T00:00:00.000Z',
+    },
     RATE_LIMITER: {
       idFromName: vi.fn(),
       get: vi.fn(() => ({
@@ -370,11 +375,12 @@ describe('Cloudflare Worker security contract', () => {
   })
 
   it('reapplies noindex headers to cached property HTML on staging', async () => {
+    const cacheMatch = vi.fn(async (_request: Request) => new Response('<!doctype html><html></html>', {
+      headers: { 'Content-Type': 'text/html' },
+    }))
     vi.stubGlobal('caches', {
       default: {
-        match: vi.fn(async () => new Response('<!doctype html><html></html>', {
-          headers: { 'Content-Type': 'text/html' },
-        })),
+        match: cacheMatch,
         put: vi.fn(),
       },
     })
@@ -386,5 +392,7 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
+    const cacheRequest = cacheMatch.mock.calls[0]?.[0] as Request
+    expect(new URL(cacheRequest.url).searchParams.get('__cubitat_worker_version')).toBe('test-worker-version')
   })
 })

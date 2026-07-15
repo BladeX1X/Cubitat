@@ -109,6 +109,13 @@ El sistema MUST servir metadatos de redes sociales (Open Graph y Twitter Cards) 
 - AND el sistema MUST consultar de forma asíncrona los datos de la propiedad (título, descripción, imagen y precio) desde la base de datos de Supabase
 - AND el sistema MUST reescribir dinámicamente las etiquetas `<meta property="og:*">` y `<meta name="twitter:*">` en el flujo HTML usando `HTMLRewriter` antes de enviarlo al cliente.
 
+#### Scenario: Invalidar HTML de propiedad tras un despliegue
+- GIVEN el Worker conserva HTML de propiedades en la Cache API
+- WHEN se despliega una nueva version del Worker y de los assets estaticos
+- THEN la clave de cache MUST incluir el identificador de la version desplegada
+- AND la primera solicitud MUST generar HTML que referencie los assets de esa version
+- AND las respuestas cacheadas de versiones anteriores MUST dejar de servirse
+
 ### Requirement: Skeletons de Carga con Shimmer (UX Premium)
 El sistema MUST mostrar skeletons de carga animados (shimmer) en lugar de layouts vacíos o spinners genéricos para reducir el layout shift y mejorar la experiencia de usuario percibida.
 
