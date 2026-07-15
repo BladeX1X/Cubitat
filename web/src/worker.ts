@@ -1052,11 +1052,12 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         try {
           const cache = (caches as any).default;
           const cacheUrl = new URL(request.url);
-          cacheUrl.searchParams.set(
-            '__cubitat_worker_version',
-            env.CF_VERSION_METADATA?.id || 'local',
-          );
-          const versionedCacheRequest = new Request(cacheUrl.toString(), request);
+          const workerVersion = encodeURIComponent(env.CF_VERSION_METADATA?.id || 'local');
+          cacheUrl.pathname = `/__cubitat_property_html/${workerVersion}${cacheUrl.pathname}`;
+          const versionedCacheRequest = new Request(cacheUrl.toString(), {
+            method: 'GET',
+            headers: request.headers,
+          });
           const cachedResponse = await cache.match(versionedCacheRequest);
           if (cachedResponse) {
             return withSecurityHeaders(cachedResponse, url);
