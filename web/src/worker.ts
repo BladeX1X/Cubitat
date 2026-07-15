@@ -18,11 +18,6 @@ export interface Env {
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
-  CF_VERSION_METADATA?: {
-    id: string;
-    tag: string;
-    timestamp: string;
-  };
   RATE_LIMITER: any;
 }
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1050,19 +1045,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       
       if (uuidRegex.test(propertyId)) {
         try {
-          const cache = (caches as any).default;
-          const cacheUrl = new URL(request.url);
-          const workerVersion = encodeURIComponent(env.CF_VERSION_METADATA?.id || 'local');
-          cacheUrl.pathname = `/__cubitat_property_html/${workerVersion}${cacheUrl.pathname}`;
-          const versionedCacheRequest = new Request(cacheUrl.toString(), {
-            method: 'GET',
-            headers: request.headers,
-          });
-          const cachedResponse = await cache.match(versionedCacheRequest);
-          if (cachedResponse) {
-            return withSecurityHeaders(cachedResponse, url);
-          }
-
           const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
           const supabaseKey = env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo";
 
@@ -1155,9 +1137,6 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
               });
 
               const finalResponse = withSecurityHeaders(rawResponse, url);
-
-              // Guardar en la caché global de Cloudflare en segundo plano
-              ctx.waitUntil(cache.put(versionedCacheRequest, finalResponse.clone()));
 
               return finalResponse;
             }
