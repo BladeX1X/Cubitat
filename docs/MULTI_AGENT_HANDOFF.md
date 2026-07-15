@@ -894,3 +894,32 @@ Usar este formato y conservar las entradas anteriores:
   navegador ni escribir el secreto de Turnstile en disco.
 - Estado Git al entregar: `main` está sincronizado en `ba98661`; el único
   elemento local ajeno al trabajo es `.unlighthouse/`, que debe conservarse.
+
+### 2026-07-14 — Codex principal — cierre productivo de Turnstile
+
+- Estado: **implementado, fusionado, desplegado y verificado en producción**.
+  PR #44 fusionado como `15c799a`; Worker principal
+  `3ab15656-27fe-4b9c-84ba-3ff4551a3821`.
+- Alcance: formularios públicos de contacto, reporte de propiedad, registro y
+  recuperación de contraseña. El navegador obtiene el token y lo valida contra
+  el Worker administrado
+  `https://turnstile-siteverify-cubitat.pochiprats18.workers.dev`; no llama
+  directamente al secreto de Cloudflare.
+- Incidencia corregida: `TurnstileWidget` dependía de callbacks inline. Cuando
+  `onVerify` actualizaba React, el efecto eliminaba el desafío aprobado y lo
+  montaba otra vez, dejando la interfaz en `Verificando...`.
+- Corrección modular: los callbacks viven en referencias actualizables y el
+  widget solo se remonta al cambiar `action` o `theme`. La prueba de regresión
+  confirmó que antes se renderizaba dos veces y después permanece en una sola
+  instancia.
+- Evidencia: health del Worker responde `200`; una petición dummy devuelve
+  `success: false` y código de token inválido; lint limpio, 41 archivos/147
+  pruebas y build TypeScript/Vite/PWA correcto. Verificación visual local y
+  productiva terminó en `¡Operación exitosa!`, sin errores de consola y sin
+  enviar formularios ni modificar datos.
+- Hardening adicional: se retiraron de `vite.config.ts` dos logs de depuración
+  que imprimían cabeceras completas del proxy local. La sustitución de la clave
+  pública de Supabase en desarrollo se conserva, pero ya no registra cabeceras,
+  cookies ni valores de autenticación.
+- Artefactos locales fuera de Git: `.unlighthouse/` y `tmp/` se conservaron sin
+  incluirlos en los PR.

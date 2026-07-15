@@ -320,14 +320,12 @@ Tipo: ${body.property_type}`;
             proxy.on('proxyReq', (proxyReq, req) => {
               const authHeader = req.headers['authorization'];
               const apiKeyHeader = req.headers['apikey'];
-              console.log('[Proxy Debug] Incoming:', { authHeader, apiKeyHeader, resolvedKeyExists: !!supabaseAnonKey });
               if (!authHeader || authHeader === 'Bearer dummy-key-safe-from-browsers') {
                 proxyReq.setHeader('Authorization', `Bearer ${supabaseAnonKey}`);
               }
               if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
                 proxyReq.setHeader('apikey', supabaseAnonKey);
               }
-              console.log('[Proxy Debug] Outgoing headers:', proxyReq.getHeaders());
             });
           }
         }
