@@ -845,7 +845,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties'];
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
       const allowedAuthenticatedRpcs = ['get_admin_metrics'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
@@ -881,6 +881,22 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         if (await isRateLimited(env, key, 3, 300000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de denuncias excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '300'
+              }
+            }
+          );
+        }
+      }
+      // 1b. Contactos (POST a contacts) - Máximo 5 cada 5 minutos
+      else if (method === 'POST' && tableName === 'contacts') {
+        const key = `${clientIp}:contacts`;
+        if (await isRateLimited(env, key, 5, 300000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de mensajes excedido. Por favor, intenta de nuevo más tarde.' }),
             {
               status: 429,
               headers: {
