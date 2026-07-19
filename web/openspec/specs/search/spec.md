@@ -82,6 +82,14 @@ El sistema MUST permitir guardar una busqueda filtrada como alerta para usuarios
 - AND MUST abrir login
 - AND despues de autenticar MUST intentar crear la alerta pendiente
 
+#### Scenario: Notificar una propiedad coincidente
+- GIVEN una propiedad de otro anunciante pasa por primera vez a `published`
+- WHEN coincide con todos los filtros validos de una alerta activa
+- THEN el sistema MUST crear una sola notificacion interna para el propietario de la alerta
+- AND MUST actualizar `last_sent_at` solo si inserto una notificacion nueva
+- AND un filtro heredado invalido MUST considerarse no coincidente sin abortar la publicacion
+- AND los campos nulos de la propiedad MUST considerarse no coincidentes cuando la alerta exige ese campo
+
 ### Requirement: Nombres accesibles coherentes
 Los controles del buscador MUST exponer nombres accesibles que incluyan su texto visible.
 
