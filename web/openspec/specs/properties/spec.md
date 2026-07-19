@@ -75,6 +75,13 @@ El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar u
 - THEN el sistema MUST registrar el reporte sin requerir cuenta si la politica lo permite
 - AND SHOULD capturar metadatos minimos antifraude sin exponerlos publicamente
 
+#### Scenario: Reporte autenticado compatible con RLS
+- GIVEN un usuario autenticado reporta una propiedad publicada
+- WHEN el sistema inserta el reporte
+- THEN `reporter_id` MUST contener el identificador del usuario autenticado
+- AND un reporte anonimo MUST conservar `reporter_id` nulo
+- AND si la insercion o Turnstile falla el widget MUST renovarse para permitir un reintento seguro
+
 ### Requirement: Normalizacion de contacto de propiedad
 El sistema MUST resolver informacion de contacto desde datos de propiedad y fallback controlado.
 

@@ -5,6 +5,11 @@ import { useSEO } from '../../shared/hooks/useSEO'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
 
+const { mockGetUser, mockTurnstileMount } = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  mockTurnstileMount: vi.fn(),
+}))
+
 // Mock useSavedProperties
 vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
   useSavedProperties: () => ({
@@ -22,12 +27,13 @@ vi.mock('../../shared/ui/TurnstileWidget', async () => {
   const { useEffect, useRef } = await import('react')
 
   return {
-    TurnstileWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
+    TurnstileWidget: ({ action, onVerify }: { action: string; onVerify: (token: string) => void }) => {
       const onVerifyRef = useRef(onVerify)
 
       useEffect(() => {
+        mockTurnstileMount(action)
         onVerifyRef.current('test-turnstile-token')
-      }, [])
+      }, [action])
 
       return null
     },
@@ -66,6 +72,10 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
 vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: (table: string) => mockFrom(table),
+    auth: {
+      getUser: mockGetUser,
+      getSession: vi.fn().mockImplementation(() => Promise.resolve({ data: { session: null }, error: null })),
+    },
   },
 }))
 
@@ -118,6 +128,8 @@ describe('DetailPage - Reportes y Visor', () => {
     mockInsert.mockClear()
     mockNot.mockClear()
     mockFrom.mockClear()
+    mockTurnstileMount.mockClear()
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
   })
 
   it('debería renderizar la información básica de la propiedad', () => {
@@ -219,11 +231,65 @@ describe('DetailPage - Reportes y Visor', () => {
         reason: 'FRAUD',
         description: 'Esta casa no es del anunciante actual.',
         status: 'pending',
+        reporter_id: null,
       })
     })
 
     // Mensaje de éxito de reporte enviado
     expect(screen.getByText('¡Reporte enviado con éxito!')).toBeInTheDocument()
+  })
+
+  it('vincula el reporte autenticado con el usuario para cumplir RLS', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-report-1' } },
+      error: null,
+    })
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /reportar propiedad sospechosa/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'FRAUD' } })
+    fireEvent.change(screen.getByPlaceholderText(/Explica brevemente/i), {
+      target: { value: 'Reporte autenticado de prueba.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        property_id: 'prop-detail-1',
+        reporter_id: 'user-report-1',
+      }))
+    })
+  })
+
+  it('renueva Turnstile cuando falla la insercion de un reporte', async () => {
+    mockInsert.mockResolvedValueOnce({ error: new Error('fallo controlado') })
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /reportar propiedad sospechosa/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'FRAUD' } })
+    fireEvent.change(screen.getByPlaceholderText(/Explica brevemente/i), {
+      target: { value: 'Fallo de insercion controlado.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
+
+    await screen.findByText(/ocurrió un error al enviar el reporte/i)
+    expect(mockTurnstileMount.mock.calls.filter(([action]) => action === 'report-property')).toHaveLength(2)
   })
 
   it('debería guardar una consulta de contacto y mostrar confirmación', async () => {

@@ -79,6 +79,7 @@ export function DetailPage({
   const [reportSuccess, setReportSuccess] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
   const [reportTurnstileToken, setReportTurnstileToken] = useState<string | null>(null)
+  const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
 
   const isAdmin = userRole === 'admin'
 
@@ -94,6 +95,7 @@ export function DetailPage({
 
   async function handleReportSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (reportLoading) return
     setReportLoading(true)
     setReportError(null)
 
@@ -108,19 +110,25 @@ export function DetailPage({
       const isHuman = await verifyTurnstile(reportTurnstileToken)
       if (!isHuman) {
         setReportError('La verificación de seguridad falló. Por favor intenta de nuevo.')
+        setReportTurnstileToken(null)
+        setReportTurnstileKey(prev => prev + 1)
         setReportLoading(false)
         return
       }
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const reporterId = user?.id || null
+
       const { error: insertError } = await supabase
         .from('property_reports')
         .insert({
           property_id: property.id,
           reason: reportReason,
           description: reportDescription,
-          status: 'pending'
+          status: 'pending',
+          reporter_id: reporterId
         })
 
       if (insertError) throw insertError
@@ -132,6 +140,8 @@ export function DetailPage({
     } catch (err: any) {
       console.error('Error submitting report:', err)
       setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
+      setReportTurnstileToken(null)
+      setReportTurnstileKey(prev => prev + 1)
     } finally {
       setReportLoading(false)
     }
@@ -765,6 +775,7 @@ export function DetailPage({
                 </div>
 
                 <TurnstileWidget
+                  key={reportTurnstileKey}
                   action="report-property"
                   onVerify={(token) => setReportTurnstileToken(token)}
                   onExpire={() => setReportTurnstileToken(null)}
@@ -1075,9 +1086,11 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [contactTurnstileToken, setContactTurnstileToken] = useState<string | null>(null)
+  const [contactTurnstileKey, setContactTurnstileKey] = useState(0)
 
   async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (loading) return
     // React no garantiza que currentTarget siga disponible después de un await.
     // Capturamos los valores enviados antes de verificar Turnstile.
     const formData = new FormData(e.currentTarget)
@@ -1111,6 +1124,8 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
       const isHuman = await verifyTurnstile(contactTurnstileToken)
       if (!isHuman) {
         setError('La verificación de seguridad falló. Por favor intenta de nuevo.')
+        setContactTurnstileToken(null)
+        setContactTurnstileKey(prev => prev + 1)
         setLoading(false)
         return
       }
@@ -1133,6 +1148,8 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
     } catch (err: any) {
       console.error('Error submitting contact lead:', err)
       setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
+      setContactTurnstileToken(null)
+      setContactTurnstileKey(prev => prev + 1)
     } finally {
       setLoading(false)
     }
@@ -1208,6 +1225,7 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
             </div>
 
             <TurnstileWidget
+              key={contactTurnstileKey}
               action="contact-owner"
               onVerify={(token) => setContactTurnstileToken(token)}
               onExpire={() => setContactTurnstileToken(null)}
