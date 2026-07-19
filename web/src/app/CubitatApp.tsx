@@ -276,10 +276,13 @@ export function CubitatApp() {
     let active = true
 
     async function loadProperties() {
+      let hasUsableCache = false
+
       // 1. Cargar cache local de forma inmediata
       try {
         const cached = await getCachedProperties()
         if (active && cached && cached.length > 0) {
+          hasUsableCache = true
           setProperties(cached)
           setLoading(false) // Ocultar el esqueleto ya que tenemos datos en caché
         }
@@ -290,7 +293,7 @@ export function CubitatApp() {
       // 2. Ejecutar la llamada de red en segundo plano (SWR)
       try {
         // Si aún no tenemos propiedades de la caché, mantener el loading activo
-        if (properties.length === 0) {
+        if (!hasUsableCache) {
           setLoading(true)
         }
         setError(null)
@@ -328,18 +331,13 @@ export function CubitatApp() {
             contact_info: getPropertyContactInfo(item.id, item.contact_info)
           }))
           setProperties(mapped)
-          saveCachedProperties(mapped) // Guardar copia para uso offline
+          void saveCachedProperties(mapped) // Guardar copia para uso offline
         }
       } catch (err: any) {
         console.error('Error loading properties from Supabase, attempting offline fallback:', err)
         // Solo mostramos el error si no hay absolutamente ningún dato en memoria
-        if (active && properties.length === 0) {
-          const cached = await getCachedProperties()
-          if (cached && cached.length > 0) {
-            setProperties(cached)
-          } else {
-            setError(err.message || 'Error al conectar con el servidor.')
-          }
+        if (active && !hasUsableCache) {
+          setError(err.message || 'Error al conectar con el servidor.')
         }
       } finally {
         if (active) {
@@ -353,7 +351,6 @@ export function CubitatApp() {
     return () => {
       active = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshCounter])
 
   // Fetch a single property on demand if not found in preloaded properties array (e.g., drafts/pending_review)

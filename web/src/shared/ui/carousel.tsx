@@ -149,7 +149,7 @@ Carousel.displayName = 'Carousel'
 const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(({ className, style, ...props }, ref) => {
   const { carouselRef, orientation } = useCarousel()
 
   return (
@@ -161,6 +161,10 @@ const CarouselContent = React.forwardRef<
           orientation === 'horizontal' ? '' : 'flex-col',
           className
         )}
+        style={{
+          touchAction: orientation === 'horizontal' ? 'pan-y pinch-zoom' : 'pan-x pinch-zoom',
+          ...style
+        }}
         {...props}
       />
     </div>
