@@ -4,6 +4,7 @@ import { MetricsTab } from '../../modules/admin/metrics/MetricsTab'
 import { PropertiesTab } from '../../modules/admin/properties/PropertiesTab'
 import { ReportsTab } from '../../modules/admin/reports/ReportsTab'
 import { AuditLogTab } from '../../modules/admin/audit-log/AuditLogTab'
+import { AdminMfaGate } from '../../modules/auth/mfa/AdminMfaGate'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
@@ -54,9 +55,10 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <AdminMfaGate>
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-400">Administración</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight text-neutral-900 sm:text-[28px]">
             Panel de moderación
@@ -64,31 +66,32 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
           <p className="mt-1 text-sm text-neutral-500">
             Revisión de anuncios publicados y reportes enviados por usuarios.
           </p>
-        </div>
+          </div>
 
-        <nav aria-label="Secciones de moderación" className="flex h-fit w-full gap-2 overflow-x-auto rounded-xl bg-neutral-100 p-1.5 sm:w-fit sm:rounded-full">
-          {SECTIONS.map((section) => (
-            <button
-              key={section.id}
-              type="button"
-              aria-current={activeSection === section.id ? 'page' : undefined}
-              onClick={() => setActiveSection(section.id)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
-                activeSection === section.id
-                  ? 'bg-[#035f53] text-white shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              {section.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+          <nav aria-label="Secciones de moderación" className="flex h-fit w-full gap-2 overflow-x-auto rounded-xl bg-neutral-100 p-1.5 sm:w-fit sm:rounded-full">
+            {SECTIONS.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                aria-current={activeSection === section.id ? 'page' : undefined}
+                onClick={() => setActiveSection(section.id)}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+                  activeSection === section.id
+                    ? 'bg-[#035f53] text-white shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
+        </header>
 
-      {activeSection === 'properties' && <PropertiesTab />}
-      {activeSection === 'reports' && <ReportsTab />}
-      {activeSection === 'metrics' && <MetricsTab />}
-      {activeSection === 'audit' && <AuditLogTab />}
-    </div>
+        {activeSection === 'properties' && <PropertiesTab />}
+        {activeSection === 'reports' && <ReportsTab />}
+        {activeSection === 'metrics' && <MetricsTab />}
+        {activeSection === 'audit' && <AuditLogTab />}
+      </div>
+    </AdminMfaGate>
   )
 }

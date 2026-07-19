@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-13
+Última actualización: 2026-07-19
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -21,25 +21,25 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
-- Rama base actual: `main`; commit funcional `60cd5ff` tras fusionar los PR #4
-  y #5. Los commits documentales posteriores no cambian el artefacto desplegado.
-- Migraciones: 41 migraciones sincronizadas con producción; la migración 39
-  endurece RLS, la 40 incorpora métricas agregadas admin-only y la 41 limita
-  tipos/tamaños de Storage y reconcilia sus políticas por propietario.
-- Validación local más reciente: lint limpio, 20 archivos de pruebas y 80
-  pruebas aprobadas, build de producción correcto y sitemap de 1007 URLs.
+- Rama base actual: `main` en `8569819`; el endurecimiento MFA está en
+  `codex/admin-mfa-enforcement` pendiente de integración mediante PR.
+- Migraciones: 47 migraciones sincronizadas con producción. La migración 47
+  exige `aal2` además del rol admin en RLS y en la RPC de métricas, sin alterar
+  los permisos legítimos del propietario.
+- Validación local más reciente: lint limpio, 45 archivos y 172 pruebas
+  aprobadas, build TypeScript/Vite/PWA correcto y sitemap de 473 URLs.
 - Recuperación de contraseña:
   - plantilla remota portable con `token_hash` aplicada mediante Supabase CLI;
   - enlace real probado sin el error PKCE entre navegadores;
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
-- Despliegue funcional del PR #22 verificado en Cloudflare: versión
-  `f7c6cddb-e56a-4aff-99cb-a60fafaacf42` del Worker `cubitat1`, publicada el
-  2026-07-14. La integración automática puede rotar el ID al fusionar cambios
-  documentales sin alterar el código web verificado.
+- Despliegue productivo vigente: Worker `cubitat1`, versión
+  `1da6d418-9c44-418a-97eb-76f2c69ceba1`, activa al 100 % desde el 2026-07-19.
 - Google OAuth funciona de extremo a extremo.
-- Panel de moderación accesible para administrador. Último estado observado:
-  0 pendientes, 9 rechazadas por IA y 303 publicadas.
+- Panel de moderación protegido por TOTP/AAL2. La sesión administrativa elevada
+  cargó propiedades, reportes, bitácora y métricas en producción sin errores de
+  consola; una prueba transaccional confirmó denegación completa para admin
+  `aal1` y aislamiento del propietario normal.
 - Las rutas directas de recuperación inválidas mantienen campos y envío
   deshabilitados.
 
@@ -66,6 +66,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. PR #20 fusionado y Worker `1d8ae4c4-8223-4499-b013-7bd0bfe29099` verificado en producción con sesión admin: tres módulos operativos y consola limpia. Sin migraciones ni cambios de datos. |
 | K. Contexto del anunciante | Terminado | Codex principal | PR #22 fusionado y desplegado; contexto real cargado bajo demanda con sesión admin, guard conservado y consola limpia. Inspección visual móvil real queda como pendiente no bloqueante. |
 | L. Bitácora de moderación | En curso | Codex principal | PR #26 fusionado y desplegado; migración 42 sincronizada y bitácora admin verificada en producción con consola limpia. Falta evidencia productiva específica de denegación para usuario normal/anónimo y del rechazo de mutaciones antes de marcar terminado. |
+| P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -1057,3 +1058,30 @@ Usar este formato y conservar las entradas anteriores:
 - Estado: **fusionado, desplegado y verificado en producción; validación de
   Google en curso**. El conteo histórico de Search Console no cambiará hasta
   que Google vuelva a rastrear las URLs.
+
+### 2026-07-19 — Codex principal — carril P, MFA administrativo
+
+- Estado: **terminado técnicamente y verificado en producción** en la rama
+  `codex/admin-mfa-enforcement`; pendiente únicamente integrar el PR en `main`.
+- Frontend: `src/modules/auth/mfa` encapsula estado, enrolamiento TOTP,
+  eliminación de factores incompletos y desafío; `AdminPage` conserva primero
+  el guard de rol y no renderiza datos administrativos hasta obtener `aal2`.
+  El QR y el código viven solo durante el flujo y no se registraron, copiaron ni
+  persistieron.
+- Backend: Worker exige `aal2` en métricas y reevaluación administrativa; la
+  migración 47 aplica `is_admin_aal2()` a propiedades ajenas, perfiles,
+  contactos, reportes, bitácora y `get_admin_metrics()`. Los permisos del dueño
+  sobre sus propios datos permanecen en `aal1`.
+- Supabase: TOTP habilitado. `migration list --linked` confirma 47 migraciones
+  sincronizadas, `db lint --linked` no reporta errores y el dry-run indica que
+  la base remota está actualizada.
+- Matriz productiva transaccional con `ROLLBACK`: admin AAL1 obtuvo 0
+  propiedades privadas ajenas, 0 reportes y 0 eventos; admin AAL2 obtuvo 5, 6
+  y 4 respectivamente; propietario normal AAL1 vio sus 5 publicaciones y 0
+  datos privados ajenos, reportes o bitácora. No persistieron cambios.
+- UI productiva: la sesión AAL2 abrió Propiedades, Reportes, Bitácora y Métricas;
+  métricas devolvió datos reales de Cloudflare, Supabase y GA4. Consola sin
+  errores ni advertencias. No se ejecutaron acciones de moderación.
+- Calidad: lint limpio, 45 archivos/172 pruebas y build TypeScript/Vite/PWA
+  correcto; sitemap de 473 URLs. Worker activo
+  `1da6d418-9c44-418a-97eb-76f2c69ceba1`.

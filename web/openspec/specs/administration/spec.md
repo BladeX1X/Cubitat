@@ -26,6 +26,19 @@ El sistema MUST limitar la administracion a usuarios con rol autorizado.
 - THEN el sistema MUST abrir login o redirigir a inicio
 - AND MUST evitar cualquier consulta de datos administrativos
 
+### Requirement: Sesion administrativa elevada
+El sistema MUST validar rol administrador y `aal2` en interfaz, Worker, RPC y RLS para funciones sensibles.
+
+#### Scenario: Admin en AAL1 intenta saltarse el guard
+- GIVEN una sesion valida de administrador con `aal1`
+- WHEN consulta datos privados, metricas o bitacora, o intenta moderar contenido
+- THEN el backend MUST denegar la operacion
+
+#### Scenario: Admin en AAL2
+- GIVEN una sesion valida de administrador con `aal2`
+- WHEN accede al panel o ejecuta una accion de moderacion permitida
+- THEN el sistema MUST autorizarla conforme a las politicas restantes
+
 ### Requirement: Gestion de publicaciones
 El sistema MUST permitir revisar estado y calidad de anuncios.
 

@@ -25,6 +25,11 @@ function createContext() {
   }
 }
 
+function testJwt(aal: 'aal1' | 'aal2') {
+  const payload = btoa(JSON.stringify({ aal })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+  return `header.${payload}.signature`
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -262,6 +267,67 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('returns 403 when an admin at aal1 requests metrics', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/metrics', {
+        headers: { Authorization: `Bearer ${testJwt('aal1')}` },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('allows an admin at aal2 to request metrics', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/metrics', {
+        headers: { Authorization: `Bearer ${testJwt('aal2')}` },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+  })
+
+  it('blocks an aal1 admin from reevaluating another user property', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${testJwt('aal1')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
+  })
+
   it('forwards the authenticated admin metrics RPC and blocks unknown RPCs', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ db_bytes: 42 }), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
@@ -337,6 +403,31 @@ describe('Cloudflare Worker security contract', () => {
     expect(forwardedHeaders.get('Prefer')).toBe('return=minimal')
     expect(forwardedHeaders.has('Cookie')).toBe(false)
     expect(forwardedHeaders.has('X-Untrusted-Header')).toBe(false)
+  })
+
+  it('forwards authenticated MFA factor cleanup but blocks anonymous deletion', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const allowedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/factors/factor-1', {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer authenticated-user-token' },
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const blockedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/factors/factor-1', {
+        method: 'DELETE',
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(allowedResponse.status).toBe(200)
+    expect(blockedResponse.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('marks non-canonical environments as non-indexable', async () => {

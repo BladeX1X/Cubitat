@@ -115,6 +115,21 @@ exactamente el orden cronológico de los archivos.
     campos nulos como no coincidentes cuando el filtro los exige y descarta
     filtros heredados inválidos sin abortar la publicación.
 
+### MFA administrativo — 2026-07-19
+
+47. `20260719001000_enforce_admin_mfa.sql`: exige sesión `aal2` además del rol
+    administrador en propiedades ajenas, perfiles, contactos, reportes,
+    bitácora y métricas; conserva intactas las ramas legítimas del propietario.
+
+Verificación productiva 2026-07-19: las 47 migraciones están sincronizadas,
+`db lint --linked` no reporta errores y el dry-run remoto indica que la base
+está actualizada. Una prueba vinculada dentro de `BEGIN`/`ROLLBACK` confirmó:
+admin `aal1` con 0 propiedades privadas ajenas, 0 reportes y 0 eventos de
+bitácora; admin `aal2` con acceso a 5 propiedades privadas ajenas, 6 reportes y
+4 eventos; propietario normal `aal1` con 5 publicaciones propias y 0 datos
+administrativos o privados ajenos. No se crearon ni modificaron filas
+persistentes.
+
 Verificación productiva 2026-07-19: la migración 46 fue aplicada al proyecto
 vinculado con Supabase CLI 2.109.1. `migration list --linked` confirma las 46
 migraciones sincronizadas, `db lint --linked` no reporta errores y el dry-run

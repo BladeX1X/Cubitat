@@ -58,9 +58,11 @@ const databaseMetrics = {
   reports_count: 3,
 }
 
-const { mockRpc, mockGetSession } = vi.hoisted(() => ({
+const { mockRpc, mockGetSession, mockGetAal, mockListFactors } = vi.hoisted(() => ({
   mockRpc: vi.fn(),
   mockGetSession: vi.fn(),
+  mockGetAal: vi.fn(),
+  mockListFactors: vi.fn(),
 }))
 
 const mockFrom = vi.fn().mockImplementation((table: string) => {
@@ -90,7 +92,13 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: (table: string) => mockFrom(table),
     rpc: mockRpc,
-    auth: { getSession: mockGetSession },
+    auth: {
+      getSession: mockGetSession,
+      mfa: {
+        getAuthenticatorAssuranceLevel: mockGetAal,
+        listFactors: mockListFactors,
+      },
+    },
   },
 }))
 
@@ -101,6 +109,11 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       data: { session: { access_token: 'admin-test-token' } },
       error: null,
     })
+    mockGetAal.mockReset().mockResolvedValue({
+      data: { currentLevel: 'aal2', nextLevel: 'aal2' },
+      error: null,
+    })
+    mockListFactors.mockReset().mockResolvedValue({ data: { all: [], totp: [] }, error: null })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       new Response(JSON.stringify({
         cloudflare: { requests: 42, error: '' },
@@ -125,6 +138,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
 
   it('debería alternar a la pestaña de "Reportes" y listar las quejas activas', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
 
     // Hacer clic en la pestaña Reportes
     const tabButton = screen.getByRole('button', { name: /reportes/i })
@@ -139,6 +153,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
 
   it('debería llamar a la acción de ocultar propiedad y resolver reporte al hacer clic en "Ocultar propiedad"', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
 
     // Cambiar a pestaña reportes
     fireEvent.click(screen.getByRole('button', { name: /reportes/i }))
@@ -160,6 +175,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
 
   it('debería descartar el reporte al hacer clic en "Descartar reporte"', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
 
     // Cambiar a pestaña reportes
     fireEvent.click(screen.getByRole('button', { name: /reportes/i }))
@@ -183,6 +199,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       .mockResolvedValueOnce({ data: databaseMetrics, error: null })
 
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
     fireEvent.click(screen.getByRole('button', { name: 'Métricas' }))
 
     await waitFor(() => {
@@ -200,6 +217,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
 
   it('abre la bitácora como una sección administrativa aislada', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
     fireEvent.click(screen.getByRole('button', { name: 'Bitácora' }))
 
     await waitFor(() => {
