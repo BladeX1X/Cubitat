@@ -121,6 +121,14 @@ migraciones sincronizadas, `db lint --linked` no reporta errores y el dry-run
 posterior indica que la base remota está actualizada. La advertencia de Docker
 afectó únicamente el cache local del catálogo y no la aplicación remota.
 
+Cierre QA productivo 2026-07-19: una prueba vinculada ejecutada completamente
+dentro de `BEGIN`/`ROLLBACK` confirmó coincidencia (`1` notificación y
+`last_sent_at` actualizado), no coincidencia (`0`), descarte seguro de filtros
+heredados inválidos (`0`) e idempotencia tras volver a publicar (`1` total para
+el mismo `event_key`). Una consulta independiente posterior confirmó 0 alertas,
+0 propiedades, 0 notificaciones y 0 eventos de auditoría con el marcador QA.
+No persistieron datos de prueba.
+
 Verificación productiva 2026-07-14: migraciones 43 y 44 aplicadas al proyecto
 vinculado. `migration list --linked` confirma 44 migraciones sincronizadas,
 `db lint --linked` no reporta errores y el dry-run posterior indica que la base

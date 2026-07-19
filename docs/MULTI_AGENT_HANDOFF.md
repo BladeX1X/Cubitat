@@ -1007,9 +1007,19 @@ Usar este formato y conservar las entradas anteriores:
 - Migración 46 aplicada el 2026-07-19: las 46 migraciones están sincronizadas,
   `db lint --linked` quedó limpio y el dry-run posterior no encontró pendientes.
   La advertencia por Docker correspondió solo al cache local del catálogo.
-- Próximo paso: ejecutar una prueba QA transaccional de
-  coincidencia/no coincidencia/idempotencia, verificar OAuth y reintento
-  Turnstile en producción, y entonces cerrar el hito en Obsidian.
+- Prueba QA transaccional de la migración 46 completada el 2026-07-19 mediante
+  `supabase db query --linked` dentro de `BEGIN`/`ROLLBACK`. Se usaron dos
+  usuarios existentes sin exponer sus datos y marcadores UUID/labels aislados.
+  La coincidencia creó exactamente una notificación y actualizó `last_sent_at`;
+  la alerta con operación no coincidente y la alerta heredada con filtros
+  inválidos crearon cero; el ciclo `published → paused → published` conservó
+  una sola notificación por `event_key`.
+- Limpieza confirmada por una consulta independiente: 0 alertas, 0 propiedades,
+  0 notificaciones y 0 eventos de auditoría con el marcador QA. No se
+  persistieron datos productivos.
+- Subhito de alertas: **terminado con evidencia productiva completa**. Próximo
+  paso del lote: verificar OAuth y reintento Turnstile en producción, sin
+  repetir flujos que Rodolfo ya haya confirmado manualmente.
 
 ### 2026-07-19 — cierre productivo del informe de indexación
 
