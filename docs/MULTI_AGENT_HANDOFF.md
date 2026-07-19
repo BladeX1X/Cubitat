@@ -1004,10 +1004,12 @@ Usar este formato y conservar las entradas anteriores:
 - Bloqueo documental resuelto el 2026-07-19: la unidad `G:` volvió a estar
   disponible y se actualizaron únicamente checklist, roadmap y dashboard de
   Obsidian con el hardening pendiente y la evidencia local vigente.
-- Próximo paso: revisar la migración 46, aplicar con el procedimiento de
-  despliegue, ejecutar una prueba QA transaccional de coincidencia/no
-  coincidencia/idempotencia, verificar OAuth y reintento Turnstile en
-  producción, y entonces cerrar el hito en Obsidian.
+- Migración 46 aplicada el 2026-07-19: las 46 migraciones están sincronizadas,
+  `db lint --linked` quedó limpio y el dry-run posterior no encontró pendientes.
+  La advertencia por Docker correspondió solo al cache local del catálogo.
+- Próximo paso: ejecutar una prueba QA transaccional de
+  coincidencia/no coincidencia/idempotencia, verificar OAuth y reintento
+  Turnstile en producción, y entonces cerrar el hito en Obsidian.
 
 ### 2026-07-19 — corrección local del informe de indexación
 
