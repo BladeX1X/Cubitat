@@ -21,8 +21,8 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
-- Rama base actual: `main` en `8569819`; el endurecimiento MFA está en
-  `codex/admin-mfa-enforcement` pendiente de integración mediante PR.
+- Rama base actual: `main` en `ba9867f`; el endurecimiento MFA se integró
+  mediante el PR #55.
 - Migraciones: 47 migraciones sincronizadas con producción. La migración 47
   exige `aal2` además del rol admin en RLS y en la RPC de métricas, sin alterar
   los permisos legítimos del propietario.
@@ -34,7 +34,7 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
 - Despliegue productivo vigente: Worker `cubitat1`, versión
-  `1da6d418-9c44-418a-97eb-76f2c69ceba1`, activa al 100 % desde el 2026-07-19.
+  `91e5452f-0e83-483b-9667-f2bd114331dd`, activa al 100 % desde el 2026-07-19.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación protegido por TOTP/AAL2. La sesión administrativa elevada
   cargó propiedades, reportes, bitácora y métricas en producción sin errores de
@@ -1061,8 +1061,8 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-19 — Codex principal — carril P, MFA administrativo
 
-- Estado: **terminado técnicamente y verificado en producción** en la rama
-  `codex/admin-mfa-enforcement`; pendiente únicamente integrar el PR en `main`.
+- Estado: **fusionado, desplegado y verificado en producción** mediante el PR
+  #55, integrado en `main` como `ba9867f`.
 - Frontend: `src/modules/auth/mfa` encapsula estado, enrolamiento TOTP,
   eliminación de factores incompletos y desafío; `AdminPage` conserva primero
   el guard de rol y no renderiza datos administrativos hasta obtener `aal2`.
@@ -1084,4 +1084,7 @@ Usar este formato y conservar las entradas anteriores:
   errores ni advertencias. No se ejecutaron acciones de moderación.
 - Calidad: lint limpio, 45 archivos/172 pruebas y build TypeScript/Vite/PWA
   correcto; sitemap de 473 URLs. Worker activo
-  `1da6d418-9c44-418a-97eb-76f2c69ceba1`.
+  `91e5452f-0e83-483b-9667-f2bd114331dd`. Comprobación posterior al merge:
+  `/` y `/moderar` respondieron HTTP 200, la ruta administrativa conservó
+  `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` y el chunk productivo
+  incluyó el guard MFA/AAL2.
