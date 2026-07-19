@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
+import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 
 const SITE_URL = 'https://cubitathome.com'
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -8,43 +9,6 @@ const TODAY = new Date().toISOString().slice(0, 10)
 const staticRoutes = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
   { path: '/resultados', priority: '0.9', changefreq: 'daily' },
-  { path: '/resultados?operacion=venta', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?operacion=alquiler', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?operacion=permuta', priority: '0.7', changefreq: 'weekly' },
-  { path: '/resultados?tipo=casa', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?tipo=apartamento', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?tipo=terreno', priority: '0.7', changefreq: 'weekly' },
-]
-
-const seoProvinces = [
-  'Pinar del Río',
-  'Artemisa',
-  'La Habana',
-  'Mayabeque',
-  'Matanzas',
-  'Cienfuegos',
-  'Villa Clara',
-  'Sancti Spíritus',
-  'Ciego de Ávila',
-  'Camagüey',
-  'Las Tunas',
-  'Holguín',
-  'Granma',
-  'Santiago de Cuba',
-  'Guantánamo',
-  'Isla de la Juventud',
-]
-
-const seoOperations = [
-  { slug: 'venta', priority: '0.86', changefreq: 'daily' },
-  { slug: 'renta', priority: '0.86', changefreq: 'daily' },
-  { slug: 'permuta', priority: '0.82', changefreq: 'weekly' },
-]
-
-const seoPropertyTypes = [
-  { slug: 'casas', priority: '0.84', changefreq: 'daily' },
-  { slug: 'apartamentos', priority: '0.84', changefreq: 'daily' },
-  { slug: 'terrenos', priority: '0.78', changefreq: 'weekly' },
 ]
 
 function escapeXml(value) {
@@ -77,48 +41,18 @@ function operationToSlug(operation) {
   return 'permuta'
 }
 
-function buildSeoLandingRoutes() {
-  return seoProvinces.flatMap((province) => {
-    const provinceSlug = slugify(province)
-    const operationRoutes = seoOperations.map((operation) => ({
-      path: `/${operation.slug}/${provinceSlug}`,
-      priority: operation.priority,
-      changefreq: operation.changefreq,
-    }))
-
-    const typedRoutes = seoOperations.flatMap((operation) =>
-      seoPropertyTypes.map((propertyType) => ({
-        path: `/${propertyType.slug}-en-${operation.slug}/${provinceSlug}`,
-        priority: propertyType.priority,
-        changefreq: propertyType.changefreq,
-      })),
-    )
-
-    return [...operationRoutes, ...typedRoutes]
-  })
-}
-
-function readMunicipalitySeoRoutes() {
+function readMunicipalityDirectory() {
   try {
     const source = readFileSync(resolve('src/shared/data/cubaLocations.ts'), 'utf8')
     const blocks = [...source.matchAll(/^  (?:'([^']+)'|([^:]+)):\s*\[([\s\S]*?)^  \],/gm)]
 
-    return blocks.flatMap((match) => {
+    return Object.fromEntries(blocks.map((match) => {
       const province = (match[1] || match[2] || '').trim()
-      const provinceSlug = slugify(province)
       const municipalities = [...match[3].matchAll(/'([^']+)'/g)].map((item) => item[1])
-
-      return municipalities.flatMap((municipality) => {
-        const municipalitySlug = slugify(municipality)
-        return seoOperations.map((operation) => ({
-          path: `/${operation.slug}/${provinceSlug}/${municipalitySlug}`,
-          priority: '0.72',
-          changefreq: operation.changefreq,
-        }))
-      })
-    })
+      return [province, municipalities]
+    }))
   } catch {
-    return []
+    return {}
   }
 }
 
@@ -157,15 +91,16 @@ async function readPublishedProperties() {
     .order('created_at', { ascending: false })
 
   if (error) throw error
+  return data ?? []
+}
 
-  return (data ?? []).flatMap((property) => {
-    if (!property.id || !property.location || !property.operation || !property.property_type) {
-      return []
-    }
+function buildPropertyRoutes(properties) {
+  return properties.flatMap((property) => {
+    if (!property.id || !property.location || !property.operation || !property.property_type) return []
 
     const typeSlug = propertyTypeToSlug(property.property_type)
     const operationSlug = operationToSlug(property.operation)
-    const locationSlug = slugify(property.location || 'cuba') || 'cuba'
+    const locationSlug = slugify(property.location) || 'cuba'
 
     return [{
       path: `/propiedad/${typeSlug}-en-${operationSlug}-en-${locationSlug}-${property.id}`,
@@ -175,11 +110,11 @@ async function readPublishedProperties() {
   })
 }
 
+const publishedProperties = await readPublishedProperties()
 const routes = [
   ...staticRoutes,
-  ...buildSeoLandingRoutes(),
-  ...readMunicipalitySeoRoutes(),
-  ...await readPublishedProperties(),
+  ...buildInventorySeoRoutes(publishedProperties, readMunicipalityDirectory()),
+  ...buildPropertyRoutes(publishedProperties),
 ]
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

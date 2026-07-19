@@ -52,7 +52,34 @@ function shouldDisallowIndexing(url?: URL): boolean {
   })
 }
 
-function withSecurityHeaders(response: Response, url?: URL): Response {
+function canonicalUrl(url: URL): string {
+  return `${url.origin}${url.pathname}`
+}
+
+async function rewriteCanonicalLink(
+  response: Response,
+  url: URL,
+  indexable = !shouldDisallowIndexing(url),
+): Promise<Response> {
+  if (!response.headers.get('Content-Type')?.includes('text/html')) return response
+
+  const canonicalPattern = /<link\b[^>]*rel=["']canonical["'][^>]*>/i
+  const html = await response.text()
+  const canonicalTag = `<link rel="canonical" href="${canonicalUrl(url)}" />`
+  const body = indexable
+    ? canonicalPattern.test(html)
+      ? html.replace(canonicalPattern, canonicalTag)
+      : html.replace('</head>', `${canonicalTag}</head>`)
+    : html.replace(canonicalPattern, '')
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  })
+}
+
+function withSecurityHeaders(response: Response, url?: URL, forceNoIndex = false): Response {
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
@@ -60,7 +87,7 @@ function withSecurityHeaders(response: Response, url?: URL): Response {
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
   headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
-  if (shouldDisallowIndexing(url)) {
+  if (forceNoIndex || shouldDisallowIndexing(url)) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
   }
 
@@ -1111,7 +1138,12 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 })
                 .on('meta[property="og:url"]', {
                   element(el: any) {
-                    el.setAttribute('content', url.toString());
+                    el.setAttribute('content', canonicalUrl(url));
+                  }
+                })
+                .on('link[rel="canonical"]', {
+                  element(el: any) {
+                    el.setAttribute('href', canonicalUrl(url));
                   }
                 })
                 .on('meta[property="og:type"]', {
@@ -1141,10 +1173,42 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
               return finalResponse;
             }
           }
+
+          const assetResponse = await env.ASSETS.fetch(request);
+          const notFoundResponse = new Response(assetResponse.body, {
+            status: supabaseResponse.ok ? 404 : 503,
+            headers: assetResponse.headers,
+          });
+          return withSecurityHeaders(
+            await rewriteCanonicalLink(notFoundResponse, url, false),
+            url,
+            true,
+          );
         } catch (err) {
           console.error('Error al interceptar tags dinámicos:', err);
+          const assetResponse = await env.ASSETS.fetch(request);
+          const unavailableResponse = new Response(assetResponse.body, {
+            status: 503,
+            headers: assetResponse.headers,
+          });
+          return withSecurityHeaders(
+            await rewriteCanonicalLink(unavailableResponse, url, false),
+            url,
+            true,
+          );
         }
       }
+
+      const assetResponse = await env.ASSETS.fetch(request);
+      const invalidPropertyResponse = new Response(assetResponse.body, {
+        status: 404,
+        headers: assetResponse.headers,
+      });
+      return withSecurityHeaders(
+        await rewriteCanonicalLink(invalidPropertyResponse, url, false),
+        url,
+        true,
+      );
     }
 
     // Retorno por defecto (activos estáticos normales del frontend)
@@ -1178,6 +1242,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         headers: newHeaders
       });
     }
+
+    response = await rewriteCanonicalLink(response, url);
 
     return withSecurityHeaders(response, url);
   }

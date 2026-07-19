@@ -13,6 +13,10 @@ function metaContent(selector: string) {
   return document.head.querySelector<HTMLMetaElement>(selector)?.content
 }
 
+function canonicalHref() {
+  return document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href
+}
+
 describe('useSEO', () => {
   it('elimina query string y fragmento de una URL explicita', () => {
     render(
@@ -25,6 +29,7 @@ describe('useSEO', () => {
     expect(metaContent('meta[property="og:url"]')).toBe(
       'https://cubitathome.com/propiedad/casa-demo',
     )
+    expect(canonicalHref()).toBe('https://cubitathome.com/propiedad/casa-demo')
   })
 
   it('reemplaza los metadatos opcionales al navegar a una pagina sin valores propios', () => {
@@ -54,5 +59,7 @@ describe('useSEO', () => {
     expect(metaContent('meta[property="og:type"]')).toBe('website')
     expect(metaContent('meta[name="twitter:image"]')).toBe('https://cubitathome.com/og-image.jpg')
     expect(metaContent('meta[property="og:url"]')).not.toContain('token=secreto')
+    expect(canonicalHref()).toBe(`${window.location.origin}/mi-cuenta`)
+    expect(canonicalHref()).not.toContain('token=secreto')
   })
 })
