@@ -407,6 +407,7 @@ function SearchAlertsCard({
             {alerts.map((alert) => (
               <div
                 key={alert.id}
+                data-search-alert-id={alert.id}
                 className="grid gap-3 rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
               >
                 <div className="min-w-0">

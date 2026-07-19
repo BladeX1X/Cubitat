@@ -8,12 +8,15 @@ const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://tohjzoncoosvjbjcakdl.supabase.co'
 const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
 
 test.describe('Publicación Real E2E', () => {
   test.skip(!E2E_EMAIL || !E2E_PASSWORD, 'Salta: definir CUBITAT_E2E_EMAIL y CUBITAT_E2E_PASSWORD')
   test.skip(!ANON_KEY, 'Salta: definir VITE_SUPABASE_ANON_KEY')
+  test.skip(!ALLOW_MUTATIONS, 'Salta: definir CUBITAT_E2E_ALLOW_MUTATIONS=true')
 
   test('flujo completo: login real → publicar → pending_review → no en resultados → limpiar', async ({ page, request }) => {
+    const qaMarker = `qa-e2e-publish-${Date.now()}`
     // 1. Login via Supabase Auth REST
     const authRes = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       headers: { apikey: ANON_KEY!, 'Content-Type': 'application/json' },
@@ -67,7 +70,7 @@ test.describe('Publicación Real E2E', () => {
     await page.locator('button:has-text("Continuar")').click()
 
     // --- Step 5: Descripción ---
-    await page.locator('textarea').fill('Casa de prueba E2E para verificar el flujo completo de publicacion y moderacion.')
+    await page.locator('textarea').fill(qaMarker)
     await page.locator('button:has-text("Continuar")').click()
 
     // --- Step 6: Imágenes ---
@@ -111,7 +114,7 @@ test.describe('Publicación Real E2E', () => {
     // 7. Cleanup: borrar propiedad creada
     if (accessToken && session?.user?.id) {
       const propsRes = await request.get(
-        `${SUPABASE_URL}/rest/v1/properties?user_id=eq.${session.user.id}&order=created_at.desc&limit=5`,
+        `${SUPABASE_URL}/rest/v1/properties?user_id=eq.${session.user.id}&description=eq.${encodeURIComponent(qaMarker)}&select=id,status`,
         { headers: { apikey: ANON_KEY!, Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
       )
 

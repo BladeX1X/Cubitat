@@ -3,7 +3,13 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
+const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
+const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
+const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
+
 test('Login, publicar y mandar mensaje', async ({ page, request }) => {
+  test.skip(!E2E_EMAIL || !E2E_PASSWORD, 'Definir CUBITAT_E2E_EMAIL y CUBITAT_E2E_PASSWORD')
+  test.skip(!ALLOW_MUTATIONS, 'Definir CUBITAT_E2E_ALLOW_MUTATIONS=true para autorizar escrituras QA')
   // Go to home
   await page.goto('http://localhost:5173/')
   await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/1_home.png' })
@@ -13,8 +19,8 @@ test('Login, publicar y mandar mensaje', async ({ page, request }) => {
   await page.waitForSelector('input[type="email"]')
 
   // Fill credentials
-  await page.fill('input[type="email"]', 'pochiprats@gmail.com')
-  await page.fill('input[type="password"]', '12345678')
+  await page.fill('input[type="email"]', E2E_EMAIL!)
+  await page.fill('input[type="password"]', E2E_PASSWORD!)
   await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/2_login_modal.png' })
 
   // Submit login
