@@ -1011,7 +1011,7 @@ Usar este formato y conservar las entradas anteriores:
   coincidencia/no coincidencia/idempotencia, verificar OAuth y reintento
   Turnstile en producción, y entonces cerrar el hito en Obsidian.
 
-### 2026-07-19 — corrección local del informe de indexación
+### 2026-07-19 — cierre productivo del informe de indexación
 
 - Search Console (informe actualizado el 2026-07-09) registró 16 URLs como
   duplicadas sin canonical y 6 páginas con redirección. Las redirecciones de
@@ -1030,6 +1030,20 @@ Usar este formato y conservar las entradas anteriores:
   TypeScript/Vite/PWA correcto. El sitemap bajó de 1008 a 473 URLs y ya no
   contiene la propiedad retirada `da2c4339-de63-460f-8a6f-1ae995e43bf6`, la
   landing vacía `/permuta/guantanamo/maisi` ni `resultados?query=`.
-- Estado: **implementado y verificado en local; pendiente de PR, despliegue y
-  validación en Search Console**. No pulsar “Validar corrección” hasta confirmar
-  en producción canonical, `404/noindex` y el sitemap nuevo.
+- PR #52 fusionado en `main` como `0da16a5`; Worker desplegado como
+  `82387f0f-77d0-44ae-bcd9-c1c0de31b37a`.
+- Evidencia productiva de solo lectura: `/` y `/venta/artemisa?utm_source=qa`
+  responden `200` con canonical correcto y sin query; `/publicar` conserva
+  `200 + noindex` sin canonical; la propiedad retirada responde `404 + noindex`
+  sin canonical; `sitemap.xml` responde `200` con 473 URLs. `http`, `www` y
+  `https://www` redirigen `301` a `https://cubitathome.com/`.
+- Chrome con la sesión existente cargó Home y la ficha autorizada sin errores
+  de consola de Cubitat. La única advertencia observada pertenecía a una
+  extensión del navegador, no al sitio.
+- Search Console aceptó nuevamente `sitemap.xml` e inició el 2026-07-19 la
+  validación de “Duplicada: el usuario no ha indicado ninguna versión
+  canónica”. Las 6 páginas con redirección no se validan como defecto porque
+  corresponden a redirecciones canónicas deliberadas.
+- Estado: **fusionado, desplegado y verificado en producción; validación de
+  Google en curso**. El conteo histórico de Search Console no cambiará hasta
+  que Google vuelva a rastrear las URLs.
