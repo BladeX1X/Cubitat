@@ -892,6 +892,12 @@ Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
 
 ## 15. Operacion Y Rollback
 
+Para pérdida del autenticador de un administrador, seguir el
+[runbook de recuperación MFA](ADMIN_MFA_RECOVERY.md). No desactivar MFA/AAL2 ni
+modificar RLS como vía de recuperación. La eliminación de un factor requiere
+autorización, verificación de identidad y la API Admin de Supabase ejecutada
+exclusivamente desde servidor.
+
 Ver logs de Cloudflare:
 
 ```powershell
@@ -916,6 +922,7 @@ Para base de datos, no usar rollback destructivo. Crear una migracion correctiva
 
 ```txt
 docs/OPERACION.md
+docs/ADMIN_MFA_RECOVERY.md
 docs/PWA.md
 docs/Cloudflare-Workers-Deploy.md
 docs/Google-Indexacion-y-Analytics.md

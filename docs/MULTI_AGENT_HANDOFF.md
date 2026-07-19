@@ -67,6 +67,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | K. Contexto del anunciante | Terminado | Codex principal | PR #22 fusionado y desplegado; contexto real cargado bajo demanda con sesión admin, guard conservado y consola limpia. Inspección visual móvil real queda como pendiente no bloqueante. |
 | L. Bitácora de moderación | En curso | Codex principal | PR #26 fusionado y desplegado; migración 42 sincronizada y bitácora admin verificada en producción con consola limpia. Falta evidencia productiva específica de denegación para usuario normal/anónimo y del rechazo de mutaciones antes de marcar terminado. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
+| Q. Recuperación MFA administrativa | Documentado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`: verificación de identidad, eliminación server-only de un único factor y rematriculación sin desactivar AAL2. No se borraron factores reales. Pendiente un simulacro no destructivo y soporte UI para varios factores. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -1088,3 +1089,15 @@ Usar este formato y conservar las entradas anteriores:
   `/` y `/moderar` respondieron HTTP 200, la ruta administrativa conservó
   `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` y el chunk productivo
   incluyó el guard MFA/AAL2.
+
+### 2026-07-19 — Codex principal — recuperación MFA administrativa
+
+- Estado: **procedimiento documentado; no ejecutado contra factores reales**.
+- `docs/ADMIN_MFA_RECOVERY.md` define autorización, doble evidencia de identidad,
+  listado y eliminación server-only mediante la API Admin de Supabase,
+  rematriculación TOTP, comprobación AAL1/AAL2 y registro sin secretos.
+- El runbook prohíbe desactivar MFA/RLS, usar SQL directo sobre
+  `auth.mfa_factors`, cambiar roles, crear cuentas de emergencia sin autorización
+  o exponer `service_role`, QR, códigos, tokens e identificadores de factores.
+- Supabase no ofrece códigos de recuperación. La selección y gestión de varios
+  factores queda como mejora separada; no se considera implementada ni probada.
