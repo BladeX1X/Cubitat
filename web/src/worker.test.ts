@@ -369,6 +369,41 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('X-Robots-Tag')).toBeNull()
   })
 
+  it('emits a query-free canonical link for public HTML routes', async () => {
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/venta/artemisa?utm_source=search'),
+      createEnv(new Response(
+        '<!doctype html><html><head><link rel="canonical" href="https://cubitathome.com/" /></head></html>',
+        { headers: { 'Content-Type': 'text/html' } },
+      )),
+      createContext(),
+    )
+
+    expect(await response.text()).toContain(
+      '<link rel="canonical" href="https://cubitathome.com/venta/artemisa" />',
+    )
+  })
+
+  it('returns a noindex 404 instead of homepage HTML for an unavailable property', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('[]', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })))
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/propiedad/casa-00000000-0000-0000-0000-000000000099'),
+      createEnv(new Response(
+        '<!doctype html><html><head><link rel="canonical" href="https://cubitathome.com/" /></head></html>',
+        { headers: { 'Content-Type': 'text/html' } },
+      )),
+      createContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
+    expect(await response.text()).not.toContain('rel="canonical"')
+  })
+
   it('does not reuse cached property HTML across deployments', async () => {
     const cacheMatch = vi.fn()
     vi.stubGlobal('caches', {

@@ -961,3 +961,75 @@ Usar este formato y conservar las entradas anteriores:
   una segunda propiedad y la interfaz mostro `¡Mensaje enviado! Tu solicitud
   ha sido procesada.`; el formulario salio del estado de carga y la consola
   permanecio sin errores. No quedan criterios pendientes en este incidente.
+
+### 2026-07-18 — saneamiento del lote local heredado
+
+- Estado: **implementado y verificado localmente; pendiente de PR, despliegue y
+  verificación productiva** en la rama `codex/harden-unfinished-batch`.
+- Seguridad E2E: se retiraron credenciales QA en texto plano de las pruebas. Las
+  pruebas que escriben datos requieren `CUBITAT_E2E_ALLOW_MUTATIONS=true` y
+  credenciales por variables de entorno. El flujo de alertas usa un marcador
+  único y elimina exclusivamente la alerta que creó dentro de `finally`.
+  `.unlighthouse/` y `tmp/` quedaron ignorados. No se ejecutaron pruebas E2E
+  mutables ni se modificaron datos de producción.
+- Riesgo pendiente de credencial: la cadena retirada ya existe en el historial
+  desde el commit `7c5a559`. Rodolfo debe rotar la contraseña de esa cuenta QA;
+  borrar el literal del árbol actual no invalida copias históricas. Una
+  reescritura de historial requeriría coordinación explícita y no se realizó.
+- OAuth: el retorno posterior a Google conserva únicamente rutas internas,
+  expira a los 15 minutos, se consume una sola vez y descarta callbacks, rutas
+  de recuperación, destinos externos y valores antiguos. El callback ya no se
+  repite cuando cambia la referencia de la prop `onContinue`.
+- Reportes y Turnstile: los reportes autenticados envían `reporter_id` para
+  cumplir RLS; anónimo conserva `NULL`. Reporte y contacto bloquean doble envío
+  y renuevan el desafío de Turnstile después de fallo de verificación o
+  inserción.
+- Rendimiento/UI: la carga inicial SWR usa el resultado real de IndexedDB y no
+  un cierre React obsoleto. Se conserva `touch-action` para gestos, pero se
+  retiraron `skipSnaps` y duración global del carrusel porque alteraban todas
+  las galerías sin evidencia ni regresión móvil específica.
+- Alertas: `migration list --linked` descubrió que
+  `20260715183000_notify_matching_search_alerts.sql` ya era la migración 45 en
+  producción aunque no estaba versionada. Se preservó sin reescribirla. La
+  migración 46 `20260718010000_harden_search_alert_notifications.sql` queda
+  pendiente de aplicar y añade idempotencia, nulos seguros y conversiones
+  defensivas. El dry-run remoto listó solo la 46 y no aplicó cambios.
+- Evidencia local: lint limpio; 42 archivos/156 pruebas correctas; build
+  TypeScript/Vite/PWA correcto y sitemap regenerado con 1008 URL. Advertencia
+  conocida: `vendor-maplibre` supera 500 kB.
+- Commits modulares: `83e1656` (E2E seguro), `7657c1e` (OAuth), `72a61c2`
+  (reportes/Turnstile), `c2b2a41` (SWR/carrusel), `1dc0176`
+  (migraciones de alertas) y `e4c0341` (sitemap). `supabase db lint --linked`
+  no reportó errores en el esquema remoto vigente.
+- Bloqueo documental resuelto el 2026-07-19: la unidad `G:` volvió a estar
+  disponible y se actualizaron únicamente checklist, roadmap y dashboard de
+  Obsidian con el hardening pendiente y la evidencia local vigente.
+- Migración 46 aplicada el 2026-07-19: las 46 migraciones están sincronizadas,
+  `db lint --linked` quedó limpio y el dry-run posterior no encontró pendientes.
+  La advertencia por Docker correspondió solo al cache local del catálogo.
+- Próximo paso: ejecutar una prueba QA transaccional de
+  coincidencia/no coincidencia/idempotencia, verificar OAuth y reintento
+  Turnstile en producción, y entonces cerrar el hito en Obsidian.
+
+### 2026-07-19 — corrección local del informe de indexación
+
+- Search Console (informe actualizado el 2026-07-09) registró 16 URLs como
+  duplicadas sin canonical y 6 páginas con redirección. Las redirecciones de
+  `http`/`www` al dominio canónico son intencionales; `/publicar` es privada y
+  conserva `noindex`.
+- Causas corregidas en `codex/harden-unfinished-batch`: el HTML base no
+  declaraba canonical, las navegaciones SPA solo actualizaban Open Graph, una
+  propiedad no disponible devolvía el shell de portada con `200`, y el sitemap
+  enumeraba todas las combinaciones geográficas aunque no tuvieran inventario.
+- Implementación: canonical sin query/fragmento en HTML, SPA y Worker;
+  propiedades inexistentes/no públicas responden `404` + `X-Robots-Tag:
+  noindex` sin canonical; el sitemap contiene solo rutas estáticas canónicas,
+  propiedades publicadas y landings respaldadas por inventario. Se retiró el
+  `SearchAction` que exponía la antigua ruta literal con placeholder.
+- Evidencia local: lint limpio; 43 archivos/160 pruebas; build
+  TypeScript/Vite/PWA correcto. El sitemap bajó de 1008 a 473 URLs y ya no
+  contiene la propiedad retirada `da2c4339-de63-460f-8a6f-1ae995e43bf6`, la
+  landing vacía `/permuta/guantanamo/maisi` ni `resultados?query=`.
+- Estado: **implementado y verificado en local; pendiente de PR, despliegue y
+  validación en Search Console**. No pulsar “Validar corrección” hasta confirmar
+  en producción canonical, `404/noindex` y el sitemap nuevo.

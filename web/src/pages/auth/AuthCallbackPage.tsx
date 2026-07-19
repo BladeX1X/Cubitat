@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Loader2, MailCheck, TriangleAlert } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { consumeAuthReturnPath } from '../../modules/auth/utils/authRedirects'
 
 type AuthCallbackPageProps = {
-  onContinue: () => void
+  onContinue: (targetPath?: string) => void
 }
 
 type CallbackStatus = 'loading' | 'success' | 'error'
@@ -18,6 +19,11 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
 
   const [status, setStatus] = useState<CallbackStatus>('loading')
   const [message, setMessage] = useState('Estamos verificando tu enlace de acceso.')
+  const onContinueRef = useRef(onContinue)
+
+  useEffect(() => {
+    onContinueRef.current = onContinue
+  }, [onContinue])
 
   useEffect(() => {
     async function handleCallback() {
@@ -32,21 +38,34 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
 
       try {
         let provider = 'email'
+        let providers: string[] = []
         if (code) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
           provider = data?.user?.app_metadata?.provider || 'email'
+          providers = data?.user?.app_metadata?.providers || []
         } else {
           const { data: { session } } = await supabase.auth.getSession()
           if (!session) {
             throw new Error('No encontramos una sesion de verificacion activa. Abre el enlace completo desde tu correo.')
           }
           provider = session.user?.app_metadata?.provider || 'email'
+          providers = session.user?.app_metadata?.providers || []
         }
 
-        if (isOAuthCallback || provider !== 'email') {
+        const isOAuth = isOAuthCallback || provider !== 'email'
+          || (providers.length > 0 && (providers.length > 1 || !providers.includes('email')))
+
+        if (isOAuth) {
+          const next = consumeAuthReturnPath()
+          if (next) {
+            window.history.replaceState(null, '', next)
+            onContinueRef.current(next)
+            return
+          }
+
           window.history.replaceState(null, '', '/')
-          onContinue()
+          onContinueRef.current()
           return
         }
 
@@ -61,7 +80,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
     }
 
     handleCallback()
-  }, [onContinue])
+  }, [])
 
   return (
     <section className="auth-action-page" aria-label="Confirmacion de correo">
@@ -83,7 +102,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
         <Button
           className="auth-action-button"
           type="button"
-          onClick={onContinue}
+          onClick={() => onContinueRef.current()}
           disabled={status === 'loading'}
         >
           {status === 'success' ? <CheckCircle2 size={18} /> : null}

@@ -14,7 +14,7 @@ import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
-import { getAuthRedirectUrl } from '../utils/authRedirects'
+import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { verifyTurnstile } from '../../../shared/lib/turnstile'
 
@@ -56,6 +56,9 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setErrorMsg(null)
     setSuccessMsg(null)
 
+    const currentPath = window.location.pathname + window.location.search + window.location.hash
+    if (!storeAuthReturnPath(currentPath)) clearAuthReturnPath()
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -69,6 +72,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
     })
 
     if (error) {
+      clearAuthReturnPath()
       setLoading(false)
       setErrorMsg(error.message || 'No pudimos iniciar sesion con Google.')
       return
@@ -82,6 +86,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       )
       window.location.assign(nativeUrl)
     } else {
+      clearAuthReturnPath()
       setLoading(false)
       setErrorMsg('No se pudo generar la URL de autenticación.')
     }

@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-07-13.
+Última revisión documental: 2026-07-19.
 
 ## Aplicación segura
 
@@ -104,6 +104,22 @@ exactamente el orden cronológico de los archivos.
     bloquea mediante trigger que admin, otro usuario o automatización saquen
     una fila de `owner_hidden` y conserva `pending_review` al editar para repetir
     la moderación IA.
+
+### Notificaciones de alertas de búsqueda — 2026-07-15 a 2026-07-18
+
+45. `20260715183000_notify_matching_search_alerts.sql`: crea el trigger que
+    genera notificaciones internas cuando una propiedad pasa a `published` y
+    coincide con una alerta activa de otro usuario.
+46. `20260718010000_harden_search_alert_notifications.sql`: añade una clave de
+    evento idempotente por usuario/alerta/propiedad, evita duplicados, trata
+    campos nulos como no coincidentes cuando el filtro los exige y descarta
+    filtros heredados inválidos sin abortar la publicación.
+
+Verificación productiva 2026-07-19: la migración 46 fue aplicada al proyecto
+vinculado con Supabase CLI 2.109.1. `migration list --linked` confirma las 46
+migraciones sincronizadas, `db lint --linked` no reporta errores y el dry-run
+posterior indica que la base remota está actualizada. La advertencia de Docker
+afectó únicamente el cache local del catálogo y no la aplicación remota.
 
 Verificación productiva 2026-07-14: migraciones 43 y 44 aplicadas al proyecto
 vinculado. `migration list --linked` confirma 44 migraciones sincronizadas,

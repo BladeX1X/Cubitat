@@ -33,6 +33,13 @@ El sistema MUST permitir el acceso seguro mediante credenciales de email y contr
 - AND MUST regresar a la ruta protegida solicitada originalmente
 - AND MUST inicializar la pantalla de destino con el usuario autenticado
 
+#### Scenario: Retorno seguro despues de Google OAuth
+- GIVEN un usuario inicia Google OAuth desde una ruta interna de Cubitat
+- WHEN el proveedor devuelve una sesion valida al callback
+- THEN el sistema MUST regresar una sola vez a la ruta interna original
+- AND MUST rechazar destinos externos, rutas de autenticacion y destinos expirados
+- AND MUST eliminar el destino temporal si OAuth no puede iniciarse
+
 #### Scenario: Intento de inicio de sesión con credenciales inválidas o correo no confirmado
 - GIVEN un usuario que intenta ingresar credenciales incorrectas o su correo no ha sido verificado
 - WHEN envía el formulario de inicio de sesión

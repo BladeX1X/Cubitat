@@ -38,9 +38,20 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
       element.setAttribute('content', content)
     }
 
+    const setCanonicalLink = (href: string) => {
+      let element = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+      if (!element) {
+        element = document.createElement('link')
+        element.rel = 'canonical'
+        document.head.appendChild(element)
+      }
+      element.href = href
+    }
+
     const resolvedDescription = description ?? DEFAULT_DESCRIPTION
     const resolvedImage = image ?? DEFAULT_IMAGE
     const resolvedUrl = getCleanDocumentUrl(url)
+    setCanonicalLink(resolvedUrl)
 
     // 2. Actualizar meta descripción general
     setMetaTag('name', 'description', resolvedDescription)
