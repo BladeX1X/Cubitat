@@ -143,6 +143,24 @@ async function getUserRole(userId: string, authHeader: string, env: Env): Promis
   return rows[0]?.role || null;
 }
 
+function getJwtAssuranceLevel(authHeader: string): string | null {
+  try {
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const claims = JSON.parse(atob(padded)) as { aal?: unknown };
+    return typeof claims.aal === 'string' ? claims.aal : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasAdminSecondFactor(authHeader: string): boolean {
+  return getJwtAssuranceLevel(authHeader) === 'aal2';
+}
+
 async function canModerateProperty(propertyId: string, userId: string, authHeader: string, env: Env): Promise<boolean> {
   const response = await fetch(
     `${env.VITE_SUPABASE_URL}/rest/v1/properties?id=eq.${encodeURIComponent(propertyId)}&select=id,user_id`,
@@ -168,7 +186,8 @@ async function canModerateProperty(propertyId: string, userId: string, authHeade
     return true;
   }
 
-  return (await getUserRole(userId, authHeader, env)) === 'admin';
+  return (await getUserRole(userId, authHeader, env)) === 'admin'
+    && hasAdminSecondFactor(authHeader);
 }
 
 async function isRateLimited(env: Env, ip: string, limit: number, windowMs: number): Promise<boolean> {
@@ -766,7 +785,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       }
 
       const role = await getUserRole(user.id, authHeader, env);
-      if (role !== 'admin') {
+      if (role !== 'admin' || !hasAdminSecondFactor(authHeader)) {
         return jsonResponse({ error: 'Forbidden' }, 403);
       }
 
@@ -879,6 +898,9 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const tableName = restMatch ? restMatch[1] : null;
       const rpcMatch = subPath.match(/^\/rest\/v1\/rpc\/([^/?]+)/);
       const rpcName = rpcMatch ? rpcMatch[1] : null;
+      const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
+        && authenticated
+        && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
       const isAllowedAuthenticatedRpc = method === 'POST'
         && authenticated
         && rpcName !== null
@@ -891,7 +913,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
       if (method === 'DELETE' || method === 'PATCH') {
-        if (!tableName || !allowedWriteTables.includes(tableName) || !authenticated) {
+        if (!isAllowedAuthenticatedMfaDelete
+          && (!tableName || !allowedWriteTables.includes(tableName) || !authenticated)) {
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
         }
       }

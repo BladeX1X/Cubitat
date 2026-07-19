@@ -85,6 +85,20 @@ El sistema MUST resolver permisos desde la sesion y el perfil del usuario sin co
 - THEN el sistema MUST bloquear o redirigir la accion
 - AND MUST evitar mostrar datos internos de usuarios, reportes o publicaciones no autorizadas
 
+### Requirement: Segundo factor para administracion
+El sistema MUST exigir TOTP verificado y una sesion `aal2` antes de abrir funciones administrativas.
+
+#### Scenario: Administrador sin segundo factor
+- GIVEN un usuario con rol administrador y una sesion `aal1`
+- WHEN intenta abrir el panel administrativo
+- THEN MUST completar enrolamiento o desafio TOTP antes de ver datos administrativos
+- AND el cliente MUST NOT persistir ni registrar QR, secreto o codigo TOTP
+
+#### Scenario: Usuario normal
+- GIVEN un usuario autenticado sin rol administrador
+- WHEN usa funciones propias de su cuenta
+- THEN el sistema MUST NOT exigir MFA administrativo
+
 ### Requirement: Modal de autenticacion reutilizable
 El sistema MUST usar el mismo flujo de login para acciones protegidas en cualquier modulo.
 
