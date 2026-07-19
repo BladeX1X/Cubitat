@@ -895,7 +895,19 @@ export function CubitatApp() {
         )}
 
         {pageMode === 'auth-callback' && (
-          <AuthCallbackPage onContinue={navigateHome} />
+          <AuthCallbackPage
+            onContinue={(targetPath) => {
+              if (targetPath) {
+                setPageMode(getInitialPageMode())
+                setFilters(getInitialFilters())
+                setSelectedPropertyId(getInitialSelectedPropertyId())
+                setSeoResultsRoute(parseSeoResultsRoute(window.location.pathname))
+                window.scrollTo(0, 0)
+              } else {
+                navigateHome()
+              }
+            }}
+          />
         )}
 
         {pageMode === 'reset-password' && (
