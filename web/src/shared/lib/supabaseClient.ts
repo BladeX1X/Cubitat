@@ -16,7 +16,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storageKey: 'cubitat-auth-token',
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: false,
     flowType: 'pkce'
   }
 })

@@ -27,7 +27,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
 
   useEffect(() => {
     async function handleCallback() {
-      const { code, error, isOAuthCallback } = getAuthUrlParams()
+      const { accessToken, code, error, isOAuthCallback, refreshToken } = getAuthUrlParams()
 
       if (error) {
         setStatus('error')
@@ -44,6 +44,17 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
           if (exchangeError) throw exchangeError
           provider = data?.user?.app_metadata?.provider || 'email'
           providers = data?.user?.app_metadata?.providers || []
+        } else if (accessToken && refreshToken) {
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          if (sessionError) throw sessionError
+          if (!data.session) {
+            throw new Error('No pudimos crear la sesion de verificacion. Solicita un enlace nuevo.')
+          }
+          provider = data.session.user?.app_metadata?.provider || 'email'
+          providers = data.session.user?.app_metadata?.providers || []
         } else {
           const { data: { session } } = await supabase.auth.getSession()
           if (!session) {
