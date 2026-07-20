@@ -17,6 +17,7 @@ import { supabase } from '../../../shared/lib/supabaseClient'
 import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
+import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -161,13 +162,9 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
     // Password validation rules
     if (isRegistering) {
-      const hasUppercase = /[A-Z]/.test(password)
-      const hasLowercase = /[a-z]/.test(password)
-      const hasNumber = /[0-9]/.test(password)
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-      if (password.length < 8 || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-        setErrorMsg('La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.')
+      const passwordPolicyError = getPasswordPolicyError(password)
+      if (passwordPolicyError) {
+        setErrorMsg(passwordPolicyError)
         return
       }
       if (password !== confirmPassword) {
@@ -236,8 +233,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
         msg = 'Por favor, confirma tu correo electronico para continuar.'
       } else if (msg.toLowerCase().includes('email rate limit exceeded')) {
         msg = 'Alcanzamos el limite temporal de correos de prueba. Intenta de nuevo mas tarde.'
-      } else if (msg.includes('Password should be at least')) {
-        msg = 'La contraseña es demasiado débil.'
+      } else if (msg.includes('Password should be at least')
+        || msg.includes('Password should contain')
+        || err?.name === 'AuthWeakPasswordError') {
+        msg = PASSWORD_POLICY_MESSAGE
       }
 
       setErrorMsg(msg)

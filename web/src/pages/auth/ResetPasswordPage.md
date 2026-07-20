@@ -55,3 +55,7 @@ supabase.auth.resetPasswordForEmail(email, {
 El formulario no debe quedar habilitado si el usuario llega manualmente a `/recuperar-contrasena` sin abrir el enlace del correo.
 
 Despues de actualizar la contrasena, el usuario no debe quedar logueado automaticamente. Debe volver a autenticarse desde el modal de login.
+
+La fortaleza se valida mediante la politica compartida de
+`src/modules/auth/passwordPolicy.ts`: minimo 8 caracteres con mayuscula,
+minuscula, numero y simbolo. Supabase Auth aplica la misma regla en servidor.

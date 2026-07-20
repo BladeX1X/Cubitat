@@ -51,6 +51,20 @@ El sistema MUST permitir el acceso seguro mediante credenciales de email y contr
 ### Requirement: Proteccion contra fuerza bruta
 El sistema MUST limitar intentos repetidos de autenticacion y recuperacion para reducir abuso automatizado.
 
+#### Scenario: Politica de contrasena coherente en cliente y servidor
+- GIVEN un usuario registra una cuenta o cambia su contrasena
+- WHEN envia una nueva clave
+- THEN el cliente y Supabase Auth MUST exigir al menos 8 caracteres
+- AND MUST exigir mayuscula, minuscula, numero y simbolo
+- AND la validacion de registro y recuperacion MUST usar una unica politica compartida
+- AND Supabase Auth MUST rechazar la clave aunque se evada la validacion del navegador
+
+#### Scenario: Frecuencia minima de correos Auth
+- GIVEN una cuenta solicita confirmacion, recuperacion u otro correo Auth
+- WHEN intenta repetir el envio antes de 1 minuto
+- THEN Supabase Auth MUST aplicar la frecuencia minima configurada
+- AND el Worker MUST conservar sus limites adicionales por IP y hash del correo
+
 #### Scenario: CAPTCHA unido a registro y recuperacion
 - GIVEN un usuario completa Turnstile para registrarse o recuperar su contrasena
 - WHEN el frontend invoca Supabase Auth

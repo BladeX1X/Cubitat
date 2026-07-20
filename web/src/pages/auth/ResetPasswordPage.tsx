@@ -5,6 +5,7 @@ import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
 
 type ResetPasswordPageProps = {
   onDone: () => void
@@ -102,13 +103,9 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       return
     }
 
-    const hasUppercase = /[A-Z]/.test(password)
-    const hasLowercase = /[a-z]/.test(password)
-    const hasNumber = /[0-9]/.test(password)
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-    if (password.length < 8 || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-      setErrorMsg('La contrasena debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.')
+    const passwordPolicyError = getPasswordPolicyError(password)
+    if (passwordPolicyError) {
+      setErrorMsg(passwordPolicyError)
       return
     }
 
@@ -121,7 +118,10 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setLoading(false)
-      setErrorMsg(error.message || 'No pudimos actualizar la contrasena.')
+      const weakPassword = error.message.includes('Password should be at least')
+        || error.message.includes('Password should contain')
+        || error.name === 'AuthWeakPasswordError'
+      setErrorMsg(weakPassword ? PASSWORD_POLICY_MESSAGE : (error.message || 'No pudimos actualizar la contrasena.'))
       return
     }
 

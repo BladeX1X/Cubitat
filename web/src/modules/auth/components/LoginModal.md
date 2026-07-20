@@ -73,6 +73,13 @@ El diseño se adapta automáticamente:
 - **Privacidad en recuperacion:** El mensaje de recuperacion no confirma si el correo existe. Siempre debe decir: `Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.`
 - **Enlaces legales:** Los enlaces del modal navegan a `/terminos` y `/privacidad`; no usan hashes internos.
 - **Rate limit de Supabase:** Si Supabase devuelve `email rate limit exceeded`, el modal muestra un mensaje amable de limite temporal. El arreglo real es configurar SMTP propio con dominio verificado.
+- **Politica de contrasena compartida:** Registro y recuperacion usan
+  `src/modules/auth/passwordPolicy.ts`. La misma regla se versiona en
+  `supabase/config.toml`: minimo 8 caracteres con mayuscula, minuscula, numero y
+  simbolo. Supabase vuelve a validarla aunque se omita el navegador.
+- **Frecuencia de Auth:** Supabase exige al menos 1 minuto entre correos y el
+  Worker agrega limites por IP y por hash del correo para login, registro,
+  recuperacion, OTP y reenvios.
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.
