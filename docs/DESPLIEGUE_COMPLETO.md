@@ -918,6 +918,32 @@ npx wrangler rollback
 
 Para base de datos, no usar rollback destructivo. Crear una migracion correctiva.
 
+### 15.1 Turnstile en Supabase Auth
+
+El registro y la recuperacion de contrasena deben enviar el token del widget en
+la misma llamada de Supabase Auth mediante `captchaToken`. No verificar ese token
+antes con otro `siteverify`: los tokens de Turnstile son de un solo uso.
+
+La configuracion versionada usa:
+
+```toml
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
+```
+
+Antes de aplicar la configuracion remota, definir
+`SUPABASE_AUTH_CAPTCHA_SECRET` solo en el entorno seguro desde el que se ejecuta
+Supabase CLI. No escribir el secreto en Git, archivos `.env` versionados,
+documentacion, logs ni comandos que lo impriman. En el Dashboard se puede
+confirmar el estado en `Authentication > Attack Protection` sin revelar el
+valor del secreto.
+
+La comprobacion de cierre debe cubrir una solicitud sin token rechazada por
+CAPTCHA y un registro o recuperacion real con token valido, autorizado para no
+crear cuentas ni enviar correo involuntariamente.
+
 ## 16. Archivos De Referencia
 
 ```txt

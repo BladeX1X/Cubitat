@@ -49,6 +49,14 @@ El sistema MUST permitir el acceso seguro mediante credenciales de email y contr
 ### Requirement: Proteccion contra fuerza bruta
 El sistema MUST limitar intentos repetidos de autenticacion y recuperacion para reducir abuso automatizado.
 
+#### Scenario: CAPTCHA unido a registro y recuperacion
+- GIVEN un usuario completa Turnstile para registrarse o recuperar su contrasena
+- WHEN el frontend invoca Supabase Auth
+- THEN MUST incluir el token como `captchaToken` en esa misma operacion Auth
+- AND MUST NOT consumir el token previamente mediante una verificacion separada
+- AND un token ausente, invalido, reutilizado o expirado MUST impedir que Supabase Auth procese la solicitud
+- AND tras un fallo el widget MUST renovarse para impedir la reutilizacion del token consumido
+
 #### Scenario: Demasiados intentos de login por IP
 - GIVEN una misma IP realiza multiples intentos de login por contrasena en una ventana corta
 - WHEN supera el limite configurado
