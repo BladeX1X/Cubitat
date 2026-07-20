@@ -36,7 +36,9 @@ El sistema MUST permitir el acceso seguro mediante credenciales de email y contr
 #### Scenario: Retorno seguro despues de Google OAuth
 - GIVEN un usuario inicia Google OAuth desde una ruta interna de Cubitat
 - WHEN el proveedor devuelve una sesion valida al callback
-- THEN el sistema MUST regresar una sola vez a la ruta interna original
+- THEN `AuthCallbackPage` MUST ser el unico responsable de intercambiar el codigo PKCE
+- AND el cliente Supabase MUST NOT intercambiar automaticamente el mismo codigo desde la URL
+- AND el sistema MUST regresar una sola vez a la ruta interna original
 - AND MUST rechazar destinos externos, rutas de autenticacion y destinos expirados
 - AND MUST eliminar el destino temporal si OAuth no puede iniciarse
 
