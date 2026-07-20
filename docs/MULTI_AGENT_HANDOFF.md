@@ -1170,3 +1170,8 @@ Usar este formato y conservar las entradas anteriores:
   conservo `prompt=select_account`.
 - Siguiente vulnerabilidad recomendada: revisar limites de frecuencia de Auth y
   politica de contrasenas como parche independiente.
+- Observacion separada para diagnostico: al restaurar la sesion con Google, el
+  selector de cuenta funciono y la sesion quedo autenticada, pero `/auth/callback`
+  mostro brevemente `PKCE code verifier not found in storage` antes de volver al
+  inicio. No hubo errores de consola. Revisar este retorno como bug de Auth antes
+  del siguiente parche de hardening.
