@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { TURNSTILE_SITEKEY } from '../lib/turnstile';
+import { TURNSTILE_SITEKEY } from '../lib/turnstileConfig';
 
 interface TurnstileWidgetProps {
   action?: string;

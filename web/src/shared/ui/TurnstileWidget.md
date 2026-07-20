@@ -35,8 +35,8 @@ script externo.
 - El Worker exige que `success`, `hostname` y `action` coincidan con la
   solicitud antes de llamar al RPC exclusivo de `service_role`.
 - Cada integracion conserva un `action` explicito para trazabilidad.
-- Registro y recuperacion mantienen el flujo CAPTCHA de Supabase y se revisan
-  como un parche independiente.
+- Registro y recuperacion entregan el token directamente como `captchaToken` a
+  Supabase Auth, que realiza la validacion dentro de la propia operacion.
 
 ## Verificacion
 

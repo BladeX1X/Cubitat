@@ -1139,3 +1139,26 @@ Usar este formato y conservar las entradas anteriores:
   marcadores QA; la consulta independiente posterior devolvio 0/0 residuos.
 - Siguiente vulnerabilidad recomendada: revisar el enlace entre Turnstile y los
   flujos de registro/recuperacion de Supabase Auth como parche separado.
+
+### 2026-07-19 - parche de seguridad 2 - Turnstile ligado a Supabase Auth
+
+- Estado: **implementado y verificado en local; pendiente de activar y probar en
+  produccion**. Rama `bugfix/auth-turnstile-enforcement`.
+- Hallazgo: registro y recuperacion validaban el token con `siteverify` antes de
+  llamar Supabase Auth. Como el token es de un solo uso y no se enviaba como
+  `captchaToken`, los endpoints de Auth quedaban fuera de esa proteccion.
+- Correccion modular: `captchaAuth.ts` une el token a la misma operacion
+  `signUp` o `resetPasswordForEmail`; se elimino la verificacion previa del
+  navegador y el widget se renueva tras un fallo.
+- Configuracion versionada: `supabase/config.toml` declara Turnstile habilitado y
+  obtiene el secreto solo desde `SUPABASE_AUTH_CAPTCHA_SECRET`; ningun secreto se
+  escribio en el repositorio ni en la documentacion.
+- Calidad local: lint limpio, 50 archivos/185 pruebas y build
+  TypeScript/Vite/PWA correcto; sitemap de 473 URLs.
+- Evidencia remota: Supabase Dashboard mostro `Enable Captcha protection` como
+  `Disabled` el 2026-07-19. El cierre requiere activarlo con el secreto privado,
+  desplegar el frontend y comprobar registro/recuperacion sin crear cuentas ni
+  enviar correos reales salvo autorizacion expresa.
+- Siguiente paso exacto: transferir de forma segura el secreto Turnstile a
+  Supabase Auth, guardar la proteccion, desplegar la rama y ejecutar una prueba
+  negativa sin token y una prueba real autorizada con token.

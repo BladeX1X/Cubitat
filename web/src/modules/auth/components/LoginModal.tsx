@@ -16,7 +16,7 @@ import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
-import { verifyTurnstile } from '../../../shared/lib/turnstile'
+import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -41,10 +41,16 @@ export function LoginModal({ onClose }: LoginModalProps) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [canResendConfirmation, setCanResendConfirmation] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
 
   useEffect(() => {
     setTurnstileToken(null)
   }, [isRegistering, isResettingPassword])
+
+  function resetTurnstileChallenge() {
+    setTurnstileToken(null)
+    setTurnstileKey((current) => current + 1)
+  }
 
   async function handleGoogleSignIn() {
     if (!navigator.onLine) {
@@ -130,28 +136,22 @@ export function LoginModal({ onClose }: LoginModalProps) {
     const cleanEmail = email.trim().toLowerCase()
 
     if (isResettingPassword) {
-      const isTest = (import.meta as any).env?.MODE === 'test'
-      if (!isTest) {
-        if (!turnstileToken) {
-          setErrorMsg('Por favor, completa la verificación de seguridad.')
-          return
-        }
-        setLoading(true)
-        const isHuman = await verifyTurnstile(turnstileToken)
-        if (!isHuman) {
-          setErrorMsg('La verificación de seguridad falló. Por favor intenta de nuevo.')
-          setLoading(false)
-          return
-        }
+      if (!turnstileToken) {
+        setErrorMsg('Por favor, completa la verificación de seguridad.')
+        return
       }
+      setLoading(true)
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        const { error } = await requestPasswordResetWithCaptcha({
+          email: cleanEmail,
+          captchaToken: turnstileToken,
           redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
         })
         if (error) throw error
         setSuccessMsg('Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.')
         setTurnstileToken(null)
       } catch (err: any) {
+        resetTurnstileChallenge()
         setErrorMsg(err?.message || 'No pudimos enviar el correo de recuperacion.')
       } finally {
         setLoading(false)
@@ -176,19 +176,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     }
 
-    const isTest = (import.meta as any).env?.MODE === 'test'
-    if (isRegistering && !isTest) {
+    if (isRegistering) {
       if (!turnstileToken) {
         setErrorMsg('Por favor, completa la verificación de seguridad.')
         return
       }
       setLoading(true)
-      const isHuman = await verifyTurnstile(turnstileToken)
-      if (!isHuman) {
-        setErrorMsg('La verificación de seguridad falló. Por favor intenta de nuevo.')
-        setLoading(false)
-        return
-      }
     } else {
       setLoading(true)
     }
@@ -196,16 +189,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
     try {
       if (isRegistering) {
         // Sign Up with custom metadata trigger values
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await signUpWithCaptcha({
           email: cleanEmail,
           password,
-          options: {
-            emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
-            data: {
-              full_name: fullName,
-              role: 'buyer', // Default public profile role
-            }
-          }
+          fullName,
+          captchaToken: turnstileToken!,
+          emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
         })
         if (error) throw error
 
@@ -228,6 +217,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     } catch (err: any) {
       console.error('Auth error:', err)
+      if (isRegistering || isResettingPassword) resetTurnstileChallenge()
       let msg = 'Ocurrió un error inesperado.'
       if (err?.message && err.message !== '{}') {
         msg = err.message
@@ -492,6 +482,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
             {(isRegistering || isResettingPassword) && (
               <TurnstileWidget
+                key={turnstileKey}
                 action={isResettingPassword ? "forgot-password" : "register-user"}
                 onVerify={(token) => setTurnstileToken(token)}
                 onExpire={() => setTurnstileToken(null)}
