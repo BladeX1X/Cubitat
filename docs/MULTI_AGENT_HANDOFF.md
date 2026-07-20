@@ -1142,8 +1142,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-19 - parche de seguridad 2 - Turnstile ligado a Supabase Auth
 
-- Estado: **implementado y verificado en local; pendiente de activar y probar en
-  produccion**. Rama `bugfix/auth-turnstile-enforcement`.
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #61
+  fusionado en `main` como `57e67d4`; Worker
+  `b98a8dd1-c671-495c-90c5-c26f2f4399b6` activo.
 - Hallazgo: registro y recuperacion validaban el token con `siteverify` antes de
   llamar Supabase Auth. Como el token es de un solo uso y no se enviaba como
   `captchaToken`, los endpoints de Auth quedaban fuera de esa proteccion.
@@ -1155,10 +1156,17 @@ Usar este formato y conservar las entradas anteriores:
   escribio en el repositorio ni en la documentacion.
 - Calidad local: lint limpio, 50 archivos/185 pruebas y build
   TypeScript/Vite/PWA correcto; sitemap de 473 URLs.
-- Evidencia remota: Supabase Dashboard mostro `Enable Captcha protection` como
-  `Disabled` el 2026-07-19. El cierre requiere activarlo con el secreto privado,
-  desplegar el frontend y comprobar registro/recuperacion sin crear cuentas ni
-  enviar correos reales salvo autorizacion expresa.
-- Siguiente paso exacto: transferir de forma segura el secreto Turnstile a
-  Supabase Auth, guardar la proteccion, desplegar la rama y ejecutar una prueba
-  negativa sin token y una prueba real autorizada con token.
+- Supabase remoto: `Authentication > Attack Protection` quedo habilitado con
+  `Turnstile by Cloudflare`. El secreto se transfirio directamente entre campos
+  protegidos sin leer el portapapeles ni escribirlo en archivos, Git, notas o
+  salidas de terminal.
+- QA productiva autorizada: Turnstile termino en `Operacion exitosa` y una unica
+  recuperacion para la cuenta QA mostro la confirmacion generica de envio. Un
+  segundo intento sin token fue bloqueado con `Por favor, completa la
+  verificacion de seguridad`, por lo que el token no se reutilizo. No se creo
+  ninguna cuenta ni se cambio ninguna contrasena.
+- La consola de `cubitathome.com` quedo sin errores ni advertencias. La sesion
+  administrativa usada antes de la prueba fue restaurada y el selector Google
+  conservo `prompt=select_account`.
+- Siguiente vulnerabilidad recomendada: revisar limites de frecuencia de Auth y
+  politica de contrasenas como parche independiente.
