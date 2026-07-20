@@ -1170,6 +1170,7 @@ Usar este formato y conservar las entradas anteriores:
   conservo `prompt=select_account`.
 - Siguiente vulnerabilidad recomendada: revisar limites de frecuencia de Auth y
   politica de contrasenas como parche independiente.
+
 - Observacion separada para diagnostico: al restaurar la sesion con Google, el
   selector de cuenta funciono y la sesion quedo autenticada, pero `/auth/callback`
   mostro brevemente `PKCE code verifier not found in storage` antes de volver al
@@ -1199,3 +1200,28 @@ Usar este formato y conservar las entradas anteriores:
   el parche de seguridad 2.
 - Siguiente vulnerabilidad recomendada: revisar limites de frecuencia de Auth y
   politica de contrasenas como parche independiente.
+
+### 2026-07-20 - parche de seguridad 3 - contrasenas y limites de Auth
+
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #66
+  fusionado en `main` como `cdd52f2`; Worker
+  `c5cf6596-e70c-4435-9dcc-fe57e088630f` activo.
+- La politica de contrasenas quedo centralizada en `passwordPolicy.ts` y se
+  reutiliza en registro y recuperacion. Supabase exige al menos 8 caracteres,
+  minusculas, mayusculas, digitos y simbolos.
+- La configuracion remota tiene cambio seguro de contrasena habilitado y una
+  frecuencia minima de 1 minuto para solicitudes repetibles por correo. El
+  enlace con Supabase CLI no detecto diferencias respecto a
+  `supabase/config.toml`.
+- El Worker conserva limites mas estrictos para login, registro, recuperacion,
+  reenvio y OTP. Tres pruebas de regresion cubren bloqueo por IP, bloqueo por
+  identificador normalizado y hasheado, `Retry-After` y ausencia de llamadas al
+  origen cuando el limite ya fue excedido.
+- Calidad: lint limpio, 54 archivos/203 pruebas y build TypeScript/Vite/PWA
+  correcto; sitemap generado con 473 URLs.
+- Produccion: la pagina principal respondio correctamente y la consola de
+  `cubitathome.com` quedo sin errores ni advertencias relevantes. No se crearon
+  cuentas, no se cambiaron contrasenas y no se enviaron correos ni se mutaron
+  datos productivos durante esta verificacion.
+- Siguiente parche recomendado: evaluar la proteccion contra contrasenas
+  filtradas si el plan de Supabase la admite y revisar los tiempos de sesion.
