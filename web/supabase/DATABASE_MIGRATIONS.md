@@ -173,6 +173,14 @@ inmutabilidad rechazó también `UPDATE` y `DELETE` privilegiados. Una consulta
 independiente posterior confirmó 0 filas del marcador QA. No persistieron
 cambios ni se expusieron datos de cuentas.
 
+Revalidación productiva 2026-07-19: matriz vinculada dentro de
+`BEGIN`/`ROLLBACK`. Anónimo rechazado en lectura e inserción; usuario normal
+`aal1` con 0 filas y sin `INSERT`, `UPDATE` o `DELETE`; admin `aal1` con 0 filas;
+admin `aal2` con lectura de los 4 eventos existentes y sin `UPDATE` o `DELETE`;
+`service_role` sin `UPDATE` o `DELETE`. El trigger de inmutabilidad permaneció
+habilitado. Las 47 migraciones siguen sincronizadas y `db lint --linked` no
+reportó errores. No persistieron cambios ni se mostraron identificadores.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
