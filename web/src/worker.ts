@@ -4,6 +4,7 @@ import {
   handlePublicReportSubmission,
   type PublicSubmissionEnv,
 } from './worker/public-submissions';
+import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 
 export { RateLimiter };
 
@@ -945,6 +946,39 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authRateLimitResponse = await enforceAuthRateLimit(request, env, clientIp, subPath);
       if (authRateLimitResponse) {
         return authRateLimitResponse;
+      }
+
+      if (shouldCheckPwnedPassword(method, subPath)) {
+        const passwordCheckRateLimit = await checkRateLimit(
+          env,
+          `${clientIp}:auth:pwned-password:v1`,
+          10,
+          60000,
+        );
+        if (!passwordCheckRateLimit.allowed) {
+          return rateLimitResponse(passwordCheckRateLimit.resetAt);
+        }
+
+        let password: unknown;
+        try {
+          const authBody = await request.clone().json() as { password?: unknown };
+          password = authBody.password;
+        } catch {
+          password = undefined;
+        }
+
+        if (typeof password === 'string' && password.length > 0) {
+          const exposure = await checkPwnedPassword(password);
+          if (exposure.status === 'pwned') {
+            return jsonResponse({
+              code: 'weak_password',
+              message: 'Esta contraseña apareció en filtraciones conocidas. Elige una contraseña diferente.',
+            }, 422);
+          }
+          if (exposure.status === 'unavailable') {
+            console.warn('Pwned Passwords check unavailable; continuing with the configured password policy.');
+          }
+        }
       }
 
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado

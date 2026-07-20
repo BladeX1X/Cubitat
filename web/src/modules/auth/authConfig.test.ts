@@ -19,4 +19,10 @@ describe('versioned Supabase Auth hardening', () => {
   it('prevents repeated Auth emails inside one minute', () => {
     expect(authConfig).toContain('max_frequency = "1m"')
   })
+
+  it('keeps short-lived JWTs and refresh-token replay protection enabled', () => {
+    expect(authConfig).toContain('jwt_expiry = 3600')
+    expect(authConfig).toContain('enable_refresh_token_rotation = true')
+    expect(authConfig).toContain('refresh_token_reuse_interval = 10')
+  })
 })

@@ -80,6 +80,11 @@ El diseño se adapta automáticamente:
 - **Frecuencia de Auth:** Supabase exige al menos 1 minuto entre correos y el
   Worker agrega limites por IP y por hash del correo para login, registro,
   recuperacion, OTP y reenvios.
+- **Contrasenas filtradas:** El registro pasa por el Worker, que consulta Pwned
+  Passwords mediante k-anonimato. Solo envia los primeros 5 caracteres del
+  SHA-1; nunca transmite la contrasena ni el hash completo. Una coincidencia se
+  rechaza como `weak_password`. Si el corpus externo falla, permanece activa la
+  politica fuerte de Supabase para no interrumpir por completo Auth.
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.

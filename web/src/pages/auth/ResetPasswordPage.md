@@ -59,3 +59,7 @@ Despues de actualizar la contrasena, el usuario no debe quedar logueado automati
 La fortaleza se valida mediante la politica compartida de
 `src/modules/auth/passwordPolicy.ts`: minimo 8 caracteres con mayuscula,
 minuscula, numero y simbolo. Supabase Auth aplica la misma regla en servidor.
+
+El cambio de contrasena tambien atraviesa el Worker y consulta Pwned Passwords
+mediante k-anonimato. Una contrasena conocida en filtraciones se rechaza antes
+de llegar a Supabase; la contrasena y su hash completo nunca salen del Worker.
