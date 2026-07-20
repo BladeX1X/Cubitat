@@ -1175,3 +1175,27 @@ Usar este formato y conservar las entradas anteriores:
   mostro brevemente `PKCE code verifier not found in storage` antes de volver al
   inicio. No hubo errores de consola. Revisar este retorno como bug de Auth antes
   del siguiente parche de hardening.
+
+### 2026-07-19 - cierre del intercambio PKCE duplicado en Google OAuth
+
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #64
+  fusionado en `main` como `6eff11e`; Worker
+  `d20372d3-f7ea-4e8d-8ace-fc687f5eff2a` activo.
+- Causa raiz: el cliente Supabase procesaba automaticamente el `code` PKCE y
+  `AuthCallbackPage` intentaba intercambiar el mismo codigo una segunda vez. El
+  primer intercambio consumia el verificador y el segundo mostraba el error.
+- Correccion modular: `AuthCallbackPage` es el unico propietario del intercambio
+  PKCE (`detectSessionInUrl: false`). Los callbacks heredados con tokens en el
+  hash conservan compatibilidad mediante `setSession` explicito.
+- Calidad local: lint limpio, 52 archivos/188 pruebas y build
+  TypeScript/Vite/PWA correcto; sitemap de 473 URLs.
+- QA productiva en la sesion existente de Chrome: cierre de sesion temporal,
+  selector Google confirmado, cuenta autorizada seleccionada y retorno a
+  `https://cubitathome.com/` con sesion activa. No aparecieron `PKCE code
+  verifier not found in storage` ni `Enlace no valido`.
+- Consola: cero errores o advertencias asociados a `cubitathome.com`; la sesion
+  administrativa quedo restaurada al finalizar.
+- Esta evidencia cierra y reemplaza el pendiente de diagnostico registrado en
+  el parche de seguridad 2.
+- Siguiente vulnerabilidad recomendada: revisar limites de frecuencia de Auth y
+  politica de contrasenas como parche independiente.
