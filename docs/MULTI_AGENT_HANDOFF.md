@@ -1119,8 +1119,9 @@ Usar este formato y conservar las entradas anteriores:
 
 ### 2026-07-19 - parche de seguridad 1 - Turnstile server-side
 
-- Estado: **implementado y verificado localmente; pendiente de PR, migracion,
-  despliegue y QA productiva** en `bugfix/turnstile-server-enforcement`.
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #59
+  fusionado en `main` como `902c824`; Worker
+  `fc3e3bf7-6af1-49de-886d-701dfe3e69be` activo.
 - Contactos y reportes ya no escriben directamente desde el navegador. Ambos
   usan endpoints aislados del Worker principal, que validan token, `action` y
   `hostname`, aplican rate limiting y llaman RPCs exclusivos de `service_role`.
@@ -1129,12 +1130,12 @@ Usar este formato y conservar las entradas anteriores:
   reportes. El `reporter_id` se deriva de una sesion valida y nunca del cuerpo.
 - TDD dirigido: 5 archivos y 43 pruebas correctas. Puerta completa: lint limpio,
   48 archivos/181 pruebas y build TypeScript/Vite/PWA correcto; sitemap de 473
-  URLs. El E2E seguro de Turnstile paso en Chromium (1/1, solo navegacion; sin
-  enviar formularios). La migracion se valido en el proyecto vinculado dentro de
-  `BEGIN`/`ROLLBACK`; `db lint` limpio y dry-run con solo la 48 pendiente. No
-  hubo cambios persistentes.
-- Criterio de cierre pendiente: aplicar migracion 48 y desplegar el mismo commit,
-  probar contacto y reporte reales con Turnstile, confirmar rechazo de insercion
-  directa y revisar consola. No marcar como productivo antes de esa evidencia.
+  URLs. El E2E seguro de Turnstile paso en Chromium (1/1).
+- Produccion: migracion 48 sincronizada; `db lint` limpio y dry-run sin
+  pendientes. Un contacto y un reporte reales mostraron confirmacion de exito
+  en Chrome; la consola no registro errores ni advertencias.
+- Aislamiento: las inserciones directas de contacto y reporte bajo rol `anon`
+  fueron rechazadas. Se eliminaron exactamente 1 contacto y 1 reporte con los
+  marcadores QA; la consulta independiente posterior devolvio 0/0 residuos.
 - Siguiente vulnerabilidad recomendada: revisar el enlace entre Turnstile y los
   flujos de registro/recuperacion de Supabase Auth como parche separado.
