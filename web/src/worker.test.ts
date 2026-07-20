@@ -478,6 +478,106 @@ describe('Cloudflare Worker security contract', () => {
     expect(forwardedHeaders.has('X-Untrusted-Header')).toBe(false)
   })
 
+  it('blocks password login by IP before forwarding it to Supabase', async () => {
+    const limiterFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({
+      allowed: false,
+      remaining: 0,
+      resetAt: Date.now() + 60_000,
+    })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.20',
+        },
+        body: JSON.stringify({ email: 'qa@example.com', password: 'invalid' }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+    })
+    expect(upstreamFetch).not.toHaveBeenCalled()
+  })
+
+  it('blocks distributed password attempts by a hashed normalized email', async () => {
+    const limiterFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        allowed: true,
+        remaining: 5,
+        resetAt: Date.now() + 60_000,
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 600_000,
+      })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.21',
+        },
+        body: JSON.stringify({ email: '  QA@Example.COM  ', password: 'invalid' }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(upstreamFetch).not.toHaveBeenCalled()
+    expect(limiterFetch).toHaveBeenCalledTimes(2)
+    const emailLimiterUrl = String(limiterFetch.mock.calls[1]?.[0])
+    expect(emailLimiterUrl).toContain('email%3A')
+    expect(emailLimiterUrl).not.toContain('qa%40example.com')
+    expect(emailLimiterUrl).not.toContain('QA%40Example.COM')
+  })
+
+  it('applies the tighter recovery limit before sending an email', async () => {
+    const limiterFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({
+      allowed: false,
+      remaining: 0,
+      resetAt: Date.now() + 600_000,
+    })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/recover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.22',
+        },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(upstreamFetch).not.toHaveBeenCalled()
+    expect(String(limiterFetch.mock.calls[0]?.[0])).toContain('auth%3Arecover%3Aip%3Av1')
+  })
+
   it('forwards authenticated MFA factor cleanup but blocks anonymous deletion', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
