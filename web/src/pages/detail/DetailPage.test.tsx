@@ -5,9 +5,23 @@ import { useSEO } from '../../shared/hooks/useSEO'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
 
-const { mockGetUser, mockTurnstileMount } = vi.hoisted(() => ({
+const {
+  mockGetUser,
+  mockGetSession,
+  mockSubmitPublicContact,
+  mockSubmitPublicReport,
+  mockTurnstileMount,
+} = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
+  mockGetSession: vi.fn(),
+  mockSubmitPublicContact: vi.fn(),
+  mockSubmitPublicReport: vi.fn(),
   mockTurnstileMount: vi.fn(),
+}))
+
+vi.mock('./publicSubmissions', () => ({
+  submitPublicContact: mockSubmitPublicContact,
+  submitPublicReport: mockSubmitPublicReport,
 }))
 
 // Mock useSavedProperties
@@ -74,7 +88,7 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
     from: (table: string) => mockFrom(table),
     auth: {
       getUser: mockGetUser,
-      getSession: vi.fn().mockImplementation(() => Promise.resolve({ data: { session: null }, error: null })),
+      getSession: mockGetSession,
     },
   },
 }))
@@ -90,7 +104,7 @@ beforeAll(() => {
 })
 
 const mockProperty: Property = {
-  id: 'prop-detail-1',
+  id: '00000000-0000-0000-0000-000000000099',
   title: 'Casa independiente en Playa',
   location: 'Playa, La Habana',
   priceUsd: 68000,
@@ -130,6 +144,9 @@ describe('DetailPage - Reportes y Visor', () => {
     mockFrom.mockClear()
     mockTurnstileMount.mockClear()
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
+    mockSubmitPublicContact.mockReset().mockResolvedValue(undefined)
+    mockSubmitPublicReport.mockReset().mockResolvedValue(undefined)
   })
 
   it('debería renderizar la información básica de la propiedad', () => {
@@ -198,7 +215,7 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getByRole('heading', { name: /informar sobre un problema/i })).toBeInTheDocument()
   })
 
-  it('debería enviar el reporte de propiedad a Supabase al rellenar el formulario', async () => {
+  it('debería enviar el reporte mediante el endpoint protegido al rellenar el formulario', async () => {
     render(
       <DetailPage
         property={mockProperty}
@@ -225,13 +242,12 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith('property_reports')
-      expect(mockInsert).toHaveBeenCalledWith({
-        property_id: 'prop-detail-1',
+      expect(mockSubmitPublicReport).toHaveBeenCalledWith({
+        turnstileToken: 'test-turnstile-token',
+        propertyId: '00000000-0000-0000-0000-000000000099',
         reason: 'FRAUD',
         description: 'Esta casa no es del anunciante actual.',
-        status: 'pending',
-        reporter_id: null,
+        accessToken: undefined,
       })
     })
 
@@ -240,8 +256,8 @@ describe('DetailPage - Reportes y Visor', () => {
   })
 
   it('vincula el reporte autenticado con el usuario para cumplir RLS', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: 'user-report-1' } },
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: { access_token: 'authenticated-report-token' } },
       error: null,
     })
 
@@ -262,15 +278,15 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
 
     await waitFor(() => {
-      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        property_id: 'prop-detail-1',
-        reporter_id: 'user-report-1',
+      expect(mockSubmitPublicReport).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        accessToken: 'authenticated-report-token',
       }))
     })
   })
 
   it('renueva Turnstile cuando falla la insercion de un reporte', async () => {
-    mockInsert.mockResolvedValueOnce({ error: new Error('fallo controlado') })
+    mockSubmitPublicReport.mockRejectedValueOnce(new Error('fallo controlado'))
 
     render(
       <DetailPage
@@ -307,16 +323,15 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
 
     await waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith('contacts')
-      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        property_id: 'prop-detail-1',
-        contact_name: 'Ana Pérez',
-        contact_phone: '+53 51234567',
+      expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        contactName: 'Ana Pérez',
+        contactPhone: '+53 51234567',
       }))
     })
 
     expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
-    expect(localStorage.getItem('cubitat_contact_sent_prop-detail-1')).toBeTruthy()
+    expect(localStorage.getItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099')).toBeTruthy()
   })
 
   it('conserva los datos del formulario durante la verificación asíncrona', async () => {
@@ -340,10 +355,10 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
 
     await waitFor(() => {
-      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        property_id: 'prop-detail-1',
-        contact_name: 'Rodolfo QA',
-        contact_phone: '+53 51111111',
+      expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        contactName: 'Rodolfo QA',
+        contactPhone: '+53 51111111',
       }))
     })
 
@@ -351,7 +366,7 @@ describe('DetailPage - Reportes y Visor', () => {
   })
 
   it('debería bloquear contactos repetidos durante cinco minutos', () => {
-    localStorage.setItem('cubitat_contact_sent_prop-detail-1', Date.now().toString())
+    localStorage.setItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099', Date.now().toString())
 
     render(
       <DetailPage
@@ -364,6 +379,6 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
-    expect(mockInsert).not.toHaveBeenCalled()
+    expect(mockSubmitPublicContact).not.toHaveBeenCalled()
   })
 })

@@ -1116,3 +1116,25 @@ Usar este formato y conservar las entradas anteriores:
   fila de prueba.
 - Las 47 migraciones continúan sincronizadas y `db lint --linked` no reporta
   errores de esquema.
+
+### 2026-07-19 - parche de seguridad 1 - Turnstile server-side
+
+- Estado: **implementado y verificado localmente; pendiente de PR, migracion,
+  despliegue y QA productiva** en `bugfix/turnstile-server-enforcement`.
+- Contactos y reportes ya no escriben directamente desde el navegador. Ambos
+  usan endpoints aislados del Worker principal, que validan token, `action` y
+  `hostname`, aplican rate limiting y llaman RPCs exclusivos de `service_role`.
+- La migracion 48 revoca `INSERT` a `PUBLIC`, `anon` y `authenticated`; fuerza
+  propiedad publicada, limites de campos y estado inicial `pending` para los
+  reportes. El `reporter_id` se deriva de una sesion valida y nunca del cuerpo.
+- TDD dirigido: 5 archivos y 43 pruebas correctas. Puerta completa: lint limpio,
+  48 archivos/181 pruebas y build TypeScript/Vite/PWA correcto; sitemap de 473
+  URLs. El E2E seguro de Turnstile paso en Chromium (1/1, solo navegacion; sin
+  enviar formularios). La migracion se valido en el proyecto vinculado dentro de
+  `BEGIN`/`ROLLBACK`; `db lint` limpio y dry-run con solo la 48 pendiente. No
+  hubo cambios persistentes.
+- Criterio de cierre pendiente: aplicar migracion 48 y desplegar el mismo commit,
+  probar contacto y reporte reales con Turnstile, confirmar rechazo de insercion
+  directa y revisar consola. No marcar como productivo antes de esa evidencia.
+- Siguiente vulnerabilidad recomendada: revisar el enlace entre Turnstile y los
+  flujos de registro/recuperacion de Supabase Auth como parche separado.

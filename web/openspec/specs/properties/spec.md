@@ -82,6 +82,14 @@ El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar u
 - AND un reporte anonimo MUST conservar `reporter_id` nulo
 - AND si la insercion o Turnstile falla el widget MUST renovarse para permitir un reintento seguro
 
+#### Scenario: Reporte protegido contra bypass de Turnstile
+- GIVEN un usuario anonimo o autenticado envia un reporte
+- WHEN el formulario se procesa
+- THEN el navegador MUST enviar el token y los datos al Worker principal de Cubitat
+- AND el Worker MUST validar `hostname` y `action` antes de persistir el reporte
+- AND el identificador del reportante autenticado MUST derivarse de una sesion validada por el servidor
+- AND el navegador MUST NOT insertar directamente en `public.property_reports`
+
 ### Requirement: Normalizacion de contacto de propiedad
 El sistema MUST resolver informacion de contacto desde datos de propiedad y fallback controlado.
 

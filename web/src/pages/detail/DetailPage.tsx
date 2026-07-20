@@ -42,7 +42,7 @@ import { Card, CardContent } from '../../shared/ui/card'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
-import { verifyTurnstile } from '../../shared/lib/turnstile'
+import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -99,45 +99,27 @@ export function DetailPage({
     setReportLoading(true)
     setReportError(null)
 
-    const isTest = (import.meta as any).env?.MODE === 'test'
-    if (!isTest) {
-      if (!reportTurnstileToken) {
-        setReportError('Por favor, completa la verificación de seguridad.')
-        setReportLoading(false)
-        return
-      }
-
-      const isHuman = await verifyTurnstile(reportTurnstileToken)
-      if (!isHuman) {
-        setReportError('La verificación de seguridad falló. Por favor intenta de nuevo.')
-        setReportTurnstileToken(null)
-        setReportTurnstileKey(prev => prev + 1)
-        setReportLoading(false)
-        return
-      }
+    if (!reportTurnstileToken) {
+      setReportError('Por favor, completa la verificación de seguridad.')
+      setReportLoading(false)
+      return
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const reporterId = user?.id || null
-
-      const { error: insertError } = await supabase
-        .from('property_reports')
-        .insert({
-          property_id: property.id,
-          reason: reportReason,
-          description: reportDescription,
-          status: 'pending',
-          reporter_id: reporterId
-        })
-
-      if (insertError) throw insertError
+      const { data: { session } } = await supabase.auth.getSession()
+      await submitPublicReport({
+        turnstileToken: reportTurnstileToken,
+        propertyId: property.id,
+        reason: reportReason,
+        description: reportDescription,
+        accessToken: session?.access_token,
+      })
 
       setReportSuccess(true)
       setReportReason('')
       setReportDescription('')
       setReportTurnstileToken(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error submitting report:', err)
       setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
       setReportTurnstileToken(null)
@@ -1113,39 +1095,24 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
       }
     }
 
-    const isTest = (import.meta as any).env?.MODE === 'test'
-    if (!isTest) {
-      if (!contactTurnstileToken) {
-        setError('Por favor, completa la verificación de seguridad.')
-        setLoading(false)
-        return
-      }
-
-      const isHuman = await verifyTurnstile(contactTurnstileToken)
-      if (!isHuman) {
-        setError('La verificación de seguridad falló. Por favor intenta de nuevo.')
-        setContactTurnstileToken(null)
-        setContactTurnstileKey(prev => prev + 1)
-        setLoading(false)
-        return
-      }
+    if (!contactTurnstileToken) {
+      setError('Por favor, completa la verificación de seguridad.')
+      setLoading(false)
+      return
     }
 
     try {
-      const { error: insertError } = await supabase
-        .from('contacts')
-        .insert({
-          property_id: property.id,
-          contact_name: name,
-          contact_phone: phone,
-          message: message
-        })
-
-      if (insertError) throw insertError
+      await submitPublicContact({
+        turnstileToken: contactTurnstileToken,
+        propertyId: property.id,
+        contactName: name,
+        contactPhone: phone,
+        message,
+      })
 
       localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
       setContactSent(true)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error submitting contact lead:', err)
       setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
       setContactTurnstileToken(null)
