@@ -578,6 +578,126 @@ describe('Cloudflare Worker security contract', () => {
     expect(String(limiterFetch.mock.calls[0]?.[0])).toContain('auth%3Arecover%3Aip%3Av1')
   })
 
+  it('rejects a leaked password during signup before forwarding to Supabase', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const target = String(input)
+      if (target === 'https://api.pwnedpasswords.com/range/32CA9') {
+        return new Response('FC1A0F5B6330E3F4C8C1BBECDE9BEDB9573:584516', { status: 200 })
+      }
+      throw new Error(`Unexpected upstream request: ${target}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com', password: 'Password1!' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(422)
+    await expect(response.json()).resolves.toEqual({
+      code: 'weak_password',
+      message: 'Esta contraseña apareció en filtraciones conocidas. Elige una contraseña diferente.',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a leaked password during an authenticated password change', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const target = String(input)
+      if (target === 'https://api.pwnedpasswords.com/range/32CA9') {
+        return new Response('FC1A0F5B6330E3F4C8C1BBECDE9BEDB9573:584516', { status: 200 })
+      }
+      throw new Error(`Unexpected upstream request: ${target}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/user', {
+        method: 'PUT',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: 'Password1!' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(422)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails open when Pwned Passwords is unavailable and preserves signup availability', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ user: { id: 'safe-user' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com', password: 'StrongPass!123' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe('https://example.supabase.co/auth/v1/signup')
+  })
+
+  it('rate limits password exposure checks before calling Pwned Passwords', async () => {
+    const limiterFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        allowed: true,
+        remaining: 4,
+        resetAt: Date.now() + 600_000,
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        allowed: true,
+        remaining: 2,
+        resetAt: Date.now() + 3_600_000,
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 60_000,
+      })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/auth/v1/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.23',
+        },
+        body: JSON.stringify({ email: 'qa@example.com', password: 'Password1!' }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(upstreamFetch).not.toHaveBeenCalled()
+    expect(limiterFetch).toHaveBeenCalledTimes(3)
+    expect(String(limiterFetch.mock.calls[2]?.[0])).toContain('auth%3Apwned-password%3Av1')
+  })
+
   it('forwards authenticated MFA factor cleanup but blocks anonymous deletion', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)

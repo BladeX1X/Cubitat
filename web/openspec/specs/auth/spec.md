@@ -166,6 +166,14 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - AND el sistema MUST validar la fortaleza de la contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial) y la coincidencia entre ambos campos
 - AND el sistema MUST guardar la nueva contrasena mediante Supabase Auth
 
+#### Scenario: Contraseña conocida en filtraciones
+- GIVEN un usuario intenta registrarse o establecer una nueva contraseña
+- WHEN la contraseña aparece en el corpus de Pwned Passwords
+- THEN el Worker MUST rechazar la operación antes de enviarla a Supabase Auth
+- AND MUST consultar el corpus mediante k-anonimato enviando solo los primeros 5 caracteres del SHA-1
+- AND MUST NOT registrar, persistir ni enviar la contraseña o su hash completo
+- AND si el corpus no está disponible MUST conservar la política fuerte configurada en Supabase sin revelar datos sensibles
+
 ### Requirement: Autenticación Social (Google OAuth)
 El sistema MUST permitir el registro e inicio de sesión rápido utilizando proveedores de identidad social de confianza.
 
@@ -196,4 +204,11 @@ El sistema MUST reaccionar adecuadamente ante la pérdida de conectividad y expi
 - WHEN la aplicación realiza peticiones o está activa en segundo plano
 - THEN el sistema MUST renovar de manera silenciosa el token de sesión (Access Token) mediante el Refresh Token usando `onAuthStateChange`
 - AND si el token de refresco ha sido invalidado o expirado, el sistema MUST cerrar la sesión local de forma segura y redirigir al usuario al inicio (`/`) con una notificación visual no invasiva de "Sesión expirada"
+
+#### Scenario: Controles de sesión disponibles en el plan actual
+- GIVEN Cubitat opera con el plan Free de Supabase
+- WHEN se revisa la configuración de sesiones
+- THEN el JWT MUST conservar una expiración de 1 hora
+- AND la rotación de refresh tokens MUST permanecer habilitada con intervalo de reutilización de 10 segundos
+- AND los timeouts por duración o inactividad MUST quedar documentados como bloqueo de plan, no simulados como una garantía de servidor
 
