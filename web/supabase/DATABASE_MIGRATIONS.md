@@ -137,10 +137,11 @@ persistentes.
     crea RPCs de escritura exclusivos de `service_role`. El Worker principal
     valida token, `action` y `hostname` antes de invocarlos.
 
-Estado 2026-07-19: **implementado y verificado localmente; pendiente de aplicar
-en produccion**. La migracion completa se ejecuto contra el proyecto vinculado
-dentro de `BEGIN`/`ROLLBACK`, `db lint --linked` no reporto errores y el dry-run
-lista unicamente la migracion 48. No se modificaron datos ni esquema persistente.
+Estado 2026-07-19: **aplicado y verificado en produccion**. Las 48 migraciones
+estan sincronizadas, `db lint --linked` no reporta errores y el dry-run remoto
+no muestra pendientes. El intento directo con rol `anon` fue rechazado para
+contactos y reportes. Los dos envios reales mediante Turnstile funcionaron y
+las dos filas QA se eliminaron; una consulta posterior confirmo 0 residuos.
 
 Verificación productiva 2026-07-19: la migración 46 fue aplicada al proyecto
 vinculado con Supabase CLI 2.109.1. `migration list --linked` confirma las 46
