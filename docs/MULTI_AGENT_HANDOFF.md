@@ -65,7 +65,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
 | J. Modularización admin | Terminado | Codex principal | Propiedades, Reportes y Métricas aislados bajo `src/modules/admin`; `AdminPage` quedó como shell de 97 líneas sin acceso directo a Supabase. PR #20 fusionado y Worker `1d8ae4c4-8223-4499-b013-7bd0bfe29099` verificado en producción con sesión admin: tres módulos operativos y consola limpia. Sin migraciones ni cambios de datos. |
 | K. Contexto del anunciante | Terminado | Codex principal | PR #22 fusionado y desplegado; contexto real cargado bajo demanda con sesión admin, guard conservado y consola limpia. Inspección visual móvil real queda como pendiente no bloqueante. |
-| L. Bitácora de moderación | En curso | Codex principal | PR #26 fusionado y desplegado; migración 42 sincronizada y bitácora admin verificada en producción con consola limpia. Falta evidencia productiva específica de denegación para usuario normal/anónimo y del rechazo de mutaciones antes de marcar terminado. |
+| L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Documentado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`: verificación de identidad, eliminación server-only de un único factor y rematriculación sin desactivar AAL2. No se borraron factores reales. Pendiente un simulacro no destructivo y soporte UI para varios factores. |
 
@@ -1101,3 +1101,18 @@ Usar este formato y conservar las entradas anteriores:
   o exponer `service_role`, QR, códigos, tokens e identificadores de factores.
 - Supabase no ofrece códigos de recuperación. La selección y gestión de varios
   factores queda como mejora separada; no se considera implementada ni probada.
+
+### 2026-07-19 — Codex principal — revalidación del carril L
+
+- Estado: **terminado con evidencia productiva actual**. La tabla de carriles
+  quedó reconciliada con el cierre que ya constaba en el registro histórico y
+  en las notas operativas.
+- Matriz vinculada dentro de `BEGIN`/`ROLLBACK`: anónimo sin lectura ni
+  `INSERT`; usuario normal AAL1 con 0 filas y sin `INSERT`, `UPDATE` o `DELETE`;
+  admin AAL1 con 0 filas; admin AAL2 con lectura de los 4 eventos existentes y
+  sin `UPDATE` o `DELETE`; `service_role` también sin `UPDATE` o `DELETE`.
+- El trigger `reject_property_moderation_audit_mutation_trigger` está habilitado.
+  No se mostraron IDs, no se modificaron publicaciones y no persistió ninguna
+  fila de prueba.
+- Las 47 migraciones continúan sincronizadas y `db lint --linked` no reporta
+  errores de esquema.
