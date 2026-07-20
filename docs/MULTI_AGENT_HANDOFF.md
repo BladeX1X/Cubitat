@@ -1225,3 +1225,32 @@ Usar este formato y conservar las entradas anteriores:
   datos productivos durante esta verificacion.
 - Siguiente parche recomendado: evaluar la proteccion contra contrasenas
   filtradas si el plan de Supabase la admite y revisar los tiempos de sesion.
+
+### 2026-07-20 - parche de seguridad 4 - contrasenas filtradas
+
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #68
+  fusionado en `main` como `863cafc`; Worker
+  `5f6366b5-8f58-4ef4-bb1a-8eb3365449b4` activo.
+- El dashboard confirmo que la organizacion usa Supabase Free. La proteccion
+  nativa contra contrasenas filtradas y los timeouts de sesion requieren Pro;
+  no se cambio el plan ni se genero ningun cargo.
+- `pwnedPassword.ts` aplica el control gratuito en registro y cambio de
+  contrasena: calcula SHA-1 dentro del Worker y envia solo el prefijo de 5
+  caracteres a Pwned Passwords con k-anonimato y `Add-Padding`. Nunca transmite
+  la contrasena ni su hash completo.
+- Una coincidencia devuelve `422 weak_password` antes de llegar a Supabase. Las
+  consultas externas tienen limite propio por IP; si el corpus no esta
+  disponible, Auth conserva disponibilidad bajo la politica fuerte ya activa.
+- Sesiones: se conservaron `jwt_expiry = 3600`, rotacion de refresh tokens y
+  ventana de reutilizacion de 10 segundos. No se simularon timeouts de servidor
+  que el plan actual no puede garantizar.
+- Calidad: lint limpio, 55 archivos/211 pruebas y build TypeScript/Vite/PWA
+  correcto; sitemap de 473 URLs.
+- Produccion: Home `200`; un intento con correo deliberadamente invalido y un
+  fixture filtrado devolvio el mensaje seguro `422 weak_password`. Era imposible
+  crear una cuenta y no se cambio ninguna contrasena ni dato productivo.
+- Chrome no devolvio telemetria tras dos reconexiones posteriores al despliegue.
+  Wrangler confirmo que no cambiaron assets del navegador; la comprobacion HTTP
+  y el contrato productivo del Worker quedaron correctos.
+- Siguiente parche recomendado: revisar exposicion de datos en logs y politica
+  de retencion de auditoria, sin ampliar acceso a datos productivos.
