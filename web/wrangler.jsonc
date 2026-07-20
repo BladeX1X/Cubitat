@@ -14,7 +14,8 @@
     "run_worker_first": true
   },
   "vars": {
-    "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co"
+    "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
+    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
   },
   "durable_objects": {
     "bindings": [

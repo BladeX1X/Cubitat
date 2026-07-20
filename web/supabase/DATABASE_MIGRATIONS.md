@@ -130,6 +130,18 @@ bitácora; admin `aal2` con acceso a 5 propiedades privadas ajenas, 6 reportes y
 administrativos o privados ajenos. No se crearon ni modificaron filas
 persistentes.
 
+### Turnstile obligatorio en escrituras publicas - 2026-07-19
+
+48. `20260719002000_enforce_server_side_turnstile_submissions.sql`: elimina la
+    insercion directa de `anon` y `authenticated` en contactos y reportes, y
+    crea RPCs de escritura exclusivos de `service_role`. El Worker principal
+    valida token, `action` y `hostname` antes de invocarlos.
+
+Estado 2026-07-19: **implementado y verificado localmente; pendiente de aplicar
+en produccion**. La migracion completa se ejecuto contra el proyecto vinculado
+dentro de `BEGIN`/`ROLLBACK`, `db lint --linked` no reporto errores y el dry-run
+lista unicamente la migracion 48. No se modificaron datos ni esquema persistente.
+
 Verificación productiva 2026-07-19: la migración 46 fue aplicada al proyecto
 vinculado con Supabase CLI 2.109.1. `migration list --linked` confirma las 46
 migraciones sincronizadas, `db lint --linked` no reporta errores y el dry-run
@@ -188,6 +200,9 @@ reportó errores. No persistieron cambios ni se mostraron identificadores.
 - Probar acceso del propietario a borradores y publicaciones propias.
 - Probar que otro usuario no pueda editar propiedades, imágenes, favoritos ni alertas ajenas.
 - Probar que solo un administrador pueda moderar y consultar denuncias.
+- Probar que el cliente publico no pueda insertar contactos o reportes
+  directamente y que ambos flujos funcionen solo tras validar Turnstile en el
+  Worker principal.
 - Probar inserción de contactos y generación de su notificación.
 - Probar que un usuario no pueda elevar su rol ni marcar su teléfono como verificado.
 - Probar subida y borrado de imágenes dentro de la carpeta autorizada del propietario.

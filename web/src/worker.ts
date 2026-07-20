@@ -1,8 +1,13 @@
 import { RateLimiter } from './rate-limiter';
+import {
+  handlePublicContactSubmission,
+  handlePublicReportSubmission,
+  type PublicSubmissionEnv,
+} from './worker/public-submissions';
 
 export { RateLimiter };
 
-export interface Env {
+export interface Env extends PublicSubmissionEnv {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
@@ -18,6 +23,7 @@ export interface Env {
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
+  TURNSTILE_VERIFY_URL?: string;
   RATE_LIMITER: any;
 }
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -585,6 +591,36 @@ export default {
     }
 
     const path = url.pathname;
+
+    if ((path === '/api/public/contact' || path === '/api/public/report') && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const isContact = path === '/api/public/contact';
+      const rateLimit = await checkRateLimit(
+        env,
+        `${clientIp}:public-submission:${isContact ? 'contact' : 'report'}:v1`,
+        isContact ? 5 : 3,
+        300000,
+      );
+      if (!rateLimit.allowed) return rateLimitResponse(rateLimit.resetAt);
+
+      if (isContact) {
+        return withSecurityHeaders(await handlePublicContactSubmission(request, env), url);
+      }
+
+      const authHeader = request.headers.get('Authorization') || '';
+      let reporterId: string | null = null;
+      if (authHeader) {
+        const reporter = await getAuthenticatedUser(authHeader, env);
+        if (!reporter) return jsonResponse({ error: 'Unauthorized' }, 401);
+        reporterId = reporter.id;
+      }
+
+      return withSecurityHeaders(await handlePublicReportSubmission(request, env, reporterId), url);
+    }
+
+    if ((path === '/api/public/contact' || path === '/api/public/report') && request.method !== 'POST') {
+      return jsonResponse({ error: 'Method not allowed' }, 405);
+    }
 
     // Endpoint interno para moderación con IA
     if (path === '/api/ai-moderate' && request.method === 'POST') {

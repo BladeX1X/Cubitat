@@ -104,6 +104,79 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('Location')).toBe('https://cubitathome.com/propiedad/demo')
   })
 
+  it('routes public contacts through Turnstile and the trusted RPC', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        success: true,
+        hostname: 'cubitathome.com',
+        action: 'contact-owner',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/public/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.10',
+        },
+        body: JSON.stringify({
+          turnstile_token: 'valid-contact-token',
+          property_id: propertyId,
+          contact_name: 'Rodolfo QA',
+          contact_phone: '+53 50000000',
+          message: 'Quiero conocer mas detalles.',
+        }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+        TURNSTILE_VERIFY_URL: 'https://turnstile.example.test',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      `https://example.supabase.co/rest/v1/rpc/submit_public_contact_trusted`,
+      expect.objectContaining({ method: 'POST' }),
+    )
+    const rpcHeaders = new Headers(fetchMock.mock.calls[1]?.[1]?.headers)
+    expect(rpcHeaders.get('apikey')).toBe('server-only-service-role-key')
+  })
+
+  it('rejects an invalid report session before validating Turnstile', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'invalid token' }), { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/public/report', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer expired-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          turnstile_token: 'unused-token',
+          property_id: crypto.randomUUID(),
+          reason: 'spam',
+        }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(401)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects malformed moderation payloads before authentication', async () => {
     const response = await worker.fetch(
       new Request('https://cubitathome.com/api/ai-moderate', {

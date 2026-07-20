@@ -52,7 +52,16 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - WHEN Turnstile entrega un token valido y el formulario actualiza su estado
 - THEN el widget MUST conservar la misma instancia aprobada
 - AND MUST evitar reiniciar el desafio por cambios de callbacks de React
-- AND el envio MUST continuar solo despues de validar el token mediante el Worker `siteverify`
+- AND el navegador MUST enviar el token y los datos al Worker principal de Cubitat
+- AND el Worker principal MUST validar el token mediante `siteverify`
+- AND el Worker principal MUST registrar la consulta solo despues de recibir `success: true`
+- AND el navegador MUST NOT insertar directamente en `public.contacts`
+
+#### Scenario: Impedir el bypass de Turnstile
+- GIVEN un cliente intenta insertar una consulta directamente mediante la Data API de Supabase
+- WHEN la solicitud no pasa por el endpoint protegido del Worker principal
+- THEN RLS y los privilegios de tabla MUST rechazar la insercion
+- AND solo una RPC reservada a `service_role` MAY registrar la consulta validada
 
 #### Scenario: Conservar datos durante la verificacion anti-bot
 - GIVEN el usuario completa el formulario publico de contacto
