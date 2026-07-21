@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-19
+Última actualización: 2026-07-21
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -21,12 +21,16 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
-- Rama base actual: `main` en `ba9867f`; el endurecimiento MFA se integró
-  mediante el PR #55.
-- Migraciones: 47 migraciones sincronizadas con producción. La migración 47
-  exige `aal2` además del rol admin en RLS y en la RPC de métricas, sin alterar
-  los permisos legítimos del propietario.
-- Validación local más reciente: lint limpio, 45 archivos y 172 pruebas
+- Rama base funcional confirmada antes de este relevo: `main` en `4bf8fa0`. El
+  código del parche de observabilidad segura se integró mediante el PR #70
+  (`f969494`) y su cierre documental mediante el PR #71. El siguiente agente
+  debe usar el `origin/main` más reciente que ya contenga esta sección.
+- Estado local que debe preservarse: `web/public/sitemap.xml` está modificado por
+  otro trabajo. No incluirlo, restaurarlo ni regenerarlo en el siguiente parche.
+- Migraciones: 48 archivos versionados y sincronizados con producción según la
+  última verificación. La migración 47 exige `aal2` para administración y la 48
+  obliga a que contactos y reportes públicos atraviesen Turnstile server-side.
+- Validación local más reciente: lint limpio, 57 archivos y 215 pruebas
   aprobadas, build TypeScript/Vite/PWA correcto y sitemap de 473 URLs.
 - Recuperación de contraseña:
   - plantilla remota portable con `token_hash` aplicada mediante Supabase CLI;
@@ -34,7 +38,7 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
   - la ruta usa un shell aislado que no muestra el estado autenticado;
   - después de cambiar la contraseña se ejecuta `signOut` y se abre el login.
 - Despliegue productivo vigente: Worker `cubitat1`, versión
-  `91e5452f-0e83-483b-9667-f2bd114331dd`, activa al 100 % desde el 2026-07-19.
+  `17e2a0e0-da43-4c4d-9b00-a701924099ba`, desplegada el 2026-07-20.
 - Google OAuth funciona de extremo a extremo.
 - Panel de moderación protegido por TOTP/AAL2. La sesión administrativa elevada
   cargó propiedades, reportes, bitácora y métricas en producción sin errores de
@@ -68,6 +72,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Documentado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`: verificación de identidad, eliminación server-only de un único factor y rematriculación sin desactivar AAL2. No se borraron factores reales. Pendiente un simulacro no destructivo y soporte UI para varios factores. |
+| R. Logs seguros del frontend | Libre | — | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -1288,3 +1293,75 @@ Usar este formato y conservar las entradas anteriores:
 - Siguiente parche recomendado: auditar `console.*` del frontend por modulos y
   sustituir objetos de error o respuestas crudas por mensajes seguros, sin
   eliminar el feedback util para soporte.
+
+## Relevo listo para el siguiente agente - 2026-07-21
+
+### Punto de partida
+
+- Continuar desde el `origin/main` más reciente que contenga este relevo. Su
+  padre funcional antes de documentarlo era `4bf8fa0`.
+- El Worker productivo vigente es
+  `17e2a0e0-da43-4c4d-9b00-a701924099ba`.
+- El parche de logs del Worker está cerrado. No repetir su auditoría ni volver a
+  habilitar `observability.logs.invocation_logs`.
+- El único cambio local no integrado es `web/public/sitemap.xml` y pertenece a
+  otro trabajo. Debe permanecer fuera de cualquier commit, stash, restore o
+  despliegue del carril R; proteger su contenido antes del build y restaurar el
+  mismo hash después.
+- No hay migraciones pendientes conocidas: el inventario contiene 48 y la
+  última comprobación vinculada quedó sincronizada.
+
+### Siguiente trabajo autorizado: carril R
+
+Línea base estática del relevo: 56 llamadas `console.*` en 20 archivos de
+`web/src`, excluyendo pruebas y `worker.ts`. Las concentraciones principales
+están en `CubitatApp.tsx`, `PublishPage.tsx`, `DetailPage.tsx`, módulos admin,
+Auth, caché offline, mapas, favoritos y `shared/components/ErrorBoundary.tsx`.
+
+1. Crear una rama nueva desde `main`, reclamar la fila R como `En curso` y no
+   trabajar directamente sobre `main`.
+2. Inventariar los `console.log/info/warn/error` del frontend, excluyendo
+   pruebas, scripts locales y `worker.ts`, que ya tiene logger seguro.
+3. Dividir el parche por módulos para evitar solapamientos: autenticación,
+   administración, publicaciones/propiedades y límite global de errores.
+4. No registrar correos, teléfonos, IDs de usuario o propiedad, URLs completas,
+   query strings, tokens, objetos `Error`, respuestas de proveedor ni cuerpos
+   de red. No convertir datos sensibles en hashes para conservarlos en logs.
+5. Mantener el feedback visible al usuario y la información mínima necesaria
+   para soporte mediante eventos constantes y campos cerrados. No silenciar
+   fallos sin una señal segura.
+6. Añadir pruebas de regresión que rechacen campos inesperados y eviten volver a
+   introducir `console.*` directo en los módulos migrados.
+7. Ejecutar desde `web`: `npm run lint`, `npm run test:run` y `npm run build`.
+   Proteger antes el `sitemap.xml` ajeno y confirmar su hash después del build.
+8. Verificar en producción solo lectura/navegación y consola. No crear cuentas,
+   publicaciones, contactos, reportes ni alertas sin autorización nueva.
+9. Actualizar este relevo y únicamente las notas afectadas del vault antes de
+   marcar R como `Terminado`.
+
+### Bloqueos y decisiones que no debe asumir
+
+- Contenido real y revisión jurídica continúan bloqueados.
+- La política interna de retención de auditoría de Supabase sigue pendiente de
+  aprobación humana. No purgar `auth.audit_log_entries`, no desactivar su
+  escritura y no cambiar de plan sin autorización explícita.
+- No leer, mostrar ni copiar secretos, cookies, LocalStorage, tokens o
+  credenciales. Para QA autenticada, reutilizar únicamente una sesión existente
+  y segura si el usuario lo solicita.
+
+### Archivos de entrada para el carril R
+
+- `web/src/modules/auth/**`
+- `web/src/modules/admin/**`
+- `web/src/modules/properties/**` y componentes de publicación relacionados
+- `web/src/shared/components/ErrorBoundary.tsx`
+- especificaciones OpenSpec de los módulos realmente modificados
+- `docs/DESPLIEGUE_COMPLETO.md` solo si cambia el contrato operativo de logs
+
+### Criterio de cierre
+
+El carril R solo puede marcarse `Terminado` con diff modular revisado, cero datos
+sensibles en los logs migrados, pruebas nuevas aprobadas, gate completo, PR
+fusionado, versión productiva identificada, navegación/consola verificadas y
+documentación del repositorio y vault actualizada. Si queda un módulo sin
+auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
