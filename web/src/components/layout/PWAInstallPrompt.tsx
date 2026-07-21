@@ -45,7 +45,9 @@ export function PWAInstallPrompt() {
   useEffect(() => {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true ||
+      document.referrer.includes('android-app://')
 
     if (isStandalone) return
 
@@ -62,7 +64,14 @@ export function PWAInstallPrompt() {
       setShowInstallPrompt(true)
     }
 
+    function handleAppInstalled() {
+      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+      setShowInstallPrompt(false)
+      setDeferredPrompt(null)
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
 
     if (ios) {
       const timer = window.setTimeout(() => {
@@ -72,11 +81,13 @@ export function PWAInstallPrompt() {
       return () => {
         window.clearTimeout(timer)
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+        window.removeEventListener('appinstalled', handleAppInstalled)
       }
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
 
@@ -87,6 +98,7 @@ export function PWAInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice
 
     if (outcome === 'accepted') {
+      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
       setDeferredPrompt(null)
       setShowInstallPrompt(false)
     }

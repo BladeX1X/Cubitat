@@ -244,6 +244,8 @@ Tipo: ${body.property_type}`;
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'favicon-32.png', 'favicon-48.png', 'apple-touch-icon.png'],
         manifest: {
+          id: '/',
+          scope: '/',
           name: 'Cubitat Inmobiliaria',
           short_name: 'Cubitat',
           description: 'El portal de propiedades para Cuba',
