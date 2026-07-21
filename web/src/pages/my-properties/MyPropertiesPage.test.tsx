@@ -49,4 +49,37 @@ describe('getPropertyStatusConfig', () => {
     expect(screen.getByText('Casa hermosa en La Habana')).toBeInTheDocument()
     expect(screen.getByText('142')).toBeInTheDocument()
   })
+
+  it('renders "Ver cómo otros lo ven" button and triggers onView', () => {
+    const mockProperty = {
+      id: 'prop-123',
+      title: 'Casa hermosa en La Habana',
+      location: 'La Habana, Cuba',
+      price_usd: 75000,
+      cover_image: null,
+      status: 'published' as const,
+      moderation_message: null,
+      created_at: new Date().toISOString(),
+      user_id: 'user-456',
+      view_count: 142,
+    }
+    const onViewMock = vi.fn()
+
+    render(
+      <PropertyCard
+        property={mockProperty}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onHide={vi.fn()}
+        onRestore={vi.fn()}
+        onView={onViewMock}
+        actionLoading={false}
+      />
+    )
+
+    const viewButton = screen.getByRole('button', { name: /ver cómo otros lo ven/i })
+    expect(viewButton).toBeInTheDocument()
+    viewButton.click()
+    expect(onViewMock).toHaveBeenCalledOnce()
+  })
 })
