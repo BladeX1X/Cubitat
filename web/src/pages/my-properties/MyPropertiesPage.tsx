@@ -43,6 +43,7 @@ export type MyPropertiesPageProps = {
   onNavigateMyProperties: () => void
   onEditProperty: (propertyId: string) => void
   onNewProperty: (loadDraft?: boolean) => void
+  onSelectProperty?: (propertyId: string) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -97,6 +98,7 @@ export function PropertyCard({
   onDelete,
   onHide,
   onRestore,
+  onView,
   actionLoading,
 }: {
   property: Property
@@ -104,6 +106,7 @@ export function PropertyCard({
   onDelete: () => void
   onHide: () => void
   onRestore: () => void
+  onView?: () => void
   actionLoading: boolean
 }) {
   return (
@@ -156,33 +159,47 @@ export function PropertyCard({
         )}
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 mt-1 pt-3 border-t border-neutral-100">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 rounded-xl text-xs"
-            onClick={onEdit}
-            disabled={actionLoading}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Editar
-          </Button>
-          <PropertyVisibilityActions
-            status={property.status}
-            loading={actionLoading}
-            onHide={onHide}
-            onRestore={onRestore}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 rounded-xl text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={onDelete}
-            disabled={actionLoading}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Eliminar
-          </Button>
+        <div className="flex flex-col gap-2 mt-1 pt-3 border-t border-neutral-100">
+          {property.status !== 'local_draft' && onView && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full rounded-xl text-xs bg-[#035f53]/5 hover:bg-[#035f53]/10 text-[#035f53] border-none font-bold py-2"
+              onClick={onView}
+              disabled={actionLoading}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Ver cómo otros lo ven
+            </Button>
+          )}
+          <div className="flex flex-wrap gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 rounded-xl text-xs"
+              onClick={onEdit}
+              disabled={actionLoading}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Editar
+            </Button>
+            <PropertyVisibilityActions
+              status={property.status}
+              loading={actionLoading}
+              onHide={onHide}
+              onRestore={onRestore}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 rounded-xl text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={onDelete}
+              disabled={actionLoading}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -247,6 +264,7 @@ export function MyPropertiesPage({
   onNavigateMyProperties,
   onEditProperty,
   onNewProperty,
+  onSelectProperty,
 }: MyPropertiesPageProps) {
   useSEO({
     title: 'Mis Publicaciones',
@@ -457,6 +475,7 @@ export function MyPropertiesPage({
                   onDelete={() => handleDelete(property.id)}
                   onHide={() => void handleVisibility(property, 'owner_hidden')}
                   onRestore={() => void handleVisibility(property, 'published')}
+                  onView={onSelectProperty ? () => onSelectProperty(property.id) : undefined}
                   actionLoading={visibilityLoadingId === property.id}
                 />
               ))}

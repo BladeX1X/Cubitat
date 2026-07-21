@@ -181,6 +181,7 @@ export function CubitatApp() {
     return undefined
   })
   const [userRole, setUserRole] = useState<string | undefined>()
+  const [detailBackPageMode, setDetailBackPageMode] = useState<'results' | 'my-properties' | 'favorites'>('results')
 
   useEffect(() => {
      initAnalytics()
@@ -644,7 +645,10 @@ export function CubitatApp() {
   }
   */
 
-  function handleSelectProperty(propertyId: string, autoScrollToContact = false) {
+  function handleSelectProperty(propertyId: string, autoScrollToContact = false, backMode?: 'results' | 'my-properties' | 'favorites') {
+    const finalBackMode = backMode || (pageMode === 'results' || pageMode === 'my-properties' || pageMode === 'favorites' ? pageMode : 'results')
+    setDetailBackPageMode(finalBackMode)
+
     const prop = properties.find(p => p.id === propertyId)
     let urlPath = `/propiedad/${propertyId}`
     if (prop) {
@@ -682,17 +686,24 @@ export function CubitatApp() {
 
   function handleBackToResults() {
     setSelectedPropertyId(undefined)
-    setPageMode('results')
-    setSeoResultsRoute(null)
-    const params = new URLSearchParams()
-    if (filters.query) params.set('q', filters.query)
-    if (filters.operations.length > 0) params.set('operacion', filters.operations.join(','))
-    if (filters.propertyType !== 'all') params.set('tipo', filters.propertyType)
-    if (filters.zoneId !== 'all') params.set('zona', filters.zoneId)
-    const queryString = params.toString()
-    const path = queryString ? `/resultados?${queryString}` : '/resultados'
+    setPageMode(detailBackPageMode)
 
-    window.history.pushState(null, '', path)
+    if (detailBackPageMode === 'my-properties') {
+      window.history.pushState(null, '', '/mis-propiedades')
+    } else if (detailBackPageMode === 'favorites') {
+      window.history.pushState(null, '', '/favoritos')
+    } else {
+      setSeoResultsRoute(null)
+      const params = new URLSearchParams()
+      if (filters.query) params.set('q', filters.query)
+      if (filters.operations.length > 0) params.set('operacion', filters.operations.join(','))
+      if (filters.propertyType !== 'all') params.set('tipo', filters.propertyType)
+      if (filters.zoneId !== 'all') params.set('zona', filters.zoneId)
+      const queryString = params.toString()
+      const path = queryString ? `/resultados?${queryString}` : '/resultados'
+
+      window.history.pushState(null, '', path)
+    }
     window.scrollTo(0, 0)
   }
 
@@ -899,6 +910,7 @@ export function CubitatApp() {
             onNavigateMyProperties={navigateMyProperties}
             onEditProperty={navigateEditProperty}
             onNewProperty={navigatePublish}
+            onSelectProperty={handleSelectProperty}
           />
         )}
 
