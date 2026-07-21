@@ -904,6 +904,23 @@ Ver logs de Cloudflare:
 npx wrangler tail
 ```
 
+La observabilidad de Cubitat conserva los eventos propios estructurados, pero
+deshabilita `observability.logs.invocation_logs` en `wrangler.jsonc`. Los logs
+automáticos incluyen método y URL de la invocación y pueden capturar parámetros
+temporales de callbacks. No volver a habilitarlos sin revisar primero todas las
+rutas de autenticación.
+
+Los eventos del Worker solo pueden incluir nombres de evento, proveedor,
+dimensión del límite, acción y código HTTP. No registrar correos, IDs, URLs,
+parámetros, tokens, cuerpos de terceros ni objetos `Error`. `wrangler tail` se
+debe ejecutar solo durante una investigación concreta y su salida no debe
+copiarse al repositorio o al vault.
+
+Cloudflare aplica la retención de Workers Logs según el plan contratado. Los
+Auth Audit Logs de Supabase tienen retención y disponibilidad propias del plan;
+no purgar `auth.audit_log_entries` ni desactivar su escritura sin autorización
+destructiva explícita y una política de conservación aprobada.
+
 Listar versiones:
 
 ```powershell

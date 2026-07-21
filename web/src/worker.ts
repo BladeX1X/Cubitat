@@ -5,6 +5,7 @@ import {
   type PublicSubmissionEnv,
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
+import { logWorkerEvent } from './worker/logger';
 
 export { RateLimiter };
 
@@ -271,7 +272,7 @@ async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string
     return null;
   }
 
-  let action = 'auth';
+  let action: 'login' | 'signup' | 'recover' | 'resend' | 'otp' = 'login';
   let ipLimit = 20;
   let ipWindowMs = 60000;
   let emailLimit = 8;
@@ -299,7 +300,7 @@ async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string
 
   const ipCheck = await checkRateLimit(env, `${clientIp}:auth:${action}:ip:v1`, ipLimit, ipWindowMs);
   if (!ipCheck.allowed) {
-    console.info(`auth ${action} blocked by IP rate limit`);
+    logWorkerEvent('info', 'auth_rate_limit_blocked', { action, dimension: 'ip' });
     return rateLimitResponse(ipCheck.resetAt);
   }
 
@@ -308,7 +309,7 @@ async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string
     const emailHash = await sha256Hex(email);
     const emailCheck = await checkRateLimit(env, `email:${emailHash}:auth:${action}:v1`, emailLimit, emailWindowMs);
     if (!emailCheck.allowed) {
-      console.info(`auth ${action} blocked by email rate limit`);
+      logWorkerEvent('info', 'auth_rate_limit_blocked', { action, dimension: 'email' });
       return rateLimitResponse(emailCheck.resetAt);
     }
   }
@@ -424,8 +425,8 @@ export async function fetchGoogleAnalyticsMetrics(env: Env): Promise<{ activeUse
     const payload = await response.json() as { rows?: Array<{ metricValues?: Array<{ value?: string }> }> };
     const value = Number(payload.rows?.[0]?.metricValues?.[0]?.value ?? 0);
     return { activeUsers: Number.isFinite(value) ? value : null, error: '' };
-  } catch (error) {
-    console.warn('Google Analytics metrics request failed:', error instanceof Error ? error.message : 'Unknown error');
+  } catch {
+    logWorkerEvent('warn', 'metrics_provider_failed', { source: 'google_analytics' });
     return { activeUsers: null, error: 'No fue posible consultar Google Analytics.' };
   }
 }
@@ -450,9 +451,9 @@ async function getEmailConfirmedAt(email: string, env: Env): Promise<string | nu
         return user?.email_confirmed_at || user?.confirmed_at || null;
       }
 
-      console.warn('Could not query auth user with service role:', response.status);
-    } catch (error) {
-      console.warn('Error checking email confirmation status with service role:', error);
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'service_role', status: response.status });
+    } catch {
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'service_role' });
     }
   }
 
@@ -477,7 +478,7 @@ async function getEmailConfirmedAt(email: string, env: Env): Promise<string | nu
     );
 
     if (!response.ok) {
-      console.warn('Could not query auth user confirmation status:', response.status);
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'management_api', status: response.status });
       return null;
     }
 
@@ -495,15 +496,18 @@ async function getEmailConfirmedAt(email: string, env: Env): Promise<string | nu
               : [];
     const row = Array.isArray(rows) ? rows[0] : null;
     return row?.email_confirmed_at || null;
-  } catch (error) {
-    console.warn('Error checking email confirmation status:', error);
+  } catch {
+    logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'management_api' });
     return null;
   }
 }
 
 async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void> {
   if (!env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY is not configured; skipping already-confirmed email.');
+    logWorkerEvent('warn', 'transactional_email_skipped', {
+      source: 'resend',
+      reason: 'missing_configuration',
+    });
     return;
   }
 
@@ -543,7 +547,10 @@ async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void>
   });
 
   if (!response.ok) {
-    console.warn('Resend already-confirmed email failed:', response.status, await response.text());
+    logWorkerEvent('warn', 'transactional_email_failed', {
+      source: 'resend',
+      status: response.status,
+    });
   }
 }
 
@@ -736,8 +743,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                         });
                       }
                     }
-                  } catch (e) {
-                    console.warn('Error fetching remote image for AI:', e);
+                  } catch {
+                    logWorkerEvent('warn', 'moderation_image_fetch_failed');
                   }
                 }
               }
@@ -800,8 +807,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
           await applyTrustedModeration(finalStatus, finalReason, 'groq');
 
-        } catch (error) {
-          console.error("Error en moderateBackground:", error);
+        } catch {
+          logWorkerEvent('error', 'moderation_background_failed');
         }
       }
 
@@ -890,7 +897,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
     if (path === '/api/auth/resend-confirmation' && request.method === 'POST') {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       if (await isRateLimited(env, `${clientIp}:resend-confirmation:v2`, 5, 600000)) {
-        console.info('resend-confirmation skipped by rate limit');
+        logWorkerEvent('info', 'auth_resend_rate_limited');
         return jsonResponse({ ok: true });
       }
 
@@ -908,10 +915,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
       const confirmedAt = await getEmailConfirmedAt(email, env);
       if (confirmedAt) {
-        console.info('resend-confirmation sending already-confirmed email');
         await sendAlreadyConfirmedEmail(email, env);
       } else {
-        console.info('resend-confirmation requesting signup confirmation email');
         await resendSignupConfirmation(email, env);
       }
 
@@ -976,7 +981,9 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             }, 422);
           }
           if (exposure.status === 'unavailable') {
-            console.warn('Pwned Passwords check unavailable; continuing with the configured password policy.');
+            logWorkerEvent('warn', 'password_exposure_check_unavailable', {
+              source: 'pwned_passwords',
+            });
           }
         }
       }
@@ -1277,8 +1284,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             url,
             true,
           );
-        } catch (err) {
-          console.error('Error al interceptar tags dinámicos:', err);
+        } catch {
+          logWorkerEvent('error', 'seo_rewrite_failed');
           const assetResponse = await env.ASSETS.fetch(request);
           const unavailableResponse = new Response(assetResponse.body, {
             status: 503,

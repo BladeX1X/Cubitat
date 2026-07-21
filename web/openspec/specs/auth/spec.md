@@ -212,3 +212,18 @@ El sistema MUST reaccionar adecuadamente ante la pérdida de conectividad y expi
 - AND la rotación de refresh tokens MUST permanecer habilitada con intervalo de reutilización de 10 segundos
 - AND los timeouts por duración o inactividad MUST quedar documentados como bloqueo de plan, no simulados como una garantía de servidor
 
+### Requirement: Observabilidad segura de autenticación
+El Worker MUST conservar diagnósticos operativos sin persistir datos de autenticación ni identificadores de usuario.
+
+#### Scenario: Registro estructurado de un fallo de proveedor
+- GIVEN un proveedor externo devuelve un error durante un flujo de autenticación
+- WHEN el Worker registra el incidente
+- THEN MUST emitir un evento estructurado con un nombre y campos previamente permitidos
+- AND MUST NOT registrar correos, URLs, parámetros de consulta, tokens, identificadores, cuerpos de respuesta ni objetos de error crudos
+
+#### Scenario: Solicitud de autenticación procesada por el Worker
+- GIVEN una solicitud atraviesa una ruta de autenticación o callback
+- WHEN Cloudflare genera telemetría del Worker
+- THEN los logs automáticos de invocación MUST permanecer deshabilitados
+- AND los eventos propios seguros MUST permanecer disponibles para diagnóstico
+
