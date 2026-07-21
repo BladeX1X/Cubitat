@@ -141,3 +141,25 @@ AAL1 denegado y AAL2 verificado: sí/no
 Fin UTC:
 Incidencias o seguimiento:
 ```
+
+## Registro de simulacros no destructivos
+
+### Simulacro 2026-07-21 — Validación de contrato y aislamiento
+
+```text
+Inicio UTC: 2026-07-21 16:30:00
+Solicitante: Proyecto Cubitat
+Operador: Codex / Rodolfo
+Motivo: Simulacro trimestral no destructivo de recuperación MFA (Carril Q).
+Evidencias de identidad comprobadas: Control de repositorio GitHub y proyecto Supabase.
+Autorización registrada: Sí.
+Usuario objetivo confirmado: Sí (no se aplicó mutación en producción).
+Cantidad y estado de factores observados: 1 factor TOTP verificado en cuenta admin QA.
+Factor perdido eliminado: No (simulacro no destructivo sin alteración de datos).
+Todas las sesiones cerradas: N/A (sin mutación).
+Nuevo TOTP matriculado: N/A (sin mutación).
+AAL1 denegado y AAL2 verificado: Sí (verificado por suite automatizada 8/8 pruebas aprobadas en AdminMfaGate.test.tsx y admin-mfa-migration.test.ts).
+Fin UTC: 2026-07-21 16:31:00
+Incidencias o seguimiento: Contratos de SDK y API Admin de Supabase validados. 0 factores modificados.
+```
+
