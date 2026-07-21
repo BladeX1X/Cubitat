@@ -18,6 +18,7 @@ import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '..
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -213,7 +214,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
         onClose?.()
       }
     } catch (err: any) {
-      console.error('Auth error:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: isResettingPassword ? 'reset_password' : isRegistering ? 'register' : 'login',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       if (isRegistering || isResettingPassword) resetTurnstileChallenge()
       let msg = 'Ocurrió un error inesperado.'
       if (err?.message && err.message !== '{}') {
@@ -270,7 +276,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
       setSuccessMsg('Si falta confirmar el correo, recibiras un nuevo enlace. Si ya esta confirmado, recibiras un aviso con las opciones para entrar.')
       setCanResendConfirmation(false)
     } catch (err: any) {
-      console.error('Resend confirmation error:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: 'resend_confirmation',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setErrorMsg(err?.message || 'No pudimos reenviar el correo de confirmacion.')
     } finally {
       setLoading(false)

@@ -15,6 +15,7 @@ import { readPublicationDraft, removePublicationDraft } from '../publish/draftSt
 import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -299,7 +300,12 @@ export function MyPropertiesPage({
               finalProperties = [localDraftProp, ...finalProperties]
           }
         } catch (e) {
-          console.error('Error al parsear el borrador local:', e)
+          logSafeEvent({
+            module: 'my_properties',
+            action: 'parse_local_draft',
+            level: 'error',
+            code: sanitizeErrorReason(e),
+          })
         }
 
         setProperties(finalProperties)
@@ -357,7 +363,12 @@ export function MyPropertiesPage({
         text: hiding ? 'La publicación quedó oculta.' : 'La propiedad volvió a publicarse.',
       })
     } catch (reason) {
-      console.error('Error updating owner property visibility:', reason)
+      logSafeEvent({
+        module: 'my_properties',
+        action: 'update_owner_visibility',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setVisibilityMessage({
         type: 'error',
         text: 'No se pudo cambiar la visibilidad. Actualiza la página e inténtalo de nuevo.',

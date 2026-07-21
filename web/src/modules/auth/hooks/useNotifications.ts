@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../shared/lib/supabaseClient'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export interface Notification {
   id: string
@@ -51,7 +52,12 @@ export function useNotifications() {
         if (error) throw error
         if (data && isMounted) setNotifications(data)
       } catch (err) {
-        console.error('Error loading notifications:', err)
+        logSafeEvent({
+          module: 'auth',
+          action: 'load_notifications',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -119,7 +125,12 @@ export function useNotifications() {
       
       if (error) throw error
     } catch (err) {
-      console.error('Error marking notification as read:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: 'mark_notification_read',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setNotifications(previousNotifications)
     }
   }
@@ -139,7 +150,12 @@ export function useNotifications() {
       
       if (error) throw error
     } catch (err) {
-      console.error('Error marking all notifications as read:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: 'mark_all_notifications_read',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setNotifications(previousNotifications)
     }
   }

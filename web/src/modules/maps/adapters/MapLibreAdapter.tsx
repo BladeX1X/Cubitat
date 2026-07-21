@@ -6,6 +6,7 @@ import { formatPrice } from '../../../shared/lib/formatPrice'
 import type { Property } from '../../properties/types'
 import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
 const CLUSTER_SELECTED_HALO_LAYER_ID = 'property-cluster-selected-halo'
@@ -100,7 +101,12 @@ export function MapLibreAdapter({
 
     initializeMap().catch((error: unknown) => {
       if (!abortController.signal.aborted) {
-        console.error('No se pudo inicializar el mapa open source', error)
+        logSafeEvent({
+          module: 'maps',
+          action: 'init_maplibre',
+          level: 'error',
+          code: sanitizeErrorReason(error),
+        })
       }
     })
 

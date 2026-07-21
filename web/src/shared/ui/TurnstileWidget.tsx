@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { TURNSTILE_SITEKEY } from '../lib/turnstileConfig';
+import { logSafeEvent, sanitizeErrorReason } from '../lib/logger';
 
 interface TurnstileWidgetProps {
   action?: string;
@@ -66,7 +67,12 @@ export function TurnstileWidget({
           },
         });
       } catch (err) {
-        console.error('Error rendering Turnstile widget:', err);
+        logSafeEvent({
+          module: 'ui',
+          action: 'render_turnstile',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        });
       }
     }
 

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { logSafeEvent, sanitizeErrorReason } from '../lib/logger'
 
 interface Props {
   children: ReactNode
@@ -28,8 +29,13 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, isChunkError: false }
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo)
+  public componentDidCatch(error: Error, _errorInfo: ErrorInfo) {
+    logSafeEvent({
+      module: 'error_boundary',
+      action: 'uncaught_error',
+      level: 'error',
+      code: sanitizeErrorReason(error),
+    })
   }
 
   public handleReload = () => {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
 import { getErrorMessage } from '../core/errors'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 import {
   deleteModerationProperty,
   fetchModerationProperties,
@@ -36,7 +37,12 @@ export function useModerationProperties() {
     try {
       setStatusCounts(await fetchStatusCounts())
     } catch (reason) {
-      console.error('Error loading property status counts:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'fetch_status_counts',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
     }
   }, [])
 
@@ -49,7 +55,12 @@ export function useModerationProperties() {
       setTotal(result.total)
       setPage(targetPage)
     } catch (reason) {
-      console.error('Error loading moderation properties:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'load_moderation_properties',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setError(getErrorMessage(reason, 'Error al cargar propiedades'))
     } finally {
       setLoading(false)
@@ -73,7 +84,12 @@ export function useModerationProperties() {
       )))
       await refreshCounts()
     } catch (reason) {
-      console.error('Error updating property:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'update_property_status',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setNotice('No se pudo actualizar la propiedad.')
     } finally {
       setActionLoading(null)
@@ -87,7 +103,12 @@ export function useModerationProperties() {
       setProperties((current) => current.filter((property) => property.id !== id))
       await refreshCounts()
     } catch (reason) {
-      console.error('Error deleting property:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'delete_property',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setNotice('No se pudo eliminar la propiedad.')
     } finally {
       setActionLoading(null)
@@ -107,7 +128,12 @@ export function useModerationProperties() {
       setNotice('La publicación quedó oculta por moderación.')
       await refreshCounts()
     } catch (caughtReason) {
-      console.error('Error hiding property:', caughtReason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'hide_property',
+        level: 'error',
+        code: sanitizeErrorReason(caughtReason),
+      })
       setNotice('No se pudo ocultar la publicación.')
     } finally {
       setActionLoading(null)
@@ -127,7 +153,12 @@ export function useModerationProperties() {
       setNotice('La publicación volvió a estar visible.')
       await refreshCounts()
     } catch (caughtReason) {
-      console.error('Error restoring property:', caughtReason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'restore_property',
+        level: 'error',
+        code: sanitizeErrorReason(caughtReason),
+      })
       setNotice('No se pudo volver a publicar. Verifica que fue ocultada por moderación.')
     } finally {
       setActionLoading(null)
@@ -147,7 +178,12 @@ export function useModerationProperties() {
       setNotice('La reevaluación por IA ha iniciado. Refresca la página en unos segundos.')
       await refreshCounts()
     } catch (reason) {
-      console.warn('Error preparando moderación asíncrona:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'reevaluate_property',
+        level: 'warn',
+        code: sanitizeErrorReason(reason),
+      })
       setNotice('Error al iniciar la reevaluación.')
     } finally {
       setActionLoading(null)

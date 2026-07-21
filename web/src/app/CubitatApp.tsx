@@ -17,6 +17,7 @@ import { SiteFooter } from '../components/layout/SiteFooter'
 import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
+import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -203,7 +204,12 @@ export function CubitatApp() {
 
         window.localStorage.setItem(cacheVersion, 'done')
       } catch (error) {
-        console.warn('No se pudo limpiar cache PWA antigua', error)
+        logSafeEvent({
+          module: 'app',
+          action: 'clear_stale_pwa_cache',
+          level: 'warn',
+          code: sanitizeErrorReason(error),
+        })
       }
     }
 
@@ -287,7 +293,12 @@ export function CubitatApp() {
           setLoading(false) // Ocultar el esqueleto ya que tenemos datos en caché
         }
       } catch (cacheErr) {
-        console.warn('Error cargando caché local en inicio:', cacheErr)
+        logSafeEvent({
+          module: 'app',
+          action: 'load_initial_cache',
+          level: 'warn',
+          code: sanitizeErrorReason(cacheErr),
+        })
       }
 
       // 2. Ejecutar la llamada de red en segundo plano (SWR)
@@ -334,7 +345,12 @@ export function CubitatApp() {
           void saveCachedProperties(mapped) // Guardar copia para uso offline
         }
       } catch (err: any) {
-        console.error('Error loading properties from Supabase, attempting offline fallback:', err)
+        logSafeEvent({
+          module: 'app',
+          action: 'load_properties_supabase',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
         // Solo mostramos el error si no hay absolutamente ningún dato en memoria
         if (active && !hasUsableCache) {
           setError(err.message || 'Error al conectar con el servidor.')
@@ -401,7 +417,12 @@ export function CubitatApp() {
           saveSingleCachedProperty(mapped) // Cachear individualmente para offline
         }
       } catch (err) {
-        console.warn('Could not fetch single property details, attempting offline fallback:', err)
+        logSafeEvent({
+          module: 'app',
+          action: 'fetch_single_property',
+          level: 'warn',
+          code: sanitizeErrorReason(err),
+        })
         const cached = await getCachedProperty(selectedPropertyId!)
         if (cached) {
           setProperties((prev) => {
@@ -691,7 +712,12 @@ export function CubitatApp() {
       .eq('id', propertyId)
 
     if (error) {
-      console.error('Error hiding property:', error)
+      logSafeEvent({
+        module: 'app',
+        action: 'admin_hide_property',
+        level: 'error',
+        code: sanitizeErrorReason(error),
+      })
       alert('No se pudo ocultar la publicación.')
       return
     }
@@ -708,7 +734,12 @@ export function CubitatApp() {
     const { error } = await supabase.from('properties').delete().eq('id', propertyId)
 
     if (error) {
-      console.error('Error deleting property:', error)
+      logSafeEvent({
+        module: 'app',
+        action: 'admin_delete_property',
+        level: 'error',
+        code: sanitizeErrorReason(error),
+      })
       alert('No se pudo eliminar la publicación.')
       return
     }

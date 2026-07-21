@@ -21,6 +21,7 @@ import {
 import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { Property } from '../../modules/properties/types'
@@ -120,7 +121,12 @@ export function DetailPage({
       setReportDescription('')
       setReportTurnstileToken(null)
     } catch (err: unknown) {
-      console.error('Error submitting report:', err)
+      logSafeEvent({
+        module: 'detail',
+        action: 'submit_report',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
       setReportTurnstileToken(null)
       setReportTurnstileKey(prev => prev + 1)
@@ -165,7 +171,12 @@ export function DetailPage({
         setTimeout(() => setCopied(false), 2000)
       })
       .catch((err) => {
-        console.error('Error al copiar al portapapeles:', err)
+        logSafeEvent({
+          module: 'detail',
+          action: 'copy_clipboard',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       })
   }
 
@@ -1039,7 +1050,12 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
 
     initMap().catch((error) => {
       if (!abortController.signal.aborted) {
-        console.error('No se pudo inicializar el mapa de detalle', error)
+        logSafeEvent({
+          module: 'maps',
+          action: 'init_detail_map',
+          level: 'error',
+          code: sanitizeErrorReason(error),
+        })
       }
     })
 
@@ -1113,7 +1129,12 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
       localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
       setContactSent(true)
     } catch (err: unknown) {
-      console.error('Error submitting contact lead:', err)
+      logSafeEvent({
+        module: 'detail',
+        action: 'submit_contact_lead',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
       setContactTurnstileToken(null)
       setContactTurnstileKey(prev => prev + 1)

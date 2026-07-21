@@ -305,7 +305,9 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
 
     await screen.findByText(/ocurrió un error al enviar el reporte/i)
-    expect(mockTurnstileMount.mock.calls.filter(([action]) => action === 'report-property')).toHaveLength(2)
+    await waitFor(() => {
+      expect(mockTurnstileMount.mock.calls.filter(([action]) => action === 'report-property')).toHaveLength(2)
+    })
   })
 
   it('debería guardar una consulta de contacto y mostrar confirmación', async () => {

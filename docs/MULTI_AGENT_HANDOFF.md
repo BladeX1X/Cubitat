@@ -72,7 +72,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Documentado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`: verificación de identidad, eliminación server-only de un único factor y rematriculación sin desactivar AAL2. No se borraron factores reales. Pendiente un simulacro no destructivo y soporte UI para varios factores. |
-| R. Logs seguros del frontend | Libre | — | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
+| R. Logs seguros del frontend | Terminado | Codex | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -113,6 +113,15 @@ Usar este formato y conservar las entradas anteriores:
 - Pendiente exacto para el siguiente agente:
 - Cambios remotos o despliegue:
 ```
+
+### 2026-07-21 — Codex — carril R
+
+- Estado: Terminado.
+- Archivos modificados: 20 archivos del frontend auditados y migrados a `src/shared/lib/logger.ts`, 6 suites de pruebas unitarias creadas/actualizadas y este documento.
+- Validaciones ejecutadas: `npm run lint` (0 advertencias/0 errores), `npm run test:run` (63 archivos y 223 pruebas aprobadas), `npm run build` TypeScript/Vite/PWA/sitemap correcto, verificación del hash SHA256 de `sitemap.xml` y respuesta de producción HTTP 200.
+- Evidencia/resultado: 56 llamadas `console.*` en 20 archivos sustituidas por `logSafeEvent` con campos cerrados (`module`, `action`, `level`, `code`, `context`). Ningún dato sensible (correos, teléfonos, IDs, URLs completas, tokens, credenciales o errores crudos) se expone en logs del cliente.
+- Pendientes para el siguiente agente: revisión jurídica externa (carril H) y contenido real (carril G).
+- Cambios remotos o despliegue: ninguno.
 
 ### 2026-07-12 — Codex principal — recuperación de contraseña
 

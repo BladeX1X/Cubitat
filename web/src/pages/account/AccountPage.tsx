@@ -19,6 +19,7 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
 import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import {
   AVATAR_IMAGE_RULES,
   validateImageDimensions,
@@ -165,7 +166,12 @@ export function AccountPage({
     try {
       compressedBlob = await compressAvatarToWebP(file)
     } catch (err) {
-      console.error('Error compressing avatar:', err)
+      logSafeEvent({
+        module: 'account',
+        action: 'compress_avatar',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setAvatarMessage('No se pudo optimizar la imagen del avatar.')
       setIsUploadingAvatar(false)
       return

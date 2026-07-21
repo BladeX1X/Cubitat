@@ -3,6 +3,7 @@ import { PAGE_SIZE } from '../core/constants'
 import { getErrorMessage } from '../core/errors'
 import { fetchAuditLog } from './auditLogRepository'
 import type { AuditActionFilter, AuditLogEvent, AuditLogFilters, AuditSourceFilter } from './types'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 const INITIAL_FILTERS: AuditLogFilters = { action: 'all', source: 'all', query: '' }
 
@@ -27,7 +28,12 @@ export function useAuditLog() {
       setPage(targetPage)
     } catch (reason) {
       if (requestId.current !== currentRequest) return
-      console.error('Error loading moderation audit log:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'load_audit_log',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setError(getErrorMessage(reason, 'No se pudo cargar la bitácora.'))
     } finally {
       if (requestId.current === currentRequest) setLoading(false)
