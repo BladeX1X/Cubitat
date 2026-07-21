@@ -1,4 +1,5 @@
 import type { Property } from '../../modules/properties/types'
+import { logSafeEvent, sanitizeErrorReason } from './logger'
 
 const DB_NAME = 'cubitat_offline_db'
 const DB_VERSION = 1
@@ -44,7 +45,12 @@ export async function saveCachedProperties(properties: Property[]): Promise<void
       transaction.onerror = () => reject(transaction.error)
     })
   } catch (error) {
-    console.warn('Fallo al guardar caché offline en IndexedDB:', error)
+    logSafeEvent({
+      module: 'cache',
+      action: 'save_properties_indexeddb',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
   }
 }
 
@@ -60,7 +66,12 @@ export async function getCachedProperties(): Promise<Property[]> {
       request.onerror = () => reject(request.error)
     })
   } catch (error) {
-    console.warn('Fallo al leer caché offline de IndexedDB:', error)
+    logSafeEvent({
+      module: 'cache',
+      action: 'read_properties_indexeddb',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
     return []
   }
 }
@@ -77,7 +88,12 @@ export async function saveSingleCachedProperty(property: Property): Promise<void
       transaction.onerror = () => reject(transaction.error)
     })
   } catch (error) {
-    console.warn('Fallo al guardar propiedad individual en IndexedDB:', error)
+    logSafeEvent({
+      module: 'cache',
+      action: 'save_single_indexeddb',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
   }
 }
 
@@ -93,7 +109,12 @@ export async function getCachedProperty(id: string): Promise<Property | null> {
       request.onerror = () => reject(request.error)
     })
   } catch (error) {
-    console.warn('Fallo al leer propiedad individual de IndexedDB:', error)
+    logSafeEvent({
+      module: 'cache',
+      action: 'read_single_indexeddb',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
     return null
   }
 }
@@ -109,6 +130,11 @@ export async function clearCachedProperties(): Promise<void> {
       transaction.onerror = () => reject(transaction.error)
     })
   } catch (error) {
-    console.warn('Fallo al limpiar la caché offline de IndexedDB:', error)
+    logSafeEvent({
+      module: 'cache',
+      action: 'clear_indexeddb',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
   }
 }

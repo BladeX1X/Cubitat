@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { useAuthModal } from '../../auth/contexts/AuthModalContext'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 type SavedPropertiesContextValue = {
   savedPropertyIds: Set<string>
@@ -68,7 +69,12 @@ export function SavedPropertiesProvider({ children }: { children: ReactNode }) {
           setSavedPropertyIds(new Set(data.map((item) => item.property_id)))
         }
       } catch (err) {
-        console.error('Error loading saved properties:', err)
+        logSafeEvent({
+          module: 'properties',
+          action: 'load_saved_properties',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -129,7 +135,12 @@ export function SavedPropertiesProvider({ children }: { children: ReactNode }) {
         return true
       }
 
-      console.error('Error toggling saved property:', err)
+      logSafeEvent({
+        module: 'properties',
+        action: 'toggle_saved_property',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setSavedPropertyIds((current) => {
         const next = new Set(current)
         if (wasSaved) {

@@ -3,6 +3,7 @@ import { formatBytes } from '../core/formatters'
 import { getErrorMessage } from '../core/errors'
 import type { AdminMetrics } from '../core/types'
 import { fetchDatabaseMetrics, fetchExternalAdminMetrics } from './adminMetricsRepository'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export type AdminStats = {
   db_size: string
@@ -45,12 +46,22 @@ export function useAdminMetrics() {
           },
         })
       } catch (reason) {
-        console.error('Error fetching external admin metrics:', reason)
+        logSafeEvent({
+          module: 'admin',
+          action: 'fetch_external_metrics',
+          level: 'error',
+          code: sanitizeErrorReason(reason),
+        })
         setMetrics(null)
         setExternalError(getErrorMessage(reason, 'No se pudieron cargar las métricas externas.'))
       }
     } catch (reason) {
-      console.error('Error loading admin stats:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'load_admin_stats',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setError('No se pudieron cargar las estadísticas.')
     } finally {
       setLoading(false)

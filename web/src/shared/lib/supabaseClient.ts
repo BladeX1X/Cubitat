@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { logSafeEvent } from './logger'
 
 const isServer = typeof window === 'undefined'
 const supabaseUrl = isServer
@@ -9,7 +10,12 @@ const supabaseAnonKey = isServer
   : 'dummy-key-safe-from-browsers'
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL y Anon Key no están definidas en el entorno.')
+  logSafeEvent({
+    module: 'core',
+    action: 'supabase_init',
+    level: 'warn',
+    code: 'ENV_KEY_MISSING',
+  })
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

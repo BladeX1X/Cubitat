@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 type IdleCallbackHandle = ReturnType<typeof setTimeout> | number
 
@@ -292,7 +293,12 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
         })
       } catch (err) {
         if (!abortController.signal.aborted) {
-          console.error('[AddressMap] Error inicializando el mapa:', err)
+          logSafeEvent({
+            module: 'maps',
+            action: 'init_address_map',
+            level: 'error',
+            code: sanitizeErrorReason(err),
+          })
         }
       }
     }

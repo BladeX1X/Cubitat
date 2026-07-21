@@ -12,6 +12,7 @@ import {
   removePublicationDraft,
   savePublicationDraft,
 } from './draftStorage'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -288,7 +289,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           }
         }
       } catch (err) {
-        console.error('Error al cargar borrador automático:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'load_auto_draft',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       }
     }
   }, [userId])
@@ -430,7 +436,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           }
         }
       } catch (err) {
-        console.error('Error loading property for edit:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'load_edit_property',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
         alert('No se pudo cargar la propiedad para editar.')
         onBack()
       } finally {
@@ -451,7 +462,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       setShowSaveFeedback(true)
       setTimeout(() => setShowSaveFeedback(false), 2500)
     } catch (err) {
-      console.warn('No se pudo guardar el borrador en localStorage:', err)
+      logSafeEvent({
+        module: 'publish',
+        action: 'save_draft_localstorage',
+        level: 'warn',
+        code: sanitizeErrorReason(err),
+      })
       alert('Hubo un problema al guardar el borrador en tu dispositivo.')
     }
   }
@@ -481,7 +497,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       try {
         removePublicationDraft(userId)
       } catch (err) {
-        console.warn('No se pudo remover el borrador de localStorage:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'remove_draft_localstorage',
+          level: 'warn',
+          code: sanitizeErrorReason(err),
+        })
       }
     }
   }
@@ -524,7 +545,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           name: file.name.replace(/\.[^/.]+$/, "") + ".webp"
         })
       } catch (err) {
-        console.error('Error comprimiendo la foto:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'compress_photo',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
         uploadFailures++
       }
     }
@@ -579,7 +605,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           .upload(fileName, blob, { contentType: 'image/webp' })
           
         if (error) {
-          console.error("Error al subir imagen:", error)
+          logSafeEvent({
+            module: 'publish',
+            action: 'upload_image',
+            level: 'error',
+            code: sanitizeErrorReason(error),
+          })
           continue
         }
         
@@ -699,9 +730,19 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             property_type: formData.propertyType,
             images: images.map(img => img.dataUrl)
           })
-        }).catch(e => console.warn('Error asincrono IA', e));
+        }).catch(e => logSafeEvent({
+          module: 'publish',
+          action: 'async_ia_moderation',
+          level: 'warn',
+          code: sanitizeErrorReason(e),
+        }));
       } catch (e) {
-        console.warn('Error preparando moderacion asincrona', e);
+        logSafeEvent({
+          module: 'publish',
+          action: 'prepare_async_ia_moderation',
+          level: 'warn',
+          code: sanitizeErrorReason(e),
+        });
       }
       
       setSubmitted(true)
@@ -710,7 +751,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
         onSubmitSuccess()
       }, 3000)
     } catch (error: any) {
-      console.error('Error publicando propiedad:', error)
+      logSafeEvent({
+        module: 'publish',
+        action: 'publish_property',
+        level: 'error',
+        code: sanitizeErrorReason(error),
+      })
       alert(`Hubo un error al publicar la propiedad: ${error.message || JSON.stringify(error)}`)
     } finally {
       setIsSubmitting(false)

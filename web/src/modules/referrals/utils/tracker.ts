@@ -3,6 +3,8 @@
  * Captures '?ref=xxx' query parameters from the URL and persists them.
  */
 
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger';
+
 const REFERRAL_STORAGE_KEY = 'cubitat_referral_id';
 
 /**
@@ -20,7 +22,12 @@ export function trackReferral(): string | null {
       return ref.trim();
     }
   } catch (err) {
-    console.error('Error tracking referral:', err);
+    logSafeEvent({
+      module: 'referrals',
+      action: 'track_referral',
+      level: 'error',
+      code: sanitizeErrorReason(err),
+    });
   }
 
   return null;
@@ -35,7 +42,12 @@ export function getReferralId(): string | null {
   try {
     return sessionStorage.getItem(REFERRAL_STORAGE_KEY);
   } catch (err) {
-    console.error('Error getting referral ID:', err);
+    logSafeEvent({
+      module: 'referrals',
+      action: 'get_referral',
+      level: 'error',
+      code: sanitizeErrorReason(err),
+    });
     return null;
   }
 }
@@ -49,6 +61,11 @@ export function clearReferralId(): void {
   try {
     sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
   } catch (err) {
-    console.error('Error clearing referral ID:', err);
+    logSafeEvent({
+      module: 'referrals',
+      action: 'clear_referral',
+      level: 'error',
+      code: sanitizeErrorReason(err),
+    });
   }
 }

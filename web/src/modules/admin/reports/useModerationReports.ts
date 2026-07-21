@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getErrorMessage } from '../core/errors'
 import type { PropertyReport } from '../core/types'
 import { dismissReport, fetchModerationReports, resolveReport } from './reportsRepository'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export function useModerationReports() {
   const [reports, setReports] = useState<PropertyReport[]>([])
@@ -21,7 +22,12 @@ export function useModerationReports() {
       setTotal(result.total)
       setPage(targetPage)
     } catch (reason) {
-      console.error('Error loading reports:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'load_reports',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setError(getErrorMessage(reason, 'No se pudieron cargar los reportes.'))
     } finally {
       setLoading(false)
@@ -40,7 +46,12 @@ export function useModerationReports() {
         report.id === reportId ? { ...report, status: 'resolved' } : report
       )))
     } catch (reason) {
-      console.error('Error resolving report:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'resolve_report',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setNotice(getErrorMessage(reason, 'No se pudo resolver el reporte.'))
     } finally {
       setActionLoading(null)
@@ -55,7 +66,12 @@ export function useModerationReports() {
         report.id === reportId ? { ...report, status: 'dismissed' } : report
       )))
     } catch (reason) {
-      console.error('Error dismissing report:', reason)
+      logSafeEvent({
+        module: 'admin',
+        action: 'dismiss_report',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
       setNotice('No se pudo descartar el reporte.')
     } finally {
       setActionLoading(null)
