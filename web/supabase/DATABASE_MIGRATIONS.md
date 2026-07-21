@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-07-19.
+Última revisión documental: 2026-07-21.
 
 ## Aplicación segura
 
@@ -120,6 +120,17 @@ exactamente el orden cronológico de los archivos.
 47. `20260719001000_enforce_admin_mfa.sql`: exige sesión `aal2` además del rol
     administrador en propiedades ajenas, perfiles, contactos, reportes,
     bitácora y métricas; conserva intactas las ramas legítimas del propietario.
+
+### Turnstile obligatorio en escrituras publicas - 2026-07-19
+
+48. `20260719002000_enforce_server_side_turnstile_submissions.sql`: elimina la
+    insercion directa de `anon` y `authenticated` en contactos y reportes, y
+    crea RPCs de escritura exclusivos de `service_role`. El Worker principal
+    valida token, `action` y `hostname` antes de invocarlos.
+
+### Contador de visitas a propiedades — 2026-07-21
+
+49. `20260721123200_add_property_view_count.sql`: añade columna `view_count` a la tabla `properties` y crea la función RPC `increment_property_view_count(property_id UUID)` protegida con `SECURITY DEFINER` para permitir incrementos públicos.
 
 Verificación productiva 2026-07-19: las 47 migraciones están sincronizadas,
 `db lint --linked` no reporta errores y el dry-run remoto indica que la base

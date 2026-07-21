@@ -8,6 +8,7 @@ import {
   MapPin,
   Calendar,
   Loader2,
+  Eye,
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -31,6 +32,7 @@ type Property = {
   moderation_message: string | null
   created_at: string
   user_id: string
+  view_count?: number
 }
 
 export type MyPropertiesPageProps = {
@@ -89,7 +91,7 @@ function StatusBadge({ status }: { status: Property['status'] }) {
   )
 }
 
-function PropertyCard({
+export function PropertyCard({
   property,
   onEdit,
   onDelete,
@@ -133,9 +135,17 @@ function PropertyCard({
           {formatPrice(property.price_usd)}
         </p>
 
-        <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
-          <Calendar className="w-3.5 h-3.5" />
-          {formatDate(property.created_at)}
+        <div className="flex items-center justify-between text-neutral-400 text-xs">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            {formatDate(property.created_at)}
+          </div>
+          {property.status !== 'local_draft' && (
+            <div className="flex items-center gap-1.5 font-bold text-neutral-600 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-100">
+              <Eye className="w-3.5 h-3.5 text-neutral-400" />
+              <span>{property.view_count ?? 0}</span>
+            </div>
+          )}
         </div>
 
         {property.moderation_message && (property.status === 'ai_rejected' || property.status === 'paused' || property.status === 'pending_review') && (

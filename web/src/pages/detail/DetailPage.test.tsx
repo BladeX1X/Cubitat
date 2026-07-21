@@ -11,12 +11,14 @@ const {
   mockSubmitPublicContact,
   mockSubmitPublicReport,
   mockTurnstileMount,
+  mockRpc,
 } = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
   mockGetSession: vi.fn(),
   mockSubmitPublicContact: vi.fn(),
   mockSubmitPublicReport: vi.fn(),
   mockTurnstileMount: vi.fn(),
+  mockRpc: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
 }))
 
 vi.mock('./publicSubmissions', () => ({
@@ -86,6 +88,7 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
 vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: (table: string) => mockFrom(table),
+    rpc: mockRpc,
     auth: {
       getUser: mockGetUser,
       getSession: mockGetSession,
