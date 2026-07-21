@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { MyPropertiesEmptyState } from './MyPropertiesPage'
+import { MyPropertiesEmptyState, PropertyCard } from './MyPropertiesPage'
 import { getPropertyStatusConfig } from './propertyStatus'
 
 describe('getPropertyStatusConfig', () => {
@@ -19,5 +19,34 @@ describe('getPropertyStatusConfig', () => {
     expect(screen.getByRole('heading', { name: /aún no tienes propiedades/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /publicar tu primera propiedad/i })).toBeInTheDocument()
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('renders property card with view_count correctly', () => {
+    const mockProperty = {
+      id: 'prop-123',
+      title: 'Casa hermosa en La Habana',
+      location: 'La Habana, Cuba',
+      price_usd: 75000,
+      cover_image: null,
+      status: 'published' as const,
+      moderation_message: null,
+      created_at: new Date().toISOString(),
+      user_id: 'user-456',
+      view_count: 142,
+    }
+
+    render(
+      <PropertyCard
+        property={mockProperty}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onHide={vi.fn()}
+        onRestore={vi.fn()}
+        actionLoading={false}
+      />
+    )
+
+    expect(screen.getByText('Casa hermosa en La Habana')).toBeInTheDocument()
+    expect(screen.getByText('142')).toBeInTheDocument()
   })
 })

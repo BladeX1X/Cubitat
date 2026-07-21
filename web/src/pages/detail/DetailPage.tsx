@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   X,
   Loader2,
+  Eye,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -90,6 +91,34 @@ export function DetailPage({
         scrollToContact()
       }, 300)
     }
+  }, [property.id])
+
+  useEffect(() => {
+    if (!property.id) return
+
+    const incrementViews = async () => {
+      try {
+        const { error } = await supabase.rpc('increment_property_view_count', { property_id: property.id })
+        if (error) {
+          logSafeEvent({
+            module: 'properties',
+            action: 'increment_view_count_failed',
+            level: 'warn',
+            code: 'DB_ERROR',
+            context: { error: sanitizeErrorReason(error) },
+          })
+        }
+      } catch (err: unknown) {
+        logSafeEvent({
+          module: 'properties',
+          action: 'increment_view_count_failed',
+          level: 'warn',
+          code: 'DB_ERROR',
+          context: { error: sanitizeErrorReason(err) },
+        })
+      }
+    }
+    incrementViews()
   }, [property.id])
 
 
@@ -351,6 +380,12 @@ export function DetailPage({
               <span className="text-[10px] tracking-wider uppercase font-bold bg-[#035f53]/10 text-[#035f53] px-2.5 py-1 rounded">
                 {titleCase(property.operation)}
               </span>
+              {property.view_count !== undefined && (
+                <span className="text-[10px] tracking-wider uppercase font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded flex items-center gap-1">
+                  <Eye size={12} className="text-neutral-400" />
+                  <span>{property.view_count} visitas</span>
+                </span>
+              )}
             </div>
             <h1 className="detail-desktop-title">
               {property.title}
@@ -524,6 +559,12 @@ export function DetailPage({
                   </div>
                 </div>
                 <h1>{property.title}</h1>
+                {property.view_count !== undefined && (
+                  <p className="detail-mobile-views flex items-center gap-1 text-[11px] text-neutral-500 font-bold mb-3 mt-1.5">
+                    <Eye size={12} className="text-neutral-400" />
+                    <span>{property.view_count} visitas</span>
+                  </p>
+                )}
                 <div className="detail-mobile-media-pills">
                   <button
                     type="button"

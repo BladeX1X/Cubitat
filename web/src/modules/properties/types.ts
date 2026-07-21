@@ -37,4 +37,5 @@ export type Property = {
     phone?: string
     email?: string
   } | null
+  view_count?: number
 }
