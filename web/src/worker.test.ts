@@ -297,10 +297,9 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
-    expect(consoleError).toHaveBeenCalledWith(
-      'Error en moderateBackground:',
-      expect.objectContaining({ message: expect.stringContaining('503') }),
-    )
+    expect(consoleError).toHaveBeenCalledWith({
+      event: 'moderation_background_failed',
+    })
   })
 
   it.each([
