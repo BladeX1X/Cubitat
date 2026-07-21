@@ -1254,3 +1254,37 @@ Usar este formato y conservar las entradas anteriores:
   y el contrato productivo del Worker quedaron correctos.
 - Siguiente parche recomendado: revisar exposicion de datos en logs y politica
   de retencion de auditoria, sin ampliar acceso a datos productivos.
+
+### 2026-07-20 - parche de seguridad 5 - observabilidad segura
+
+- Estado: **fusionado, desplegado y verificado en produccion**. PR #70
+  fusionado en `main` como `f969494`; Worker
+  `17e2a0e0-da43-4c4d-9b00-a701924099ba` activo.
+- Hallazgo: Cloudflare conservaba logs automaticos de invocacion con metodo y
+  URL completa, y el Worker registraba objetos `Error`, un cuerpo de respuesta
+  de Resend y mensajes que distinguian el estado de confirmacion de una cuenta.
+- Correccion modular: `worker/logger.ts` acepta solo eventos y campos cerrados;
+  se retiraron correos, URLs, parametros, tokens, IDs, cuerpos externos y
+  errores crudos de los diagnosticos. `wrangler.jsonc` conserva logs propios al
+  100 % y deshabilita `invocation_logs`.
+- Regresion: las pruebas validan el filtrado en tiempo de ejecucion, la
+  configuracion de Cloudflare y la ausencia de `console.*` directo en
+  `worker.ts`.
+- Calidad local: lint limpio, 57 archivos/215 pruebas, build TypeScript/Vite/PWA
+  correcto, sitemap de 473 URLs y `wrangler deploy --dry-run` aprobado.
+- Produccion: Home `200` con HSTS; `/auth/callback` `200` con
+  `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`. La version desplegada
+  corresponde al upload de Wrangler. No se abrio `wrangler tail`, no se leyeron
+  logs con URLs reales y no se consultaron ni mutaron datos productivos.
+- Retencion: Supabase Free permanece sin cambios. No se purgo
+  `auth.audit_log_entries` ni se desactivo su escritura porque ambas acciones
+  requieren autorizacion destructiva y una politica interna aprobada. Como
+  referencia operativa, el proveedor muestra 1 hora para Auth Audit Logs y 1
+  dia para logs generales de API/base de datos en Free; verificar de nuevo ante
+  un incidente porque estas ventanas pueden cambiar.
+- Vault actualizado y verificado mediante Google Drive: Checklist de
+  Lanzamiento, Dashboard del Proyecto, Roadmap Fase 1 y Guia de Supabase
+  Produccion. La unidad local `G:` no estaba montada.
+- Siguiente parche recomendado: auditar `console.*` del frontend por modulos y
+  sustituir objetos de error o respuestas crudas por mensajes seguros, sin
+  eliminar el feedback util para soporte.
