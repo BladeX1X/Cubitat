@@ -839,6 +839,7 @@ export function CubitatApp() {
             seoRoute={seoResultsRoute}
             user={user}
             onRequireLogin={openLogin}
+            onGoToAccount={navigateAccount}
           />
         )}
 
