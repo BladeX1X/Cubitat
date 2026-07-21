@@ -8,6 +8,7 @@ import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
 import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/search/seoRoutes'
 import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
+import { SearchAlertModal } from '../../modules/search/components/SearchAlertModal'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
@@ -62,6 +63,7 @@ export type ResultsPageProps = {
   seoRoute?: SeoResultsRoute | null
   user?: User | null
   onRequireLogin?: () => void
+  onGoToAccount?: () => void
 }
 
 export function ResultsPage({
@@ -75,6 +77,7 @@ export function ResultsPage({
   seoRoute,
   user,
   onRequireLogin,
+  onGoToAccount,
 }: ResultsPageProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -82,6 +85,8 @@ export function ResultsPage({
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertError, setAlertError] = useState<string | null>(null)
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false)
+  const [isAlertError, setIsAlertError] = useState(false)
   const [viewMode, setViewMode] = useState<ResultsViewMode>(getInitialViewMode)
   const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | null>(null)
   const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
@@ -157,10 +162,14 @@ export function ResultsPage({
           window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
           setAlertError(null)
           setAlertMessage('Alerta creada. La veras en Mi cuenta.')
+          setIsAlertError(false)
+          setIsAlertModalOpen(true)
         })
         .catch(() => {
           pendingAlertProcessedRef.current = false
           setAlertError('No se pudo crear la alerta despues de iniciar sesion.')
+          setIsAlertError(true)
+          setIsAlertModalOpen(true)
         })
     } catch {
       window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
@@ -230,15 +239,16 @@ export function ResultsPage({
     if (!user) {
       window.localStorage.setItem(PENDING_SEARCH_ALERT_KEY, JSON.stringify(filters))
       onRequireLogin?.()
-      setAlertMessage('Inicia sesion para guardar esta alerta.')
       return
     }
 
     try {
       await createAlert(filters)
-      setAlertMessage('Alerta creada. La veras en Mi cuenta.')
+      setIsAlertError(false)
+      setIsAlertModalOpen(true)
     } catch {
-      setAlertError('No se pudo crear la alerta. Intentalo de nuevo.')
+      setIsAlertError(true)
+      setIsAlertModalOpen(true)
     }
   }
 
@@ -503,6 +513,14 @@ export function ResultsPage({
             />
           ) : null}
         </div>
+      <SearchAlertModal
+        isOpen={isAlertModalOpen}
+        onClose={() => setIsAlertModalOpen(false)}
+        onGoToAccount={onGoToAccount}
+        filters={filters}
+        isError={isAlertError}
+        errorMessage={alertError}
+      />
     </section>
   )
 }

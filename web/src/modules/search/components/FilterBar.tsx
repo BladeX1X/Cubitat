@@ -37,8 +37,8 @@ export function FilterBar({
   totalResults = 0,
   onCreateAlert,
   creatingAlert = false,
-  alertMessage,
-  alertError,
+  alertMessage: _alertMessage,
+  alertError: _alertError,
 }: FilterBarProps) {
   const [isOperationOpen, setIsOperationOpen] = useState(false)
   const [isTypeOpen, setIsTypeOpen] = useState(false)
@@ -458,8 +458,6 @@ export function FilterBar({
         </Button>
       ) : null}
       </div>
-      {alertMessage ? <p className="search-alert-feedback">{alertMessage}</p> : null}
-      {alertError ? <p className="search-alert-feedback is-error">{alertError}</p> : null}
       {isMobileViewport && isMobileSheetMounted ? (
         <div
           className={`mobile-filter-sheet ${isMobileSheetVisible ? 'is-open' : ''}`}
