@@ -151,9 +151,9 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                   className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
                 >
                   <div className="h-48 bg-neutral-100 relative overflow-hidden">
-                    {prop.cover_image ? (
+                    {prop.coverImage ? (
                       <img
-                        src={prop.cover_image}
+                        src={prop.coverImage}
                         alt={prop.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -163,7 +163,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                       </div>
                     )}
                     <span className="absolute top-3 right-3 bg-neutral-900/80 text-white font-bold text-xs px-2.5 py-1 rounded-md backdrop-blur-xs">
-                      ${prop.price_usd?.toLocaleString('en-US') || 0} USD
+                      ${prop.priceUsd?.toLocaleString('en-US') || 0} USD
                     </span>
                   </div>
                   <div className="p-4">

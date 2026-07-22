@@ -17,7 +17,7 @@ describe('kycRepository', () => {
       count: null,
       status: 200,
       statusText: 'OK',
-    })
+    } as any)
 
     const result = await submitKycRequest('identity_card', 'https://example.com/doc.jpg')
     expect(result.success).toBe(true)
@@ -35,7 +35,7 @@ describe('kycRepository', () => {
       count: null,
       status: 500,
       statusText: 'Error',
-    })
+    } as any)
 
     const result = await submitKycRequest('passport', 'https://example.com/doc.jpg')
     expect(result.success).toBe(false)
