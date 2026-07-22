@@ -205,6 +205,10 @@ admin `aal2` con lectura de los 4 eventos existentes y sin `UPDATE` o `DELETE`;
 habilitado. Las 47 migraciones siguen sincronizadas y `db lint --linked` no
 reportó errores. No persistieron cambios ni se mostraron identificadores.
 
+### 49. `20260801000000_phase2_kyc_and_agents.sql`
+- **Fecha**: 2026-07-21
+- **Propósito**: Fase 2 - Añade soporte para perfiles de agencias/agentes (`agency_name`, `license_number`, `bio`), solicitudes KYC (`kyc_requests`) y funciones RPC seguras (`submit_kyc_request`, `review_kyc_request`) para validación de identidad con RLS.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
