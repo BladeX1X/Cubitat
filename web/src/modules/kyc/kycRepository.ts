@@ -63,3 +63,41 @@ export async function fetchUserKycStatus(
     return { status: 'unverified' }
   }
 }
+
+export async function uploadKycDocument(
+  userId: string,
+  file: File,
+): Promise<{ success: boolean; publicUrl?: string; error?: string }> {
+  try {
+    const fileExt = file.name.split('.').pop() || 'jpg'
+    const filePath = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('kyc_documents')
+      .upload(filePath, file, { upsert: true })
+
+    if (uploadError) {
+      logSafeEvent({
+        module: 'kyc',
+        action: 'upload_document_storage',
+        level: 'error',
+        code: sanitizeErrorReason(uploadError),
+      })
+      return { success: false, error: 'No se pudo subir la foto del documento.' }
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('kyc_documents')
+      .getPublicUrl(filePath)
+
+    return { success: true, publicUrl: publicUrlData.publicUrl }
+  } catch (err) {
+    logSafeEvent({
+      module: 'kyc',
+      action: 'upload_document_exception',
+      level: 'error',
+      code: sanitizeErrorReason(err),
+    })
+    return { success: false, error: 'Error al procesar el archivo.' }
+  }
+}
