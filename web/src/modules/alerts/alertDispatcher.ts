@@ -1,5 +1,6 @@
 import type { Property } from '../properties/types'
 import { supabase } from '../../shared/lib/supabaseClient'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 export interface SavedSearchAlert {
   id: string
@@ -198,13 +199,25 @@ export async function dispatchSearchAlertNotifications(
         .eq('is_active', true)
 
       if (error) {
-        console.warn('[alertDispatcher] Error loading search_alerts from Supabase:', error)
+        logSafeEvent({
+          module: 'alerts',
+          action: 'fetch_active_alerts',
+          level: 'warn',
+          code: sanitizeErrorReason(error),
+          message: 'Error loading search_alerts from Supabase',
+        })
         alertsToEvaluate = []
       } else {
         alertsToEvaluate = (data ?? []) as SavedSearchAlert[]
       }
     } catch (e) {
-      console.warn('[alertDispatcher] Exception fetching active search alerts:', e)
+      logSafeEvent({
+        module: 'alerts',
+        action: 'fetch_active_alerts',
+        level: 'warn',
+        code: sanitizeErrorReason(e),
+        message: 'Exception fetching active search alerts',
+      })
       alertsToEvaluate = []
     }
   }

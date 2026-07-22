@@ -13,6 +13,7 @@ export type LogModule =
   | 'kyc'
   | 'agents'
   | 'agent_dashboard'
+  | 'alerts'
   | 'reputation'
   | 'error_boundary'
   | 'ui'
