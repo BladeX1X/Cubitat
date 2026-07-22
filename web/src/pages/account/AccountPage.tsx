@@ -25,6 +25,9 @@ import {
   validateImageDimensions,
   validateImageFile,
 } from '../../shared/lib/imageSecurity'
+import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
+import { KycSubmissionModal } from '../../modules/kyc/components/KycSubmissionModal'
+import type { VerificationStatus } from '../../modules/kyc/types'
 
 type AccountPageProps = {
   user: User
@@ -73,6 +76,10 @@ export function AccountPage({
   ]
   const verifiedCount = verifiedItems.filter(Boolean).length
 
+  const [kycStatus, setKycStatus] = useState<VerificationStatus>('unverified')
+  const [kycReason, setKycReason] = useState<string | null>(null)
+  const [isKycModalOpen, setIsKycModalOpen] = useState(false)
+
   useEffect(() => {
     let cancelled = false
 
@@ -97,6 +104,12 @@ export function AccountPage({
       }
       if (data.phone_verified_at) {
         setPhoneVerifiedAt(data.phone_verified_at)
+      }
+      if (data.verification_status) {
+        setKycStatus(data.verification_status as VerificationStatus)
+      }
+      if (data.verification_reason) {
+        setKycReason(data.verification_reason)
       }
     }
 
@@ -292,6 +305,62 @@ export function AccountPage({
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
                 />
 
+                <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+                        <ShieldCheck size={20} />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-neutral-900">Verificación de Identidad (KYC)</h2>
+                        <p className="text-xs text-neutral-500">Obtén la insignia oficial en tus publicaciones</p>
+                      </div>
+                    </div>
+                    <VerificationBadge status={kycStatus} />
+                  </div>
+
+                  {kycStatus === 'unverified' && (
+                    <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <p className="text-xs text-neutral-600">
+                        Sube una foto de tu carnet de identidad para verificar tu cuenta y destacar frente a otros anunciantes.
+                      </p>
+                      <Button
+                        onClick={() => setIsKycModalOpen(true)}
+                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold shrink-0"
+                      >
+                        Solicitar Verificación
+                      </Button>
+                    </div>
+                  )}
+
+                  {kycStatus === 'pending' && (
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
+                      <strong>Tu documento está en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
+                    </div>
+                  )}
+
+                  {kycStatus === 'verified' && (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+                      <strong>¡Cuenta Verificada!</strong> Tu perfil cuenta con el distintivo oficial de confianza.
+                    </div>
+                  )}
+
+                  {kycStatus === 'rejected' && (
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-xs text-red-800 space-y-2">
+                      <p>
+                        <strong>Solicitud Rechazada:</strong> {kycReason || 'El documento presentado no pudo ser validado.'}
+                      </p>
+                      <Button
+                        onClick={() => setIsKycModalOpen(true)}
+                        variant="outline"
+                        className="rounded-full text-xs font-bold border-red-200 text-red-700 bg-white"
+                      >
+                        Reenviar Documento
+                      </Button>
+                    </div>
+                  )}
+                </section>
+
                 <SearchAlertsCard
                   alerts={searchAlerts}
                   loading={loadingSearchAlerts}
@@ -356,6 +425,16 @@ export function AccountPage({
                 </div>
               </section>
             </div>
+
+      <KycSubmissionModal
+        userId={user.id}
+        isOpen={isKycModalOpen}
+        onClose={() => setIsKycModalOpen(false)}
+        onSuccess={() => {
+          setKycStatus('pending')
+          setKycReason(null)
+        }}
+      />
     </AccountLayout>
   )
 }
