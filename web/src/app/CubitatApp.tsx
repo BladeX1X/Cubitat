@@ -897,9 +897,7 @@ export function CubitatApp() {
             onBack={() => {
               if (selectedPropertyId) {
                 setPageMode('detail')
-                const prop = properties.find((p) => p.id === selectedPropertyId)
-                const slug = prop ? buildPropertySlug(prop.id, prop.title) : selectedPropertyId
-                window.history.pushState(null, '', `/propiedad/${slug}`)
+                window.history.pushState(null, '', `/propiedad/${selectedPropertyId}`)
               } else {
                 setPageMode('results')
                 window.history.pushState(null, '', '/resultados')
