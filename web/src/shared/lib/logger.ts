@@ -10,6 +10,8 @@ export type LogModule =
   | 'cache'
   | 'app'
   | 'referrals'
+  | 'kyc'
+  | 'agents'
   | 'error_boundary'
   | 'ui'
   | 'core';
