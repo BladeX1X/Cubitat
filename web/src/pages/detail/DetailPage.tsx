@@ -18,6 +18,7 @@ import {
   X,
   Loader2,
   Eye,
+  Building2,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -56,6 +57,7 @@ type DetailPageProps = {
   userRole?: string
   onAdminHideProperty?: (propertyId: string) => void
   onAdminDeleteProperty?: (propertyId: string) => void
+  onSelectAgent?: (agentId: string) => void
 }
 
 function titleCase(str: string): string {
@@ -70,6 +72,7 @@ export function DetailPage({
   userRole,
   onAdminHideProperty,
   onAdminDeleteProperty,
+  onSelectAgent,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
@@ -686,7 +689,7 @@ export function DetailPage({
 
           {/* Columna Derecha: Tarjeta de Contacto (Sticky) */}
           <div className="space-y-6">
-            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} />
+            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} onSelectAgent={onSelectAgent} />
           </div>
 
         </div>
@@ -1113,7 +1116,15 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
 }
 
 /* Subcomponente: Tarjeta de Contacto */
-function ContactCard({ property, onReport }: { property: Property; onReport: () => void }) {
+function ContactCard({
+  property,
+  onReport,
+  onSelectAgent,
+}: {
+  property: Property
+  onReport: () => void
+  onSelectAgent?: (agentId: string) => void
+}) {
   const [contactSent, setContactSent] = useState(() => {
     const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
     if (saved) {
@@ -1195,6 +1206,17 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
             <Calendar size={12} />
             Publicado recientemente
           </p>
+
+          {property.user_id && onSelectAgent && (
+            <button
+              type="button"
+              onClick={() => onSelectAgent(property.user_id!)}
+              className="w-full mt-3 py-2 px-3 bg-teal-50 hover:bg-teal-100 text-[#035f53] font-bold text-xs rounded-xl flex items-center justify-center gap-2 border border-teal-200/60 transition-colors cursor-pointer"
+            >
+              <Building2 size={14} />
+              <span>Ver perfil del agente / anunciante</span>
+            </button>
+          )}
         </div>
 
         {error && (
