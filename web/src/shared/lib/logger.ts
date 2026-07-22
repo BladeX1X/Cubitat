@@ -12,6 +12,8 @@ export type LogModule =
   | 'referrals'
   | 'kyc'
   | 'agents'
+  | 'agent_dashboard'
+  | 'reputation'
   | 'error_boundary'
   | 'ui'
   | 'core';

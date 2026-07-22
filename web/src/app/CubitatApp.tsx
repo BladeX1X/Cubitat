@@ -43,6 +43,9 @@ const AccountPage = lazy(() =>
 const AgentProfilePage = lazy(() =>
   import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
 )
+const AgentDashboardPage = lazy(() =>
+  import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
+)
 const FavoritesPage = lazy(() =>
   import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -88,13 +91,16 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
     return 'home'
   }
   const path = window.location.pathname
+  if (path.startsWith('/panel-agente')) {
+    return 'agent-dashboard'
+  }
   if (path.startsWith('/agente/')) {
     return 'agent-profile'
   }
@@ -267,7 +273,7 @@ export function CubitatApp() {
 
   // Guard protected routes from unauthenticated direct access
   useEffect(() => {
-    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar']
+    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard']
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
       setPendingAuthPath(window.location.pathname + window.location.search + window.location.hash)
       openLogin()
@@ -629,6 +635,19 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
+  function navigateAgentDashboard() {
+    if (!user) {
+      setPendingAuthPath('/panel-agente')
+      openLogin()
+      return
+    }
+    window.history.pushState(null, '', '/panel-agente')
+    setPageMode('agent-dashboard')
+    setSeoResultsRoute(null)
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     await clearCachedProperties()
@@ -954,10 +973,24 @@ export function CubitatApp() {
         {pageMode === 'account' && user && (
           <AccountPage
             user={user}
+            userRole={userRole}
             onBack={navigateAccount}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={navigateAgentDashboard}
+          />
+        )}
+
+        {pageMode === 'agent-dashboard' && user && (
+          <AgentDashboardPage
+            user={user}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={navigateAgentDashboard}
+            onEditProperty={navigateEditProperty}
+            onSelectProperty={handleSelectProperty}
           />
         )}
 

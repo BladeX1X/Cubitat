@@ -1,22 +1,26 @@
 import type { ReactNode } from 'react'
-import { Heart, Home, User as UserIcon } from 'lucide-react'
+import { BarChart3, Heart, Home, User as UserIcon } from 'lucide-react'
 
-export type AccountSectionKey = 'account' | 'favorites' | 'contents'
+export type AccountSectionKey = 'account' | 'favorites' | 'contents' | 'agent-dashboard'
 
 type AccountLayoutProps = {
   active: AccountSectionKey
   children: ReactNode
+  userRole?: string
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateAgentDashboard?: () => void
 }
 
 export function AccountLayout({
   active,
   children,
+  userRole,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateAgentDashboard,
 }: AccountLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
@@ -45,6 +49,14 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
+              {(userRole === 'agent' || onNavigateAgentDashboard) && onNavigateAgentDashboard && (
+                <SideItem
+                  active={active === 'agent-dashboard'}
+                  icon={<BarChart3 size={20} />}
+                  label="Panel de Agente"
+                  onClick={onNavigateAgentDashboard}
+                />
+              )}
             </nav>
           </aside>
 

@@ -46,6 +46,9 @@ import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
+import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
+import { fetchAgentProfile } from '../../modules/agents/agentRepository'
+import type { AgentProfile } from '../../modules/agents/types'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -1137,6 +1140,15 @@ function ContactCard({
   const [error, setError] = useState<string | null>(null)
   const [contactTurnstileToken, setContactTurnstileToken] = useState<string | null>(null)
   const [contactTurnstileKey, setContactTurnstileKey] = useState(0)
+  const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
+
+  useEffect(() => {
+    if (property.user_id) {
+      fetchAgentProfile(property.user_id).then((prof) => {
+        if (prof) setAgentProfile(prof)
+      })
+    }
+  }, [property.user_id])
 
   async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -1199,9 +1211,20 @@ function ContactCard({
     <Card id="contactar-anunciante" className="border border-neutral-100 rounded-2xl shadow-xl p-6 sticky top-6 bg-white">
       <CardContent className="p-0 space-y-5">
         <div>
-          <h2 className="text-lg font-bold text-neutral-900 mb-1">
-            Contactar anunciante
-          </h2>
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+            <h2 className="text-lg font-bold text-neutral-900">
+              Contactar anunciante
+            </h2>
+            <TrustScoreBadge
+              profileData={{
+                verificationStatus: agentProfile?.verification_status || 'verified',
+                createdAt: agentProfile?.created_at || new Date().toISOString(),
+                activePropertiesCount: 1,
+                reportsCount: 0,
+              }}
+              compact
+            />
+          </div>
           <p className="text-[11px] text-neutral-500 flex items-center gap-1">
             <Calendar size={12} />
             Publicado recientemente

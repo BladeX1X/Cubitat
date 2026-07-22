@@ -1,4 +1,4 @@
-export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit'
+export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit' | 'kyc'
 
 export type StatusFilter =
   | 'pending_review'

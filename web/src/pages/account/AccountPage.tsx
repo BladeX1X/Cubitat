@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
+  BarChart3,
   Camera,
   Bell,
   Check,
@@ -31,18 +32,22 @@ import type { VerificationStatus } from '../../modules/kyc/types'
 
 type AccountPageProps = {
   user: User
+  userRole?: string
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateAgentDashboard?: () => void
 }
 
 export function AccountPage({
   user,
+  userRole: initialUserRole,
   onBack,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateAgentDashboard,
 }: AccountPageProps) {
   useSEO({
     title: 'Mi Cuenta',
@@ -79,6 +84,7 @@ export function AccountPage({
   const [kycStatus, setKycStatus] = useState<VerificationStatus>('unverified')
   const [kycReason, setKycReason] = useState<string | null>(null)
   const [isKycModalOpen, setIsKycModalOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
 
   useEffect(() => {
     let cancelled = false
@@ -92,6 +98,9 @@ export function AccountPage({
 
       if (cancelled || !data) return
 
+      if (data.role) {
+        setUserRole(data.role)
+      }
       if (data.full_name) {
         setFullName(data.full_name)
         setDraftName(data.full_name)
@@ -239,9 +248,11 @@ export function AccountPage({
   return (
     <AccountLayout
       active="account"
+      userRole={userRole || initialUserRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
             <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-4 py-5 text-white shadow-sm sm:px-7 sm:py-8">
               <div className="flex items-start gap-3 sm:gap-4">
@@ -298,6 +309,28 @@ export function AccountPage({
               </section>
 
               <section className="grid gap-5 sm:gap-8">
+                {(userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
+                  <section className="rounded-xl border border-[#035f53]/20 bg-emerald-50/60 p-4 shadow-sm sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#035f53] text-white flex items-center justify-center font-bold shrink-0">
+                          <BarChart3 size={20} />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-bold text-neutral-900">Panel de Agente</h2>
+                          <p className="text-xs text-neutral-600">Revisa métricas acumuladas, leads estimados y gestiona la visibilidad de tus propiedades.</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={onNavigateAgentDashboard}
+                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold px-5 h-9 shrink-0 shadow-xs"
+                      >
+                        Ir al Panel de Agente
+                      </Button>
+                    </div>
+                  </section>
+                )}
+
                 <VerificationCard
                   verifiedCount={verifiedCount}
                   hasName={Boolean(fullName.trim())}

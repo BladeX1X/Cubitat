@@ -4,6 +4,7 @@ import { MetricsTab } from '../../modules/admin/metrics/MetricsTab'
 import { PropertiesTab } from '../../modules/admin/properties/PropertiesTab'
 import { ReportsTab } from '../../modules/admin/reports/ReportsTab'
 import { AuditLogTab } from '../../modules/admin/audit-log/AuditLogTab'
+import { KycModerationTab } from '../../modules/admin/kyc/KycModerationTab'
 import { AdminMfaGate } from '../../modules/auth/mfa/AdminMfaGate'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -17,6 +18,7 @@ type AdminPageProps = {
 const SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'properties', label: 'Propiedades' },
   { id: 'reports', label: 'Reportes' },
+  { id: 'kyc', label: 'KYC' },
   { id: 'audit', label: 'Bitácora' },
   { id: 'metrics', label: 'Métricas' },
 ]
@@ -89,6 +91,7 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
 
         {activeSection === 'properties' && <PropertiesTab />}
         {activeSection === 'reports' && <ReportsTab />}
+        {activeSection === 'kyc' && <KycModerationTab />}
         {activeSection === 'metrics' && <MetricsTab />}
         {activeSection === 'audit' && <AuditLogTab />}
       </div>

@@ -18,6 +18,7 @@ describe('AdminPage modular architecture', () => {
     expect(adminPageSource).toContain('ReportsTab')
     expect(adminPageSource).toContain('MetricsTab')
     expect(adminPageSource).toContain('AuditLogTab')
+    expect(adminPageSource).toContain('KycModerationTab')
   })
 
   it('keeps each existing feature in its own module', () => {

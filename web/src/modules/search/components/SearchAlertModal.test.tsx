@@ -66,4 +66,44 @@ describe('SearchAlertModal', () => {
     expect(screen.getByText('No se pudo crear la alerta')).toBeInTheDocument()
     expect(screen.getByText('Fallo de conexión')).toBeInTheDocument()
   })
+
+  it('captures optional email and calls onSaveAlert', () => {
+    const handleSaveAlert = vi.fn()
+    const handleEmailChange = vi.fn()
+
+    render(
+      <SearchAlertModal
+        isOpen={true}
+        onClose={vi.fn()}
+        filters={mockFilters}
+        onEmailChange={handleEmailChange}
+        onSaveAlert={handleSaveAlert}
+      />
+    )
+
+    const emailInput = screen.getByLabelText(/Correo electrónico para recibir alertas/i)
+    fireEvent.change(emailInput, { target: { value: 'user@example.com' } })
+
+    expect(handleEmailChange).toHaveBeenCalledWith('user@example.com')
+
+    const saveButton = screen.getByRole('button', { name: 'Guardar alerta' })
+    fireEvent.click(saveButton)
+
+    expect(handleSaveAlert).toHaveBeenCalledWith('user@example.com')
+  })
+
+  it('displays authenticated user state when isAuthenticated is true', () => {
+    render(
+      <SearchAlertModal
+        isOpen={true}
+        onClose={vi.fn()}
+        filters={mockFilters}
+        isAuthenticated={true}
+        userEmail="testuser@cubitat.com"
+      />
+    )
+
+    expect(screen.getByText(/Alerta asociada a tu usuario autenticado/i)).toBeInTheDocument()
+    expect(screen.getByText(/\(testuser@cubitat.com\)/i)).toBeInTheDocument()
+  })
 })

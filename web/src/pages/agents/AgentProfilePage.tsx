@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Building2, Phone, Award } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
+import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
 import { fetchAgentProfile, fetchAgentProperties } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
 import type { Property } from '../../modules/properties/types'
@@ -93,6 +94,14 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                   {agent.full_name}
                 </h1>
                 <VerificationBadge status={agent.verification_status} isAgent />
+                <TrustScoreBadge
+                  profileData={{
+                    verificationStatus: agent.verification_status,
+                    createdAt: agent.created_at,
+                    activePropertiesCount: properties.length,
+                    reportsCount: 0,
+                  }}
+                />
               </div>
 
               {agent.agency_name && (
