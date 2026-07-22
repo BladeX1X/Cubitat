@@ -38,4 +38,5 @@ export type Property = {
     email?: string
   } | null
   view_count?: number
+  user_id?: string
 }

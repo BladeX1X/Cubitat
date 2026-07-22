@@ -40,6 +40,9 @@ const MyPropertiesPage = lazy(() =>
 const AccountPage = lazy(() =>
   import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
 )
+const AgentProfilePage = lazy(() =>
+  import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
+)
 const FavoritesPage = lazy(() =>
   import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -85,13 +88,16 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
     return 'home'
   }
   const path = window.location.pathname
+  if (path.startsWith('/agente/')) {
+    return 'agent-profile'
+  }
   if (path.startsWith('/resultados') || parseSeoResultsRoute(path)) {
     return 'results'
   }
@@ -131,6 +137,17 @@ function getInitialPageMode(): PageMode {
   return 'home'
 }
 
+function getInitialSelectedAgentId(): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+  const path = window.location.pathname
+  if (path.startsWith('/agente/')) {
+    return path.split('/').pop() || undefined
+  }
+  return undefined
+}
+
 function extractIdFromSlug(slug: string): string {
   if (!slug) return ''
   const parts = slug.split('-')
@@ -168,6 +185,7 @@ export function CubitatApp() {
     return parseSeoResultsRoute(window.location.pathname)
   })
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>(getInitialSelectedPropertyId)
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(getInitialSelectedAgentId)
   const { isLoginOpen, openLogin, closeLogin, isSavePromptOpen, closeSavePrompt } = useAuthModal()
   const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
   const [user, setUser] = useState<User | null>(null)
@@ -679,6 +697,13 @@ export function CubitatApp() {
     }
   }
 
+  function handleSelectAgent(agentId: string) {
+    setSelectedAgentId(agentId)
+    setPageMode('agent-profile')
+    window.history.pushState(null, '', `/agente/${agentId}`)
+    window.scrollTo(0, 0)
+  }
+
   function handleBackToResults() {
     setSelectedPropertyId(undefined)
     setPageMode(detailBackPageMode)
@@ -862,6 +887,25 @@ export function CubitatApp() {
             userRole={userRole}
             onAdminHideProperty={handleAdminHideProperty}
             onAdminDeleteProperty={handleAdminDeleteProperty}
+            onSelectAgent={handleSelectAgent}
+          />
+        )}
+
+        {pageMode === 'agent-profile' && selectedAgentId && (
+          <AgentProfilePage
+            agentId={selectedAgentId}
+            onBack={() => {
+              if (selectedPropertyId) {
+                setPageMode('detail')
+                const prop = properties.find((p) => p.id === selectedPropertyId)
+                const slug = prop ? buildPropertySlug(prop.id, prop.title) : selectedPropertyId
+                window.history.pushState(null, '', `/propiedad/${slug}`)
+              } else {
+                setPageMode('results')
+                window.history.pushState(null, '', '/resultados')
+              }
+            }}
+            onSelectProperty={handleSelectProperty}
           />
         )}
 
