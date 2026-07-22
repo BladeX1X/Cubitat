@@ -39,7 +39,7 @@ describe('calculateTrustScore', () => {
     })
 
     expect(result.label).toBe('Verificado')
-    expect(result.score).toBe(4.3) // 2.5 base + 1.5 verified + 0.3 zero-report bonus
+    expect(result.score).toBe(4.3)
   })
 
   it('applies penalties for reported profiles and clamps minimum score to 1.0', () => {
@@ -63,7 +63,7 @@ describe('calculateTrustScore', () => {
       reportsCount: 0,
     })
 
-    expect(result.score).toBe(3.2) // 2.5 + 0.4 (2 props) + 0.3 (zero reports bonus)
+    expect(result.score).toBe(3.2)
     expect(result.label).toBe('Nuevo')
   })
 })
