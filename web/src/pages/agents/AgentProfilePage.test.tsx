@@ -16,6 +16,8 @@ describe('AgentProfilePage', () => {
       license_number: 'LIC-9988',
       verification_status: 'verified',
       created_at: new Date().toISOString(),
+      active_properties_count: 1,
+      reports_count: 0,
     })
 
     vi.mocked(agentRepo.fetchAgentProperties).mockResolvedValueOnce([
@@ -26,18 +28,6 @@ describe('AgentProfilePage', () => {
         priceUsd: 85000,
         coverImage: '',
         status: 'published',
-        operation: 'venta',
-        propertyType: 'apartamento',
-        description: 'Hermoso apartamento',
-        zoneId: 'playa',
-        bedrooms: 2,
-        bathrooms: 2,
-        parking: 1,
-        areaM2: 110,
-        amenities: [],
-        coverTone: '#ffffff',
-        mapPoint: { x: 0, y: 0 },
-        coordinates: { latitude: 23.1, longitude: -82.3 },
       },
     ])
 
@@ -59,5 +49,51 @@ describe('AgentProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByText('Agente no encontrado')).toBeInTheDocument()
     })
+  })
+
+  it('renders a distinct error state when loading fails', async () => {
+    vi.mocked(agentRepo.fetchAgentProfile).mockRejectedValueOnce(new Error('network'))
+    vi.mocked(agentRepo.fetchAgentProperties).mockResolvedValueOnce([])
+
+    render(<AgentProfilePage agentId="agent-123" onBack={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudo cargar el perfil')).toBeInTheDocument()
+      expect(screen.queryByText('Agente no encontrado')).not.toBeInTheDocument()
+    })
+  })
+
+  it('ignores an obsolete response after the agent id changes', async () => {
+    let resolveFirst: ((value: Awaited<ReturnType<typeof agentRepo.fetchAgentProfile>>) => void) | undefined
+    const firstProfile = new Promise<Awaited<ReturnType<typeof agentRepo.fetchAgentProfile>>>((resolve) => {
+      resolveFirst = resolve
+    })
+
+    vi.mocked(agentRepo.fetchAgentProfile)
+      .mockReturnValueOnce(firstProfile)
+      .mockResolvedValueOnce({
+        id: 'agent-new',
+        full_name: 'Agente Nuevo',
+        verification_status: 'verified',
+        created_at: new Date().toISOString(),
+        active_properties_count: 0,
+        reports_count: 0,
+      })
+    vi.mocked(agentRepo.fetchAgentProperties).mockResolvedValue([])
+
+    const { rerender } = render(<AgentProfilePage agentId="agent-old" onBack={vi.fn()} />)
+    rerender(<AgentProfilePage agentId="agent-new" onBack={vi.fn()} />)
+
+    await screen.findByText('Agente Nuevo')
+    resolveFirst?.({
+      id: 'agent-old',
+      full_name: 'Agente Obsoleto',
+      verification_status: 'verified',
+      created_at: new Date().toISOString(),
+      active_properties_count: 0,
+      reports_count: 0,
+    })
+
+    await waitFor(() => expect(screen.queryByText('Agente Obsoleto')).not.toBeInTheDocument())
   })
 })

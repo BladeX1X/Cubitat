@@ -5,12 +5,12 @@ import type { VerificationStatus } from './types'
 
 export async function submitKycRequest(
   documentType: 'identity_card' | 'license' | 'passport',
-  documentUrl: string,
+  documentPath: string,
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
   try {
     const { data, error } = await supabase.rpc('submit_kyc_request', {
       p_document_type: documentType,
-      p_document_url: documentUrl,
+      p_document_path: documentPath,
     })
 
     if (error) {
@@ -67,14 +67,23 @@ export async function fetchUserKycStatus(
 export async function uploadKycDocument(
   userId: string,
   file: File,
-): Promise<{ success: boolean; publicUrl?: string; error?: string }> {
+): Promise<{ success: boolean; documentPath?: string; error?: string }> {
   try {
-    const fileExt = file.name.split('.').pop() || 'jpg'
-    const filePath = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`
+    const extensionByMime: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    }
+    const fileExtension = extensionByMime[file.type]
+    if (!fileExtension || file.size > 10 * 1024 * 1024) {
+      return { success: false, error: 'Selecciona una imagen JPG, PNG o WebP de hasta 10 MB.' }
+    }
+
+    const filePath = `${userId}/${crypto.randomUUID()}.${fileExtension}`
 
     const { error: uploadError } = await supabase.storage
       .from('kyc_documents')
-      .upload(filePath, file, { upsert: true })
+      .upload(filePath, file, { upsert: false, contentType: file.type })
 
     if (uploadError) {
       logSafeEvent({
@@ -86,11 +95,7 @@ export async function uploadKycDocument(
       return { success: false, error: 'No se pudo subir la foto del documento.' }
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from('kyc_documents')
-      .getPublicUrl(filePath)
-
-    return { success: true, publicUrl: publicUrlData.publicUrl }
+    return { success: true, documentPath: filePath }
   } catch (err) {
     logSafeEvent({
       module: 'kyc',
@@ -99,5 +104,26 @@ export async function uploadKycDocument(
       code: sanitizeErrorReason(err),
     })
     return { success: false, error: 'Error al procesar el archivo.' }
+  }
+}
+
+export async function removeKycDocument(documentPath: string): Promise<void> {
+  try {
+    const { error } = await supabase.storage.from('kyc_documents').remove([documentPath])
+    if (error) {
+      logSafeEvent({
+        module: 'kyc',
+        action: 'remove_orphan_document',
+        level: 'warn',
+        code: sanitizeErrorReason(error),
+      })
+    }
+  } catch (err) {
+    logSafeEvent({
+      module: 'kyc',
+      action: 'remove_orphan_document_exception',
+      level: 'warn',
+      code: sanitizeErrorReason(err),
+    })
   }
 }

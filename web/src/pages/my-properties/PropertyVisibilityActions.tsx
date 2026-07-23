@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
-import type { PropertyStatus } from './propertyStatus'
+import type { PropertyStatus } from '../../modules/properties/propertyStatus'
 
 type Props = {
   status: PropertyStatus

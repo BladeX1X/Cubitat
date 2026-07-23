@@ -136,6 +136,12 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     })
   })
 
+  it('oculta KYC cuando Fase 2 está deshabilitada en producción', async () => {
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} phaseTwoEnabled={false} />)
+    await screen.findByText('Panel de moderación')
+    expect(screen.queryByRole('button', { name: 'KYC' })).not.toBeInTheDocument()
+  })
+
   it('debería alternar a la pestaña de "Reportes" y listar las quejas activas', async () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
     await screen.findByText('Panel de moderación')

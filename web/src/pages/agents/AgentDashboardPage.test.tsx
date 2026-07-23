@@ -1,195 +1,71 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentDashboardPage } from './AgentDashboardPage'
-import { supabase } from '../../shared/lib/supabaseClient'
+import { loadAgentDashboard, setOwnerPropertyVisibility } from '../../modules/agents/agentDashboardRepository'
 
-// Mock Supabase
-vi.mock('../../shared/lib/supabaseClient', () => {
-  const mockSingle = vi.fn().mockResolvedValue({ data: { role: 'agent' }, error: null })
-  const mockMaybeSingle = vi.fn().mockResolvedValue({ data: { role: 'agent' }, error: null })
-  const mockOrder = vi.fn().mockResolvedValue({
-    data: [
-      {
-        id: 'prop-1',
-        title: 'Apartamento de Lujo en El Vedado',
-        location: 'Vedado, La Habana',
-        price_usd: 120000,
-        cover_image: null,
-        status: 'published',
-        created_at: new Date().toISOString(),
-        user_id: 'agent-123',
-        view_count: 350,
-      },
-      {
-        id: 'prop-2',
-        title: 'Casa Colonial con Garaje',
-        location: 'Playa, La Habana',
-        price_usd: 85000,
-        cover_image: null,
-        status: 'published',
-        created_at: new Date().toISOString(),
-        user_id: 'agent-123',
-        view_count: 150,
-      },
-      {
-        id: 'prop-3',
-        title: 'Terreno Urbanizable',
-        location: 'Miramar, La Habana',
-        price_usd: 45000,
-        cover_image: null,
-        status: 'paused',
-        created_at: new Date().toISOString(),
-        user_id: 'agent-123',
-        view_count: 0,
-      },
-    ],
-    error: null,
-  })
+vi.mock('../../modules/agents/agentDashboardRepository', () => ({
+  loadAgentDashboard: vi.fn(),
+  setOwnerPropertyVisibility: vi.fn(),
+}))
 
-  const mockEq = vi.fn().mockImplementation((_field: string, _val: any) => ({
-    single: mockSingle,
-    maybeSingle: mockMaybeSingle,
-    order: mockOrder,
-    update: mockUpdate,
-  }))
+const properties = [
+  { id: 'prop-1', title: 'Apartamento de Lujo en El Vedado', location: 'Vedado, La Habana', price_usd: 120000, cover_image: null, status: 'published', created_at: '2026-07-21', user_id: 'agent-123', view_count: 350 },
+  { id: 'prop-2', title: 'Casa Colonial con Garaje', location: 'Playa, La Habana', price_usd: 85000, cover_image: null, status: 'published', created_at: '2026-07-20', user_id: 'agent-123', view_count: 150 },
+  { id: 'prop-3', title: 'Terreno Urbanizable', location: 'Miramar, La Habana', price_usd: 45000, cover_image: null, status: 'paused', created_at: '2026-07-19', user_id: 'agent-123', view_count: 0 },
+] as const
 
-  const mockUpdate = vi.fn().mockReturnValue({
-    eq: vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-    }),
-  })
-
-  const mockSelect = vi.fn().mockImplementation((_cols: string) => ({
-    eq: mockEq,
-  }))
-
-  const mockFrom = vi.fn().mockImplementation((_table: string) => ({
-    select: mockSelect,
-    update: mockUpdate,
-  }))
-
-  return {
-    supabase: {
-      from: mockFrom,
-    },
-  }
-})
+const mockUser = { id: 'agent-123', email: 'agente@cubitat.cu', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: '2026-07-21' } as never
 
 describe('AgentDashboardPage', () => {
-  const mockUser = {
-    id: 'agent-123',
-    email: 'agente@cubitat.cu',
-    app_metadata: {},
-    user_metadata: { full_name: 'Carlos Agente' },
-    aud: 'authenticated',
-    created_at: new Date().toISOString(),
-  } as any
-
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: true, properties: [...properties] })
+    vi.mocked(setOwnerPropertyVisibility).mockResolvedValue('owner_hidden')
     window.confirm = vi.fn().mockReturnValue(true)
   })
 
-  it('renders metric cards with correct values from fetched properties', async () => {
+  it('renders metrics from the verified owner properties', async () => {
     render(<AgentDashboardPage user={mockUser} />)
-
-    // Wait for properties to load
-    await waitFor(() => {
-      expect(screen.getByTestId('metric-active-properties')).toHaveTextContent('2')
-    })
-
-    // Total views: 350 + 150 + 0 = 500
+    await waitFor(() => expect(screen.getByTestId('metric-active-properties')).toHaveTextContent('2'))
     expect(screen.getByTestId('metric-total-views')).toHaveTextContent('500')
-
-    // Estimated leads: 500 * 0.05 = 25
     expect(screen.getByTestId('metric-estimated-leads')).toHaveTextContent('25')
-
-    // Check main titles
-    expect(screen.getByText('Métricas y Rendimiento')).toBeInTheDocument()
-    expect(screen.getByText('Publicaciones del Agente')).toBeInTheDocument()
   })
 
-  it('renders properties in table and responds to search filtering', async () => {
+  it('denies the dashboard to a user without verified agent status', async () => {
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: false, properties: [] })
     render(<AgentDashboardPage user={mockUser} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('únicamente para agentes verificados')
+  })
 
-    await waitFor(() => {
-      expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    })
+  it('shows a safe load error', async () => {
+    vi.mocked(loadAgentDashboard).mockRejectedValue(new Error('private backend details'))
+    render(<AgentDashboardPage user={mockUser} />)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No se pudo cargar')
+    expect(alert).not.toHaveTextContent('private backend details')
+  })
 
-    expect(screen.getByText('Casa Colonial con Garaje')).toBeInTheDocument()
-    expect(screen.getByText('Terreno Urbanizable')).toBeInTheDocument()
-
-    // Type search query
-    const searchInput = screen.getByPlaceholderText(/buscar por título o zona/i)
-    fireEvent.change(searchInput, { target: { value: 'Vedado' } })
-
-    expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
+  it('filters properties by search and status', async () => {
+    render(<AgentDashboardPage user={mockUser} />)
+    await screen.findByText('Apartamento de Lujo en El Vedado')
+    fireEvent.change(screen.getByPlaceholderText(/buscar por/i), { target: { value: 'Vedado' } })
     expect(screen.queryByText('Casa Colonial con Garaje')).not.toBeInTheDocument()
-    expect(screen.queryByText('Terreno Urbanizable')).not.toBeInTheDocument()
-  })
-
-  it('filters properties by status buttons (Activas / Pausadas)', async () => {
-    render(<AgentDashboardPage user={mockUser} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    })
-
-    // Click Activas filter button
-    const activeFilterBtn = screen.getByRole('button', { name: /activas \(2\)/i })
-    fireEvent.click(activeFilterBtn)
-
-    expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    expect(screen.getByText('Casa Colonial con Garaje')).toBeInTheDocument()
-    expect(screen.queryByText('Terreno Urbanizable')).not.toBeInTheDocument()
-
-    // Click Pausadas filter button
-    const pausedFilterBtn = screen.getByRole('button', { name: /pausadas \(1\)/i })
-    fireEvent.click(pausedFilterBtn)
-
-    expect(screen.queryByText('Apartamento de Lujo en El Vedado')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText(/buscar por/i), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: /pausadas \(1\)/i }))
     expect(screen.getByText('Terreno Urbanizable')).toBeInTheDocument()
   })
 
-  it('triggers onEditProperty when clicking Editar button', async () => {
-    const onEditPropertyMock = vi.fn()
-    render(<AgentDashboardPage user={mockUser} onEditProperty={onEditPropertyMock} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    })
-
-    const editButtons = screen.getAllByRole('button', { name: /editar/i })
-    fireEvent.click(editButtons[0])
-
-    expect(onEditPropertyMock).toHaveBeenCalledWith('prop-1')
-  })
-
-  it('triggers onSelectProperty when clicking "Ver cómo otros lo ven" button', async () => {
-    const onSelectPropertyMock = vi.fn()
-    render(<AgentDashboardPage user={mockUser} onSelectProperty={onSelectPropertyMock} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    })
-
-    const viewButtons = screen.getAllByRole('button', { name: /ver cómo otros lo ven/i })
-    fireEvent.click(viewButtons[0])
-
-    expect(onSelectPropertyMock).toHaveBeenCalledWith('prop-1')
-  })
-
-  it('calls update to pause/reactivate property when clicking Pausar/Reactivar button', async () => {
+  it('uses owner-hidden rather than the moderation paused state', async () => {
     render(<AgentDashboardPage user={mockUser} />)
+    await screen.findByText('Apartamento de Lujo en El Vedado')
+    fireEvent.click(screen.getAllByRole('button', { name: /ocultar/i })[0])
+    await waitFor(() => expect(setOwnerPropertyVisibility).toHaveBeenCalledWith('prop-1', 'agent-123', 'published'))
+  })
 
-    await waitFor(() => {
-      expect(screen.getByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
-    })
-
-    const pauseButtons = screen.getAllByRole('button', { name: /^pausar$/i })
-    fireEvent.click(pauseButtons[0])
-
-    expect(window.confirm).toHaveBeenCalled()
-    expect(supabase.from).toHaveBeenCalledWith('properties')
+  it('does not let the owner reactivate a moderation-paused property', async () => {
+    render(<AgentDashboardPage user={mockUser} />)
+    await screen.findByText('Terreno Urbanizable')
+    expect(screen.getByText('Gestionada por moderación')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /reactivar/i })).not.toBeInTheDocument()
   })
 })

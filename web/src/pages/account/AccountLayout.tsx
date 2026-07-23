@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BarChart3, Heart, Home, User as UserIcon } from 'lucide-react'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 export type AccountSectionKey = 'account' | 'favorites' | 'contents' | 'agent-dashboard'
 
@@ -49,7 +50,7 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
-              {(userRole === 'agent' || onNavigateAgentDashboard) && onNavigateAgentDashboard && (
+              {PHASE_TWO_ENABLED && (userRole === 'agent' || onNavigateAgentDashboard) && onNavigateAgentDashboard && (
                 <SideItem
                   active={active === 'agent-dashboard'}
                   icon={<BarChart3 size={20} />}

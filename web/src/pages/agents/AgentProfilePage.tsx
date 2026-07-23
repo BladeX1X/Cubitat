@@ -4,8 +4,7 @@ import { Button } from '../../shared/ui/button'
 import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
 import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
 import { fetchAgentProfile, fetchAgentProperties } from '../../modules/agents/agentRepository'
-import type { AgentProfile } from '../../modules/agents/types'
-import type { Property } from '../../modules/properties/types'
+import type { AgentProfile, AgentPropertySummary } from '../../modules/agents/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 
 type AgentProfilePageProps = {
@@ -16,8 +15,9 @@ type AgentProfilePageProps = {
 
 export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentProfilePageProps) {
   const [agent, setAgent] = useState<AgentProfile | null>(null)
-  const [properties, setProperties] = useState<Property[]>([])
+  const [properties, setProperties] = useState<AgentPropertySummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useSEO({
     title: agent ? `${agent.full_name} | Agente Cubitat` : 'Perfil de Agente Inmobiliario',
@@ -25,18 +25,32 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
   })
 
   useEffect(() => {
+    let active = true
+
     async function load() {
       setLoading(true)
-      const [profileData, propData] = await Promise.all([
-        fetchAgentProfile(agentId),
-        fetchAgentProperties(agentId),
-      ])
-      setAgent(profileData)
-      setProperties(propData)
-      setLoading(false)
+      setLoadError(false)
+      setAgent(null)
+      setProperties([])
+      try {
+        const [profileData, propData] = await Promise.all([
+          fetchAgentProfile(agentId),
+          fetchAgentProperties(agentId),
+        ])
+        if (!active) return
+        setAgent(profileData)
+        setProperties(propData)
+      } catch {
+        if (active) setLoadError(true)
+      } finally {
+        if (active) setLoading(false)
+      }
     }
 
     load()
+    return () => {
+      active = false
+    }
   }, [agentId])
 
   if (loading) {
@@ -47,6 +61,18 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
           <div className="h-5 w-48 bg-neutral-200 rounded mx-auto mb-2" />
           <div className="h-4 w-32 bg-neutral-200 rounded mx-auto" />
         </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-xl font-bold text-neutral-800">No se pudo cargar el perfil</h2>
+        <p className="text-neutral-500 mt-2 text-sm">Comprueba tu conexión e inténtalo nuevamente.</p>
+        <Button onClick={onBack} className="mt-6 rounded-full bg-[#035f53] text-white">
+          Volver
+        </Button>
       </div>
     )
   }
@@ -98,8 +124,8 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                   profileData={{
                     verificationStatus: agent.verification_status,
                     createdAt: agent.created_at,
-                    activePropertiesCount: properties.length,
-                    reportsCount: 0,
+                    activePropertiesCount: agent.active_properties_count,
+                    reportsCount: agent.reports_count,
                   }}
                 />
               </div>

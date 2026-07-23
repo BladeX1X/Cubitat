@@ -18,6 +18,7 @@ import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
+import { PHASE_TWO_ENABLED } from '../shared/config/features'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -98,10 +99,10 @@ function getInitialPageMode(): PageMode {
     return 'home'
   }
   const path = window.location.pathname
-  if (path.startsWith('/panel-agente')) {
+  if (PHASE_TWO_ENABLED && path.startsWith('/panel-agente')) {
     return 'agent-dashboard'
   }
-  if (path.startsWith('/agente/')) {
+  if (PHASE_TWO_ENABLED && path.startsWith('/agente/')) {
     return 'agent-profile'
   }
   if (path.startsWith('/resultados') || parseSeoResultsRoute(path)) {
@@ -144,7 +145,7 @@ function getInitialPageMode(): PageMode {
 }
 
 function getInitialSelectedAgentId(): string | undefined {
-  if (typeof window === 'undefined') {
+  if (!PHASE_TWO_ENABLED || typeof window === 'undefined') {
     return undefined
   }
   const path = window.location.pathname
@@ -636,6 +637,10 @@ export function CubitatApp() {
   }
 
   function navigateAgentDashboard() {
+    if (!PHASE_TWO_ENABLED) {
+      navigateAccount()
+      return
+    }
     if (!user) {
       setPendingAuthPath('/panel-agente')
       openLogin()
@@ -717,6 +722,7 @@ export function CubitatApp() {
   }
 
   function handleSelectAgent(agentId: string) {
+    if (!PHASE_TWO_ENABLED) return
     setSelectedAgentId(agentId)
     setPageMode('agent-profile')
     window.history.pushState(null, '', `/agente/${agentId}`)
@@ -906,11 +912,11 @@ export function CubitatApp() {
             userRole={userRole}
             onAdminHideProperty={handleAdminHideProperty}
             onAdminDeleteProperty={handleAdminDeleteProperty}
-            onSelectAgent={handleSelectAgent}
+            onSelectAgent={PHASE_TWO_ENABLED ? handleSelectAgent : undefined}
           />
         )}
 
-        {pageMode === 'agent-profile' && selectedAgentId && (
+        {PHASE_TWO_ENABLED && pageMode === 'agent-profile' && selectedAgentId && (
           <AgentProfilePage
             agentId={selectedAgentId}
             onBack={() => {
@@ -978,11 +984,11 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
-            onNavigateAgentDashboard={navigateAgentDashboard}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
           />
         )}
 
-        {pageMode === 'agent-dashboard' && user && (
+        {PHASE_TWO_ENABLED && pageMode === 'agent-dashboard' && user && (
           <AgentDashboardPage
             user={user}
             onNavigateAccount={navigateAccount}

@@ -5,53 +5,50 @@ import { supabase } from '../../shared/lib/supabaseClient'
 vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }))
 
 describe('agentRepository', () => {
   it('fetches agent profile successfully', async () => {
-    const mockSelect = vi.fn().mockReturnThis()
-    const mockEq = vi.fn().mockReturnThis()
-    const mockSingle = vi.fn().mockResolvedValueOnce({
-      data: {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [{
         id: 'agent-1',
         full_name: 'Carlos Agente',
         agency_name: 'Habana Real Estate',
         verification_status: 'verified',
         created_at: new Date().toISOString(),
-      },
+        active_properties_count: 3,
+        reports_count: 0,
+      }],
       error: null,
-    })
-
-    vi.mocked(supabase.from).mockReturnValueOnce({
-      select: mockSelect,
-      eq: mockEq,
-      single: mockSingle,
-    } as any)
+    } as never)
 
     const profile = await fetchAgentProfile('agent-1')
     expect(profile).not.toBeNull()
     expect(profile?.full_name).toBe('Carlos Agente')
     expect(profile?.agency_name).toBe('Habana Real Estate')
     expect(profile?.verification_status).toBe('verified')
+    expect(supabase.rpc).toHaveBeenCalledWith('get_public_agent_profile', { p_agent_id: 'agent-1' })
   })
 
   it('returns null when agent profile is not found', async () => {
-    const mockSelect = vi.fn().mockReturnThis()
-    const mockEq = vi.fn().mockReturnThis()
-    const mockSingle = vi.fn().mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Not found' },
-    })
-
-    vi.mocked(supabase.from).mockReturnValueOnce({
-      select: mockSelect,
-      eq: mockEq,
-      single: mockSingle,
-    } as any)
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [],
+      error: null,
+    } as never)
 
     const profile = await fetchAgentProfile('invalid-id')
     expect(profile).toBeNull()
+  })
+
+  it('rejects when the public profile RPC fails', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Database unavailable' },
+    } as never)
+
+    await expect(fetchAgentProfile('agent-1')).rejects.toThrow('AGENT_PROFILE_LOAD_FAILED')
   })
 
   it('fetches agent published properties list', async () => {
