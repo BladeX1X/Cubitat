@@ -105,6 +105,30 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-23 14:30 — Codex — fuga de interfaz Fase 2 en producción
+
+- Estado: **diagnosticado; corrección validada en PR #73 y pendiente de
+  revisión/fusión/despliegue**.
+- Evidencia productiva de solo lectura: `https://cubitathome.com/moderar`
+  muestra la pestaña KYC y esta falla al consultar solicitudes, porque el chunk
+  activo `AdminPage-Ch3qWGaW.js` contiene el módulo y el mensaje KYC sin guard.
+  El HTML se sirvió con `Cache-Control: no-cache, no-store, must-revalidate`,
+  por lo que no es una caché local del navegador.
+- Causa raíz: `main` (`ae1b9bf`) todavía renderiza KYC de forma incondicional y
+  no contiene `shared/config/features.ts`. La corrección está en
+  `bugfix/phase2-security-integration` (`1519f56`), un commit por delante de
+  `main`; el PR #73 propone su integración sin cambios en Supabase productivo.
+- Verificación independiente del build corregido: lint limpio; 78 archivos/292
+  pruebas; build TypeScript/Vite/PWA correcto; 473 URLs; sitemap restaurado al
+  hash previo. `PHASE_TWO_ENABLED` compila como `false`, KYC no se lista ni se
+  renderiza y `/panel-agente`/`/agente/:id` caen al inicio.
+- Riesgo residual: los chunks de Fase 2 siguen físicamente incluidos y
+  precargados, aunque resultan inalcanzables. La promoción posterior debe
+  decidir si el aislamiento funcional basta o si se exige exclusión física.
+- Producción no se modificó durante el diagnóstico. Siguiente cierre: revisar y
+  fusionar el PR #73, desplegar el build aprobado y verificar en producción
+  que KYC ya no aparece, las rutas de Fase 2 no abren y la consola queda limpia.
+
 ### 2026-07-23 12:02 — Codex — QA visual y permisos API del entorno local
 
 - Estado: Terminado para DEV/local. Panel de agente, aislamiento de usuario

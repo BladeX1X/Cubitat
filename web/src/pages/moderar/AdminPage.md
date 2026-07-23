@@ -23,6 +23,9 @@ Cada capacidad vive bajo `src/modules/admin`:
 - `audit-log`: consulta paginada y de solo lectura de cambios/eliminaciones de
   propiedades. Encapsula filtros, estado asíncrono, formateo y tarjetas
   mobile-first sin depender de los módulos de propiedades, reportes o métricas.
+- `kyc`: capacidad exclusiva de Fase 2/DEV. `AdminPage` solo la incorpora a la
+  navegación y la renderiza cuando `PHASE_TWO_ENABLED` es verdadero; un build
+  productivo debe conservarla inaccesible aunque el módulo exista en el código.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.
@@ -64,3 +67,7 @@ carga/error y contrato de integración sin acceso directo a Supabase desde
 `PropertyDetails`.
 La bitácora añade pruebas de repositorio, hook, formateadores, tarjetas y shell;
 la prueba arquitectónica impide que importe detalles internos de otros módulos.
+La regresión de aislamiento comprueba además que KYC no aparece cuando Fase 2
+está deshabilitada. El 2026-07-23 el build de producción de
+`bugfix/phase2-security-integration` compiló el flag como `false`; la promoción
+a `main` y la verificación en `cubitathome.com` permanecen pendientes.
