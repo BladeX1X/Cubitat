@@ -36,6 +36,18 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
+  it('does not schedule Phase 2 jobs in the production environment', () => {
+    const context = createContext()
+    worker.scheduled({}, createEnv(), context)
+    expect(context.waitUntil).not.toHaveBeenCalled()
+  })
+
+  it('allows the Phase 2 scheduler only in the dev environment', () => {
+    const context = createContext()
+    worker.scheduled({}, { ...createEnv(), PHASE2_ENABLED: 'true' }, context)
+    expect(context.waitUntil).toHaveBeenCalledTimes(1)
+  })
+
   it('reads realtime GA4 active users with service-account credentials', async () => {
     const keyPair = await crypto.subtle.generateKey(
       { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
@@ -400,7 +412,7 @@ describe('Cloudflare Worker security contract', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
   })
 
-  it('forwards the authenticated admin metrics RPC and blocks unknown RPCs', async () => {
+  it('forwards only the allowlisted public and authenticated RPCs', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ db_bytes: 42 }), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     const env = createEnv()
@@ -425,7 +437,29 @@ describe('Cloudflare Worker security contract', () => {
       createContext(),
     )
 
+    const publicProfileResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/get_public_agent_profile', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer dummy-key-safe-from-browsers' },
+        body: '{}',
+      }),
+      env,
+      createContext(),
+    )
+
+    const kycResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/submit_kyc_request', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer user-token' },
+        body: '{}',
+      }),
+      env,
+      createContext(),
+    )
+
     expect(allowedResponse.status).toBe(200)
+    expect(publicProfileResponse.status).toBe(200)
+    expect(kycResponse.status).toBe(200)
     expect(blockedResponse.status).toBe(403)
   })
 

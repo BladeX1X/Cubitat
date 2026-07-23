@@ -205,9 +205,23 @@ admin `aal2` con lectura de los 4 eventos existentes y sin `UPDATE` o `DELETE`;
 habilitado. Las 47 migraciones siguen sincronizadas y `db lint --linked` no
 reportó errores. No persistieron cambios ni se mostraron identificadores.
 
-### 49. `20260801000000_phase2_kyc_and_agents.sql`
+### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
+
+- **Estado 2026-07-22**: exclusiva de DEV. Está fuera de `supabase/migrations/` y no forma parte de la cadena productiva, que termina en 49.
+- **Prohibido**: no aplicar al proyecto Supabase de producción ni copiarla temporalmente a la carpeta de migraciones productivas.
+- Protege los campos de verificación contra autoelevación, exige administrador con AAL2 para revisar y almacena únicamente rutas privadas en `kyc_documents`.
+- `get_public_agent_profile(uuid)` expone solo el perfil profesional permitido y agregados de publicaciones activas, sin abrir la tabla `profiles` al público.
+- En DEV, el Worker procesa entregas mediante Cron Trigger y secretos server-side; `claim_pending_alert_emails` reclama filas atómicamente con `SKIP LOCKED`, reintenta y evita duplicados por solapamiento.
+- El entorno DEV de Wrangler no tiene rutas del dominio productivo y su URL de Supabase queda como marcador no operativo hasta configurar explícitamente un proyecto DEV.
+- El bucket privado se crea desde esta migración; no debe crearse manualmente ni usar URLs públicas para documentos KYC.
 - **Fecha**: 2026-07-21
 - **Propósito**: Fase 2 - Añade soporte para perfiles de agencias/agentes (`agency_name`, `license_number`, `bio`), solicitudes KYC (`kyc_requests`) y funciones RPC seguras (`submit_kyc_request`, `review_kyc_request`) para validación de identidad con RLS.
+
+### DEV-F2.1. `dev-migrations/20260801001000_local_api_grants.sql`
+
+- **Estado 2026-07-22**: exclusiva de DEV/local y fuera de la cadena productiva.
+- Reproduce los permisos mínimos de API que el proyecto productivo histórico ya tenía, pero que las primeras migraciones no versionaron: perfil propio, propiedades legibles bajo RLS y notificaciones propias.
+- No abre tablas nuevas ni evita RLS; únicamente permite que `authenticated`/`anon` lleguen a las políticas existentes en el stack reconstruido desde cero.
 
 ## Verificación después de aplicar
 

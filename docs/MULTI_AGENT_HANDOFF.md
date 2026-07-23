@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-21
+Última actualización: 2026-07-22
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -21,17 +21,20 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
+> Actualización 2026-07-22: decisión de producto confirmada por Rodolfo: toda la Fase 2 se prueba exclusivamente en DEV. La migración quedó fuera de la cadena productiva, la UI se desactiva en builds de producción y el Cron existe solo en `env.dev`. No desplegar Fase 2 ni aplicar su SQL en producción.
+
 - Rama base funcional confirmada antes de este relevo: `main` en `4bf8fa0`. El
   código del parche de observabilidad segura se integró mediante el PR #70
   (`f969494`) y su cierre documental mediante el PR #71. El siguiente agente
   debe usar el `origin/main` más reciente que ya contenga esta sección.
 - Estado local que debe preservarse: `web/public/sitemap.xml` está modificado por
   otro trabajo. No incluirlo, restaurarlo ni regenerarlo en el siguiente parche.
-- Migraciones: 48 archivos versionados y sincronizados con producción según la
-  última verificación. La migración 47 exige `aal2` para administración y la 48
-  obliga a que contactos y reportes públicos atraviesen Turnstile server-side.
-- Validación local más reciente: lint limpio, 57 archivos y 215 pruebas
-  aprobadas, build TypeScript/Vite/PWA correcto y sitemap de 473 URLs.
+- Migraciones: 50 archivos versionados; 48 estaban sincronizados con producción
+  en la última verificación histórica, la 49 debe confirmarse y la 50 está
+  pendiente de aplicar. La 50 crea y protege KYC/perfiles/entrega de alertas.
+- Validación local 2026-07-22: lint limpio, 77 archivos y 281 pruebas aprobadas,
+  build TypeScript/Vite/PWA correcto, sitemap de 473 URLs preservado y dry-run
+  del Worker correcto.
 - Recuperación de contraseña:
   - plantilla remota portable con `token_hash` aplicada mediante Supabase CLI;
   - enlace real probado sin el error PKCE entre navegadores;
@@ -102,6 +105,121 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-23 12:02 — Codex — QA visual y permisos API del entorno local
+
+- Estado: Terminado para DEV/local. Panel de agente, aislamiento de usuario
+  normal y acceso administrativo AAL2 verificados visualmente.
+- Archivos modificados en este bloque:
+  `web/supabase/dev-migrations/20260801001000_local_api_grants.sql` y
+  `web/src/phase2-security-migration.test.ts`. La migración continúa marcada
+  DEV ONLY y fuera de la cadena productiva.
+- Evidencia/resultado: el panel local del agente cargó 1 publicación activa y
+  1 oculta por el propietario, con acciones separadas. Se detectó que la
+  reconstrucción local tenía políticas RLS pero no privilegios SQL para varias
+  operaciones usadas por la UI. Se añadieron privilegios mínimos para
+  propiedades, favoritos, alertas y reportes; RLS sigue siendo la frontera de
+  autorización. La consulta de favoritos del usuario normal funciona y devuelve
+  cero filas; la publicación `owner_hidden` ajena también devuelve cero filas.
+  Se corrigió únicamente el texto mal codificado de la ubicación del fixture
+  sintético local.
+- Validaciones ejecutadas: prueba focalizada 7/7; lint limpio; 78 archivos/292
+  pruebas; build TypeScript/Vite/PWA correcto; 473 URLs. Sitemap restaurado al
+  hash previo
+  `4FE1A8F5658F4A9611FB1AB37BC8005BA46FBC84787B199318EF4F5A772134F5`.
+- Verificación admin AAL2 del 2026-07-23: una sesión admin AAL1 fue detenida por
+  el guard con la pantalla `Protege el panel administrativo`; se enroló TOTP
+  únicamente en la cuenta QA local y, tras elevar a AAL2, `/moderar` mostró
+  Propiedades, Reportes, KYC, Bitácora y Métricas. KYC devolvió su estado vacío
+  válido, Reportes y Bitácora cargaron sin datos sintéticos adicionales, y
+  Métricas reflejó el entorno local con 10 anuncios y 3 usuarios.
+- Consola: cero errores y cero advertencias durante la navegación admin AAL2.
+  El error histórico `load_saved_properties` quedó corregido por los grants
+  locales faltantes.
+- Pendiente: ninguno dentro de esta matriz QA local. No desplegar Fase 2 ni
+  aplicar estos grants en producción sin autorización explícita posterior.
+- Cambios remotos o despliegue: ninguno; producción, `main`, Supabase remoto y
+  Cloudflare permanecen intactos.
+- Vault: actualización completada y verificada el 2026-07-23 mediante la API
+  oficial de Google Drive en `Cubitat - Checklist de Lanzamiento.md` y
+  `Cubitat - Dashboard del Proyecto.md`. Se conservaron los mismos IDs, nombres
+  y carpeta; ambas lecturas posteriores contienen el marcador de QA local, la
+  evidencia de 292 pruebas y el cierre visual AAL2/KYC. La escritura directa
+  sobre la unidad sincronizada `G:` se descartó por sus bloqueos; la API de
+  Drive confirmó en ambas notas el guard AAL1, acceso AAL2 y consola limpia.
+
+### 2026-07-22 21:31 — Codex — entorno demostrable de Fase 2 en local
+
+- Estado: Terminado para demostración local. La aplicación está disponible en
+  `http://127.0.0.1:5173/` mientras permanezcan activos Vite y el stack local de
+  Supabase. No existe despliegue DEV remoto.
+- Archivos modificados en este bloque: `web/vite.config.ts` para que el proxy
+  local respete `VITE_SUPABASE_URL`; `web/supabase/config.toml` para omitir
+  Turnstile exclusivamente en Supabase local; este relevo y las dos notas
+  afectadas del vault.
+- Evidencia/resultado: se crearon tres cuentas QA sintéticas persistentes
+  únicamente en `supabase_db_web` (agente/propietario verificado, comprador y
+  administrador), además de una publicación pública y otra oculta por el
+  propietario. Los tres inicios de sesión funcionaron tanto contra Auth local
+  como a través del proxy de Vite. Las contraseñas y claves no se almacenaron
+  en el repositorio ni en el vault.
+- Validaciones ejecutadas: Vite responde `200`; lint limpio; 78 archivos/290
+  pruebas; build TypeScript/Vite/PWA correcto; 473 URLs. El sitemap se restauró
+  al hash previo
+  `4FE1A8F5658F4A9611FB1AB37BC8005BA46FBC84787B199318EF4F5A772134F5`.
+- Alcance de seguridad: producción, `main`, Supabase remoto y Cloudflare no se
+  consultaron ni modificaron. La cuenta admin local sigue entrando inicialmente
+  con AAL1; la pestaña KYC exige enrolar y verificar TOTP local para alcanzar
+  AAL2, como requiere el diseño.
+- Pendiente exacto para el siguiente agente: hacer la revisión visual local de
+  `/panel-agente`, `/cuenta`, `/agente/f3000000-0000-0000-0000-000000000001`
+  y `/moderar`; enrolar TOTP local si se quiere probar la moderación KYC en UI.
+  No promover esta fase ni sus fixtures fuera del entorno local.
+- Cambios remotos o despliegue: ninguno.
+
+### 2026-07-22 20:47 — Codex — refactor modular de superficies Fase 2
+
+- Estado: Terminado en `bugfix/phase2-security-integration`; refactor exclusivamente DEV/local, sin cambios de comportamiento ni promoción a producción.
+- Archivos modificados: `web/src/pages/agents/AgentDashboardPage.tsx`; nuevos hook/componentes bajo `web/src/modules/agents/{hooks,components}`; `web/src/modules/admin/kyc/KycModerationTab.tsx` y nuevos `useKycModeration`, `KycRequestCard`, `KycRejectDialog`; `KycSubmissionModal.tsx` y nuevos hook/formulario/éxito KYC; contrato compartido `web/src/modules/properties/propertyStatus.ts` y consumidores de Mis propiedades.
+- Evidencia/resultado: `AgentDashboardPage`, `KycModerationTab` y `KycSubmissionModal` quedaron como orquestadores pequeños; estado y efectos viven en hooks tipados, y la presentación en componentes acotados. Se eliminó la dependencia invertida de `modules/agents` hacia `pages/my-properties` al mover `PropertyStatus` a `modules/properties`.
+- Validaciones ejecutadas: pruebas focalizadas por cada extracción; `npm run lint`; suite completa con 78 archivos/290 pruebas; `npm run build`; 473 URLs. El primer build detectó un import residual en `PropertyVisibilityActions.tsx`; se corrigió y se repitieron lint, suite completa y build con éxito. Sitemap restaurado al hash previo `4FE1A8F5658F4A9611FB1AB37BC8005BA46FBC84787B199318EF4F5A772134F5`.
+- Riesgos cerrados: ya no queda pendiente la separación de los tres componentes grandes ni la importación de detalles internos de otra página. El hook de envío KYC también cancela su temporizador de confirmación al desmontarse.
+- Pendiente exacto para el siguiente agente: revisión final del diff acumulado de la rama y decisión humana sobre rama destino/PR DEV. No fusionar a `main`, desplegar ni aplicar infraestructura Fase 2 sin autorización posterior explícita de Rodolfo.
+- Cambios remotos o despliegue: ninguno; producción, Supabase remoto, Cloudflare y `main` permanecen intactos.
+
+### 2026-07-22 20:18 — Codex — validación integral local de Fase 2
+
+- Estado: Terminado para DEV/local. Producción y `main` no se modificaron; la rama continúa siendo `bugfix/phase2-security-integration` con todos los cambios locales preservados.
+- Archivos modificados en este bloque: `web/supabase/tests/phase2_local_security.sql`, `web/supabase/dev-migrations/20260801001000_local_api_grants.sql`, `web/supabase/DATABASE_MIGRATIONS.md`, dispatcher de alertas y su prueba, logger frontend y su prueba, repositorio/página/pruebas de perfil de agente, este relevo y las dos notas afectadas del vault.
+- Validaciones ejecutadas: matriz SQL transaccional con `ROLLBACK`; tests focalizados de Worker, KYC, agentes y guards; `npm run lint`; suite completa con 78 archivos/290 pruebas; `npm run build`; 473 URLs; `wrangler deploy --dry-run` para el entorno base y `env.dev`. El sitemap se restauró al hash previo `4FE1A8F5658F4A9611FB1AB37BC8005BA46FBC84787B199318EF4F5A772134F5`.
+- Evidencia/resultado: propietario AAL1 ve solo su perfil/KYC/documento y no puede auto-verificarse; otro usuario no accede a datos ajenos; admin AAL1 queda bloqueado; admin AAL2 lee y aprueba KYC y accede al documento privado; la RPC anónima expone solo el perfil profesional permitido. La alerta se encola como `pending`, `authenticated` no puede reclamarla, `service_role` la reclama una sola vez y un segundo reclamo solapado devuelve cero. Ninguna fixture persistió y no se envió correo.
+- Correcciones derivadas: migración DEV de permisos API mínimos para reconstrucción local sin evitar RLS; `Idempotency-Key` estable de Resend por notificación; logger frontend sin `message` libre; `AgentProfilePage` distingue error/no-encontrado e ignora respuestas obsoletas.
+- Riesgo restante: la separación visual adicional de `AgentDashboardPage.tsx`, `KycModerationTab.tsx` y `KycSubmissionModal.tsx` sigue siendo deuda de mantenibilidad, no un fallo de autorización. Mantenerla como refactor DEV independiente con pruebas sin mezclarla con la promoción de fase.
+- Incidencia no bloqueante: `supabase_vector_web` continúa reiniciando por Analytics/Vector en Docker Desktop para Windows; API, Auth, PostgreSQL, Storage y Studio permanecen sanos para esta matriz.
+- Pendiente exacto para el siguiente agente: revisar el diff completo de la rama y preparar un PR DEV sin desplegar; si se prioriza deuda técnica, dividir los tres componentes grandes en un carril separado. No promover Fase 2 hasta lanzamiento exitoso de Fase 1 y autorización explícita posterior de Rodolfo.
+- Cambios remotos o despliegue: ninguno. No se usó `--linked`, no se aplicó SQL remoto, no se crearon recursos/secretos externos y no se tocó producción.
+
+### 2026-07-22 19:52 — Codex — arranque local de Fase 2
+
+- Estado: En curso; Docker y Supabase local desbloqueados. Producción y `main` permanecen intactos.
+- Archivos modificados: este relevo y la checklist afectada del vault; no se modificó código en este bloque.
+- Validaciones ejecutadas: reinicio de Windows confirmado a las 15:35; `HypervisorPresent=True`; WSL2 operativo; Docker Engine `29.6.1`; CLI global de Supabase `2.109.1`; `supabase start` desde `web`; aplicación local del SQL DEV mediante `psql` del contenedor con `ON_ERROR_STOP`; comprobación estructural de tabla, bucket privado y cuatro RPC.
+- Evidencia/resultado: las 49 migraciones de Fase 1 se aplicaron al PostgreSQL local y `supabase/dev-migrations/20260801000000_phase2_kyc_and_agents.sql` se aplicó únicamente a `supabase_db_web`. `kyc_requests`, `kyc_documents` privado, `submit_kyc_request`, `review_kyc_request`, `get_public_agent_profile` y `claim_pending_alert_emails` existen localmente. API/Auth/PostgreSQL/Storage/Studio están activos; `supabase_vector_web` reinicia por la limitación local de Analytics/Vector en Docker Desktop para Windows, no bloqueante para las pruebas previstas.
+- Incidencia de CLI: `supabase db query --local --file` no ejecutó el archivo porque CLI 2.109.1 intentó preparar múltiples comandos juntos; el error ocurrió antes de aplicar SQL. Se usó el `psql` del contenedor local como alternativa explícita, sin `--linked`.
+- Pendiente exacto para el siguiente bloque: crear fixtures exclusivamente locales y validar KYC, AAL1/AAL2, perfil público, panel de agente, Storage privado y reclamo de alertas; después revisar los cuatro riesgos de auditoría registrados.
+- Cambios remotos o despliegue: ninguno. No se consultó ni modificó producción, no se crearon secretos ni buckets remotos y no se ejecutó ningún comando `--linked`.
+
+### 2026-07-22 — Codex — endurecimiento e integración real de Fase 2
+
+- Estado: Código terminado para pruebas DEV; preparación de Supabase local bloqueada antes de iniciar contenedores. La exposición accidental de KYC observada en `/moderar` productivo quedó corregida localmente mediante una frontera de entorno; producción no se modificó y continúa fuera de alcance.
+- Rama: `bugfix/phase2-security-integration`, basada en `main` (`ae1b9bf`).
+- Correcciones: KYC privado con bucket, políticas y RPC; campos de verificación protegidos; revisión administrativa AAL2; perfil profesional público por RPC mínima; guard del panel para agentes verificados; separación entre `owner_hidden` y `paused`; alertas por correo movidas del navegador a un Cron Worker con reclamo atómico y reintentos; allowlist del proxy actualizada; logger frontend limitado a códigos de error cerrados.
+- Evidencia local: `main` y `origin/main` verificados en `ae1b9bf`; lint limpio; 78 archivos/286 pruebas; build TypeScript/Vite/PWA; 473 URLs; simulaciones Wrangler correctas para producción y `env.dev`; el entorno productivo no tiene Cron ni `PHASE2_ENABLED`, y DEV no tiene rutas hacia `cubitathome.com`. Hash del sitemap restaurado y preservado (`4FE1A8F5658F4A9611FB1AB37BC8005BA46FBC84787B199318EF4F5A772134F5`).
+- Preparación local: el paquete invocado mediante `npx supabase` falla en Windows por ausencia del binario compatible, pero el CLI global instalado por Scoop funciona (`supabase 2.109.1`). Docker Desktop no pudo arrancar WSL2 y registró `HCS_E_HYPERV_NOT_INSTALLED`. El firmware y las características `VirtualMachinePlatform`/WSL aparecen habilitados, pero Windows reporta `HypervisorPresent=False`. Docker Desktop se cerró después de la comprobación.
+- Acciones no ejecutadas: no se corrieron `supabase start`, `supabase db reset`, migraciones, seeds ni pruebas RLS; tampoco se modificó infraestructura remota o productiva.
+- Pendiente exacto: abrir PowerShell como administrador, ejecutar `bcdedit /set hypervisorlaunchtype auto`, reiniciar Windows y después reintentar Docker Desktop y `supabase start` desde `web`. Cuando el stack local esté sano, aplicar únicamente la migración DEV y probar KYC, AAL2, perfil público, panel y Cron.
+- Riesgos de auditoría para el siguiente carril: (1) el dispatcher puede duplicar un correo si Resend acepta el envío y falla el `PATCH` que marca la alerta como enviada; falta una clave de idempotencia del proveedor; (2) el contrato del logger todavía admite un `message` libre, aunque no se encontró una llamada insegura actual; (3) `AgentDashboardPage.tsx`, `KycModerationTab.tsx` y `KycSubmissionModal.tsx` concentran demasiada responsabilidad, y el dashboard importa detalles internos de otras páginas; (4) `AgentProfilePage` no diferencia error de no-encontrado ni cancela respuestas obsoletas.
+- Cambios remotos o despliegue: ninguno.
+
 Usar este formato y conservar las entradas anteriores:
 
 ```text
@@ -120,7 +238,7 @@ Usar este formato y conservar las entradas anteriores:
 - Archivos modificados: `web/src/modules/alerts/alertDispatcher.ts`, `web/src/shared/lib/logger.ts`, `docs/MULTI_AGENT_HANDOFF.md`.
 - Validaciones ejecutadas: `npm run lint` (0 errores/0 advertencias), `npm run test:run` (76 archivos y 280 pruebas aprobadas al 100%), `npm run build` (compilación limpia TypeScript/Vite/PWA con 473 URLs de sitemap), comprobación de 0 `console.*` residuales fuera de `logger.ts`.
 - Evidencia/resultado: Fase 2 completada íntegramente con los 7 módulos (0–6). Se auditaron los archivos de los módulos creados en la Fase 2 y se migró `alertDispatcher.ts` a `logSafeEvent` seguro de `logger.ts`. Ramas integradas en `main` (`8537420`). `sitemap.xml` se mantuvo intacto.
-- Pendientes para el siguiente agente: Ejecución de migración SQL en Supabase producción (`npx supabase db push`), despliegue de versión a Cloudflare, creación de bucket privado `kyc_documents` en Supabase Storage.
+- Pendientes para el siguiente agente: **SUPERADO — NO EJECUTAR EN PRODUCCIÓN**. Desde 2026-07-22, migración, bucket KYC y Cron de Fase 2 pertenecen únicamente a DEV.
 - Cambios remotos o despliegue: Fusión y push a `origin/main` (`8537420`).
 
 ### 2026-07-21 — Codex — carril R

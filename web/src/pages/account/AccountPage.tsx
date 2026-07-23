@@ -29,6 +29,7 @@ import {
 import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
 import { KycSubmissionModal } from '../../modules/kyc/components/KycSubmissionModal'
 import type { VerificationStatus } from '../../modules/kyc/types'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 type AccountPageProps = {
   user: User
@@ -114,7 +115,7 @@ export function AccountPage({
       if (data.phone_verified_at) {
         setPhoneVerifiedAt(data.phone_verified_at)
       }
-      if (data.verification_status) {
+      if (PHASE_TWO_ENABLED && data.verification_status) {
         setKycStatus(data.verification_status as VerificationStatus)
       }
       if (data.verification_reason) {
@@ -309,7 +310,7 @@ export function AccountPage({
               </section>
 
               <section className="grid gap-5 sm:gap-8">
-                {(userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
+                {PHASE_TWO_ENABLED && (userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
                   <section className="rounded-xl border border-[#035f53]/20 bg-emerald-50/60 p-4 shadow-sm sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -338,7 +339,7 @@ export function AccountPage({
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
                 />
 
-                <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
+                {PHASE_TWO_ENABLED && <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
@@ -392,7 +393,7 @@ export function AccountPage({
                       </Button>
                     </div>
                   )}
-                </section>
+                </section>}
 
                 <SearchAlertsCard
                   alerts={searchAlerts}
@@ -459,7 +460,7 @@ export function AccountPage({
               </section>
             </div>
 
-      <KycSubmissionModal
+      {PHASE_TWO_ENABLED && <KycSubmissionModal
         userId={user.id}
         isOpen={isKycModalOpen}
         onClose={() => setIsKycModalOpen(false)}
@@ -467,7 +468,7 @@ export function AccountPage({
           setKycStatus('pending')
           setKycReason(null)
         }}
-      />
+      />}
     </AccountLayout>
   )
 }

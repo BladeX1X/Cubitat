@@ -49,6 +49,7 @@ import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
 import { fetchAgentProfile } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -1143,7 +1144,7 @@ function ContactCard({
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
 
   useEffect(() => {
-    if (property.user_id) {
+    if (PHASE_TWO_ENABLED && property.user_id) {
       fetchAgentProfile(property.user_id).then((prof) => {
         if (prof) setAgentProfile(prof)
       })
@@ -1215,22 +1216,24 @@ function ContactCard({
             <h2 className="text-lg font-bold text-neutral-900">
               Contactar anunciante
             </h2>
-            <TrustScoreBadge
-              profileData={{
-                verificationStatus: agentProfile?.verification_status || 'verified',
-                createdAt: agentProfile?.created_at || new Date().toISOString(),
-                activePropertiesCount: 1,
-                reportsCount: 0,
-              }}
-              compact
-            />
+            {PHASE_TWO_ENABLED && agentProfile && (
+              <TrustScoreBadge
+                profileData={{
+                  verificationStatus: agentProfile.verification_status,
+                  createdAt: agentProfile.created_at,
+                  activePropertiesCount: agentProfile.active_properties_count,
+                  reportsCount: agentProfile.reports_count,
+                }}
+                compact
+              />
+            )}
           </div>
           <p className="text-[11px] text-neutral-500 flex items-center gap-1">
             <Calendar size={12} />
             Publicado recientemente
           </p>
 
-          {property.user_id && onSelectAgent && (
+          {PHASE_TWO_ENABLED && property.user_id && onSelectAgent && (
             <button
               type="button"
               onClick={() => onSelectAgent(property.user_id!)}

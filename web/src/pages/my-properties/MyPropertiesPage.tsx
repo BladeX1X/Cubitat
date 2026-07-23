@@ -13,7 +13,7 @@ import {
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { readPublicationDraft, removePublicationDraft } from '../publish/draftStorage'
-import { getPropertyStatusConfig, type PropertyStatus } from './propertyStatus'
+import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/properties/propertyStatus'
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'

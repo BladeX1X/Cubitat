@@ -9,24 +9,28 @@ import { AdminMfaGate } from '../../modules/auth/mfa/AdminMfaGate'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 type AdminPageProps = {
   userRole?: string
   onNavigateHome: () => void
+  phaseTwoEnabled?: boolean
 }
 
-const SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
+const BASE_SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'properties', label: 'Propiedades' },
   { id: 'reports', label: 'Reportes' },
-  { id: 'kyc', label: 'KYC' },
   { id: 'audit', label: 'Bitácora' },
   { id: 'metrics', label: 'Métricas' },
 ]
 
-export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
+export function AdminPage({ userRole, onNavigateHome, phaseTwoEnabled = PHASE_TWO_ENABLED }: AdminPageProps) {
   useSEO({ title: 'Panel de Administración' })
 
   const [activeSection, setActiveSection] = useState<AdminSection>('properties')
+  const sections = phaseTwoEnabled
+    ? [...BASE_SECTIONS.slice(0, 2), { id: 'kyc' as const, label: 'KYC' }, ...BASE_SECTIONS.slice(2)]
+    : BASE_SECTIONS
 
   if (userRole === undefined) {
     return (
@@ -71,7 +75,7 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
           </div>
 
           <nav aria-label="Secciones de moderación" className="flex h-fit w-full gap-2 overflow-x-auto rounded-xl bg-neutral-100 p-1.5 sm:w-fit sm:rounded-full">
-            {SECTIONS.map((section) => (
+            {sections.map((section) => (
               <button
                 key={section.id}
                 type="button"
@@ -91,7 +95,7 @@ export function AdminPage({ userRole, onNavigateHome }: AdminPageProps) {
 
         {activeSection === 'properties' && <PropertiesTab />}
         {activeSection === 'reports' && <ReportsTab />}
-        {activeSection === 'kyc' && <KycModerationTab />}
+        {phaseTwoEnabled && activeSection === 'kyc' && <KycModerationTab />}
         {activeSection === 'metrics' && <MetricsTab />}
         {activeSection === 'audit' && <AuditLogTab />}
       </div>

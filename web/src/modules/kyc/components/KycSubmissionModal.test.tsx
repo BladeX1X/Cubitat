@@ -22,7 +22,7 @@ describe('KycSubmissionModal', () => {
   it('allows file selection and calls submit repository functions', async () => {
     vi.mocked(kycRepo.uploadKycDocument).mockResolvedValueOnce({
       success: true,
-      publicUrl: 'https://example.com/doc.jpg',
+      documentPath: 'u1/private-doc.jpg',
     })
     vi.mocked(kycRepo.submitKycRequest).mockResolvedValueOnce({
       success: true,
@@ -44,7 +44,7 @@ describe('KycSubmissionModal', () => {
 
     await waitFor(() => {
       expect(kycRepo.uploadKycDocument).toHaveBeenCalledWith('u1', file)
-      expect(kycRepo.submitKycRequest).toHaveBeenCalledWith('identity_card', 'https://example.com/doc.jpg')
+      expect(kycRepo.submitKycRequest).toHaveBeenCalledWith('identity_card', 'u1/private-doc.jpg')
     })
   })
 })

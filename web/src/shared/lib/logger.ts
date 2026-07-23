@@ -1,6 +1,7 @@
 export type LogModule =
   | 'auth'
   | 'admin'
+  | 'admin_kyc'
   | 'properties'
   | 'publish'
   | 'account'
@@ -26,7 +27,6 @@ export interface FrontendLogEvent {
   action: string;
   level: LogLevel;
   code?: string;
-  message?: string;
   context?: Record<string, string | number | boolean | null>;
 }
 
@@ -64,38 +64,19 @@ const SENSITIVE_PATTERNS = [
  * Guaranteed not to return stack traces, raw error objects, emails, URLs, or IDs.
  */
 export function sanitizeErrorReason(err: unknown): string {
-  if (!err) {
-    return 'UNKNOWN_ERROR';
+  if (!err) return 'UNKNOWN_ERROR'
+  if (typeof err !== 'object') return 'UNHANDLED_EXCEPTION'
+
+  const value = err as Record<string, unknown>
+  if (value.name === 'AbortError') return 'REQUEST_ABORTED'
+  if (value.name === 'TypeError') return 'CLIENT_TYPE_ERROR'
+  if (typeof value.status === 'number') return 'HTTP_REQUEST_FAILED'
+  if (typeof value.code === 'string') {
+    if (/^PGRST\d{3}$/.test(value.code)) return 'SUPABASE_API_ERROR'
+    if (/^[0-9A-Z]{5}$/.test(value.code)) return 'DATABASE_ERROR'
+    return 'BACKEND_ERROR'
   }
-
-  if (typeof err === 'string') {
-    let sanitized = err;
-    for (const pattern of SENSITIVE_PATTERNS) {
-      sanitized = sanitized.replace(pattern, '[REDACTED]');
-    }
-    return sanitized.slice(0, 100);
-  }
-
-  if (typeof err === 'object') {
-    const obj = err as Record<string, unknown>;
-
-    // Check standard error code or name
-    if (typeof obj.code === 'string' && obj.code.length > 0 && obj.code.length <= 40) {
-      return obj.code;
-    }
-    if (typeof obj.name === 'string' && obj.name.length > 0 && obj.name !== 'Error') {
-      return obj.name;
-    }
-    if (typeof obj.message === 'string') {
-      let msg = obj.message;
-      for (const pattern of SENSITIVE_PATTERNS) {
-        msg = msg.replace(pattern, '[REDACTED]');
-      }
-      return msg.slice(0, 100);
-    }
-  }
-
-  return 'UNHANDLED_EXCEPTION';
+  return 'UNHANDLED_EXCEPTION'
 }
 
 /**
@@ -142,13 +123,12 @@ export function logSafeEvent(event: FrontendLogEvent): void {
     action: event.action,
     level: event.level,
     ...(event.code ? { code: event.code } : {}),
-    ...(event.message ? { message: event.message } : {}),
     ...(safeContext ? { context: safeContext } : {}),
   };
 
   const outputString = `[${payload.module.toUpperCase()}:${payload.action}] ${payload.level.toUpperCase()}${
     payload.code ? ` (${payload.code})` : ''
-  }${payload.message ? `: ${payload.message}` : ''}`;
+  }`;
 
   if (payload.level === 'error') {
     console.error(outputString, payload.context ?? '');

@@ -302,18 +302,20 @@ Para evitar la pantalla de advertencia roja de "Aplicación no verificada" de Go
 Para garantizar la protección de datos sensibles e impedir que usuarios manipulen registros ajenos, Supabase debe configurar las siguientes políticas RLS (código SQL contenido en `supabase/migrations/`):
 
 #### 1. Tabla `profiles` (Perfiles de Usuario)
+
+> Fase 2, solo DEV: estas reglas están en `supabase/dev-migrations/20260801000000_phase2_kyc_and_agents.sql`. No forman parte del esquema productivo y no deben desplegarse todavía.
 *   **Seguridad**: RLS habilitado.
 *   **Políticas**:
-    *   `Permitir lectura pública (SELECT)`: Cualquier usuario (incluso no autenticado) puede leer perfiles para visualizar datos de contacto del anunciante de forma pública.
-    *   `Permitir actualización propia (UPDATE)`: Solo el usuario autenticado cuyo `auth.uid()` coincida con el `id` del registro puede modificar su información de perfil.
+    *   `Lectura (SELECT)`: propietario o administrador con AAL2; la vista profesional pública usa el RPC mínimo.
+    *   `Actualización propia (UPDATE)`: solo campos ordinarios del perfil; rol, teléfono verificado y KYC están protegidos por trigger.
 
 #### 2. Tabla `properties` (Inmuebles)
 *   **Seguridad**: RLS habilitado.
 *   **Políticas**:
     *   `Lectura pública (SELECT)`: Permitida para cualquier usuario únicamente si el anuncio tiene el estado `status = 'published'`.
-    *   `Lectura privada de borradores/revisiones (SELECT)`: Solo el propietario del anuncio (`owner_id = auth.uid()`) o usuarios con el rol `admin` en la tabla `profiles` pueden consultar propiedades en estados `draft`, `pending_review`, `rejected` o `paused`.
+    *   `Lectura privada de borradores/revisiones (SELECT)`: solo el propietario del anuncio (`user_id = auth.uid()`) o un administrador con sesión AAL2.
     *   `Creación (INSERT)`: Permitido para cualquier usuario autenticado. El sistema inserta y vincula obligatoriamente el registro con el ID del creador (`owner_id = auth.uid()`).
-    *   `Modificación/Eliminación (UPDATE/DELETE)`: Permitido únicamente al propietario (`owner_id = auth.uid()`) o a usuarios administradores (`role = 'admin'`).
+    *   `Modificación/Eliminación (UPDATE/DELETE)`: propietario para sus transiciones permitidas o administrador con AAL2 para moderación. `owner_hidden` y `paused` son controles independientes.
 
 #### 3. Tabla `property_images` (Galería de Fotos)
 *   **Seguridad**: RLS habilitado.
@@ -324,7 +326,7 @@ Para garantizar la protección de datos sensibles e impedir que usuarios manipul
 #### 4. Tabla `contacts` (Prospectos y Leads)
 *   **Seguridad**: RLS habilitado.
 *   **Políticas**:
-    *   `Creación (INSERT)`: Permitido de forma pública (anon) para permitir que cualquier interesado envíe mensajes al anunciante.
+    *   `Creación (INSERT)`: no se permite directamente desde el cliente. El Worker valida Turnstile y usa el RPC exclusivo de `service_role`.
     *   `Lectura (SELECT)`: Restringido únicamente al anunciante dueño de la propiedad (`owner_id = auth.uid()`) y a los administradores para labores de control de spam.
 
 #### 5. Tabla `saved_properties` (Favoritos)
@@ -889,6 +891,16 @@ Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
 - `robots.txt` apunta al sitemap.
 - No hay secretos en git.
 - HSTS y CSP endurecida verificadas en la respuesta productiva.
+
+### Entorno aislado de Fase 2 — solo DEV
+
+- La migración está aislada en `web/supabase/dev-migrations/` y no se incluye en `supabase db push`.
+- La interfaz usa `PHASE_TWO_ENABLED`, que solo es verdadera con el servidor Vite en modo DEV. Un build productivo oculta KYC, perfiles y panel de agente.
+- El Cron Trigger existe únicamente en `wrangler.jsonc` bajo `env.dev`; el Worker productivo no programa tareas de Fase 2.
+- `env.dev` usa un subdominio `workers.dev` y una lista de rutas vacía: nunca debe asociarse a `cubitathome.com`.
+- `kyc_documents`, `RESEND_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` de Fase 2 deben configurarse únicamente en un proyecto/entorno DEV aislado, nunca en producción durante esta etapa.
+- Puerta de promoción: no mover migraciones, bucket, secretos, UI ni Cron de Fase 2 a producción hasta completar un lanzamiento exitoso de Fase 1 y recibir una autorización posterior y explícita.
+- Estado local del 2026-07-22: Supabase todavía no se inició. Docker Desktop quedó bloqueado con `HCS_E_HYPERV_NOT_INSTALLED` y `HypervisorPresent=False`; habilitar el arranque del hipervisor con `bcdedit /set hypervisorlaunchtype auto` en PowerShell administrador, reiniciar y volver a validar antes de ejecutar migraciones DEV.
 
 ## 15. Operacion Y Rollback
 

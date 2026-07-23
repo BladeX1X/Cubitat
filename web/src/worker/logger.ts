@@ -11,6 +11,8 @@ const EVENTS = new Set([
   'seo_rewrite_failed',
   'transactional_email_failed',
   'transactional_email_skipped',
+  'alert_email_dispatch_failed',
+  'alert_email_dispatch_skipped',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -35,6 +37,8 @@ export type WorkerLogEvent =
   | 'seo_rewrite_failed'
   | 'transactional_email_failed'
   | 'transactional_email_skipped'
+  | 'alert_email_dispatch_failed'
+  | 'alert_email_dispatch_skipped'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'

@@ -12,4 +12,15 @@ export type AgentProfile = {
   license_number?: string | null
   verification_status: VerificationStatus
   created_at: string
+  active_properties_count: number
+  reports_count: number
+}
+
+export type AgentPropertySummary = {
+  id: string
+  title: string
+  location: string
+  priceUsd?: number
+  coverImage: string
+  status: 'published'
 }

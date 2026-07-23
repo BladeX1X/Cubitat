@@ -7,7 +7,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
-  const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || ''
+  const supabaseAnonKey =
+    env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+  const supabaseUrl =
+    env.VITE_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://tohjzoncoosvjbjcakdl.supabase.co'
 
   return {
     plugins: [
@@ -315,7 +320,7 @@ Tipo: ${body.property_type}`;
       allowedHosts: true,
       proxy: {
         '/api/supabase': {
-          target: 'https://tohjzoncoosvjbjcakdl.supabase.co',
+          target: supabaseUrl,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
           configure: (proxy) => {

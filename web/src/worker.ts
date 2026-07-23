@@ -6,6 +6,7 @@ import {
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
+import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
 
 export { RateLimiter };
 
@@ -21,6 +22,7 @@ export interface Env extends PublicSubmissionEnv {
   SUPABASE_PROJECT_ID?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
+  PHASE2_ENABLED?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
@@ -44,6 +46,7 @@ const PRIVATE_ROUTE_PREFIXES = [
   '/mi-cuenta',
   '/mis-propiedades',
   '/moderar',
+  '/panel-agente',
   '/publicar',
   '/recuperar-contrasena',
 ]
@@ -572,6 +575,10 @@ async function resendSignupConfirmation(email: string, env: Env): Promise<void> 
 }
 
 export default {
+  scheduled(_controller: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): void {
+    if (env.PHASE2_ENABLED !== 'true') return
+    ctx.waitUntil(dispatchPendingAlertEmails(env))
+  },
   async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
     const url = new URL(request.url);
     const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
@@ -934,7 +941,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
       const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
-      const allowedAuthenticatedRpcs = ['get_admin_metrics'];
+      const allowedPublicRpcs = ['get_public_agent_profile', 'increment_property_view_count'];
+      const allowedAuthenticatedRpcs = ['get_admin_metrics', 'submit_kyc_request', 'review_kyc_request'];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
@@ -947,6 +955,9 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         && authenticated
         && rpcName !== null
         && allowedAuthenticatedRpcs.includes(rpcName);
+      const isAllowedPublicRpc = method === 'POST'
+        && rpcName !== null
+        && allowedPublicRpcs.includes(rpcName);
 
       const authRateLimitResponse = await enforceAuthRateLimit(request, env, clientIp, subPath);
       if (authRateLimitResponse) {
@@ -997,7 +1008,11 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       }
 
       // Bloquear POST a tablas no permitidas
-      if (method === 'POST' && tableName && !allowedWriteTables.includes(tableName) && !isAllowedAuthenticatedRpc) {
+      if (method === 'POST'
+        && tableName
+        && !allowedWriteTables.includes(tableName)
+        && !isAllowedAuthenticatedRpc
+        && !isAllowedPublicRpc) {
         return jsonResponse({ error: 'Operación no permitida.' }, 403);
       }
 

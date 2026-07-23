@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MyPropertiesEmptyState, PropertyCard } from './MyPropertiesPage'
-import { getPropertyStatusConfig } from './propertyStatus'
+import { getPropertyStatusConfig } from '../../modules/properties/propertyStatus'
 
 describe('getPropertyStatusConfig', () => {
   it('presenta los borradores remotos sin romper la pagina', () => {

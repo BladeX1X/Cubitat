@@ -1,18 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchPendingKycRequests, reviewKycRequest } from './kycAdminRepository'
 
-const { fromMock, selectMock, eqMock, orderMock, rpcMock } = vi.hoisted(() => ({
+const { fromMock, selectMock, eqMock, orderMock, rpcMock, storageFromMock, createSignedUrlMock } = vi.hoisted(() => ({
   fromMock: vi.fn(),
   selectMock: vi.fn(),
   eqMock: vi.fn(),
   orderMock: vi.fn(),
   rpcMock: vi.fn(),
+  storageFromMock: vi.fn(),
+  createSignedUrlMock: vi.fn(),
 }))
 
 vi.mock('../../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: fromMock,
     rpc: rpcMock,
+    storage: { from: storageFromMock },
   },
 }))
 
@@ -30,6 +33,8 @@ describe('kycAdminRepository', () => {
     selectMock.mockReturnValue(queryChain)
     eqMock.mockReturnValue(queryChain)
     orderMock.mockResolvedValue({ data: [], error: null })
+    storageFromMock.mockReturnValue({ createSignedUrl: createSignedUrlMock })
+    createSignedUrlMock.mockResolvedValue({ data: { signedUrl: 'https://signed.example/doc' }, error: null })
   })
 
   describe('fetchPendingKycRequests', () => {
@@ -39,7 +44,7 @@ describe('kycAdminRepository', () => {
           id: 'req-1',
           user_id: 'user-1',
           document_type: 'identity_card',
-          document_url: 'https://example.com/id.jpg',
+          document_path: 'user-1/id.jpg',
           status: 'pending',
           rejection_reason: null,
           created_at: '2026-07-21T10:00:00Z',
@@ -65,7 +70,8 @@ describe('kycAdminRepository', () => {
         id: 'req-1',
         user_id: 'user-1',
         document_type: 'identity_card',
-        document_url: 'https://example.com/id.jpg',
+        document_path: 'user-1/id.jpg',
+        document_signed_url: 'https://signed.example/doc',
         status: 'pending',
         rejection_reason: null,
         created_at: '2026-07-21T10:00:00Z',
@@ -83,7 +89,7 @@ describe('kycAdminRepository', () => {
       const dbError = new Error('Database connection failed')
       orderMock.mockResolvedValueOnce({ data: null, error: dbError })
 
-      await expect(fetchPendingKycRequests()).rejects.toThrow('Database connection failed')
+      await expect(fetchPendingKycRequests()).rejects.toThrow('No se pudieron cargar las solicitudes KYC pendientes.')
     })
   })
 
