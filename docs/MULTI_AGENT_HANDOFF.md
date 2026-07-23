@@ -107,8 +107,8 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ### 2026-07-23 14:30 — Codex — fuga de interfaz Fase 2 en producción
 
-- Estado: **diagnosticado; corrección validada en PR #73 y pendiente de
-  revisión/fusión/despliegue**.
+- Estado: **corregido, fusionado y desplegado; falta únicamente repetir la
+  comprobación visual con una sesión administrativa productiva**.
 - Evidencia productiva de solo lectura: `https://cubitathome.com/moderar`
   muestra la pestaña KYC y esta falla al consultar solicitudes, porque el chunk
   activo `AdminPage-Ch3qWGaW.js` contiene el módulo y el mensaje KYC sin guard.
@@ -125,9 +125,20 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 - Riesgo residual: los chunks de Fase 2 siguen físicamente incluidos y
   precargados, aunque resultan inalcanzables. La promoción posterior debe
   decidir si el aislamiento funcional basta o si se exige exclusión física.
-- Producción no se modificó durante el diagnóstico. Siguiente cierre: revisar y
-  fusionar el PR #73, desplegar el build aprobado y verificar en producción
-  que KYC ya no aparece, las rutas de Fase 2 no abren y la consola queda limpia.
+- El PR #73 fue fusionado en `main` como `66b673a` y Cloudflare publicó el
+  Worker `cubitat1` con la versión
+  `a7053e7e-0b74-4236-81a2-c28c47ee95df`. No se aplicaron migraciones, buckets,
+  secretos ni recursos de Fase 2 en Supabase productivo.
+- Evidencia posterior al despliegue: `/moderar` respondió `200`, conservó
+  `Cache-Control: no-cache, no-store, must-revalidate` y
+  `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`; producción sirvió
+  `index-wMzMHyxL.js` y `AdminPage-CsjOS2nh.js`. Una sesión no autenticada fue
+  redirigida al inicio y abrió el login, confirmando que el guard sigue activo.
+- La comprobación visual autenticada quedó pendiente porque la conexión de la
+  extensión de Chrome perdió el registro Native Messaging. No marcar como
+  observada la ausencia de la pestaña KYC en una sesión admin hasta reconectar
+  Chrome, recargar `/moderar` y revisar la consola. El build desplegado sí es el
+  mismo que pasó la regresión automatizada de producción con KYC oculto.
 
 ### 2026-07-23 12:02 — Codex — QA visual y permisos API del entorno local
 
