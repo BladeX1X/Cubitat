@@ -3,8 +3,9 @@ export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'reject
 export type KycRequest = {
   id: string
   user_id: string
-  document_type: 'identity_card' | 'license' | 'passport'
+  document_type: 'identity_card' | 'passport'
   document_path: string
+  selfie_path: string
   status: 'pending' | 'approved' | 'rejected'
   rejection_reason?: string | null
   created_at: string

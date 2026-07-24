@@ -356,7 +356,7 @@ export function AccountPage({
                   {kycStatus === 'unverified' && (
                     <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <p className="text-xs text-neutral-600">
-                        Sube una foto de tu carnet de identidad para verificar tu cuenta y destacar frente a otros anunciantes.
+                        Sube tu documento de identidad y una foto tuya sosteniéndolo para verificar tu cuenta.
                       </p>
                       <Button
                         onClick={() => setIsKycModalOpen(true)}
@@ -369,7 +369,7 @@ export function AccountPage({
 
                   {kycStatus === 'pending' && (
                     <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
-                      <strong>Tu documento está en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
+                      <strong>Tus evidencias están en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
                     </div>
                   )}
 
@@ -382,14 +382,14 @@ export function AccountPage({
                   {kycStatus === 'rejected' && (
                     <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-xs text-red-800 space-y-2">
                       <p>
-                        <strong>Solicitud Rechazada:</strong> {kycReason || 'El documento presentado no pudo ser validado.'}
+                        <strong>Solicitud Rechazada:</strong> {kycReason || 'Las evidencias presentadas no pudieron validarse.'}
                       </p>
                       <Button
                         onClick={() => setIsKycModalOpen(true)}
                         variant="outline"
                         className="rounded-full text-xs font-bold border-red-200 text-red-700 bg-white"
                       >
-                        Reenviar Documento
+                        Reenviar evidencias
                       </Button>
                     </div>
                   )}

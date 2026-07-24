@@ -105,6 +105,15 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-24 — Codex / Rodolfo — KYC local con documento y foto sosteniéndolo (Verificación completada)
+
+- Estado: **Terminado, exclusivamente DEV/local**. Rama `bugfix/phase2-kyc-identity-selfie`; producción, Supabase remoto y Cloudflare no se consultaron ni modificaron.
+- Verificación AAL2 + Moderación KYC: Rodolfo introdujo el TOTP en `http://127.0.0.1:5173/moderar`, elevó la sesión a AAL2, abrió la pestaña KYC, comprobó la tarjeta del solicitante QA con las dos evidencias etiquetadas (Documento de identidad y Persona sosteniéndolo) y ejecutó la aprobación de la solicitud QA local.
+- Confirmación en Base de Datos Local: la RPC `review_kyc_request` actualizó `kyc_requests.status` a `'approved'` y `profiles.verification_status` a `'verified'` para `Usuario QA Local` (`phase2-user@local.test`).
+- Limpieza y Residuos: la solicitud QA y los 3 objetos de almacenamiento en `kyc_documents` fueron eliminados de `supabase_db_web`; el estado del perfil sintético se restableció a `'unverified'`. Consulta posterior en Postgres confirmó 0 solicitudes, 0 objetos y 0 residuos.
+- Criterios de Calidad: `npm run lint` limpio (0 errores/0 advertencias en 247 archivos); 78 archivos y 297 pruebas unitarias aprobadas al 100%; `npm run build` TypeScript/Vite/PWA/sitemap correcto.
+- Despliegue: ninguno; Fase 2 continúa 100% aislada en DEV/local sin afectar producción ni `main`.
+
 ### 2026-07-23 14:30 — Codex — fuga de interfaz Fase 2 en producción
 
 - Estado: **corregido, fusionado y desplegado; falta únicamente repetir la
