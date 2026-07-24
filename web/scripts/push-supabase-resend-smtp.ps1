@@ -1,6 +1,6 @@
 param(
   [string]$ProjectRef = "tohjzoncoosvjbjcakdl",
-  [string]$SenderEmail = "onboarding@resend.dev"
+  [string]$SenderEmail = "notificaciones@cubitathome.com"
 )
 
 $secureKey = Read-Host "Pega RESEND_API_KEY para configurar SMTP en Supabase" -AsSecureString

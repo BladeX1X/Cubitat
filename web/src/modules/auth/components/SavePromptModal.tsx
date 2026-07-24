@@ -1,5 +1,7 @@
 import { X, Heart } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { Button } from '../../../shared/ui/button'
+import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { useAuthModal } from '../contexts/AuthModalContext'
 
 interface SavePromptModalProps {
@@ -14,8 +16,14 @@ export function SavePromptModal({ onClose }: SavePromptModalProps) {
     openLogin()
   }
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={MODAL_LAYER_STYLE}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Guardar propiedad"
+    >
       <div 
         className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
@@ -24,6 +32,7 @@ export function SavePromptModal({ onClose }: SavePromptModalProps) {
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-75 fade-in duration-300 ease-out">
         <button
           onClick={onClose}
+          aria-label="Cerrar"
           className="absolute right-4 top-4 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
         >
           <X size={20} />
@@ -59,6 +68,7 @@ export function SavePromptModal({ onClose }: SavePromptModalProps) {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

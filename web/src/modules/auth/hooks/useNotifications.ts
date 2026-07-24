@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../shared/lib/supabaseClient'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export interface Notification {
   id: string
@@ -45,12 +46,18 @@ export function useNotifications() {
           .from('notifications')
           .select('*')
           .eq('user_id', sessionUid)
+          .eq('is_read', false)
           .order('created_at', { ascending: false })
 
         if (error) throw error
         if (data && isMounted) setNotifications(data)
       } catch (err) {
-        console.error('Error loading notifications:', err)
+        logSafeEvent({
+          module: 'auth',
+          action: 'load_notifications',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -72,9 +79,22 @@ export function useNotifications() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setNotifications(prev => [payload.new as Notification, ...prev])
+            const nextNotification = payload.new as Notification
+            if (!nextNotification.is_read) {
+              setNotifications(prev => [nextNotification, ...prev])
+            }
           } else if (payload.eventType === 'UPDATE') {
-            setNotifications(prev => prev.map(n => n.id === payload.new.id ? payload.new as Notification : n))
+            const nextNotification = payload.new as Notification
+            setNotifications(prev => {
+              if (nextNotification.is_read) {
+                return prev.filter(n => n.id !== nextNotification.id)
+              }
+
+              const exists = prev.some(n => n.id === nextNotification.id)
+              return exists
+                ? prev.map(n => n.id === nextNotification.id ? nextNotification : n)
+                : [nextNotification, ...prev]
+            })
           } else if (payload.eventType === 'DELETE') {
             setNotifications(prev => prev.filter(n => n.id !== payload.old.id))
           }
@@ -88,13 +108,13 @@ export function useNotifications() {
     }
   }, [sessionUid])
 
-  const unreadCount = notifications.filter(n => !n.is_read).length
+  const unreadCount = notifications.length
 
   const markAsRead = async (notificationId: string) => {
     if (!sessionUid) return
 
-    // Optimistic UI update
-    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n))
+    const previousNotifications = notifications
+    setNotifications(prev => prev.filter(n => n.id !== notificationId))
 
     try {
       const { error } = await supabase
@@ -105,16 +125,21 @@ export function useNotifications() {
       
       if (error) throw error
     } catch (err) {
-      console.error('Error marking notification as read:', err)
-      // Revert optimistic update
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: false } : n))
+      logSafeEvent({
+        module: 'auth',
+        action: 'mark_notification_read',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      setNotifications(previousNotifications)
     }
   }
 
   const markAllAsRead = async () => {
     if (!sessionUid || unreadCount === 0) return
 
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    const previousNotifications = notifications
+    setNotifications([])
 
     try {
       const { error } = await supabase
@@ -125,7 +150,13 @@ export function useNotifications() {
       
       if (error) throw error
     } catch (err) {
-      console.error('Error marking all notifications as read:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: 'mark_all_notifications_read',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      setNotifications(previousNotifications)
     }
   }
 

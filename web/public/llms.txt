@@ -1,0 +1,12 @@
+# Cubitat
+
+> Plataforma inmobiliaria para buscar, publicar y gestionar propiedades en Cuba.
+
+## Enlaces principales
+
+- [Inicio](https://cubitathome.com/)
+- [Buscar propiedades](https://cubitathome.com/resultados)
+- [Publicar una propiedad](https://cubitathome.com/publicar)
+- [Politica de privacidad](https://cubitathome.com/privacidad)
+- [Terminos de servicio](https://cubitathome.com/terminos)
+- [Sitemap](https://cubitathome.com/sitemap.xml)

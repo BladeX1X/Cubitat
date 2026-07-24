@@ -1,9 +1,30 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DetailPage } from './DetailPage'
 import { useSEO } from '../../shared/hooks/useSEO'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
+
+const {
+  mockGetUser,
+  mockGetSession,
+  mockSubmitPublicContact,
+  mockSubmitPublicReport,
+  mockTurnstileMount,
+  mockRpc,
+} = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  mockGetSession: vi.fn(),
+  mockSubmitPublicContact: vi.fn(),
+  mockSubmitPublicReport: vi.fn(),
+  mockTurnstileMount: vi.fn(),
+  mockRpc: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+}))
+
+vi.mock('./publicSubmissions', () => ({
+  submitPublicContact: mockSubmitPublicContact,
+  submitPublicReport: mockSubmitPublicReport,
+}))
 
 // Mock useSavedProperties
 vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
@@ -18,8 +39,26 @@ vi.mock('../../shared/hooks/useSEO', () => ({
   useSEO: vi.fn(),
 }))
 
+vi.mock('../../shared/ui/TurnstileWidget', async () => {
+  const { useEffect, useRef } = await import('react')
+
+  return {
+    TurnstileWidget: ({ action, onVerify }: { action: string; onVerify: (token: string) => void }) => {
+      const onVerifyRef = useRef(onVerify)
+
+      useEffect(() => {
+        mockTurnstileMount(action)
+        onVerifyRef.current('test-turnstile-token')
+      }, [action])
+
+      return null
+    },
+  }
+})
+
 // Mock SupabaseClient
 const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
+const mockNot = vi.fn()
 const mockFrom = vi.fn().mockImplementation((table: string) => {
   const proxy: any = new Proxy({}, {
     get(_, prop) {
@@ -34,6 +73,12 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
           return Promise.resolve(resolve({ data: null, error: null }))
         }
       }
+      if (prop === 'not') {
+        return (...args: unknown[]) => {
+          mockNot(...args)
+          return proxy
+        }
+      }
       return () => proxy
     }
   })
@@ -43,6 +88,11 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
 vi.mock('../../shared/lib/supabaseClient', () => ({
   supabase: {
     from: (table: string) => mockFrom(table),
+    rpc: mockRpc,
+    auth: {
+      getUser: mockGetUser,
+      getSession: mockGetSession,
+    },
   },
 }))
 
@@ -57,7 +107,7 @@ beforeAll(() => {
 })
 
 const mockProperty: Property = {
-  id: 'prop-detail-1',
+  id: '00000000-0000-0000-0000-000000000099',
   title: 'Casa independiente en Playa',
   location: 'Playa, La Habana',
   priceUsd: 68000,
@@ -85,6 +135,23 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  beforeEach(() => {
+    localStorage.clear()
+    mockInsert.mockClear()
+    mockNot.mockClear()
+    mockFrom.mockClear()
+    mockTurnstileMount.mockClear()
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
+    mockSubmitPublicContact.mockReset().mockResolvedValue(undefined)
+    mockSubmitPublicReport.mockReset().mockResolvedValue(undefined)
+  })
+
   it('debería renderizar la información básica de la propiedad', () => {
     render(
       <DetailPage
@@ -95,9 +162,9 @@ describe('DetailPage - Reportes y Visor', () => {
       />
     )
 
-    expect(screen.getByText('Casa independiente en Playa')).toBeInTheDocument()
-    expect(screen.getByText('USD 68,000')).toBeInTheDocument()
-    expect(screen.getByText('Playa, La Habana')).toBeInTheDocument()
+    expect(screen.getAllByText('Casa independiente en Playa')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('USD 68,000')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Playa, La Habana')[0]).toBeInTheDocument()
   })
 
   it('debería registrar metadatos SEO dinámicos con Open Graph', () => {
@@ -118,6 +185,23 @@ describe('DetailPage - Reportes y Visor', () => {
     }))
   })
 
+  it('excluye UUID relacionados con sintaxis PostgREST válida', async () => {
+    const propertyId = '00000000-0000-0000-0000-000000000089'
+
+    render(
+      <DetailPage
+        property={{ ...mockProperty, id: propertyId }}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockNot).toHaveBeenCalledWith('id', 'in', `(${propertyId})`)
+    })
+  })
+
   it('debería abrir el modal de reportes al hacer clic en "Reportar propiedad sospechosa"', () => {
     render(
       <DetailPage
@@ -134,7 +218,7 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getByRole('heading', { name: /informar sobre un problema/i })).toBeInTheDocument()
   })
 
-  it('debería enviar el reporte de propiedad a Supabase al rellenar el formulario', async () => {
+  it('debería enviar el reporte mediante el endpoint protegido al rellenar el formulario', async () => {
     render(
       <DetailPage
         property={mockProperty}
@@ -161,16 +245,145 @@ describe('DetailPage - Reportes y Visor', () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith('property_reports')
-      expect(mockInsert).toHaveBeenCalledWith({
-        property_id: 'prop-detail-1',
+      expect(mockSubmitPublicReport).toHaveBeenCalledWith({
+        turnstileToken: 'test-turnstile-token',
+        propertyId: '00000000-0000-0000-0000-000000000099',
         reason: 'FRAUD',
         description: 'Esta casa no es del anunciante actual.',
-        status: 'pending',
+        accessToken: undefined,
       })
     })
 
     // Mensaje de éxito de reporte enviado
     expect(screen.getByText('¡Reporte enviado con éxito!')).toBeInTheDocument()
+  })
+
+  it('vincula el reporte autenticado con el usuario para cumplir RLS', async () => {
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: { access_token: 'authenticated-report-token' } },
+      error: null,
+    })
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /reportar propiedad sospechosa/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'FRAUD' } })
+    fireEvent.change(screen.getByPlaceholderText(/Explica brevemente/i), {
+      target: { value: 'Reporte autenticado de prueba.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
+
+    await waitFor(() => {
+      expect(mockSubmitPublicReport).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        accessToken: 'authenticated-report-token',
+      }))
+    })
+  })
+
+  it('renueva Turnstile cuando falla la insercion de un reporte', async () => {
+    mockSubmitPublicReport.mockRejectedValueOnce(new Error('fallo controlado'))
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /reportar propiedad sospechosa/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'FRAUD' } })
+    fireEvent.change(screen.getByPlaceholderText(/Explica brevemente/i), {
+      target: { value: 'Fallo de insercion controlado.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /enviar reporte/i }))
+
+    await screen.findByText(/ocurrió un error al enviar el reporte/i)
+    await waitFor(() => {
+      expect(mockTurnstileMount.mock.calls.filter(([action]) => action === 'report-property')).toHaveLength(2)
+    })
+  })
+
+  it('debería guardar una consulta de contacto y mostrar confirmación', async () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Ana Pérez' } })
+    fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51234567' } })
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+
+    await waitFor(() => {
+      expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        contactName: 'Ana Pérez',
+        contactPhone: '+53 51234567',
+      }))
+    })
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+    expect(localStorage.getItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099')).toBeTruthy()
+  })
+
+  it('conserva los datos del formulario durante la verificación asíncrona', async () => {
+    vi.stubEnv('MODE', 'production')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    }))
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Rodolfo QA' } })
+    fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51111111' } })
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+
+    await waitFor(() => {
+      expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
+        propertyId: '00000000-0000-0000-0000-000000000099',
+        contactName: 'Rodolfo QA',
+        contactPhone: '+53 51111111',
+      }))
+    })
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+  })
+
+  it('debería bloquear contactos repetidos durante cinco minutos', () => {
+    localStorage.setItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099', Date.now().toString())
+
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
+    expect(mockSubmitPublicContact).not.toHaveBeenCalled()
   })
 })

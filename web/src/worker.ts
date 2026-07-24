@@ -1,27 +1,323 @@
-interface Env {
+import { RateLimiter } from './rate-limiter';
+import {
+  handlePublicContactSubmission,
+  handlePublicReportSubmission,
+  type PublicSubmissionEnv,
+} from './worker/public-submissions';
+import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
+import { logWorkerEvent } from './worker/logger';
+import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
+
+export { RateLimiter };
+
+export interface Env extends PublicSubmissionEnv {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
+  CF_API_TOKEN?: string;
+  CF_ACCOUNT_ID?: string;
+  SUPABASE_MANAGEMENT_TOKEN?: string;
+  SUPABASE_PROJECT_ID?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  RESEND_API_KEY?: string;
+  PHASE2_ENABLED?: string;
+  GA_SERVICE_ACCOUNT_JSON?: string;
+  GA_PROPERTY_ID?: string;
+  GEMINI_API_KEY?: string;
+  GROQ_API_KEY?: string;
+  TURNSTILE_VERIFY_URL?: string;
+  RATE_LIMITER: any;
+}
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return withSecurityHeaders(new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  }));
 }
 
-const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
+const PRIVATE_ROUTE_PREFIXES = [
+  '/auth/callback',
+  '/editar/',
+  '/favoritos',
+  '/mi-cuenta',
+  '/mis-propiedades',
+  '/moderar',
+  '/panel-agente',
+  '/publicar',
+  '/recuperar-contrasena',
+]
 
-function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const record = rateLimitCache.get(ip);
+function shouldDisallowIndexing(url?: URL): boolean {
+  if (!url) return false
 
-  if (!record || now > record.resetTime) {
-    rateLimitCache.set(ip, { count: 1, resetTime: now + windowMs });
+  const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+  if (!isLocal && url.hostname !== 'cubitathome.com') return true
+
+  return PRIVATE_ROUTE_PREFIXES.some((route) => {
+    const baseRoute = route.endsWith('/') ? route.slice(0, -1) : route
+    return url.pathname === baseRoute || url.pathname.startsWith(`${baseRoute}/`)
+  })
+}
+
+function canonicalUrl(url: URL): string {
+  return `${url.origin}${url.pathname}`
+}
+
+async function rewriteCanonicalLink(
+  response: Response,
+  url: URL,
+  indexable = !shouldDisallowIndexing(url),
+): Promise<Response> {
+  if (!response.headers.get('Content-Type')?.includes('text/html')) return response
+
+  const canonicalPattern = /<link\b[^>]*rel=["']canonical["'][^>]*>/i
+  const html = await response.text()
+  const canonicalTag = `<link rel="canonical" href="${canonicalUrl(url)}" />`
+  const body = indexable
+    ? canonicalPattern.test(html)
+      ? html.replace(canonicalPattern, canonicalTag)
+      : html.replace('</head>', `${canonicalTag}</head>`)
+    : html.replace(canonicalPattern, '')
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  })
+}
+
+function withSecurityHeaders(response: Response, url?: URL, forceNoIndex = false): Response {
+  const headers = new Headers(response.headers);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+  if (forceNoIndex || shouldDisallowIndexing(url)) {
+    headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+  }
+
+  if (response.headers.get('Content-Type')?.includes('text/html')) {
+    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org https://challenges.cloudflare.com https://*.workers.dev; frame-src 'self' https://www.google.com https://www.openstreetmap.org https://challenges.cloudflare.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+async function getAuthenticatedUser(authHeader: string, env: Env): Promise<{ id: string } | null> {
+  if (!authHeader.startsWith('Bearer ') || authHeader === 'Bearer dummy-key-safe-from-browsers') {
+    return null;
+  }
+
+  const response = await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      'apikey': env.VITE_SUPABASE_ANON_KEY,
+      'Authorization': authHeader
+    }
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const user = await response.json() as { id?: string };
+  return user.id ? { id: user.id } : null;
+}
+
+async function getUserRole(userId: string, authHeader: string, env: Env): Promise<string | null> {
+  const response = await fetch(
+    `${env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role`,
+    {
+      headers: {
+        'apikey': env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': authHeader
+      }
+    }
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const rows = await response.json() as { role?: string }[];
+  return rows[0]?.role || null;
+}
+
+function getJwtAssuranceLevel(authHeader: string): string | null {
+  try {
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const claims = JSON.parse(atob(padded)) as { aal?: unknown };
+    return typeof claims.aal === 'string' ? claims.aal : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasAdminSecondFactor(authHeader: string): boolean {
+  return getJwtAssuranceLevel(authHeader) === 'aal2';
+}
+
+async function canModerateProperty(propertyId: string, userId: string, authHeader: string, env: Env): Promise<boolean> {
+  const response = await fetch(
+    `${env.VITE_SUPABASE_URL}/rest/v1/properties?id=eq.${encodeURIComponent(propertyId)}&select=id,user_id`,
+    {
+      headers: {
+        'apikey': env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': authHeader
+      }
+    }
+  );
+
+  if (!response.ok) {
     return false;
   }
 
-  record.count++;
-  if (record.count > limit) {
+  const rows = await response.json() as { user_id?: string }[];
+  const property = rows[0];
+  if (!property) {
+    return false;
+  }
+
+  if (property.user_id === userId) {
     return true;
   }
-  return false;
+
+  return (await getUserRole(userId, authHeader, env)) === 'admin'
+    && hasAdminSecondFactor(authHeader);
+}
+
+async function isRateLimited(env: Env, ip: string, limit: number, windowMs: number): Promise<boolean> {
+  const id = env.RATE_LIMITER.idFromName('global');
+  const stub = env.RATE_LIMITER.get(id);
+  const url = `https://dummy/check?key=${encodeURIComponent(ip)}&limit=${limit}&windowMs=${windowMs}`;
+  const res = await stub.fetch(url);
+  const data = await res.json() as { allowed: boolean };
+  return !data.allowed;
+}
+
+async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const id = env.RATE_LIMITER.idFromName('global');
+  const stub = env.RATE_LIMITER.get(id);
+  const url = `https://dummy/check?key=${encodeURIComponent(key)}&limit=${limit}&windowMs=${windowMs}`;
+  const res = await stub.fetch(url);
+  return await res.json() as { allowed: boolean; remaining: number; resetAt: number };
+}
+
+function rateLimitResponse(resetAt: number): Response {
+  const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+  return withSecurityHeaders(new Response(JSON.stringify({
+    error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+  }), {
+    status: 429,
+    headers: {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+    },
+  }));
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function getRequestEmail(request: Request): Promise<string> {
+  try {
+    const contentType = request.headers.get('content-type') || '';
+    const clonedRequest = request.clone();
+
+    if (contentType.includes('application/json')) {
+      const body = await clonedRequest.json() as any;
+      return normalizeEmail(body?.email || body?.data?.email || body?.user?.email);
+    }
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const form = await clonedRequest.formData();
+      return normalizeEmail(form.get('email'));
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string, subPath: string): Promise<Response | null> {
+  const url = new URL(request.url);
+  const method = request.method.toUpperCase();
+  const isPasswordToken = method === 'POST'
+    && subPath.startsWith('/auth/v1/token')
+    && url.searchParams.get('grant_type') === 'password';
+  const isSignup = method === 'POST' && subPath === '/auth/v1/signup';
+  const isRecover = method === 'POST' && subPath === '/auth/v1/recover';
+  const isOtp = method === 'POST' && subPath === '/auth/v1/otp';
+  const isResend = method === 'POST' && subPath === '/auth/v1/resend';
+
+  if (!isPasswordToken && !isSignup && !isRecover && !isOtp && !isResend) {
+    return null;
+  }
+
+  let action: 'login' | 'signup' | 'recover' | 'resend' | 'otp' = 'login';
+  let ipLimit = 20;
+  let ipWindowMs = 60000;
+  let emailLimit = 8;
+  let emailWindowMs = 600000;
+
+  if (isPasswordToken) {
+    action = 'login';
+    ipLimit = 10;
+    ipWindowMs = 60000;
+    emailLimit = 6;
+    emailWindowMs = 600000;
+  } else if (isSignup) {
+    action = 'signup';
+    ipLimit = 5;
+    ipWindowMs = 600000;
+    emailLimit = 3;
+    emailWindowMs = 3600000;
+  } else if (isRecover || isResend || isOtp) {
+    action = isRecover ? 'recover' : isResend ? 'resend' : 'otp';
+    ipLimit = 5;
+    ipWindowMs = 600000;
+    emailLimit = 3;
+    emailWindowMs = 3600000;
+  }
+
+  const ipCheck = await checkRateLimit(env, `${clientIp}:auth:${action}:ip:v1`, ipLimit, ipWindowMs);
+  if (!ipCheck.allowed) {
+    logWorkerEvent('info', 'auth_rate_limit_blocked', { action, dimension: 'ip' });
+    return rateLimitResponse(ipCheck.resetAt);
+  }
+
+  const email = await getRequestEmail(request);
+  if (email) {
+    const emailHash = await sha256Hex(email);
+    const emailCheck = await checkRateLimit(env, `email:${emailHash}:auth:${action}:v1`, emailLimit, emailWindowMs);
+    if (!emailCheck.allowed) {
+      logWorkerEvent('info', 'auth_rate_limit_blocked', { action, dimension: 'email' });
+      return rateLimitResponse(emailCheck.resetAt);
+    }
+  }
+
+  return null;
 }
 
 function extractIdFromSlug(slug: string): string {
@@ -37,21 +333,694 @@ function extractIdFromSlug(slug: string): string {
   return slug
 }
 
+function normalizeEmail(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+type GoogleServiceAccountCredentials = {
+  client_email: string;
+  private_key: string;
+  private_key_id?: string;
+  token_uri?: string;
+};
+
+function encodeBase64Url(value: string | Uint8Array): string {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodePrivateKey(privateKey: string): ArrayBuffer {
+  const normalized = privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s/g, '');
+  const binary = atob(normalized);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0)).buffer;
+}
+
+async function createGoogleAccessToken(credentials: GoogleServiceAccountCredentials): Promise<string> {
+  const tokenUri = credentials.token_uri || 'https://oauth2.googleapis.com/token';
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT', ...(credentials.private_key_id ? { kid: credentials.private_key_id } : {}) };
+  const claims = {
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/analytics.readonly',
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+  const unsignedJwt = `${encodeBase64Url(JSON.stringify(header))}.${encodeBase64Url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    decodePrivateKey(credentials.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedJwt));
+  const assertion = `${unsignedJwt}.${encodeBase64Url(new Uint8Array(signature))}`;
+
+  const response = await fetch(tokenUri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google OAuth rechazó la autenticación (${response.status}).`);
+  const payload = await response.json() as { access_token?: string };
+  if (!payload.access_token) throw new Error('Google OAuth no devolvió un token de acceso.');
+  return payload.access_token;
+}
+
+export async function fetchGoogleAnalyticsMetrics(env: Env): Promise<{ activeUsers: number | null; error: string }> {
+  if (!env.GA_SERVICE_ACCOUNT_JSON || !env.GA_PROPERTY_ID) {
+    return { activeUsers: null, error: 'Falta configurar Google Analytics.' };
+  }
+
+  try {
+    const credentials = JSON.parse(env.GA_SERVICE_ACCOUNT_JSON) as Partial<GoogleServiceAccountCredentials>;
+    if (!credentials.client_email || !credentials.private_key) {
+      return { activeUsers: null, error: 'Las credenciales de Google Analytics no son válidas.' };
+    }
+    const accessToken = await createGoogleAccessToken(credentials as GoogleServiceAccountCredentials);
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(env.GA_PROPERTY_ID)}:runRealtimeReport`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ metrics: [{ name: 'activeUsers' }] }),
+      },
+    );
+    if (!response.ok) {
+      return { activeUsers: null, error: `Google Analytics no está disponible (${response.status}).` };
+    }
+    const payload = await response.json() as { rows?: Array<{ metricValues?: Array<{ value?: string }> }> };
+    const value = Number(payload.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+    return { activeUsers: Number.isFinite(value) ? value : null, error: '' };
+  } catch {
+    logWorkerEvent('warn', 'metrics_provider_failed', { source: 'google_analytics' });
+    return { activeUsers: null, error: 'No fue posible consultar Google Analytics.' };
+  }
+}
+
+async function getEmailConfirmedAt(email: string, env: Env): Promise<string | null> {
+  if (env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const response = await fetch(
+        `${env.VITE_SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+        {
+          headers: {
+            'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json() as any;
+        const users = Array.isArray(data?.users) ? data.users : Array.isArray(data) ? data : [];
+        const user = users.find((item: any) => normalizeEmail(item?.email) === email) || users[0];
+        return user?.email_confirmed_at || user?.confirmed_at || null;
+      }
+
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'service_role', status: response.status });
+    } catch {
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'service_role' });
+    }
+  }
+
+  if (!env.SUPABASE_MANAGEMENT_TOKEN || !env.SUPABASE_PROJECT_ID) {
+    return null;
+  }
+
+  try {
+    const safeEmail = email.replace(/'/g, "''");
+    const response = await fetch(
+      `https://api.supabase.com/v1/projects/${encodeURIComponent(env.SUPABASE_PROJECT_ID)}/database/query/read-only`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.SUPABASE_MANAGEMENT_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: `select email_confirmed_at from auth.users where lower(email) = lower('${safeEmail}') order by created_at desc limit 1;`,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'management_api', status: response.status });
+      return null;
+    }
+
+    const data = await response.json() as any;
+    const rows = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.rows)
+            ? data.rows
+            : Array.isArray(data?.result?.rows)
+              ? data.result.rows
+              : [];
+    const row = Array.isArray(rows) ? rows[0] : null;
+    return row?.email_confirmed_at || null;
+  } catch {
+    logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'management_api' });
+    return null;
+  }
+}
+
+async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void> {
+  if (!env.RESEND_API_KEY) {
+    logWorkerEvent('warn', 'transactional_email_skipped', {
+      source: 'resend',
+      reason: 'missing_configuration',
+    });
+    return;
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Cubitat <notificaciones@cubitathome.com>',
+      to: [email],
+      subject: 'Tu correo ya esta confirmado en Cubitat',
+      html: `<!doctype html>
+<html lang="es">
+  <body style="margin:0;background:#f4f7f6;color:#10231f;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7f6;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #dce6e2;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px;color:#60716e;font-size:16px;line-height:1.55;">
+                <p style="margin:0 0 12px;color:#006b5d;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Cubitat</p>
+                <h1 style="margin:0 0 16px;color:#10231f;font-size:26px;line-height:1.15;">Tu correo ya esta confirmado</h1>
+                <p style="margin:0 0 18px;">Recibimos una solicitud para reenviar la confirmacion, pero este correo ya esta confirmado en Cubitat.</p>
+                <p style="margin:0 0 26px;">Puedes iniciar sesion con tu contrasena. Si no la recuerdas, usa la opcion de recuperar contrasena.</p>
+                <p style="margin:0;font-size:13px;color:#8a9895;">Si no fuiste tu, puedes ignorar este mensaje.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+    }),
+  });
+
+  if (!response.ok) {
+    logWorkerEvent('warn', 'transactional_email_failed', {
+      source: 'resend',
+      status: response.status,
+    });
+  }
+}
+
+async function resendSignupConfirmation(email: string, env: Env): Promise<void> {
+  await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/resend`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.VITE_SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'signup',
+      email,
+      options: {
+        email_redirect_to: 'https://cubitathome.com/auth/callback',
+      },
+    }),
+  });
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  scheduled(_controller: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): void {
+    if (env.PHASE2_ENABLED !== 'true') return
+    ctx.waitUntil(dispatchPendingAlertEmails(env))
+  },
+  async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
     const url = new URL(request.url);
+    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    
+    // Redirigir siempre de HTTP a HTTPS (solo en producción) y de www a la raíz para consolidar SEO
+    let shouldRedirect = false;
+    const proto = request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+    if (proto === 'http' && !isLocal) {
+      url.protocol = 'https:';
+      shouldRedirect = true;
+    }
+    
+    if (url.hostname.startsWith('www.')) {
+      url.hostname = url.hostname.replace('www.', '');
+      shouldRedirect = true;
+    }
+
+    if (shouldRedirect) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': url.toString()
+        }
+      });
+    }
+
     const path = url.pathname;
 
-    // 1. Interceptar solicitudes de API de Supabase Proxy
+    if ((path === '/api/public/contact' || path === '/api/public/report') && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const isContact = path === '/api/public/contact';
+      const rateLimit = await checkRateLimit(
+        env,
+        `${clientIp}:public-submission:${isContact ? 'contact' : 'report'}:v1`,
+        isContact ? 5 : 3,
+        300000,
+      );
+      if (!rateLimit.allowed) return rateLimitResponse(rateLimit.resetAt);
+
+      if (isContact) {
+        return withSecurityHeaders(await handlePublicContactSubmission(request, env), url);
+      }
+
+      const authHeader = request.headers.get('Authorization') || '';
+      let reporterId: string | null = null;
+      if (authHeader) {
+        const reporter = await getAuthenticatedUser(authHeader, env);
+        if (!reporter) return jsonResponse({ error: 'Unauthorized' }, 401);
+        reporterId = reporter.id;
+      }
+
+      return withSecurityHeaders(await handlePublicReportSubmission(request, env, reporterId), url);
+    }
+
+    if ((path === '/api/public/contact' || path === '/api/public/report') && request.method !== 'POST') {
+      return jsonResponse({ error: 'Method not allowed' }, 405);
+    }
+
+    // Endpoint interno para moderación con IA
+    if (path === '/api/ai-moderate' && request.method === 'POST') {
+      let body: any;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({ error: 'Invalid JSON' }, 400);
+      }
+
+      const authHeader = request.headers.get('Authorization') || '';
+      const user = await getAuthenticatedUser(authHeader, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+      }
+
+      if (!body.property_id || !uuidRegex.test(body.property_id)) {
+        return jsonResponse({ error: 'Invalid property_id' }, 400);
+      }
+
+      const allowed = await canModerateProperty(body.property_id, user.id, authHeader, env);
+      if (!allowed) {
+        return jsonResponse({ error: 'Forbidden' }, 403);
+      }
+
+      // Proceso de fondo para no colgar el cliente
+      async function moderateBackground(body: any, env: Env) {
+        try {
+          if (!body.property_id) return; // Si no hay ID, no podemos actualizar
+
+          const applyTrustedModeration = async (
+            status: string,
+            message: string,
+            provider: 'groq' | null
+          ) => {
+            if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+              throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured.');
+            }
+
+            const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/set_property_ai_moderation_trusted`, {
+              method: 'POST',
+              headers: {
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                p_property_id: body.property_id,
+                p_status: status,
+                p_message: message,
+                p_provider: provider
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error(`Trusted moderation RPC failed with status ${response.status}.`);
+            }
+          };
+
+          if (!env.GROQ_API_KEY) {
+            await applyTrustedModeration(
+              'pending_review',
+              'IA deshabilitada. Pendiente de revisión manual.',
+              null
+            );
+            return;
+          }
+          
+          const systemPrompt = `Eres un moderador experto de bienes raíces en Cuba para la plataforma Cubitat. 
+Tu tarea es analizar el siguiente anuncio y determinar si cumple con las reglas (sin lenguaje ofensivo, sin spam evidente, precio razonable, descripción coherente).
+IMPORTANTE: Si se adjuntan imágenes, analízalas también. Rechaza el anuncio si las imágenes contienen desnudos, violencia, contenido irrelevante que no sea de propiedades, o exceso de texto promocional (spam).
+Responde Únicamente con un objeto JSON válido, sin texto adicional, con exactamente estas dos propiedades:
+"status": "ai_approved" o "ai_rejected".
+"reason": Una breve explicación de por qué lo aprobaste o rechazaste. Incluye una descripción breve de las imágenes si se adjuntaron.`;
+
+          const userContent: any[] = [
+            {
+              type: 'text',
+              text: `Título: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} USD\nTipo: ${body.property_type}`
+            }
+          ];
+
+          if (body.images && Array.isArray(body.images)) {
+            const imagesToProcess = body.images.slice(0, 5); // Groq soporta hasta 5 imágenes
+            
+            for (const dataUrl of imagesToProcess) {
+              if (typeof dataUrl === 'string') {
+                if (dataUrl.startsWith('data:image/')) {
+                  userContent.push({
+                    type: 'image_url',
+                    image_url: { url: dataUrl }
+                  });
+                } else if (dataUrl.startsWith(`${env.VITE_SUPABASE_URL}/storage/v1/object/public/property_images/`)) {
+                  try {
+                    const imgRes = await fetch(dataUrl);
+                    if (imgRes.ok) {
+                      const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+                      const arrayBuffer = await imgRes.arrayBuffer();
+                      if (arrayBuffer.byteLength > 2000) {
+                        let binary = '';
+                        const bytes = new Uint8Array(arrayBuffer);
+                        const chunkSize = 8192;
+                        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+                          const chunk = bytes.subarray(i, i + chunkSize);
+                          binary += String.fromCharCode.apply(null, Array.from(chunk));
+                        }
+                        const base64Data = btoa(binary);
+                        userContent.push({
+                          type: 'image_url',
+                          image_url: { url: `data:${contentType};base64,${base64Data}` }
+                        });
+                      }
+                    }
+                  } catch {
+                    logWorkerEvent('warn', 'moderation_image_fetch_failed');
+                  }
+                }
+              }
+            }
+          }
+
+          let finalStatus = 'pending_review';
+          let finalReason = '';
+
+          try {
+            const groqApiKey = (env.GROQ_API_KEY || '').trim().replace(/[\r\n]/g, '');
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${groqApiKey}`
+              },
+              body: JSON.stringify({
+                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userContent }
+                ],
+                temperature: 0.1,
+                max_tokens: 512,
+                response_format: { type: 'json_object' }
+              })
+            });
+
+            const groqJson = await groqRes.json() as any;
+
+            if (!groqRes.ok) {
+              finalStatus = 'pending_review';
+              if (groqRes.status === 429) {
+                finalReason = 'Servicio de IA temporalmente saturado. Pendiente de revisión manual.';
+              } else {
+                finalReason = `Error de API de IA (${groqRes.status}): ${groqJson?.error?.message || 'Desconocido'}`;
+              }
+            } else {
+              const rawText = groqJson?.choices?.[0]?.message?.content || '';
+              if (rawText) {
+                try {
+                  const cleanText = rawText.replace(/```(?:json)?/gi, '').trim();
+                  const aiResult = JSON.parse(cleanText);
+                  finalStatus = aiResult.status || 'pending_review';
+                  finalReason = aiResult.reason || '';
+                } catch {
+                  finalStatus = 'pending_review';
+                  finalReason = 'Fallo al interpretar respuesta de IA. Pendiente de revisión manual.';
+                }
+              } else {
+                finalStatus = 'pending_review';
+                finalReason = 'No hay texto en IA. Pendiente de revisión manual.';
+              }
+            }
+          } catch {
+            finalStatus = 'pending_review';
+            finalReason = 'Fallo de conexión con IA. Pendiente de revisión manual.';
+          }
+
+          await applyTrustedModeration(finalStatus, finalReason, 'groq');
+
+        } catch {
+          logWorkerEvent('error', 'moderation_background_failed');
+        }
+      }
+
+      ctx.waitUntil(moderateBackground(body, env));
+
+      return new Response(JSON.stringify({ status: 'processing', reason: 'Moderación iniciada en segundo plano.' }), { 
+        status: 202, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // Endpoint interno para obtener las métricas de plataformas usando APIs directamente
+    if (path === '/api/metrics') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const user = await getAuthenticatedUser(authHeader, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+      }
+
+      const role = await getUserRole(user.id, authHeader, env);
+      if (role !== 'admin' || !hasAdminSecondFactor(authHeader)) {
+        return jsonResponse({ error: 'Forbidden' }, 403);
+      }
+
+      // 1. Fetch Cloudflare Metrics (si tenemos los tokens)
+      let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID' };
+      if (env.CF_API_TOKEN && env.CF_ACCOUNT_ID) {
+        try {
+          const date = new Date();
+          const todayStr = date.toISOString().split('T')[0] + 'T00:00:00Z'; // Inicio del dia UTC
+          const cfQuery = `
+            query {
+              viewer {
+                accounts(filter: {accountTag: "${env.CF_ACCOUNT_ID}"}) {
+                  workersInvocationsAdaptive(limit: 10000, filter: {datetime_geq: "${todayStr}"}) {
+                    sum { requests }
+                  }
+                }
+              }
+            }
+          `;
+          const cfRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${env.CF_API_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ query: cfQuery })
+          });
+          const cfJson: any = await cfRes.json();
+          if (cfJson?.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive?.[0]?.sum?.requests !== undefined) {
+            cloudflareData = { requests: cfJson.data.viewer.accounts[0].workersInvocationsAdaptive[0].sum.requests, error: '' };
+          } else {
+            const cfErr = cfJson?.errors?.[0]?.message || 'Error desconocido';
+            cloudflareData.error = `Error GraphQL CF: ${cfErr}`;
+          }
+        } catch (e: any) {
+          cloudflareData.error = `Excepción CF: ${e.message}`;
+        }
+      }
+
+      // 2. Supabase API doesn't expose usage metrics publicly
+      let supabaseData = { storage_bytes: null as number | null, egress_bytes: null as number | null, db_bytes: null as number | null, error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID' };
+      if (env.SUPABASE_MANAGEMENT_TOKEN && env.SUPABASE_PROJECT_ID) {
+        supabaseData = {
+          db_bytes: null,
+          storage_bytes: null,
+          egress_bytes: null,
+          error: 'Usa el dashboard de Supabase para ver el ancho de banda y storage real.'
+        };
+      }
+
+      // 3. Google Analytics Data API (realtime users, read-only)
+      const analyticsData = await fetchGoogleAnalyticsMetrics(env);
+      const responseBody = {
+        cloudflare: cloudflareData,
+        supabase: supabaseData,
+        analytics: analyticsData,
+      };
+
+      return new Response(JSON.stringify(responseBody), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (path === '/api/auth/resend-confirmation' && request.method === 'POST') {
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      if (await isRateLimited(env, `${clientIp}:resend-confirmation:v2`, 5, 600000)) {
+        logWorkerEvent('info', 'auth_resend_rate_limited');
+        return jsonResponse({ ok: true });
+      }
+
+      let body: any;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({ ok: true });
+      }
+
+      const email = normalizeEmail(body?.email);
+      if (!isValidEmail(email)) {
+        return jsonResponse({ ok: true });
+      }
+
+      const confirmedAt = await getEmailConfirmedAt(email, env);
+      if (confirmedAt) {
+        await sendAlreadyConfirmedEmail(email, env);
+      } else {
+        await resendSignupConfirmation(email, env);
+      }
+
+      return jsonResponse({ ok: true });
+    }
+
+// 1. Interceptar solicitudes de API de Supabase Proxy
     if (path.startsWith('/api/supabase/')) {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       const method = request.method;
       const subPath = path.replace('/api/supabase', '');
 
-      // 1. Denuncias (POST a rest/v1/property_reports) - Máximo 3 cada 5 minutos (300,000 ms)
-      if (method === 'POST' && subPath.startsWith('/rest/v1/property_reports')) {
+      // ── Lista blanca de tablas y métodos permitidos ──
+      const authHeader = request.headers.get('Authorization') || '';
+      const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
+
+      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
+      const allowedPublicRpcs = ['get_public_agent_profile', 'increment_property_view_count'];
+      const allowedAuthenticatedRpcs = ['get_admin_metrics', 'submit_kyc_request', 'review_kyc_request'];
+
+      const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
+      const tableName = restMatch ? restMatch[1] : null;
+      const rpcMatch = subPath.match(/^\/rest\/v1\/rpc\/([^/?]+)/);
+      const rpcName = rpcMatch ? rpcMatch[1] : null;
+      const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
+        && authenticated
+        && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
+      const isAllowedAuthenticatedRpc = method === 'POST'
+        && authenticated
+        && rpcName !== null
+        && allowedAuthenticatedRpcs.includes(rpcName);
+      const isAllowedPublicRpc = method === 'POST'
+        && rpcName !== null
+        && allowedPublicRpcs.includes(rpcName);
+
+      const authRateLimitResponse = await enforceAuthRateLimit(request, env, clientIp, subPath);
+      if (authRateLimitResponse) {
+        return authRateLimitResponse;
+      }
+
+      if (shouldCheckPwnedPassword(method, subPath)) {
+        const passwordCheckRateLimit = await checkRateLimit(
+          env,
+          `${clientIp}:auth:pwned-password:v1`,
+          10,
+          60000,
+        );
+        if (!passwordCheckRateLimit.allowed) {
+          return rateLimitResponse(passwordCheckRateLimit.resetAt);
+        }
+
+        let password: unknown;
+        try {
+          const authBody = await request.clone().json() as { password?: unknown };
+          password = authBody.password;
+        } catch {
+          password = undefined;
+        }
+
+        if (typeof password === 'string' && password.length > 0) {
+          const exposure = await checkPwnedPassword(password);
+          if (exposure.status === 'pwned') {
+            return jsonResponse({
+              code: 'weak_password',
+              message: 'Esta contraseña apareció en filtraciones conocidas. Elige una contraseña diferente.',
+            }, 422);
+          }
+          if (exposure.status === 'unavailable') {
+            logWorkerEvent('warn', 'password_exposure_check_unavailable', {
+              source: 'pwned_passwords',
+            });
+          }
+        }
+      }
+
+      // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
+      if (method === 'DELETE' || method === 'PATCH') {
+        if (!isAllowedAuthenticatedMfaDelete
+          && (!tableName || !allowedWriteTables.includes(tableName) || !authenticated)) {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+      }
+
+      // Bloquear POST a tablas no permitidas
+      if (method === 'POST'
+        && tableName
+        && !allowedWriteTables.includes(tableName)
+        && !isAllowedAuthenticatedRpc
+        && !isAllowedPublicRpc) {
+        return jsonResponse({ error: 'Operación no permitida.' }, 403);
+      }
+
+      // Rate limiting por tipo de operación
+      // 1. Denuncias (POST a property_reports) - Máximo 3 cada 5 minutos
+      if (method === 'POST' && tableName === 'property_reports') {
         const key = `${clientIp}:reports`;
-        if (isRateLimited(key, 3, 300000)) {
+        if (await isRateLimited(env, key, 3, 300000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de denuncias excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -64,10 +1033,26 @@ export default {
           );
         }
       }
-      // 2. Publicaciones (POST a rest/v1/properties) - Máximo 5 cada 10 minutos (600,000 ms)
-      else if (method === 'POST' && subPath.startsWith('/rest/v1/properties')) {
+      // 1b. Contactos (POST a contacts) - Máximo 5 cada 5 minutos
+      else if (method === 'POST' && tableName === 'contacts') {
+        const key = `${clientIp}:contacts`;
+        if (await isRateLimited(env, key, 5, 300000)) {
+          return new Response(
+            JSON.stringify({ error: 'Límite de mensajes excedido. Por favor, intenta de nuevo más tarde.' }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '300'
+              }
+            }
+          );
+        }
+      }
+      // 2. Publicaciones (POST a properties) - Máximo 5 cada 10 minutos
+      else if (method === 'POST' && tableName === 'properties') {
         const key = `${clientIp}:publish`;
-        if (isRateLimited(key, 5, 600000)) {
+        if (await isRateLimited(env, key, 5, 600000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de publicaciones excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -80,10 +1065,10 @@ export default {
           );
         }
       }
-      // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos (600,000 ms)
+      // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos
       else if ((method === 'POST' || method === 'PUT') && subPath.startsWith('/storage/v1/object/')) {
         const key = `${clientIp}:storage`;
-        if (isRateLimited(key, 40, 600000)) {
+        if (await isRateLimited(env, key, 40, 600000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de subida de imágenes excedido. Por favor, intenta de nuevo más tarde.' }),
             {
@@ -96,10 +1081,10 @@ export default {
           );
         }
       }
-      // 4. Límite general (GET, OPTIONS, etc.) - Máximo 100 cada 1 minuto (60,000 ms)
+      // 4. Límite general (GET, OPTIONS, etc.) - evita falsos positivos en navegación pública
       else {
         const key = `${clientIp}:general`;
-        if (isRateLimited(key, 100, 60000)) {
+        if (await isRateLimited(env, key, 300, 60000)) {
           return new Response(
             JSON.stringify({ error: 'Límite de peticiones excedido. Demasiadas solicitudes.' }),
             {
@@ -114,26 +1099,47 @@ export default {
       }
 
       const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
-      const targetUrl = request.url.replace(
+      let targetUrl = request.url.replace(
         url.origin + '/api/supabase',
         supabaseUrl
       );
 
-      const headers = new Headers(request.headers);
-      headers.delete('host');
+      if (subPath.startsWith('/realtime/')) {
+        const realtimeUrl = new URL(targetUrl);
+        if (realtimeUrl.searchParams.get('apikey') === 'dummy-key-safe-from-browsers') {
+          realtimeUrl.searchParams.set('apikey', env.VITE_SUPABASE_ANON_KEY);
+          targetUrl = realtimeUrl.toString();
+        }
+      }
+
+      const headers = new Headers();
+      const allowedRequestHeaders = [
+        'accept',
+        'accept-profile',
+        'apikey',
+        'authorization',
+        'content-profile',
+        'content-type',
+        'prefer',
+        'range',
+        'range-unit',
+        'x-client-info',
+        'x-supabase-api-version',
+      ];
+      for (const headerName of allowedRequestHeaders) {
+        const value = request.headers.get(headerName);
+        if (value) headers.set(headerName, value);
+      }
+
+      if (subPath.startsWith('/realtime/')) {
+        for (const headerName of ['connection', 'sec-websocket-key', 'sec-websocket-protocol', 'sec-websocket-version', 'upgrade']) {
+          const value = request.headers.get(headerName);
+          if (value) headers.set(headerName, value);
+        }
+      }
 
       // Inyectar la Anon Key real si falta o es la clave dummy en el cliente
       const apiKeyHeader = headers.get('apikey');
-      const authHeader = headers.get('Authorization');
-      
-      console.log('Worker Proxy Request:', {
-        path,
-        method,
-        apiKeyHeader,
-        authHeader,
-        envKeyLength: env.VITE_SUPABASE_ANON_KEY ? env.VITE_SUPABASE_ANON_KEY.length : 0,
-        envKeyStart: env.VITE_SUPABASE_ANON_KEY ? env.VITE_SUPABASE_ANON_KEY.substring(0, 10) : 'none'
-      });
 
       if (!apiKeyHeader || apiKeyHeader === 'dummy-key-safe-from-browsers') {
         headers.set('apikey', env.VITE_SUPABASE_ANON_KEY);
@@ -155,7 +1161,6 @@ export default {
 
       const response = await fetch(targetUrl, fetchOptions);
 
-      // Si la respuesta es una redirección (3xx), construir una nueva respuesta de redirección limpia para el navegador
       if (response.status >= 300 && response.status < 400) {
         const redirectUrl = response.headers.get('Location') || response.headers.get('location');
         if (redirectUrl) {
@@ -168,11 +1173,11 @@ export default {
         }
       }
 
-      return response;
+      return withSecurityHeaders(response, url);
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
-    const match = path.match(/^\/propiedad\/([^\/]+)/);
+    const match = path.match(/^\/propiedad\/([^/]+)/);
 
     if (match) {
       const slug = match[1];
@@ -188,87 +1193,138 @@ export default {
           // Consultar la propiedad de manera asíncrona usando la API REST pública de Supabase
           const supabaseResponse = await fetch(
             `${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=title,description,cover_image,price_usd`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+              }
+            }
+          );
+
+          if (supabaseResponse.ok) {
+            const properties = await supabaseResponse.json() as any[];
+            if (properties && properties.length > 0) {
+              const property = properties[0];
+              const price = property.price_usd 
+                ? `USD ${property.price_usd.toLocaleString('en-US')}` 
+                : 'Precio no informado';
+              
+              const title = `${property.title} - ${price}`;
+              const description = property.description 
+                ? `${property.description.slice(0, 150)}... Contacto en Cubitat.`
+                : 'Encuentra propiedades en venta y renta en Cuba con Cubitat.';
+              const image = property.cover_image || '';
+
+              // Obtener el HTML estático base desde el manejador de activos
+              const assetResponse = await env.ASSETS.fetch(request);
+
+              // Re-escribir las etiquetas HTML usando HTMLRewriter al vuelo
+              // @ts-ignore
+              const rewritten = new HTMLRewriter()
+                .on('meta[property="og:title"]', {
+                  element(el: any) {
+                    el.setAttribute('content', title);
+                  }
+                })
+                .on('meta[name="twitter:title"]', {
+                  element(el: any) {
+                    el.setAttribute('content', title);
+                  }
+                })
+                .on('meta[property="og:description"]', {
+                  element(el: any) {
+                    el.setAttribute('content', description);
+                  }
+                })
+                .on('meta[name="twitter:description"]', {
+                  element(el: any) {
+                    el.setAttribute('content', description);
+                  }
+                })
+                .on('meta[property="og:image"]', {
+                  element(el: any) {
+                    el.setAttribute('content', image);
+                  }
+                })
+                .on('meta[name="twitter:image"]', {
+                  element(el: any) {
+                    el.setAttribute('content', image);
+                  }
+                })
+                .on('meta[property="og:url"]', {
+                  element(el: any) {
+                    el.setAttribute('content', canonicalUrl(url));
+                  }
+                })
+                .on('link[rel="canonical"]', {
+                  element(el: any) {
+                    el.setAttribute('href', canonicalUrl(url));
+                  }
+                })
+                .on('meta[property="og:type"]', {
+                  element(el: any) {
+                    el.setAttribute('content', 'article');
+                  }
+                })
+                .on('title', {
+                  element(el: any) {
+                    el.setInnerContent(title);
+                  }
+                })
+                .transform(assetResponse);
+
+              // Configurar cabeceras de cacheo y seguridad
+              const baseHeaders = new Headers(rewritten.headers);
+              baseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+              
+              const rawResponse = new Response(rewritten.body, {
+                status: rewritten.status,
+                statusText: rewritten.statusText,
+                headers: baseHeaders
+              });
+
+              const finalResponse = withSecurityHeaders(rawResponse, url);
+
+              return finalResponse;
             }
           }
-        );
 
-        if (supabaseResponse.ok) {
-          const properties = await supabaseResponse.json() as any[];
-          if (properties && properties.length > 0) {
-            const property = properties[0];
-            const price = property.price_usd 
-              ? `USD ${property.price_usd.toLocaleString('en-US')}` 
-              : 'Precio no informado';
-            
-            const title = `${property.title} - ${price}`;
-            const description = property.description 
-              ? `${property.description.slice(0, 150)}... Contacto en Cubitat.`
-              : 'Encuentra propiedades en venta y renta en Cuba con Cubitat.';
-            const image = property.cover_image || '';
-
-            // Obtener el HTML estático base desde el manejador de activos
-            const assetResponse = await env.ASSETS.fetch(request);
-
-            // Re-escribir las etiquetas HTML usando HTMLRewriter al vuelo
-            // @ts-ignore
-            return new HTMLRewriter()
-              .on('meta[property="og:title"]', {
-                element(el: any) {
-                  el.setAttribute('content', title);
-                }
-              })
-              .on('meta[name="twitter:title"]', {
-                element(el: any) {
-                  el.setAttribute('content', title);
-                }
-              })
-              .on('meta[property="og:description"]', {
-                element(el: any) {
-                  el.setAttribute('content', description);
-                }
-              })
-              .on('meta[name="twitter:description"]', {
-                element(el: any) {
-                  el.setAttribute('content', description);
-                }
-              })
-              .on('meta[property="og:image"]', {
-                element(el: any) {
-                  el.setAttribute('content', image);
-                }
-              })
-              .on('meta[name="twitter:image"]', {
-                element(el: any) {
-                  el.setAttribute('content', image);
-                }
-              })
-              .on('meta[property="og:url"]', {
-                element(el: any) {
-                  el.setAttribute('content', url.toString());
-                }
-              })
-              .on('meta[property="og:type"]', {
-                element(el: any) {
-                  el.setAttribute('content', 'article');
-                }
-              })
-              .on('title', {
-                element(el: any) {
-                  el.setInnerContent(title);
-                }
-              })
-              .transform(assetResponse);
-          }
+          const assetResponse = await env.ASSETS.fetch(request);
+          const notFoundResponse = new Response(assetResponse.body, {
+            status: supabaseResponse.ok ? 404 : 503,
+            headers: assetResponse.headers,
+          });
+          return withSecurityHeaders(
+            await rewriteCanonicalLink(notFoundResponse, url, false),
+            url,
+            true,
+          );
+        } catch {
+          logWorkerEvent('error', 'seo_rewrite_failed');
+          const assetResponse = await env.ASSETS.fetch(request);
+          const unavailableResponse = new Response(assetResponse.body, {
+            status: 503,
+            headers: assetResponse.headers,
+          });
+          return withSecurityHeaders(
+            await rewriteCanonicalLink(unavailableResponse, url, false),
+            url,
+            true,
+          );
         }
-      } catch (err) {
-        console.error('Error al interceptar tags dinámicos:', err);
       }
+
+      const assetResponse = await env.ASSETS.fetch(request);
+      const invalidPropertyResponse = new Response(assetResponse.body, {
+        status: 404,
+        headers: assetResponse.headers,
+      });
+      return withSecurityHeaders(
+        await rewriteCanonicalLink(invalidPropertyResponse, url, false),
+        url,
+        true,
+      );
     }
-  }
 
     // Retorno por defecto (activos estáticos normales del frontend)
     let response = await env.ASSETS.fetch(request);
@@ -285,6 +1341,25 @@ export default {
       });
     }
 
-    return response;
+    // Inyectar cabeceras de Content-Type con charset=utf-8 para documentos HTML
+    const contentType = response.headers.get('Content-Type') || '';
+    if (contentType.includes('text/html')) {
+      const newHeaders = new Headers(response.headers);
+      if (!contentType.includes('charset')) {
+        newHeaders.set('Content-Type', 'text/html; charset=utf-8');
+      }
+      newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      newHeaders.set('Pragma', 'no-cache');
+      newHeaders.set('Expires', '0');
+      response = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders
+      });
+    }
+
+    response = await rewriteCanonicalLink(response, url);
+
+    return withSecurityHeaders(response, url);
   }
 };

@@ -1,0 +1,85 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RateLimiter } from './rate-limiter'
+
+type RateLimitEntry = { count: number; resetTime: number }
+
+function createStorage() {
+  const records = new Map<string, RateLimitEntry>()
+
+  return {
+    records,
+    get: vi.fn(async (key: string) => records.get(key)),
+    put: vi.fn(async (key: string, value: RateLimitEntry) => {
+      records.set(key, value)
+    }),
+    delete: vi.fn(async (key: string) => {
+      records.delete(key)
+    }),
+    list: vi.fn(async () => new Map(records)),
+    setAlarm: vi.fn(async () => undefined),
+  }
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-07-11T12:00:00Z'))
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
+describe('RateLimiter durable object', () => {
+  it('rejects checks without a key', async () => {
+    const storage = createStorage()
+    const limiter = new RateLimiter({ storage })
+
+    const response = await limiter.fetch(new Request('https://rate-limiter/check'))
+
+    expect(response.status).toBe(400)
+    await expect(response.text()).resolves.toBe('Missing key')
+    expect(storage.put).not.toHaveBeenCalled()
+  })
+
+  it('allows requests up to the configured limit and then blocks', async () => {
+    const storage = createStorage()
+    const limiter = new RateLimiter({ storage })
+    const request = new Request('https://rate-limiter/check?key=login%3Aip&limit=2&windowMs=60000')
+
+    const first = await limiter.fetch(request.clone())
+    const second = await limiter.fetch(request.clone())
+    const third = await limiter.fetch(request.clone())
+
+    await expect(first.json()).resolves.toMatchObject({ allowed: true, remaining: 1 })
+    await expect(second.json()).resolves.toMatchObject({ allowed: true, remaining: 0 })
+    await expect(third.json()).resolves.toMatchObject({ allowed: false, remaining: 0 })
+    expect(storage.setAlarm).toHaveBeenCalledTimes(1)
+  })
+
+  it('starts a fresh window after the previous one expires', async () => {
+    const storage = createStorage()
+    const limiter = new RateLimiter({ storage })
+    const request = new Request('https://rate-limiter/check?key=recovery&limit=1&windowMs=1000')
+
+    await limiter.fetch(request.clone())
+    vi.advanceTimersByTime(1001)
+    const response = await limiter.fetch(request.clone())
+
+    await expect(response.json()).resolves.toMatchObject({ allowed: true, remaining: 0 })
+    expect(storage.records.get('recovery')?.count).toBe(1)
+  })
+
+  it('deletes expired entries when its alarm runs', async () => {
+    const storage = createStorage()
+    storage.records.set('expired', { count: 4, resetTime: Date.now() - 1 })
+    storage.records.set('active', { count: 1, resetTime: Date.now() + 60_000 })
+    const limiter = new RateLimiter({ storage })
+
+    await limiter.alarm()
+
+    expect(storage.records.has('expired')).toBe(false)
+    expect(storage.records.has('active')).toBe(true)
+    expect(storage.delete).toHaveBeenCalledWith('expired')
+  })
+})

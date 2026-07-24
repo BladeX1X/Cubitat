@@ -10,8 +10,22 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-reports
+/reports/
+test-results
+.wrangler
+.unlighthouse-ci
+unlighthouse-*.json
+%TEMP%
+scratch
+temp_supa
+scripts/optimize-images.mjs
 *.local
+
+# Local env files and secrets
+.env
+.env.*
+.dev.vars
+!.env.example
 
 # Editor directories and files
 .vscode/*

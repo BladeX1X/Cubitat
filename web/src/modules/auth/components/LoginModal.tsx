@@ -12,8 +12,13 @@ import {
 } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
+import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
-import { getAuthRedirectUrl } from '../utils/authRedirects'
+import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
+import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
+import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
+import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -36,11 +41,31 @@ export function LoginModal({ onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [canResendConfirmation, setCanResendConfirmation] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
+
+  useEffect(() => {
+    setTurnstileToken(null)
+  }, [isRegistering, isResettingPassword])
+
+  function resetTurnstileChallenge() {
+    setTurnstileToken(null)
+    setTurnstileKey((current) => current + 1)
+  }
 
   async function handleGoogleSignIn() {
+    if (!navigator.onLine) {
+      setErrorMsg('Para iniciar sesión necesitas una conexión a Internet activa.')
+      return
+    }
+
     setLoading(true)
     setErrorMsg(null)
     setSuccessMsg(null)
+
+    const currentPath = window.location.pathname + window.location.search + window.location.hash
+    if (!storeAuthReturnPath(currentPath)) clearAuthReturnPath()
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -49,11 +74,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
         skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
+          prompt: 'select_account',
         },
       },
     })
 
     if (error) {
+      clearAuthReturnPath()
       setLoading(false)
       setErrorMsg(error.message || 'No pudimos iniciar sesion con Google.')
       return
@@ -67,6 +94,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       )
       window.location.assign(nativeUrl)
     } else {
+      clearAuthReturnPath()
       setLoading(false)
       setErrorMsg('No se pudo generar la URL de autenticación.')
     }
@@ -100,16 +128,32 @@ export function LoginModal({ onClose }: LoginModalProps) {
     event.preventDefault()
     setErrorMsg(null)
     setSuccessMsg(null)
+    setCanResendConfirmation(false)
+
+    if (!navigator.onLine) {
+      setErrorMsg('Para iniciar sesión necesitas una conexión a Internet activa.')
+      return
+    }
+
+    const cleanEmail = email.trim().toLowerCase()
 
     if (isResettingPassword) {
+      if (!turnstileToken) {
+        setErrorMsg('Por favor, completa la verificación de seguridad.')
+        return
+      }
       setLoading(true)
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await requestPasswordResetWithCaptcha({
+          email: cleanEmail,
+          captchaToken: turnstileToken,
           redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
         })
         if (error) throw error
         setSuccessMsg('Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.')
+        setTurnstileToken(null)
       } catch (err: any) {
+        resetTurnstileChallenge()
         setErrorMsg(err?.message || 'No pudimos enviar el correo de recuperacion.')
       } finally {
         setLoading(false)
@@ -119,8 +163,9 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
     // Password validation rules
     if (isRegistering) {
-      if (password.length < 8) {
-        setErrorMsg('La contraseña debe tener al menos 8 caracteres.')
+      const passwordPolicyError = getPasswordPolicyError(password)
+      if (passwordPolicyError) {
+        setErrorMsg(passwordPolicyError)
         return
       }
       if (password !== confirmPassword) {
@@ -129,36 +174,53 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     }
 
-    setLoading(true)
+    if (isRegistering) {
+      if (!turnstileToken) {
+        setErrorMsg('Por favor, completa la verificación de seguridad.')
+        return
+      }
+      setLoading(true)
+    } else {
+      setLoading(true)
+    }
 
     try {
       if (isRegistering) {
         // Sign Up with custom metadata trigger values
-        const { error } = await supabase.auth.signUp({
-          email,
+        const { data, error } = await signUpWithCaptcha({
+          email: cleanEmail,
           password,
-          options: {
-            emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
-            data: {
-              full_name: fullName,
-              role: 'buyer', // Default public profile role
-            }
-          }
+          fullName,
+          captchaToken: turnstileToken!,
+          emailRedirectTo: getAuthRedirectUrl('/auth/callback'),
         })
         if (error) throw error
-        setSuccessMsg('Cuenta creada. Revisa tu correo para confirmar el email antes de iniciar sesion.')
+
+        const existingAccount = data.user?.identities?.length === 0
+        setSuccessMsg(existingAccount
+          ? 'Ese correo ya tiene una cuenta. Si ya confirmaste el correo, inicia sesion. Si aun no lo confirmaste, puedes reenviar el enlace.'
+          : 'Cuenta creada. Revisa tu correo para confirmar el email antes de iniciar sesion.'
+        )
+        setCanResendConfirmation(true)
         setConfirmPassword('')
+        setTurnstileToken(null)
       } else {
         // Sign In
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password
         })
         if (error) throw error
         onClose?.()
       }
     } catch (err: any) {
-      console.error('Auth error:', err)
+      logSafeEvent({
+        module: 'auth',
+        action: isResettingPassword ? 'reset_password' : isRegistering ? 'register' : 'login',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      if (isRegistering || isResettingPassword) resetTurnstileChallenge()
       let msg = 'Ocurrió un error inesperado.'
       if (err?.message && err.message !== '{}') {
         msg = err.message
@@ -177,8 +239,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
         msg = 'Por favor, confirma tu correo electronico para continuar.'
       } else if (msg.toLowerCase().includes('email rate limit exceeded')) {
         msg = 'Alcanzamos el limite temporal de correos de prueba. Intenta de nuevo mas tarde.'
-      } else if (msg.includes('Password should be at least')) {
-        msg = 'La contraseña es demasiado débil.'
+      } else if (msg.includes('Password should be at least')
+        || msg.includes('Password should contain')
+        || err?.name === 'AuthWeakPasswordError') {
+        msg = PASSWORD_POLICY_MESSAGE
       }
 
       setErrorMsg(msg)
@@ -187,9 +251,47 @@ export function LoginModal({ onClose }: LoginModalProps) {
     }
   }
 
+  async function handleResendConfirmation() {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      setErrorMsg('Escribe el correo para reenviar la confirmacion.')
+      return
+    }
+
+    setLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const response = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+        }),
+      })
+
+      if (!response.ok) throw new Error('No pudimos procesar la solicitud.')
+      setSuccessMsg('Si falta confirmar el correo, recibiras un nuevo enlace. Si ya esta confirmado, recibiras un aviso con las opciones para entrar.')
+      setCanResendConfirmation(false)
+    } catch (err: any) {
+      logSafeEvent({
+        module: 'auth',
+        action: 'resend_confirmation',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      setErrorMsg(err?.message || 'No pudimos reenviar el correo de confirmacion.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return createPortal(
     <div
       className={`login-modal-overlay ${isClosing ? 'closing' : ''}`}
+      style={MODAL_LAYER_STYLE}
       id="login"
       aria-label="Inicio de sesion"
       role="dialog"
@@ -278,6 +380,16 @@ export function LoginModal({ onClose }: LoginModalProps) {
             {successMsg && (
               <div className="p-3 text-xs bg-green-50 border border-green-200 text-green-700 rounded-md">
                 {successMsg}
+                {canResendConfirmation && isRegistering && !isResettingPassword ? (
+                  <button
+                    className="mt-2 block font-bold text-[#035f53] underline underline-offset-2"
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                  >
+                    Reenviar enlace si falta confirmar
+                  </button>
+                ) : null}
               </div>
             )}
 
@@ -378,6 +490,16 @@ export function LoginModal({ onClose }: LoginModalProps) {
               </div>
             )}
 
+            {(isRegistering || isResettingPassword) && (
+              <TurnstileWidget
+                key={turnstileKey}
+                action={isResettingPassword ? "forgot-password" : "register-user"}
+                onVerify={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
+            )}
+
             <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
               {loading ? (
                 <>Procesando...</>
@@ -417,6 +539,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                 setIsRegistering(!isRegistering)
                 setErrorMsg(null)
                 setSuccessMsg(null)
+                setCanResendConfirmation(false)
               }}
               className="text-[#035f53] font-semibold hover:underline"
             >
@@ -425,8 +548,8 @@ export function LoginModal({ onClose }: LoginModalProps) {
           </p>
           )}
           <p className="login-legal-copy">
-            Al continuar aceptas los <a href="#terminos">terminos</a> y el{' '}
-            <a href="#privacidad">aviso de privacidad</a>.
+            Al continuar aceptas los <a href="/terminos">terminos</a> y el{' '}
+            <a href="/privacidad">aviso de privacidad</a>.
           </p>
         </div>
       </div>

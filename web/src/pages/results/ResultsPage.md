@@ -70,6 +70,15 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 - El popover de ordenamiento se cierra al seleccionar una opcion para evitar que tape el grid.
 - En movil, `/resultados` usa un layout compacto inspirado en portales inmobiliarios: header mas bajo, filtros en una fila, sin resumen descriptivo y con tarjetas reducidas para que se vea mas contenido desde el primer viewport.
 - En movil, la bottom nav se oculta solo en `/resultados` para no tapar las tarjetas y maximizar el espacio de exploracion.
+- El modo visual `list|map` se conserva en `window.history.state` de la entrada
+  actual. Así, abrir un detalle desde la preview y volver con `Atrás` restaura el
+  mapa sin crear una entrada adicional ni sobrescribir otros datos del historial.
+- Cualquier valor de historial distinto de `list` o `map` se ignora y la página
+  usa la lista como fallback seguro.
+- Verificado en producción el 2026-07-14 tras PR #29 / `5de3ead`: en viewport
+  390×844, mapa → grupo de La Habana → primer detalle → Atrás restauró el
+  diálogo de mapa y `Ocultar mapa`; consola limpia. Worker verificado
+  `be21f08f-f473-455e-b6c2-d754a8b35813`.
 
 ## Verificacion Esperada
 
@@ -88,3 +97,23 @@ Prueba manual:
 - Confirmar que no aparece hero en `/resultados`.
 - Confirmar que aparecen tarjetas.
 - Confirmar que seleccionar una tarjeta actualiza el estado seleccionado.
+
+## Hardening de imágenes y CSS 2026-07-13
+
+- Las dos primeras tarjetas del catálogo priorizan solo su imagen principal,
+  porque cualquiera de ellas puede convertirse en LCP según el viewport.
+- Desde la tercera tarjeta, las imágenes usan carga diferida y prioridad de red
+  baja para no competir con el contenido sobre el fold.
+- `ResultsPage.css` se carga con la ruta lazy de resultados; los estilos
+  exclusivos del catálogo, filtros móviles y mapa no bloquean la portada.
+
+## Fallback crítico de la ruta 2026-07-13
+
+- El fallback de `Suspense` de resultados usa clases autónomas
+  `results-route-fallback*` definidas en el CSS global de entrada.
+- No debe reutilizar clases de `ResultsPage.css`: ese archivo llega junto con
+  el módulo lazy y aplicarlo después del primer render provoca cambios de layout.
+- El fallback reserva la misma estructura responsive del catálogo: cuatro,
+  tres, dos o una columna según el viewport, y 154 px de imagen en móvil.
+- La regresión queda cubierta por `PageLoadingState.test.tsx` y por una traza
+  móvil con red y CPU limitadas antes de desplegar.

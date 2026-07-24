@@ -1,35 +1,58 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
+  BarChart3,
   Camera,
+  Bell,
   Check,
   Edit3,
+  Loader2,
   Mail,
   MessageCircle,
   Search,
   ShieldCheck,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
+import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
+import { useSEO } from '../../shared/hooks/useSEO'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import {
+  AVATAR_IMAGE_RULES,
+  validateImageDimensions,
+  validateImageFile,
+} from '../../shared/lib/imageSecurity'
+import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
+import { KycSubmissionModal } from '../../modules/kyc/components/KycSubmissionModal'
+import type { VerificationStatus } from '../../modules/kyc/types'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 type AccountPageProps = {
   user: User
+  userRole?: string
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateAgentDashboard?: () => void
 }
 
 export function AccountPage({
   user,
+  userRole: initialUserRole,
   onBack,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateAgentDashboard,
 }: AccountPageProps) {
+  useSEO({
+    title: 'Mi Cuenta',
+  })
   const initialName =
     user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Cubitat'
   const [fullName, setFullName] = useState(initialName)
@@ -47,12 +70,22 @@ export function AccountPage({
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const email = user.email || 'Sin correo registrado'
   const initial = (fullName || email).substring(0, 1).toUpperCase()
+  const {
+    alerts: searchAlerts,
+    loading: loadingSearchAlerts,
+    deleteAlert: deleteSearchAlert,
+  } = useSearchAlerts(user.id)
   const verifiedItems = [
     Boolean(fullName.trim()),
     Boolean(email),
     Boolean(phoneVerifiedAt),
   ]
   const verifiedCount = verifiedItems.filter(Boolean).length
+
+  const [kycStatus, setKycStatus] = useState<VerificationStatus>('unverified')
+  const [kycReason, setKycReason] = useState<string | null>(null)
+  const [isKycModalOpen, setIsKycModalOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
 
   useEffect(() => {
     let cancelled = false
@@ -66,6 +99,9 @@ export function AccountPage({
 
       if (cancelled || !data) return
 
+      if (data.role) {
+        setUserRole(data.role)
+      }
       if (data.full_name) {
         setFullName(data.full_name)
         setDraftName(data.full_name)
@@ -78,6 +114,12 @@ export function AccountPage({
       }
       if (data.phone_verified_at) {
         setPhoneVerifiedAt(data.phone_verified_at)
+      }
+      if (PHASE_TWO_ENABLED && data.verification_status) {
+        setKycStatus(data.verification_status as VerificationStatus)
+      }
+      if (data.verification_reason) {
+        setKycReason(data.verification_reason)
       }
     }
 
@@ -134,8 +176,9 @@ export function AccountPage({
   async function handleAvatarFile(file: File | undefined) {
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      setAvatarMessage('Selecciona una imagen valida.')
+    const validationError = validateImageFile(file, AVATAR_IMAGE_RULES)
+    if (validationError) {
+      setAvatarMessage(validationError)
       return
     }
 
@@ -146,7 +189,12 @@ export function AccountPage({
     try {
       compressedBlob = await compressAvatarToWebP(file)
     } catch (err) {
-      console.error('Error compressing avatar:', err)
+      logSafeEvent({
+        module: 'account',
+        action: 'compress_avatar',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setAvatarMessage('No se pudo optimizar la imagen del avatar.')
       setIsUploadingAvatar(false)
       return
@@ -201,35 +249,39 @@ export function AccountPage({
   return (
     <AccountLayout
       active="account"
+      userRole={userRole || initialUserRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
-            <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-7 py-8 text-white shadow-sm">
-              <div className="absolute left-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-black/15">
-                <Search size={18} />
-              </div>
-              <div className="pl-0 sm:pl-8">
-                <h1 className="text-2xl sm:text-[28px] font-black tracking-tight">
+            <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-4 py-5 text-white shadow-sm sm:px-7 sm:py-8">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-black/15 sm:h-10 sm:w-10">
+                  <Search size={18} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-[20px] font-black leading-[1.08] tracking-tight sm:text-[28px]">
                   Centro de verificacion y cuenta
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm sm:text-base font-semibold text-white/85">
+                  </h1>
+                  <p className="mt-1.5 max-w-2xl text-xs font-semibold leading-snug text-white/85 sm:text-base">
                   Manten tu informacion actualizada y aumenta la confianza de tus contactos.
-                </p>
+                  </p>
+                </div>
               </div>
             </section>
 
-            <div className="mt-8 grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
-              <section className="flex flex-col items-center">
+            <div className="mt-5 grid grid-cols-1 gap-5 items-start xl:mt-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
+              <section className="flex items-center justify-center gap-4 xl:flex-col">
                 <div className="relative">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt={`Avatar de ${fullName}`}
-                      className="h-44 w-44 sm:h-52 sm:w-52 rounded-full object-cover shadow-sm"
+                      className="h-24 w-24 rounded-full object-cover shadow-sm sm:h-52 sm:w-52"
                     />
                   ) : (
-                    <div className="grid h-44 w-44 sm:h-52 sm:w-52 place-items-center rounded-full bg-[#1263e6] text-[76px] sm:text-[88px] font-light text-white shadow-sm">
+                    <div className="grid h-24 w-24 place-items-center rounded-full bg-[#1263e6] text-[42px] font-light text-white shadow-sm sm:h-52 sm:w-52 sm:text-[88px]">
                       {initial}
                     </div>
                   )}
@@ -244,7 +296,7 @@ export function AccountPage({
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={isUploadingAvatar}
-                    className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-4 py-1.5 text-xs font-black text-white shadow-sm"
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-3 py-1 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:px-4 sm:py-1.5 sm:text-xs"
                   >
                     {isUploadingAvatar ? <Edit3 size={13} /> : <Camera size={13} />}
                     {isUploadingAvatar ? 'Subiendo...' : 'Editar'}
@@ -257,12 +309,96 @@ export function AccountPage({
                 ) : null}
               </section>
 
-              <section className="grid gap-8">
+              <section className="grid gap-5 sm:gap-8">
+                {PHASE_TWO_ENABLED && (userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
+                  <section className="rounded-xl border border-[#035f53]/20 bg-emerald-50/60 p-4 shadow-sm sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#035f53] text-white flex items-center justify-center font-bold shrink-0">
+                          <BarChart3 size={20} />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-bold text-neutral-900">Panel de Agente</h2>
+                          <p className="text-xs text-neutral-600">Revisa métricas acumuladas, leads estimados y gestiona la visibilidad de tus propiedades.</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={onNavigateAgentDashboard}
+                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold px-5 h-9 shrink-0 shadow-xs"
+                      >
+                        Ir al Panel de Agente
+                      </Button>
+                    </div>
+                  </section>
+                )}
+
                 <VerificationCard
                   verifiedCount={verifiedCount}
                   hasName={Boolean(fullName.trim())}
                   hasEmail={Boolean(email)}
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
+                />
+
+                {PHASE_TWO_ENABLED && <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+                        <ShieldCheck size={20} />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-neutral-900">Verificación de Identidad (KYC)</h2>
+                        <p className="text-xs text-neutral-500">Obtén la insignia oficial en tus publicaciones</p>
+                      </div>
+                    </div>
+                    <VerificationBadge status={kycStatus} />
+                  </div>
+
+                  {kycStatus === 'unverified' && (
+                    <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <p className="text-xs text-neutral-600">
+                        Sube tu documento de identidad y una foto tuya sosteniéndolo para verificar tu cuenta.
+                      </p>
+                      <Button
+                        onClick={() => setIsKycModalOpen(true)}
+                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold shrink-0"
+                      >
+                        Solicitar Verificación
+                      </Button>
+                    </div>
+                  )}
+
+                  {kycStatus === 'pending' && (
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
+                      <strong>Tus evidencias están en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
+                    </div>
+                  )}
+
+                  {kycStatus === 'verified' && (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+                      <strong>¡Cuenta Verificada!</strong> Tu perfil cuenta con el distintivo oficial de confianza.
+                    </div>
+                  )}
+
+                  {kycStatus === 'rejected' && (
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-xs text-red-800 space-y-2">
+                      <p>
+                        <strong>Solicitud Rechazada:</strong> {kycReason || 'Las evidencias presentadas no pudieron validarse.'}
+                      </p>
+                      <Button
+                        onClick={() => setIsKycModalOpen(true)}
+                        variant="outline"
+                        className="rounded-full text-xs font-bold border-red-200 text-red-700 bg-white"
+                      >
+                        Reenviar evidencias
+                      </Button>
+                    </div>
+                  )}
+                </section>}
+
+                <SearchAlertsCard
+                  alerts={searchAlerts}
+                  loading={loadingSearchAlerts}
+                  onDelete={deleteSearchAlert}
                 />
 
                 <AccountSection title="Informacion de usuario">
@@ -323,7 +459,108 @@ export function AccountPage({
                 </div>
               </section>
             </div>
+
+      {PHASE_TWO_ENABLED && <KycSubmissionModal
+        userId={user.id}
+        isOpen={isKycModalOpen}
+        onClose={() => setIsKycModalOpen(false)}
+        onSuccess={() => {
+          setKycStatus('pending')
+          setKycReason(null)
+        }}
+      />}
     </AccountLayout>
+  )
+}
+
+function SearchAlertsCard({
+  alerts,
+  loading,
+  onDelete,
+}: {
+  alerts: SearchAlert[]
+  loading: boolean
+  onDelete: (alertId: string) => Promise<void>
+}) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+
+  async function handleDelete(alertId: string) {
+    setDeletingId(alertId)
+    setMessage(null)
+
+    try {
+      await onDelete(alertId)
+      setMessage('Alerta eliminada.')
+    } catch {
+      setMessage('No se pudo eliminar la alerta.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79] sm:h-12 sm:w-12">
+            <Bell size={22} />
+          </span>
+          <div>
+            <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
+              Alertas de busqueda
+            </h2>
+            <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
+              Guarda filtros importantes y consultalos aqui. El envio automatico por email queda como tarea pendiente.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center gap-2 rounded-lg bg-neutral-50 px-4 py-3 text-sm font-bold text-neutral-500">
+            <Loader2 size={16} className="animate-spin" />
+            Cargando alertas...
+          </div>
+        ) : alerts.length > 0 ? (
+          <div className="grid gap-3">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                data-search-alert-id={alert.id}
+                className="grid gap-3 rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-neutral-900">
+                    {alert.label}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-neutral-500">
+                    Creada el {new Date(alert.created_at).toLocaleDateString('es-CU')}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
+                  disabled={deletingId === alert.id}
+                  onClick={() => handleDelete(alert.id)}
+                >
+                  <Trash2 size={14} />
+                  {deletingId === alert.id ? 'Eliminando...' : 'Eliminar'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-neutral-200 px-4 py-5 text-sm text-neutral-500">
+            Todavia no tienes alertas. Entra a resultados, aplica filtros y pulsa Crear alerta.
+          </div>
+        )}
+
+        {message ? (
+          <p className="text-sm font-bold text-[#008f79]">{message}</p>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -419,17 +656,17 @@ function VerificationCard({
   const missingCount = totalItems - verifiedCount
 
   return (
-    <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-5">
+    <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <div className="flex gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79]">
-            <ShieldCheck size={24} />
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#d7faea] text-[#008f79] sm:h-12 sm:w-12">
+            <ShieldCheck size={22} />
           </span>
           <div>
-            <h2 className="text-lg font-black text-neutral-900">
+            <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
               Completa tu verificacion y aumenta tu rendimiento
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
               Los usuarios con datos verificados reciben mas contactos y generan mayor confianza.
             </p>
           </div>
@@ -570,12 +807,20 @@ function StatusPill({ status }: { status: 'verified' | 'pending' | 'missing' }) 
 
 /* Helper to compress avatar image to WebP offline with Canvas */
 async function compressAvatarToWebP(file: File): Promise<Blob> {
+  const fileValidationError = validateImageFile(file, AVATAR_IMAGE_RULES)
+  if (fileValidationError) throw new Error(fileValidationError)
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
       img.onload = () => {
         try {
+          const dimensionError = validateImageDimensions(img.width, img.height, AVATAR_IMAGE_RULES)
+          if (dimensionError) {
+            reject(new Error(dimensionError))
+            return
+          }
           const canvas = document.createElement('canvas')
           let width = img.width
           let height = img.height

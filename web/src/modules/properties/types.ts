@@ -2,7 +2,7 @@ export type OperationType = 'venta' | 'alquiler' | 'permuta'
 
 export type PropertyType = 'casa' | 'apartamento' | 'terreno'
 
-export type PropertyStatus = 'published' | 'pending_review' | 'paused'
+export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'owner_hidden' | 'ai_approved' | 'ai_rejected'
 
 export type Property = {
   id: string
@@ -37,4 +37,6 @@ export type Property = {
     phone?: string
     email?: string
   } | null
+  view_count?: number
+  user_id?: string
 }

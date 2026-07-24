@@ -48,10 +48,10 @@ export function SvgMapAdapter({
                 d={zone.path}
                 role="button"
                 tabIndex={0}
-                onClick={() => onSelectZone(zone.id)}
+                onClick={() => onSelectZone?.(zone.id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
-                    onSelectZone(zone.id)
+                    onSelectZone?.(zone.id)
                   }
                 }}
               />

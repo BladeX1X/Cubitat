@@ -15,6 +15,7 @@ export function PropertyMap(props: MapAdapterProps) {
   )
 }
 
+
 function MapLoadingState() {
   return (
     <div className="map-card map-loading-state">

@@ -1,11 +1,14 @@
 .agents/
 .agent/
 .claude/
+.tmp-map-reference-frames/
+.unlighthouse/
+tmp/
 .playwright/
 .playwright-cli/
 %TEMP%/
 scratch/
-reports/
+/reports/
 test-results/
 temp_supa/
 node_modules/

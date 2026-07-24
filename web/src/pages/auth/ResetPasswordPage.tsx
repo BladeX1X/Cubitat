@@ -3,13 +3,19 @@ import { Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
-import { cleanAuthUrl, getAuthUrlParams } from './authUrlParams'
+import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
+import { useSEO } from '../../shared/hooks/useSEO'
+import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
 
 type ResetPasswordPageProps = {
   onDone: () => void
 }
 
 export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
+  useSEO({
+    title: 'Restablecer Contraseña',
+  })
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -22,7 +28,8 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
 
   useEffect(() => {
     async function prepareSession() {
-      const { accessToken, code, error, refreshToken } = getAuthUrlParams()
+      const { accessToken, code, error, refreshToken, tokenHash, type } = getAuthUrlParams()
+      let unsubscribe: (() => void) | undefined
 
       if (error) {
         setErrorMsg(error)
@@ -32,7 +39,22 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       }
 
       try {
-        if (code) {
+        let sawPasswordRecoveryEvent = false
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            sawPasswordRecoveryEvent = true
+          }
+        })
+        unsubscribe = () => subscription.unsubscribe()
+
+        if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          })
+          if (verifyError) throw verifyError
+          sawPasswordRecoveryEvent = true
+        } else if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
         } else if (accessToken && refreshToken) {
@@ -41,6 +63,11 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
             refresh_token: refreshToken,
           })
           if (sessionError) throw sessionError
+        }
+
+        const hasAuthCredentials = Boolean(tokenHash || code || (accessToken && refreshToken))
+        if (!isPasswordRecoveryFlow(type, sawPasswordRecoveryEvent, hasAuthCredentials)) {
+          throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
 
         const { data: { session } } = await supabase.auth.getSession()
@@ -52,9 +79,10 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       } catch (err: any) {
         cleanAuthUrl('/recuperar-contrasena')
         setErrorMsg(err?.message || 'No pudimos validar el enlace de recuperacion.')
+      } finally {
+        unsubscribe?.()
+        setIsPreparingSession(false)
       }
-
-      setIsPreparingSession(false)
     }
 
     prepareSession()
@@ -65,13 +93,19 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
     setErrorMsg(null)
     setSuccessMsg(null)
 
+    if (!navigator.onLine) {
+      setErrorMsg('Para actualizar tu contraseña necesitas una conexión a Internet activa.')
+      return
+    }
+
     if (!hasRecoverySession) {
       setErrorMsg('Primero abre el enlace de recuperacion enviado a tu correo.')
       return
     }
 
-    if (password.length < 8) {
-      setErrorMsg('La contrasena debe tener al menos 8 caracteres.')
+    const passwordPolicyError = getPasswordPolicyError(password)
+    if (passwordPolicyError) {
+      setErrorMsg(passwordPolicyError)
       return
     }
 
@@ -84,7 +118,10 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setLoading(false)
-      setErrorMsg(error.message || 'No pudimos actualizar la contrasena.')
+      const weakPassword = error.message.includes('Password should be at least')
+        || error.message.includes('Password should contain')
+        || error.name === 'AuthWeakPasswordError'
+      setErrorMsg(weakPassword ? PASSWORD_POLICY_MESSAGE : (error.message || 'No pudimos actualizar la contrasena.'))
       return
     }
 

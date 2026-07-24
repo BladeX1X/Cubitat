@@ -16,6 +16,7 @@
     "audit:lighthouse:ci": "npx --yes unlighthouse@latest --config-file unlighthouse.config.js --ci",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:real": "playwright test e2e/real-publish.spec.ts",
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
     "deploy": "wrangler deploy",
     "cf:deploy": "npm run build && wrangler deploy"

@@ -1,28 +1,33 @@
 import type { ReactNode } from 'react'
-import { Heart, Home, User as UserIcon } from 'lucide-react'
+import { BarChart3, Heart, Home, User as UserIcon } from 'lucide-react'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
-export type AccountSectionKey = 'account' | 'favorites' | 'contents'
+export type AccountSectionKey = 'account' | 'favorites' | 'contents' | 'agent-dashboard'
 
 type AccountLayoutProps = {
   active: AccountSectionKey
   children: ReactNode
+  userRole?: string
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateAgentDashboard?: () => void
 }
 
 export function AccountLayout({
   active,
   children,
+  userRole,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateAgentDashboard,
 }: AccountLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
-          <aside className="border-r border-neutral-100 pr-0 lg:pr-6">
+          <aside className="hidden border-r border-neutral-100 pr-0 lg:block lg:pr-6">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-4">
               Navegacion
             </p>
@@ -45,6 +50,14 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
+              {PHASE_TWO_ENABLED && (userRole === 'agent' || onNavigateAgentDashboard) && onNavigateAgentDashboard && (
+                <SideItem
+                  active={active === 'agent-dashboard'}
+                  icon={<BarChart3 size={20} />}
+                  label="Panel de Agente"
+                  onClick={onNavigateAgentDashboard}
+                />
+              )}
             </nav>
           </aside>
 

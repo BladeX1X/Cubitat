@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
+import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 
 const SITE_URL = 'https://cubitathome.com'
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -8,12 +9,6 @@ const TODAY = new Date().toISOString().slice(0, 10)
 const staticRoutes = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
   { path: '/resultados', priority: '0.9', changefreq: 'daily' },
-  { path: '/resultados?operacion=venta', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?operacion=alquiler', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?operacion=permuta', priority: '0.7', changefreq: 'weekly' },
-  { path: '/resultados?tipo=casa', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?tipo=apartamento', priority: '0.8', changefreq: 'daily' },
-  { path: '/resultados?tipo=terreno', priority: '0.7', changefreq: 'weekly' },
 ]
 
 function escapeXml(value) {
@@ -44,6 +39,21 @@ function operationToSlug(operation) {
   if (operation === 'alquiler') return 'renta'
   if (operation === 'venta') return 'venta'
   return 'permuta'
+}
+
+function readMunicipalityDirectory() {
+  try {
+    const source = readFileSync(resolve('src/shared/data/cubaLocations.ts'), 'utf8')
+    const blocks = [...source.matchAll(/^  (?:'([^']+)'|([^:]+)):\s*\[([\s\S]*?)^  \],/gm)]
+
+    return Object.fromEntries(blocks.map((match) => {
+      const province = (match[1] || match[2] || '').trim()
+      const municipalities = [...match[3].matchAll(/'([^']+)'/g)].map((item) => item[1])
+      return [province, municipalities]
+    }))
+  } catch {
+    return {}
+  }
 }
 
 function readEnv() {
@@ -81,15 +91,16 @@ async function readPublishedProperties() {
     .order('created_at', { ascending: false })
 
   if (error) throw error
+  return data ?? []
+}
 
-  return (data ?? []).flatMap((property) => {
-    if (!property.id || !property.location || !property.operation || !property.property_type) {
-      return []
-    }
+function buildPropertyRoutes(properties) {
+  return properties.flatMap((property) => {
+    if (!property.id || !property.location || !property.operation || !property.property_type) return []
 
     const typeSlug = propertyTypeToSlug(property.property_type)
     const operationSlug = operationToSlug(property.operation)
-    const locationSlug = slugify(property.location || 'cuba') || 'cuba'
+    const locationSlug = slugify(property.location) || 'cuba'
 
     return [{
       path: `/propiedad/${typeSlug}-en-${operationSlug}-en-${locationSlug}-${property.id}`,
@@ -99,7 +110,12 @@ async function readPublishedProperties() {
   })
 }
 
-const routes = [...staticRoutes, ...await readPublishedProperties()]
+const publishedProperties = await readPublishedProperties()
+const routes = [
+  ...staticRoutes,
+  ...buildInventorySeoRoutes(publishedProperties, readMunicipalityDirectory()),
+  ...buildPropertyRoutes(publishedProperties),
+]
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -112,14 +128,18 @@ ${routes.map(({ path, priority, changefreq }) => `  <url>
 </urlset>
 `
 
-writeFileSync(resolve('public/sitemap.xml'), sitemap)
-writeFileSync(
-  resolve('public/robots.txt'),
-  `User-agent: *
+const robots = `User-agent: *
 Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
-`,
-)
+`
+
+writeFileSync(resolve('public/sitemap.xml'), sitemap)
+writeFileSync(resolve('public/robots.txt'), robots)
+
+if (existsSync(resolve('dist'))) {
+  writeFileSync(resolve('dist/sitemap.xml'), sitemap)
+  writeFileSync(resolve('dist/robots.txt'), robots)
+}
 
 console.log(`Generated ${routes.length} sitemap URLs for ${SITE_URL}`)

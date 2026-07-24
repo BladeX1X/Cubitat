@@ -5,12 +5,18 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Building2,
   MapPin,
   Calendar,
   Loader2,
+  Eye,
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
+import { useSEO } from '../../shared/hooks/useSEO'
+import { readPublicationDraft, removePublicationDraft } from '../publish/draftStorage'
+import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/properties/propertyStatus'
+import { PropertyVisibilityActions } from './PropertyVisibilityActions'
+import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -22,19 +28,22 @@ type Property = {
   location: string
   price_usd: number
   cover_image: string | null
-  status: 'published' | 'pending_review' | 'paused' | 'local_draft'
+  status: PropertyStatus
   moderation_message: string | null
   created_at: string
   user_id: string
+  view_count?: number
 }
 
 export type MyPropertiesPageProps = {
+  userId: string
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
   onEditProperty: (propertyId: string) => void
   onNewProperty: (loadDraft?: boolean) => void
+  onSelectProperty?: (propertyId: string) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -58,36 +67,6 @@ function formatDate(iso: string): string {
   })
 }
 
-const STATUS_CONFIG: Record<
-  Property['status'],
-  { label: string; bg: string; text: string; dot: string }
-> = {
-  published: {
-    label: 'Publicada',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    dot: 'bg-emerald-500',
-  },
-  pending_review: {
-    label: 'Pendiente de revisión',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    dot: 'bg-amber-500',
-  },
-  paused: {
-    label: 'Oculta',
-    bg: 'bg-neutral-100',
-    text: 'text-neutral-500',
-    dot: 'bg-neutral-400',
-  },
-  local_draft: {
-    label: 'Borrador (Sin publicar)',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    dot: 'bg-blue-500',
-  },
-}
-
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,' +
   btoa(
@@ -102,7 +81,7 @@ const PLACEHOLDER_IMAGE =
 /* ------------------------------------------------------------------ */
 
 function StatusBadge({ status }: { status: Property['status'] }) {
-  const cfg = STATUS_CONFIG[status]
+  const cfg = getPropertyStatusConfig(status)
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}
@@ -113,14 +92,22 @@ function StatusBadge({ status }: { status: Property['status'] }) {
   )
 }
 
-function PropertyCard({
+export function PropertyCard({
   property,
   onEdit,
   onDelete,
+  onHide,
+  onRestore,
+  onView,
+  actionLoading,
 }: {
   property: Property
   onEdit: () => void
   onDelete: () => void
+  onHide: () => void
+  onRestore: () => void
+  onView?: () => void
+  actionLoading: boolean
 }) {
   return (
     <div className="rounded-2xl shadow-md border border-neutral-100 overflow-hidden bg-white hover:shadow-lg transition-shadow group">
@@ -151,38 +138,68 @@ function PropertyCard({
           {formatPrice(property.price_usd)}
         </p>
 
-        <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
-          <Calendar className="w-3.5 h-3.5" />
-          {formatDate(property.created_at)}
+        <div className="flex items-center justify-between text-neutral-400 text-xs">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            {formatDate(property.created_at)}
+          </div>
+          {property.status !== 'local_draft' && (
+            <div className="flex items-center gap-1.5 font-bold text-neutral-600 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-100">
+              <Eye className="w-3.5 h-3.5 text-neutral-400" />
+              <span>{property.view_count ?? 0}</span>
+            </div>
+          )}
         </div>
 
-        {property.status === 'paused' && property.moderation_message && (
-          <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">
-            <strong className="block mb-1">Motivo del rechazo</strong>
+        {property.moderation_message && (property.status === 'ai_rejected' || property.status === 'paused' || property.status === 'pending_review') && (
+          <div className={`rounded-xl border p-3 text-xs leading-relaxed ${property.status === 'pending_review' ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+            <strong className="block mb-1">{property.status === 'ai_rejected' ? '🚨 Rechazada por IA' : property.status === 'pending_review' ? 'ℹ️ Nota de moderación' : '🚫 Motivo del rechazo'}</strong>
             {property.moderation_message}
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 mt-1 pt-3 border-t border-neutral-100">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 rounded-xl text-xs"
-            onClick={onEdit}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Editar
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 rounded-xl text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={onDelete}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Eliminar
-          </Button>
+        <div className="flex flex-col gap-2 mt-1 pt-3 border-t border-neutral-100">
+          {property.status !== 'local_draft' && onView && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full rounded-xl text-xs bg-[#035f53]/5 hover:bg-[#035f53]/10 text-[#035f53] border-none font-bold py-2"
+              onClick={onView}
+              disabled={actionLoading}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Ver cómo otros lo ven
+            </Button>
+          )}
+          <div className="flex flex-wrap gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 rounded-xl text-xs"
+              onClick={onEdit}
+              disabled={actionLoading}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Editar
+            </Button>
+            <PropertyVisibilityActions
+              status={property.status}
+              loading={actionLoading}
+              onHide={onHide}
+              onRestore={onRestore}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 rounded-xl text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={onDelete}
+              disabled={actionLoading}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -198,13 +215,22 @@ function LoadingSpinner() {
   )
 }
 
-function EmptyState({ onPublish }: { onPublish: () => void }) {
+export function MyPropertiesEmptyState({ onPublish }: { onPublish: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center gap-5">
-      {/* Illustration-like circle */}
-      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-        <Building2 className="w-12 h-12 text-[#035f53]" />
-      </div>
+      <svg aria-hidden="true" focusable="false" className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M25 80V30H65" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1="65" y1="30" x2="65" y2="40" stroke="#94a3b8" strokeWidth="2" />
+        <rect x="35" y="45" width="30" height="35" rx="3" fill="#f0fdf4" stroke="#035f53" strokeWidth="2.5" />
+        <rect x="41" y="51" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="53" y="51" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="41" y="63" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <rect x="53" y="63" width="6" height="6" rx="1" fill="#cbd5e1" />
+        <g className="animate-bounce" style={{ animationDuration: '3.5s' }}>
+          <circle cx="70" cy="40" r="12" fill="#008f79" />
+          <path d="M70 35V45M65 40H75" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      </svg>
 
       <div className="max-w-sm">
         <h3 className="text-xl font-bold text-neutral-800 mb-2">
@@ -232,14 +258,25 @@ function EmptyState({ onPublish }: { onPublish: () => void }) {
 /* ------------------------------------------------------------------ */
 
 export function MyPropertiesPage({
+  userId,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
   onEditProperty,
   onNewProperty,
+  onSelectProperty,
 }: MyPropertiesPageProps) {
+  useSEO({
+    title: 'Mis Publicaciones',
+  })
+
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(null)
+  const [visibilityMessage, setVisibilityMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   /* ---- fetch ---- */
   useEffect(() => {
@@ -265,18 +302,22 @@ export function MyPropertiesPage({
 
         // Cargar borrador local si existe en localStorage
         try {
-          const savedDraft = localStorage.getItem('cubitat_publish_draft')
-          if (savedDraft) {
-            const parsed = JSON.parse(savedDraft)
-            if (parsed && typeof parsed === 'object') {
+          const parsed = readPublicationDraft(userId)
+          if (parsed) {
+              const municipality = typeof parsed.municipality === 'string' ? parsed.municipality : ''
+              const neighborhood = typeof parsed.neighborhood === 'string' ? parsed.neighborhood : ''
+              const province = typeof parsed.province === 'string' ? parsed.province : 'Cuba'
+              const location = typeof parsed.location === 'string'
+                ? parsed.location
+                : `${municipality}, ${province}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
               const propertyTypeName = parsed.propertyType === 'apartamento' ? 'Departamento' : parsed.propertyType === 'casa' ? 'Casa' : 'Terreno'
               const operationName = parsed.operation === 'alquiler' ? 'en renta' : parsed.operation === 'venta' ? 'en venta' : 'en permuta'
-              const draftTitle = `${propertyTypeName} ${operationName} en ${parsed.municipality || parsed.neighborhood || 'Cuba'} (Borrador)`
+              const draftTitle = `${propertyTypeName} ${operationName} en ${municipality || neighborhood || 'Cuba'} (Borrador)`
               
               const localDraftProp: Property = {
                 id: 'local_draft_id',
                 title: draftTitle,
-                location: parsed.location || `${parsed.municipality || ''}, ${parsed.province || 'Cuba'}`.replace(/^,\s*/, '').replace(/,\s*$/, ''),
+                location,
                 price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
                 cover_image: null,
                 status: 'local_draft',
@@ -285,10 +326,14 @@ export function MyPropertiesPage({
                 user_id: user.id,
               }
               finalProperties = [localDraftProp, ...finalProperties]
-            }
           }
         } catch (e) {
-          console.error('Error al parsear el borrador local:', e)
+          logSafeEvent({
+            module: 'my_properties',
+            action: 'parse_local_draft',
+            level: 'error',
+            code: sanitizeErrorReason(e),
+          })
         }
 
         setProperties(finalProperties)
@@ -297,7 +342,7 @@ export function MyPropertiesPage({
       }
     }
     load()
-  }, [])
+  }, [userId])
 
   /* ---- delete handler ---- */
   async function handleDelete(propertyId: string) {
@@ -306,7 +351,7 @@ export function MyPropertiesPage({
         '¿Estás seguro de que deseas eliminar este borrador local? Se perderán todos los datos guardados en tu navegador.',
       )
       if (!confirmed) return
-      localStorage.removeItem('cubitat_publish_draft')
+      removePublicationDraft(userId)
       setProperties((prev) => prev.filter((p) => p.id !== 'local_draft_id'))
       return
     }
@@ -320,6 +365,44 @@ export function MyPropertiesPage({
 
     if (!error) {
       setProperties((prev) => prev.filter((p) => p.id !== propertyId))
+    }
+  }
+
+  async function handleVisibility(property: Property, nextStatus: 'owner_hidden' | 'published') {
+    const hiding = nextStatus === 'owner_hidden'
+    const confirmed = window.confirm(hiding
+      ? '¿Ocultar esta publicación? Dejará de aparecer públicamente y solo tú podrás volver a publicarla.'
+      : '¿Volver a publicar esta propiedad? Volverá a aparecer en los resultados públicos.')
+    if (!confirmed) return
+
+    setVisibilityLoadingId(property.id)
+    setVisibilityMessage(null)
+    try {
+      if (hiding) await hideOwnProperty(property.id, userId)
+      else await restoreOwnProperty(property.id, userId)
+
+      setProperties((current) => current.map((item) => (
+        item.id === property.id
+          ? { ...item, status: nextStatus, moderation_message: null }
+          : item
+      )))
+      setVisibilityMessage({
+        type: 'success',
+        text: hiding ? 'La publicación quedó oculta.' : 'La propiedad volvió a publicarse.',
+      })
+    } catch (reason) {
+      logSafeEvent({
+        module: 'my_properties',
+        action: 'update_owner_visibility',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
+      setVisibilityMessage({
+        type: 'error',
+        text: 'No se pudo cambiar la visibilidad. Actualiza la página e inténtalo de nuevo.',
+      })
+    } finally {
+      setVisibilityLoadingId(null)
     }
   }
 
@@ -366,11 +449,22 @@ export function MyPropertiesPage({
             </div>
           )}
 
+          {visibilityMessage && (
+            <div
+              role={visibilityMessage.type === 'error' ? 'alert' : 'status'}
+              className={`mb-5 rounded-xl border p-3 text-sm font-medium ${visibilityMessage.type === 'error'
+                ? 'border-red-200 bg-red-50 text-red-800'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}
+            >
+              {visibilityMessage.text}
+            </div>
+          )}
+
           {/* States */}
           {loading ? (
             <LoadingSpinner />
           ) : properties.length === 0 ? (
-            <EmptyState onPublish={() => onNewProperty()} />
+            <MyPropertiesEmptyState onPublish={() => onNewProperty()} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((property) => (
@@ -379,6 +473,10 @@ export function MyPropertiesPage({
                   property={property}
                   onEdit={() => property.id === 'local_draft_id' ? onNewProperty(true) : onEditProperty(property.id)}
                   onDelete={() => handleDelete(property.id)}
+                  onHide={() => void handleVisibility(property, 'owner_hidden')}
+                  onRestore={() => void handleVisibility(property, 'published')}
+                  onView={onSelectProperty ? () => onSelectProperty(property.id) : undefined}
+                  actionLoading={visibilityLoadingId === property.id}
                 />
               ))}
             </div>

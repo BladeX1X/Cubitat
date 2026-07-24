@@ -1,5 +1,18 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
+import { getEditableProperty } from './editablePropertyRepository'
+import { useSEO } from '../../shared/hooks/useSEO'
+import {
+  PROPERTY_IMAGE_RULES,
+  validateImageDimensions,
+  validateImageFile,
+} from '../../shared/lib/imageSecurity'
+import {
+  readPublicationDraft,
+  removePublicationDraft,
+  savePublicationDraft,
+} from './draftStorage'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -13,10 +26,16 @@ import {
   Plus,
   Check,
   Info,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
+import {
+  formatCubanPhoneForDisplay,
+  normalizeCubanPhoneForStorage,
+  validatePhone,
+} from './phone'
 import {
   Select,
   SelectContent,
@@ -138,6 +157,17 @@ const propertyTypeLabels = {
   terreno: 'Terreno',
 }
 
+const publishStepLabels = [
+  'Dirección y ubicación',
+  'Información general',
+  'Características',
+  'Amenidades',
+  'Descripción',
+  'Fotos',
+  'Precio',
+  'Contacto',
+]
+
 const cubanProvinces = [
   'La Habana',
   'Matanzas',
@@ -222,13 +252,19 @@ const cubanMunicipalities: Record<string, string[]> = {
 }
 
 type PublishPageProps = {
+  userId: string
   onBack: () => void
   onSubmitSuccess: () => void
   editPropertyId?: string // When set, the form loads and updates an existing property
 }
 
-export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
+export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
   const isEditMode = Boolean(editPropertyId)
+
+  useSEO({
+    title: isEditMode ? 'Editar Propiedad' : 'Publicar Propiedad',
+  })
+
   const [step, setStep] = useState<number>(1)
   const [formData, setFormData] = useState<PublishFormData>(initialFormState)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -236,38 +272,95 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   const [isCompressing, setIsCompressing] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [editLoading, setEditLoading] = useState(isEditMode)
+  const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null)
 
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
+  const progressPercent = Math.round((step / publishStepLabels.length) * 100)
+  const currentStepLabel = publishStepLabels[step - 1] ?? 'Publicación'
 
   // 1. Detectar e instalar borrador automáticamente si viene de la URL
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('load_draft=true')) {
       try {
-        const savedDraft = localStorage.getItem('cubitat_publish_draft')
-        if (savedDraft) {
-          const parsed = JSON.parse(savedDraft)
+        const parsed = readPublicationDraft(userId)
+        if (parsed) {
           if (parsed && typeof parsed === 'object') {
             setFormData((prev) => ({ ...prev, ...parsed }))
           }
         }
       } catch (err) {
-        console.error('Error al cargar borrador automático:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'load_auto_draft',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       }
     }
-  }, [])
+  }, [userId])
+
+  useEffect(() => {
+    if (isEditMode) return
+
+    let cancelled = false
+
+    async function loadSellerContact() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+      let profileName = ''
+      let profilePhone = ''
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (data) {
+        profileName = typeof data.full_name === 'string' ? data.full_name : ''
+        profilePhone = typeof data.phone === 'string' ? data.phone : ''
+      }
+
+      if (cancelled) return
+
+      setFormData((prev) => ({
+        ...prev,
+        contactName: prev.contactName || profileName || fallbackName,
+        contactPhone: prev.contactPhone || formatCubanPhoneForDisplay(profilePhone),
+      }))
+    }
+
+    loadSellerContact()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isEditMode])
 
   // Load existing property data when editing
   useEffect(() => {
     if (!editPropertyId) return
+    const propertyId = editPropertyId
+    let cancelled = false
     async function loadProperty() {
       setEditLoading(true)
       try {
-        const { data, error } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('id', editPropertyId)
-          .single()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (cancelled) return
+        if (!user) {
+          onBack()
+          return
+        }
+
+        const { data, error } = await getEditableProperty(propertyId, user.id)
+        if (cancelled) return
         if (error) throw error
+        if (!data) {
+          onBack()
+          return
+        }
         if (data) {
           const features = data.features || {}
           const contactInfo = data.contact_info || {}
@@ -331,7 +424,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
             hasTerrace: features.hasTerrace || false,
             hasPortal: features.hasPortal || false,
             contactName: contactInfo.name || '',
-            contactPhone: contactInfo.phone || '',
+            contactPhone: formatCubanPhoneForDisplay(contactInfo.phone || ''),
           })
           // Load existing images as preview-only entries
           if (data.images && data.images.length > 0) {
@@ -343,24 +436,38 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           }
         }
       } catch (err) {
-        console.error('Error loading property for edit:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'load_edit_property',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
         alert('No se pudo cargar la propiedad para editar.')
         onBack()
       } finally {
-        setEditLoading(false)
+        if (!cancelled) setEditLoading(false)
       }
     }
     loadProperty()
-  }, [editPropertyId])
+
+    return () => {
+      cancelled = true
+    }
+  }, [editPropertyId, onBack])
 
   // Guardar borrador manualmente al pulsar el botón
   function handleSaveDraftManual() {
     try {
-      localStorage.setItem('cubitat_publish_draft', JSON.stringify(formData))
+      savePublicationDraft(userId, formData)
       setShowSaveFeedback(true)
       setTimeout(() => setShowSaveFeedback(false), 2500)
     } catch (err) {
-      console.warn('No se pudo guardar el borrador en localStorage:', err)
+      logSafeEvent({
+        module: 'publish',
+        action: 'save_draft_localstorage',
+        level: 'warn',
+        code: sanitizeErrorReason(err),
+      })
       alert('Hubo un problema al guardar el borrador en tu dispositivo.')
     }
   }
@@ -388,9 +495,14 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       setImages([])
       setStep(1)
       try {
-        localStorage.removeItem('cubitat_publish_draft')
+        removePublicationDraft(userId)
       } catch (err) {
-        console.warn('No se pudo remover el borrador de localStorage:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'remove_draft_localstorage',
+          level: 'warn',
+          code: sanitizeErrorReason(err),
+        })
       }
     }
   }
@@ -405,11 +517,26 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       return
     }
 
+    const validFiles: File[] = []
+    let rejectedFiles = 0
+    for (const file of files) {
+      if (validateImageFile(file, PROPERTY_IMAGE_RULES)) {
+        rejectedFiles++
+      } else {
+        validFiles.push(file)
+      }
+    }
+
+    if (rejectedFiles > 0) {
+      alert(`${rejectedFiles} imágenes fueron rechazadas. Usa JPG, PNG o WebP de hasta 10 MB.`)
+    }
+    if (validFiles.length === 0) return
+
     setIsCompressing(true)
     const newCompressed: typeof images = []
 
     let uploadFailures = 0
-    for (const file of files) {
+    for (const file of validFiles) {
       try {
         const result = await compressToWebP(file)
         newCompressed.push({
@@ -418,7 +545,12 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           name: file.name.replace(/\.[^/.]+$/, "") + ".webp"
         })
       } catch (err) {
-        console.error('Error comprimiendo la foto:', err)
+        logSafeEvent({
+          module: 'publish',
+          action: 'compress_photo',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
         uploadFailures++
       }
     }
@@ -438,23 +570,31 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault()
     
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      alert('Debes iniciar sesión para publicar.')
+      return
+    }
+
+    if (images.length === 0 && !isEditMode) {
+      alert('Por favor, agrega al menos una foto de la propiedad.')
+      return
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        alert("Debes iniciar sesión para publicar una propiedad.")
-        setIsSubmitting(false)
-        return
-      }
+      setIsSubmitting(true)
 
       // 1. Subir imágenes a Storage
       const uploadedImages: string[] = []
       
       for (let i = 0; i < images.length; i++) {
         const img = images[i]
+        if (img.dataUrl.startsWith('http')) {
+          uploadedImages.push(img.dataUrl)
+          continue
+        }
+
         const fileName = `${user.id}/${Date.now()}-${i}.webp`
         
         // Convert dataUrl back to blob for upload
@@ -465,7 +605,12 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           .upload(fileName, blob, { contentType: 'image/webp' })
           
         if (error) {
-          console.error("Error al subir imagen:", error)
+          logSafeEvent({
+            module: 'publish',
+            action: 'upload_image',
+            level: 'error',
+            code: sanitizeErrorReason(error),
+          })
           continue
         }
         
@@ -502,7 +647,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       
       const contactInfo = {
         name: formData.contactName,
-        phone: formData.contactPhone
+        phone: normalizeCubanPhoneForStorage(formData.contactPhone)
       }
       
       const amenities: string[] = []
@@ -519,7 +664,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
       const operationName = formData.operation === 'alquiler' ? 'en renta' : formData.operation === 'venta' ? 'en venta' : 'en permuta'
       const generatedTitle = `${propertyTypeName} ${operationName} en ${formData.municipality || formData.neighborhood || 'Cuba'}`
 
-      // 3. Insertar o actualizar en base de datos
+      // 3. Insertar o actualizar en base de datos (con status pending_review por defecto)
       const propertyPayload = {
         user_id: user.id,
         title: generatedTitle,
@@ -544,33 +689,75 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
         coordinates: (formData.latitude && formData.longitude) ? { latitude: formData.latitude, longitude: formData.longitude } : null,
       }
 
-      let dbError: any = null
+      let savedPropertyId = editPropertyId;
+      
+      setAiStatusMessage('Guardando publicación...')
 
       if (isEditMode && editPropertyId) {
         const { error } = await supabase
           .from('properties')
           .update(propertyPayload)
           .eq('id', editPropertyId)
-        dbError = error
+        if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('properties')
           .insert(propertyPayload)
-        dbError = error
+          .select('id')
+          .single()
+        if (error) throw error;
+        if (data) savedPropertyId = data.id;
       }
+
+      // 4. Iniciar moderación por IA en segundo plano (Fire and forget)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
         
-      if (dbError) {
-        throw dbError
+        // No le hacemos await para no colgar la UI
+        fetch('/api/ai-moderate', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            property_id: savedPropertyId,
+            title: generatedTitle,
+            location: formData.location || '',
+            description: formData.description || '',
+            price_usd: formData.priceUsd,
+            property_type: formData.propertyType,
+            images: images.map(img => img.dataUrl)
+          })
+        }).catch(e => logSafeEvent({
+          module: 'publish',
+          action: 'async_ia_moderation',
+          level: 'warn',
+          code: sanitizeErrorReason(e),
+        }));
+      } catch (e) {
+        logSafeEvent({
+          module: 'publish',
+          action: 'prepare_async_ia_moderation',
+          level: 'warn',
+          code: sanitizeErrorReason(e),
+        });
       }
       
       setSubmitted(true)
-      localStorage.removeItem('cubitat_publish_draft')
+      removePublicationDraft(userId)
       setTimeout(() => {
         onSubmitSuccess()
       }, 3000)
-    } catch (error) {
-      console.error('Error publicando propiedad:', error)
-      alert('Hubo un error al publicar la propiedad. Inténtalo de nuevo.')
+    } catch (error: any) {
+      logSafeEvent({
+        module: 'publish',
+        action: 'publish_property',
+        level: 'error',
+        code: sanitizeErrorReason(error),
+      })
+      alert(`Hubo un error al publicar la propiedad: ${error.message || JSON.stringify(error)}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -601,6 +788,11 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           <div>
             <h1>{isEditMode ? 'Editar propiedad' : 'Publicar propiedad'}</h1>
             <p>{isEditMode ? 'Modifica los datos de tu propiedad y guarda los cambios.' : 'Asegúrate de documentar todos los datos de tu propiedad y verifica que sean correctos.'}</p>
+            <div className="publish-hero-pills" aria-label="Ventajas de publicar en Cubitat">
+              <span>Revisión segura</span>
+              <span>Mapa automático</span>
+              <span>Borrador editable</span>
+            </div>
           </div>
           <div className="publish-hero-actions flex items-center gap-2">
             {showSaveFeedback && (
@@ -640,6 +832,16 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
           ) : submitted ? (
             <PublishSuccessCard />
           ) : (
+            <>
+            <div className="publish-progress-summary" aria-label="Progreso de publicación">
+              <div>
+                <span>Paso {step} de {publishStepLabels.length}</span>
+                <strong>{currentStepLabel}</strong>
+              </div>
+              <div className="publish-progress-track" aria-hidden="true">
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
+            </div>
             <div className="publish-grid-layout">
               
               {/* Left Column: Sidebar 8-Steps Timeline Navigator */}
@@ -726,6 +928,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
                       onClearDraft={handleClearDraft}
                       isSubmitting={isSubmitting}
                       isEditMode={isEditMode}
+                      aiStatusMessage={aiStatusMessage}
                     />
                   )}
 
@@ -733,6 +936,7 @@ export function PublishPage({ onBack, onSubmitSuccess, editPropertyId }: Publish
               </div>
 
             </div>
+            </>
           )}
         </div>
       </div>
@@ -918,6 +1122,7 @@ function StepAddress({
   onNext: () => void
 }) {
   const isNextDisabled = !formData.streetAddress || !formData.province || !formData.municipality
+  const shouldShowMap = Boolean(formData.province && formData.municipality)
 
   return (
     <div className="space-y-5">
@@ -977,7 +1182,7 @@ function StepAddress({
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-semibold">Municipio *</label>
             <Select
               value={formData.municipality}
-              onValueChange={(val) => onChange({ municipality: val })}
+              onValueChange={(val) => onChange({ municipality: val, latitude: null, longitude: null })}
             >
               <SelectTrigger
                 disabled={!formData.province}
@@ -1029,25 +1234,37 @@ function StepAddress({
         {/* Right: Interactive Map */}
         <div className="flex flex-col gap-2">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-            Ubicación en el Mapa <span className="text-neutral-300 font-normal normal-case">(opcional – haz clic para marcar)</span>
+            Ubicación en el Mapa
           </label>
           <div className="flex-1 min-h-[300px] lg:min-h-[340px]">
-            <Suspense fallback={
-              <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-[11px] text-neutral-400">Cargando mapa…</p>
+            {shouldShowMap ? (
+              <Suspense fallback={
+                <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-[11px] text-neutral-400">Cargando mapa…</p>
+                  </div>
+                </div>
+              }>
+                <AddressMap
+                  province={formData.province}
+                  municipality={formData.municipality}
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  onCoordinatesChange={(lat, lng) => onChange({ latitude: lat, longitude: lng })}
+                />
+              </Suspense>
+            ) : (
+              <div className="w-full h-full min-h-[300px] rounded-xl bg-neutral-50 border border-dashed border-neutral-200 flex items-center justify-center p-6">
+                <div className="max-w-xs text-center space-y-3">
+                  <MapPin className="w-8 h-8 text-[#035f53] mx-auto" />
+                  <p className="text-sm font-bold text-neutral-800">Selecciona provincia y municipio</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    El mapa se abrirá automáticamente con la vista del municipio para que puedas marcar la ubicación exacta.
+                  </p>
                 </div>
               </div>
-            }>
-              <AddressMap
-                province={formData.province}
-                municipality={formData.municipality}
-                latitude={formData.latitude}
-                longitude={formData.longitude}
-                onCoordinatesChange={(lat, lng) => onChange({ latitude: lat, longitude: lng })}
-              />
-            </Suspense>
+            )}
           </div>
         </div>
 
@@ -1671,6 +1888,7 @@ function StepContact({
   onClearDraft,
   isSubmitting,
   isEditMode,
+  aiStatusMessage,
 }: {
   formData: PublishFormData
   onChange: (updates: Partial<PublishFormData>) => void
@@ -1678,6 +1896,7 @@ function StepContact({
   onClearDraft: () => void
   isSubmitting: boolean
   isEditMode: boolean
+  aiStatusMessage: string | null
 }) {
   const isPhoneValid = validatePhone(formData.contactPhone)
   const isSubmitDisabled = !formData.contactName || !isPhoneValid
@@ -1706,14 +1925,19 @@ function StepContact({
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">WhatsApp / Teléfono Cuba *</label>
           <Input
             required
-            placeholder="Ej: 52345678 o 7123456"
+            type="tel"
+            placeholder="Ej: +53 52345678 o +53 7123456"
             value={formData.contactPhone}
             onChange={(e) => onChange({ contactPhone: e.target.value })}
+            onBlur={(e) => onChange({ contactPhone: formatCubanPhoneForDisplay(e.target.value) })}
             className={`h-11 text-xs ${!isPhoneValid && formData.contactPhone ? 'border-red-500 focus-visible:ring-red-500/20' : 'border-neutral-200'}`}
           />
+          <span className="text-[9px] text-neutral-500 font-semibold block mt-1">
+            Incluye el código de país. Ejemplo: +53 52345678.
+          </span>
           {!isPhoneValid && formData.contactPhone && (
             <span className="text-[9px] text-red-500 font-bold block mt-1">
-              Teléfono inválido. Si es móvil debe empezar con 5 y tener 8 dígitos. Si es fijo debe empezar con 7 y tener de 6 a 8 dígitos.
+              Teléfono inválido. Usa el formato +53 seguido del número móvil o fijo cubano.
             </span>
           )}
         </div>
@@ -1745,7 +1969,7 @@ function StepContact({
           disabled={isSubmitDisabled || isSubmitting}
           className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full h-11 px-8 text-xs font-bold transition-colors duration-200 shadow-md"
         >
-          {isSubmitting ? (isEditMode ? 'Guardando...' : 'Publicando...') : (isEditMode ? 'Guardar Cambios' : 'Publicar Propiedad')}
+          {isSubmitting ? (aiStatusMessage || (isEditMode ? 'Guardando...' : 'Publicando...')) : (isEditMode ? 'Guardar Cambios' : 'Publicar Propiedad')}
         </Button>
       </div>
     </div>
@@ -1777,31 +2001,22 @@ function PublishSuccessCard() {
    HELPERS & COMPRESSORS
    ========================================================================== */
 
-/* Validador de Teléfono cubano */
-function validatePhone(phone: string): boolean {
-  const clean = phone.replace(/[\s\-\+]/g, '')
-  
-  // Si contiene el código de país cubano 53 al inicio
-  if (clean.startsWith('53')) {
-    const withoutCountry = clean.slice(2)
-    return withoutCountry.length === 8 && withoutCountry.startsWith('5')
-  }
-  
-  // Móvil simple (ej: 52839201) de 8 dígitos empezando con 5, o fijo (ej: 78392010) de 6 a 8 dígitos empezando con 7 u otros prefijos
-  return (clean.length === 8 && clean.startsWith('5')) || 
-         (clean.length >= 6 && clean.length <= 8 && (clean.startsWith('7') || clean.startsWith('4') || clean.startsWith('3') || clean.startsWith('2')))
-}
-
-
-
 /* Compresor WebP offline con Canvas */
 async function compressToWebP(file: File): Promise<{ dataUrl: string; size: number }> {
+  const fileValidationError = validateImageFile(file, PROPERTY_IMAGE_RULES)
+  if (fileValidationError) throw new Error(fileValidationError)
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
       img.onload = () => {
         try {
+          const dimensionError = validateImageDimensions(img.width, img.height, PROPERTY_IMAGE_RULES)
+          if (dimensionError) {
+            reject(new Error(dimensionError))
+            return
+          }
           const canvas = document.createElement('canvas')
           let width = img.width
           let height = img.height

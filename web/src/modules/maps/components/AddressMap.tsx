@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { StyleSpecification } from 'maplibre-gl'
+import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
-const OPEN_SOURCE_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
+type IdleCallbackHandle = ReturnType<typeof setTimeout> | number
 
 // Centro geográfico aproximado de cada provincia de Cuba
 const PROVINCE_CENTERS: Record<string, { lng: number; lat: number; zoom: number }> = {
@@ -241,6 +242,11 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
   const markerRef = useRef<maplibregl.Marker | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const onCoordinatesRef = useRef(onCoordinatesChange)
+  const initialCenterRef = useRef(
+    (municipality && MUNICIPALITY_CENTERS[municipality]) ||
+      (province && PROVINCE_CENTERS[province]) ||
+      PROVINCE_CENTERS['La Habana']
+  )
 
   // Keep callback ref stable
   useEffect(() => {
@@ -252,20 +258,19 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
     if (!containerRef.current || mapRef.current) return
 
     const abortController = new AbortController()
-
-    const defaultCenter = PROVINCE_CENTERS['La Habana']
+    let idleHandle: IdleCallbackHandle | null = null
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return
       try {
-        const resp = await fetch(OPEN_SOURCE_STYLE, { signal: abortController.signal })
-        const style = (await resp.json()) as StyleSpecification
+        const style = await getOpenFreeMapStyle(abortController.signal)
+        const initialCenter = initialCenterRef.current
 
         mapRef.current = new maplibregl.Map({
           container: containerRef.current,
           style,
-          center: [defaultCenter.lng, defaultCenter.lat],
-          zoom: defaultCenter.zoom,
+          center: [initialCenter.lng, initialCenter.lat],
+          zoom: initialCenter.zoom,
           attributionControl: false,
         })
 
@@ -288,15 +293,31 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
         })
       } catch (err) {
         if (!abortController.signal.aborted) {
-          console.error('[AddressMap] Error inicializando el mapa:', err)
+          logSafeEvent({
+            module: 'maps',
+            action: 'init_address_map',
+            level: 'error',
+            code: sanitizeErrorReason(err),
+          })
         }
       }
     }
 
-    initMap()
+    if ('requestIdleCallback' in window) {
+      idleHandle = window.requestIdleCallback(() => initMap(), { timeout: 600 })
+    } else {
+      idleHandle = setTimeout(() => initMap(), 0)
+    }
 
     return () => {
       abortController.abort()
+      if (idleHandle !== null) {
+        if ('cancelIdleCallback' in window && typeof idleHandle === 'number') {
+          window.cancelIdleCallback(idleHandle)
+        } else {
+          clearTimeout(idleHandle)
+        }
+      }
       markerRef.current?.remove()
       markerRef.current = null
       mapRef.current?.remove()

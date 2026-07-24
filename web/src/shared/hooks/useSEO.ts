@@ -8,6 +8,19 @@ interface SEOProps {
   type?: 'website' | 'article'
 }
 
+const DEFAULT_DESCRIPTION =
+  'Cubitat es el portal inmobiliario para buscar, comprar, vender y rentar propiedades en Cuba.'
+const DEFAULT_IMAGE = 'https://cubitathome.com/og-image.jpg'
+
+function getCleanDocumentUrl(url?: string) {
+  try {
+    const resolvedUrl = new URL(url ?? window.location.href, window.location.origin)
+    return `${resolvedUrl.origin}${resolvedUrl.pathname}`
+  } catch {
+    return `${window.location.origin}${window.location.pathname}`
+  }
+}
+
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
   useEffect(() => {
     // 1. Actualizar título
@@ -25,32 +38,35 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
       element.setAttribute('content', content)
     }
 
-    // 2. Actualizar meta descripción general
-    if (description) {
-      setMetaTag('name', 'description', description)
+    const setCanonicalLink = (href: string) => {
+      let element = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+      if (!element) {
+        element = document.createElement('link')
+        element.rel = 'canonical'
+        document.head.appendChild(element)
+      }
+      element.href = href
     }
+
+    const resolvedDescription = description ?? DEFAULT_DESCRIPTION
+    const resolvedImage = image ?? DEFAULT_IMAGE
+    const resolvedUrl = getCleanDocumentUrl(url)
+    setCanonicalLink(resolvedUrl)
+
+    // 2. Actualizar meta descripción general
+    setMetaTag('name', 'description', resolvedDescription)
 
     // 3. Actualizar metadatos Open Graph (Facebook/WhatsApp/Telegram)
     setMetaTag('property', 'og:title', formattedTitle)
-    if (description) {
-      setMetaTag('property', 'og:description', description)
-    }
-    if (image) {
-      setMetaTag('property', 'og:image', image)
-    }
-    if (url) {
-      setMetaTag('property', 'og:url', url)
-    }
+    setMetaTag('property', 'og:description', resolvedDescription)
+    setMetaTag('property', 'og:image', resolvedImage)
+    setMetaTag('property', 'og:url', resolvedUrl)
     setMetaTag('property', 'og:type', type)
 
     // 4. Actualizar metadatos Twitter Cards
     setMetaTag('name', 'twitter:card', 'summary_large_image')
     setMetaTag('name', 'twitter:title', formattedTitle)
-    if (description) {
-      setMetaTag('name', 'twitter:description', description)
-    }
-    if (image) {
-      setMetaTag('name', 'twitter:image', image)
-    }
+    setMetaTag('name', 'twitter:description', resolvedDescription)
+    setMetaTag('name', 'twitter:image', resolvedImage)
   }, [title, description, image, url, type])
 }

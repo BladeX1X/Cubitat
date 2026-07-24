@@ -13,8 +13,11 @@ export type MapZone = {
 
 export type MapAdapterProps = {
   properties: Property[]
-  selectedZoneId: string
+  selectedZoneId?: string
   selectedPropertyId?: string
-  onSelectZone: (zoneId: string) => void
+  onSelectZone?: (zoneId: string) => void
   onSelectProperty: (propertyId: string) => void
+  onSelectCluster?: (propertyIds: string[]) => void
+  onViewportChange?: (propertyIds: string[]) => void
+  locateTrigger?: number
 }

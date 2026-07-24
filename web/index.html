@@ -9,6 +9,7 @@
     <meta property="og:description" content="Encuentra casas, apartamentos y terrenos para comprar, vender o rentar en Cuba con Cubitat." />
     <meta property="og:image" content="https://cubitathome.com/og-image.jpg" />
     <meta property="og:url" content="https://cubitathome.com/" />
+    <link rel="canonical" href="https://cubitathome.com/" />
     <meta property="og:type" content="website" />
 
     <!-- Fallback Twitter Cards -->
@@ -24,28 +25,46 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#035f53" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="preconnect" href="https://tohjzoncoosvjbjcakdl.supabase.co" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50" imagesrcset="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=45 800w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50 1200w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=55 1600w" imagesizes="100vw" fetchpriority="high" />
+
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>Cubitat</title>
+    <title>Cubitat | Comprar, Vender y Rentar Casas y Apartamentos en Cuba</title>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Cubitat",
       "alternateName": "Cubitat Home",
-      "url": "https://cubitathome.com/",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://cubitathome.com/resultados?query={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
+      "url": "https://cubitathome.com/"
     }
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback de SEO para rastreadores sin soporte de JavaScript / SPA -->
+      <header style="display:none;">
+        <nav>
+          <a href="/comprar">Comprar propiedades</a> | 
+          <a href="/rentar">Rentar propiedades</a> | 
+          <a href="/publicar" rel="nofollow">Publicar anuncio gratis</a>
+        </nav>
+      </header>
+      <main style="display:none;">
+        <h1>Cubitat - Portal Inmobiliario en Cuba</h1>
+        <h2>Encuentra casas, apartamentos y terrenos para comprar, vender y rentar en Cuba.</h2>
+        <p>
+          Bienvenido a Cubitat, el portal inmobiliario definitivo y de última generación para el mercado inmobiliario en Cuba. Cubitat está diseñado pensando en las necesidades específicas de la comunidad cubana, ofreciendo una plataforma ágil, móvil-first y optimizada para conexiones de datos móviles y lentas. Aquí podrás buscar de forma clara y rápida viviendas por zona, comparar precios promedio, ver mapas de precios por metro cuadrado, y contactar directamente a los propietarios y anunciantes sin intermediarios molestos.
+        </p>
+        <p>
+          Nuestra misión es facilitar la búsqueda de inmuebles y agilizar las transacciones de compra, venta y permuta de casas y apartamentos en provincias clave como La Habana, Artemisa, Mayabeque, Cienfuegos, Camagüey, Santiago de Cuba, entre otras. Si eres dueño, puedes publicar tu anuncio de forma completamente gratuita en pocos pasos, administrar tus borradores sin conexión y reanudar la publicación en cualquier momento. Comienza tu búsqueda de hogar hoy mismo en Cubitat, tu casa en Cuba a un clic de distancia.
+        </p>
+        <p>
+          En Cubitat nos tomamos muy en serio la seguridad y veracidad de cada publicación. Por ello, implementamos filtros dinámicos avanzados y procesos de moderación eficientes para garantizar que los anuncios de casas, apartamentos, fincas y locales comerciales en venta o alquiler cuenten con información real y de contacto directa verificada. Los usuarios pueden explorar listados detallados que incluyen fotos de alta calidad comprimidas en formato WebP para una carga ultra rápida, descripciones exhaustivas, precios transparentes y la ubicación exacta en el mapa. Ya sea que busques rentar un apartamento acogedor por temporada en El Vedado o comprar una casa colonial espaciosa en Santiago de Cuba, Cubitat te proporciona todas las herramientas interactivas necesarias para tomar decisiones informadas desde la comodidad de tu dispositivo móvil.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,14 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
 import { FilterBar } from '../../modules/search/components/FilterBar'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
+import { buildRelatedSeoRoutes, type SeoResultsRoute } from '../../modules/search/seoRoutes'
+import { useSearchAlerts } from '../../modules/search/hooks/useSearchAlerts'
+import { SearchAlertModal } from '../../modules/search/components/SearchAlertModal'
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
+import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
+import './ResultsPage.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
+type ResultsViewMode = 'list' | 'map'
+const PENDING_SEARCH_ALERT_KEY = 'cubitat-pending-search-alert'
+const RESULTS_VIEW_MODE_HISTORY_KEY = 'resultsViewMode'
+
+function isHistoryState(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getInitialViewMode(): ResultsViewMode {
+  const state: unknown = window.history.state
+  if (!isHistoryState(state)) return 'list'
+  return state[RESULTS_VIEW_MODE_HISTORY_KEY] === 'map' ? 'map' : 'list'
+}
 
 const sortOptions: Array<{ value: SortOption; label: string; helper: string }> = [
   {
@@ -41,6 +60,10 @@ export type ResultsPageProps = {
   onSelectProperty: (propertyId: string) => void
   onClearFilters: () => void
   onChangeFilters?: (filters: SearchFilters) => void
+  seoRoute?: SeoResultsRoute | null
+  user?: User | null
+  onRequireLogin?: () => void
+  onGoToAccount?: () => void
 }
 
 export function ResultsPage({
@@ -51,12 +74,26 @@ export function ResultsPage({
   onSelectProperty,
   onClearFilters,
   onChangeFilters,
+  seoRoute,
+  user,
+  onRequireLogin,
+  onGoToAccount,
 }: ResultsPageProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
   const [isSortOpen, setIsSortOpen] = useState(false)
-  const PAGE_SIZE = 16
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertError, setAlertError] = useState<string | null>(null)
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false)
+  const [isAlertError, setIsAlertError] = useState(false)
+  const [viewMode, setViewMode] = useState<ResultsViewMode>(getInitialViewMode)
+  const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | null>(null)
+  const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false)
+  const pendingAlertProcessedRef = useRef(false)
+  const { createAlert, creating: creatingSearchAlert } = useSearchAlerts(user?.id)
+  const PAGE_SIZE = 15
 
   // Dynamic document title and description
   const isRent = filters.operations.includes('alquiler')
@@ -69,15 +106,76 @@ export function ResultsPage({
   else if (isSwap) operationText = 'Permutas de Viviendas'
 
   const locationText = filters.query ? ` en ${filters.query}` : ' en Cuba'
-  const title = `${operationText}${locationText}`
-  const description = `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
+  const title = seoRoute?.title ?? `${operationText}${locationText}`
+  const description = seoRoute?.description ?? `Encuentra las mejores ofertas de ${operationText.toLowerCase()}${locationText} con fotos, precios actualizados y mapas interactivos en Cubitat.`
+  const relatedSeoRoutes = seoRoute ? buildRelatedSeoRoutes(seoRoute) : []
 
   useSEO({ title, description })
 
   // Reset to first page when properties (filters) change
   useEffect(() => {
     setCurrentPage(1)
-  }, [properties, sortBy])
+  }, [properties, sortBy, mapScopedPropertyIds])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1021px)')
+    const updateViewport = () => setIsDesktopViewport(mediaQuery.matches)
+
+    updateViewport()
+    mediaQuery.addEventListener('change', updateViewport)
+    return () => mediaQuery.removeEventListener('change', updateViewport)
+  }, [])
+
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setMapScopedPropertyIds(null)
+    }
+  }, [viewMode])
+
+  useEffect(() => {
+    const currentState: unknown = window.history.state
+    const preservedState = isHistoryState(currentState) ? currentState : {}
+    if (preservedState[RESULTS_VIEW_MODE_HISTORY_KEY] === viewMode) return
+
+    window.history.replaceState({
+      ...preservedState,
+      [RESULTS_VIEW_MODE_HISTORY_KEY]: viewMode,
+    }, '')
+  }, [viewMode])
+
+  useEffect(() => {
+    setDesktopMapPropertyId(selectedPropertyId)
+  }, [selectedPropertyId])
+
+  useEffect(() => {
+    if (!user || pendingAlertProcessedRef.current) return
+
+    const rawPendingAlert = window.localStorage.getItem(PENDING_SEARCH_ALERT_KEY)
+    if (!rawPendingAlert) return
+
+    pendingAlertProcessedRef.current = true
+
+    try {
+      const pendingFilters = JSON.parse(rawPendingAlert) as SearchFilters
+      createAlert(pendingFilters)
+        .then(() => {
+          window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
+          setAlertError(null)
+          setAlertMessage('Alerta creada. La veras en Mi cuenta.')
+          setIsAlertError(false)
+          setIsAlertModalOpen(true)
+        })
+        .catch(() => {
+          pendingAlertProcessedRef.current = false
+          setAlertError('No se pudo crear la alerta despues de iniciar sesion.')
+          setIsAlertError(true)
+          setIsAlertModalOpen(true)
+        })
+    } catch {
+      window.localStorage.removeItem(PENDING_SEARCH_ALERT_KEY)
+      pendingAlertProcessedRef.current = false
+    }
+  }, [createAlert, user])
 
   // Sticky toolbar detection using IntersectionObserver
   useEffect(() => {
@@ -113,8 +211,15 @@ export function ResultsPage({
   }, [properties, sortBy])
 
   const activeSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? 'Ordenar'
-  const totalPages = Math.ceil(sortedProperties.length / PAGE_SIZE)
-  const paginatedProperties = sortedProperties.slice(
+  const listedProperties = useMemo(() => {
+    if (!isDesktopViewport || viewMode !== 'map' || mapScopedPropertyIds === null) return sortedProperties
+
+    const visibleIds = new Set(mapScopedPropertyIds)
+    return sortedProperties.filter((property) => visibleIds.has(property.id))
+  }, [isDesktopViewport, mapScopedPropertyIds, sortedProperties, viewMode])
+  const heading = seoRoute?.heading ?? `${viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? listedProperties.length : properties.length} propiedades en Cuba`
+  const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
+  const paginatedProperties = listedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   )
@@ -125,6 +230,40 @@ export function ResultsPage({
     if (sentinel) {
       sentinel.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+  }
+
+  const handleCreateSearchAlert = async () => {
+    setAlertMessage(null)
+    setAlertError(null)
+
+    if (!user) {
+      window.localStorage.setItem(PENDING_SEARCH_ALERT_KEY, JSON.stringify(filters))
+      onRequireLogin?.()
+      return
+    }
+
+    try {
+      await createAlert(filters)
+      setIsAlertError(false)
+      setIsAlertModalOpen(true)
+    } catch {
+      setIsAlertError(true)
+      setIsAlertModalOpen(true)
+    }
+  }
+
+  const handleDesktopMapPropertySelect = (propertyId: string) => {
+    setMapScopedPropertyIds([propertyId])
+    setDesktopMapPropertyId(propertyId)
+  }
+
+  const handleDesktopMapClusterSelect = (propertyIds: string[]) => {
+    setMapScopedPropertyIds(propertyIds)
+    setDesktopMapPropertyId(propertyIds[0])
+  }
+
+  const handleDesktopMapViewportChange = (propertyIds: string[]) => {
+    setMapScopedPropertyIds(propertyIds)
   }
 
   const getPageNumbers = () => {
@@ -151,7 +290,7 @@ export function ResultsPage({
 
   return (
     <section
-      className="workspace-catalog"
+      className="workspace-catalog results-stable-viewport"
       id="resultados"
       aria-label="Resultados de busqueda"
     >
@@ -162,132 +301,226 @@ export function ResultsPage({
         onClearFilters={onClearFilters}
         onChangeFilters={onChangeFilters}
         totalResults={properties.length}
+        onCreateAlert={handleCreateSearchAlert}
+        creatingAlert={creatingSearchAlert}
+        alertMessage={alertMessage}
+        alertError={alertError}
       />
 
-      <div className="catalog-container">
-        <div className="results-heading">
-          <div>
-            <p className="eyebrow">Resultados destacados</p>
-            <h1>{properties.length} propiedades en Cuba</h1>
-          </div>
-          <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                className="sort-button"
-                type="button"
-                variant="outline"
-                aria-label={`Ordenar resultados: ${activeSortLabel}`}
-              >
-                {activeSortLabel === 'Relevancia' ? 'Ordenar' : activeSortLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-2 bg-white border border-neutral-200 shadow-lg rounded-md">
-              <div className="px-2 py-2">
-                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#035f53]">
-                  Ordenar por
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                {sortOptions.map((option) => {
-                  const isActive = option.value === sortBy
+      <ResultsMapView
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        properties={sortedProperties}
+        selectedPropertyId={selectedPropertyId}
+        onSelectProperty={onSelectProperty}
+        onCreateAlert={handleCreateSearchAlert}
+        creatingAlert={creatingSearchAlert}
+        filterBarProps={{
+          filters,
+          isSticky: false,
+          onClearFilters,
+          onChangeFilters,
+          totalResults: properties.length,
+          onCreateAlert: handleCreateSearchAlert,
+          creatingAlert: creatingSearchAlert,
+          alertMessage,
+          alertError,
+        }}
+      />
 
+        <div className={`results-desktop-shell${viewMode === 'map' && isDesktopViewport ? ' is-map-open' : ''}`}>
+          <div className="catalog-container results-list-panel">
+          <div className="results-heading">
+            <div>
+              <p className="eyebrow">Resultados destacados</p>
+              <h1>{heading}</h1>
+              <span className="mobile-results-count">
+                {listedProperties.length} resultado{listedProperties.length === 1 ? '' : 's'} disponibles
+              </span>
+            </div>
+            <Popover open={isSortOpen} onOpenChange={setIsSortOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  className="sort-button"
+                  type="button"
+                  variant="outline"
+                  aria-label={`Ordenar resultados: ${activeSortLabel}`}
+                >
+                  {activeSortLabel === 'Relevancia' ? 'Ordenar' : activeSortLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="end" sideOffset={8} avoidCollisions={false} className="w-64 p-2 bg-white border border-neutral-200 shadow-lg rounded-md">
+                <div className="px-2 py-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#035f53]">
+                    Ordenar por
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {sortOptions.map((option) => {
+                    const isActive = option.value === sortBy
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                          isActive
+                            ? 'bg-[#035f53]/10 text-[#035f53]'
+                            : 'text-neutral-700 hover:bg-neutral-50'
+                        }`}
+                        aria-pressed={isActive}
+                        onClick={() => {
+                          setSortBy(option.value)
+                          setIsSortOpen(false)
+                        }}
+                      >
+                        <span className="block text-sm font-bold">{option.label}</span>
+                        <span className="block text-xs text-neutral-500">{option.helper}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <p className="results-summary">
+            {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
+            {viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? ` Mostrando ${listedProperties.length} en el area visible del mapa.` : ''}
+          </p>
+
+          <div className="property-catalog-grid">
+            {loading ? (
+              <PropertyCardSkeleton count={6} />
+            ) : paginatedProperties.length > 0 ? (
+              paginatedProperties.map((property, index) => (
+                <div
+                  key={property.id}
+                  className="property-catalog-item"
+                  data-property-card-id={property.id}
+                >
+                  <PropertyCard
+                    property={property}
+                    isSelected={property.id === selectedPropertyId || property.id === desktopMapPropertyId}
+                    onSelect={onSelectProperty}
+                    prioritizeImage={index < 2}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="results-empty-state">
+                <svg aria-hidden="true" focusable="false" className="w-28 h-28 text-neutral-300 mb-4 animate-pulse" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 45L50 20L80 45V80C80 82.2091 78.2091 84 76 84H24C21.7909 84 20 82.2091 20 80V45Z" fill="#f0fdf4" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M42 84V56H58V84" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <g className="animate-bounce" style={{ animationDuration: '3s' }}>
+                    <circle cx="62" cy="48" r="16" fill="white" stroke="#035f53" strokeWidth="3" />
+                    <path d="M73 59L88 74" stroke="#035f53" strokeWidth="4.5" strokeLinecap="round" />
+                    <path d="M57 43L67 53" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M67 43L57 53" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                  </g>
+                </svg>
+                <p className="eyebrow">Sin resultados</p>
+                <h2>
+                  {seoRoute
+                    ? 'Todavia no hay anuncios para esta busqueda'
+                    : 'No encontramos propiedades con esos filtros'}
+                </h2>
+                {seoRoute ? (
+                  <p>
+                    Esta pagina se actualiza cuando entren nuevos anuncios. Mientras tanto puedes explorar busquedas relacionadas en {seoRoute.province} o ampliar los filtros.
+                  </p>
+                ) : null}
+                {relatedSeoRoutes.length > 0 ? (
+                  <div className="results-empty-links" aria-label="Busquedas relacionadas">
+                    {relatedSeoRoutes.map((route) => (
+                      <a key={route.path} href={route.path}>
+                        {route.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  className="results-empty-action"
+                  onClick={onClearFilters}
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {!loading && totalPages > 1 && (
+            <div className="results-pagination flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
+              >
+                Anterior
+              </Button>
+
+              <div className="flex items-center gap-1.5 mx-2">
+                {getPageNumbers().map((pageNum, idx) => {
+                  if (pageNum === '...') {
+                    return (
+                      <span key={`dots-${idx}`} className="px-2 text-neutral-500 text-xs font-bold">
+                        ...
+                      </span>
+                    )
+                  }
+                  const isCurrent = pageNum === currentPage
                   return (
                     <button
-                      key={option.value}
-                      type="button"
-                      className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
-                        isActive
-                          ? 'bg-[#035f53]/10 text-[#035f53]'
-                          : 'text-neutral-700 hover:bg-neutral-50'
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum as number)}
+                      aria-current={isCurrent ? 'page' : undefined}
+                      className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-[#035f53] text-white shadow-md'
+                          : 'text-neutral-700 hover:bg-neutral-100 active:scale-95'
                       }`}
-                      aria-pressed={isActive}
-                      onClick={() => {
-                        setSortBy(option.value)
-                        setIsSortOpen(false)
-                      }}
                     >
-                      <span className="block text-sm font-bold">{option.label}</span>
-                      <span className="block text-xs text-neutral-500">{option.helper}</span>
+                      {pageNum}
                     </button>
                   )
                 })}
               </div>
-            </PopoverContent>
-          </Popover>
-        </div>
 
-        <p className="results-summary">
-          Encuentra viviendas por zona, compara precios y contacta al
-          anunciante desde una busqueda clara y rapida.
-        </p>
-
-        <div className="property-catalog-grid">
-          {loading ? (
-            <PropertyCardSkeleton count={6} />
-          ) : (
-            paginatedProperties.map((property, index) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                isSelected={property.id === selectedPropertyId}
-                onSelect={onSelectProperty}
-                prioritizeImage={index < 4}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Pagination Controls */}
-        {!loading && totalPages > 1 && (
-          <div className="results-pagination flex items-center justify-center gap-2 mt-12 pb-6 select-none animate-fadeIn">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-              className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
-            >
-              Anterior
-            </Button>
-            
-            <div className="flex items-center gap-1.5 mx-2">
-              {getPageNumbers().map((pageNum, idx) => {
-                if (pageNum === '...') {
-                  return (
-                    <span key={`dots-${idx}`} className="px-2 text-neutral-500 text-xs font-bold">
-                      ...
-                    </span>
-                  )
-                }
-                const isCurrent = pageNum === currentPage
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum as number)}
-                    className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${
-                      isCurrent
-                        ? 'bg-[#035f53] text-white shadow-md'
-                        : 'text-neutral-700 hover:bg-neutral-100 active:scale-95'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
+              >
+                Siguiente
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-              className="rounded-full px-4 h-9 text-xs font-bold border-neutral-300 text-neutral-700 disabled:opacity-40 transition-colors"
-            >
-              Siguiente
-            </Button>
+          )}
           </div>
-        )}
-      </div>
+
+          {viewMode === 'map' && isDesktopViewport ? (
+            <ResultsDesktopMapPanel
+              properties={sortedProperties}
+              selectedPropertyId={desktopMapPropertyId}
+              onSelectProperty={handleDesktopMapPropertySelect}
+              onSelectCluster={handleDesktopMapClusterSelect}
+              onViewportChange={handleDesktopMapViewportChange}
+            />
+          ) : null}
+        </div>
+      <SearchAlertModal
+        isOpen={isAlertModalOpen}
+        onClose={() => setIsAlertModalOpen(false)}
+        onGoToAccount={onGoToAccount}
+        filters={filters}
+        isError={isAlertError}
+        errorMessage={alertError}
+      />
     </section>
   )
 }

@@ -20,8 +20,15 @@ El sistema MUST sincronizar los criterios de búsqueda activos con la URL para p
 #### Scenario: Sincronización de búsqueda a URL
 - GIVEN un usuario buscando propiedades en el municipio "Playa"
 - WHEN selecciona los filtros de "Compraventa" e "Inmueble: Casa"
-- THEN el sistema MUST navegar a `/resultados?lugar=Playa&operacion=compraventa&tipo=casa`
+- THEN el sistema MUST navegar a `/resultados?q=Playa&operacion=venta&tipo=casa`
 - AND al recargar la página o compartir el enlace, el sistema MUST leer los parámetros de la URL para inicializar el estado del buscador y renderizar los resultados correspondientes
+
+#### Scenario: Ruta SEO de resultados
+- GIVEN una combinacion de provincia, municipio, tipo u operacion tiene ruta SEO soportada
+- WHEN el usuario ejecuta la busqueda desde home o navegacion
+- THEN el sistema MAY navegar a una ruta legible en vez de query string
+- AND MUST parsear esa ruta al cargar directo
+- AND MUST mantener consistencia entre filtros visibles y URL
 
 ### Requirement: Barra de Filtros Adhesiva (Sticky Toolbar)
 El sistema MUST permitir la fijación de la barra de filtros en la parte superior al hacer scroll en resultados, desplazando la cabecera principal para optimizar espacio.
@@ -41,3 +48,53 @@ El sistema MUST permitir ordenar las propiedades desde la pagina de resultados s
 - AND el usuario MUST poder ordenar por relevancia, menor precio, mayor precio y mayor superficie
 - AND al seleccionar una opcion, el catalogo MUST actualizar el orden de las tarjetas
 - AND la paginacion MUST volver a la primera pagina para evitar resultados inconsistentes
+
+### Requirement: Filtros avanzados consistentes
+El sistema MUST aplicar filtros de operacion, tipo, precio, dormitorios, banos y parqueo de forma consistente en lista y mapa.
+
+#### Scenario: Aplicar filtros desde escritorio
+- GIVEN un usuario abre la barra de filtros en resultados
+- WHEN modifica operacion, tipo, precio o filtros avanzados
+- THEN el sistema MUST recalcular propiedades visibles
+- AND MUST actualizar el conteo de resultados
+- AND MUST conservar el estado en la URL cuando aplique
+
+#### Scenario: Aplicar filtros desde movil
+- GIVEN un usuario abre el panel movil de filtros
+- WHEN ajusta filtros y pulsa ver resultados
+- THEN el sistema MUST cerrar el panel
+- AND MUST aplicar los filtros a lista y mapa movil
+- AND MUST mostrar estado vacio si no hay coincidencias
+
+### Requirement: Alertas de busqueda
+El sistema MUST permitir guardar una busqueda filtrada como alerta para usuarios autenticados.
+
+#### Scenario: Crear alerta desde filtros
+- GIVEN un usuario autenticado tiene filtros activos
+- WHEN pulsa `Crear alerta`
+- THEN el sistema MUST guardar los filtros asociados al usuario
+- AND MUST mostrar confirmacion sin perder la busqueda actual
+
+#### Scenario: Crear alerta anonima pendiente
+- GIVEN un usuario anonimo pulsa `Crear alerta`
+- WHEN el sistema requiere autenticacion
+- THEN MUST guardar temporalmente los filtros actuales
+- AND MUST abrir login
+- AND despues de autenticar MUST intentar crear la alerta pendiente
+
+#### Scenario: Notificar una propiedad coincidente
+- GIVEN una propiedad de otro anunciante pasa por primera vez a `published`
+- WHEN coincide con todos los filtros validos de una alerta activa
+- THEN el sistema MUST crear una sola notificacion interna para el propietario de la alerta
+- AND MUST actualizar `last_sent_at` solo si inserto una notificacion nueva
+- AND un filtro heredado invalido MUST considerarse no coincidente sin abortar la publicacion
+- AND los campos nulos de la propiedad MUST considerarse no coincidentes cuando la alerta exige ese campo
+
+### Requirement: Nombres accesibles coherentes
+Los controles del buscador MUST exponer nombres accesibles que incluyan su texto visible.
+
+#### Scenario: Leer controles con tecnologia asistiva
+- GIVEN un usuario abre el buscador principal
+- WHEN una tecnologia asistiva enumera provincia, municipio y accion de busqueda
+- THEN cada control MUST anunciar el mismo valor o instruccion que muestra visualmente
+- AND el boton de envio MUST anunciar `Buscar inmuebles`

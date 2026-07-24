@@ -1,9 +1,10 @@
 import { useRef, useState, type ReactNode, type UIEvent } from 'react'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   Bath,
   BedDouble,
   Car,
-  Heart,
   MapPin,
   MessageCircle,
   Phone,
@@ -16,19 +17,39 @@ import {
   AlertTriangle,
   X,
   Loader2,
+  Eye,
+  Building2,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
+import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { Property } from '../../modules/properties/types'
-import { getPropertyGalleryImages, normalizePropertyImages } from '../../modules/properties/utils/images'
-import { useSavedProperties } from '../../modules/properties/hooks/useSavedProperties'
+import {
+  getPropertyContactInfo,
+  normalizePhoneForTel,
+  normalizePhoneForWhatsApp,
+} from '../../modules/properties/utils/contact'
+import {
+  getPropertyGalleryImages,
+  getPropertyCoverImage,
+  normalizePropertyImages,
+  PROPERTY_IMAGE_FALLBACK,
+} from '../../modules/properties/utils/images'
 import { formatPrice } from '../../shared/lib/formatPrice'
+import { getOpenFreeMapStyle } from '../../modules/maps/lib/openFreeMapStyle'
 import { Button } from '../../shared/ui/button'
 import { Card, CardContent } from '../../shared/ui/card'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
+import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
+import { submitPublicContact, submitPublicReport } from './publicSubmissions'
+import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
+import { fetchAgentProfile } from '../../modules/agents/agentRepository'
+import type { AgentProfile } from '../../modules/agents/types'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -40,6 +61,7 @@ type DetailPageProps = {
   userRole?: string
   onAdminHideProperty?: (propertyId: string) => void
   onAdminDeleteProperty?: (propertyId: string) => void
+  onSelectAgent?: (agentId: string) => void
 }
 
 function titleCase(str: string): string {
@@ -54,6 +76,7 @@ export function DetailPage({
   userRole,
   onAdminHideProperty,
   onAdminDeleteProperty,
+  onSelectAgent,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
@@ -64,10 +87,10 @@ export function DetailPage({
   const [reportLoading, setReportLoading] = useState(false)
   const [reportSuccess, setReportSuccess] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const { isSaved, toggleSave } = useSavedProperties()
+  const [reportTurnstileToken, setReportTurnstileToken] = useState<string | null>(null)
+  const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
+
   const isAdmin = userRole === 'admin'
-  
-  const saved = isSaved(property.id)
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
@@ -77,29 +100,72 @@ export function DetailPage({
     }
   }, [property.id])
 
+  useEffect(() => {
+    if (!property.id) return
+
+    const incrementViews = async () => {
+      try {
+        const { error } = await supabase.rpc('increment_property_view_count', { property_id: property.id })
+        if (error) {
+          logSafeEvent({
+            module: 'properties',
+            action: 'increment_view_count_failed',
+            level: 'warn',
+            code: 'DB_ERROR',
+            context: { error: sanitizeErrorReason(error) },
+          })
+        }
+      } catch (err: unknown) {
+        logSafeEvent({
+          module: 'properties',
+          action: 'increment_view_count_failed',
+          level: 'warn',
+          code: 'DB_ERROR',
+          context: { error: sanitizeErrorReason(err) },
+        })
+      }
+    }
+    incrementViews()
+  }, [property.id])
+
+
+
   async function handleReportSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (reportLoading) return
     setReportLoading(true)
     setReportError(null)
 
-    try {
-      const { error: insertError } = await supabase
-        .from('property_reports')
-        .insert({
-          property_id: property.id,
-          reason: reportReason,
-          description: reportDescription,
-          status: 'pending'
-        })
+    if (!reportTurnstileToken) {
+      setReportError('Por favor, completa la verificación de seguridad.')
+      setReportLoading(false)
+      return
+    }
 
-      if (insertError) throw insertError
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      await submitPublicReport({
+        turnstileToken: reportTurnstileToken,
+        propertyId: property.id,
+        reason: reportReason,
+        description: reportDescription,
+        accessToken: session?.access_token,
+      })
 
       setReportSuccess(true)
       setReportReason('')
       setReportDescription('')
-    } catch (err: any) {
-      console.error('Error submitting report:', err)
+      setReportTurnstileToken(null)
+    } catch (err: unknown) {
+      logSafeEvent({
+        module: 'detail',
+        action: 'submit_report',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
       setReportError('Ocurrió un error al enviar el reporte. Por favor intenta de nuevo.')
+      setReportTurnstileToken(null)
+      setReportTurnstileKey(prev => prev + 1)
     } finally {
       setReportLoading(false)
     }
@@ -141,7 +207,12 @@ export function DetailPage({
         setTimeout(() => setCopied(false), 2000)
       })
       .catch((err) => {
-        console.error('Error al copiar al portapapeles:', err)
+        logSafeEvent({
+          module: 'detail',
+          action: 'copy_clipboard',
+          level: 'error',
+          code: sanitizeErrorReason(err),
+        })
       })
   }
 
@@ -262,16 +333,14 @@ export function DetailPage({
             </div>
           </div>
           <div className="detail-actions flex items-center gap-2 w-full md:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              aria-label={saved ? 'Quitar de guardados' : 'Guardar propiedad'}
-              onClick={() => toggleSave(property.id)}
-              className={`detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
-            >
-              <Heart size={14} className={saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'} />
-              <span className="detail-action-label">{saved ? 'Guardado' : 'Guardar'}</span>
-            </Button>
+            <SavePropertyButton
+              propertyId={property.id}
+              iconSize={14}
+              showLabel
+              labelClassName="detail-action-label"
+              className={(saved) => `detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
+              iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'}
+            />
             <Button
               type="button"
               variant="outline"
@@ -306,6 +375,99 @@ export function DetailPage({
                 </Button>
               </>
             )}
+          </div>
+        </div>
+
+        <div className="detail-desktop-hero">
+          <div className="detail-desktop-hero-copy">
+            <div className="detail-badges flex items-center gap-2 mb-4">
+              <span className="text-[10px] tracking-wider uppercase font-bold bg-white text-neutral-700 px-2.5 py-1 rounded">
+                {titleCase(property.propertyType)}
+              </span>
+              <span className="text-[10px] tracking-wider uppercase font-bold bg-[#035f53]/10 text-[#035f53] px-2.5 py-1 rounded">
+                {titleCase(property.operation)}
+              </span>
+              {property.view_count !== undefined && (
+                <span className="text-[10px] tracking-wider uppercase font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded flex items-center gap-1">
+                  <Eye size={12} className="text-neutral-400" />
+                  <span>{property.view_count} visitas</span>
+                </span>
+              )}
+            </div>
+            <h1 className="detail-desktop-title">
+              {property.title}
+            </h1>
+            <p className="detail-desktop-location">
+              <MapPin size={18} />
+              <span>{property.location}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('map')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Ver ubicación
+              </button>
+            </p>
+            <div className="detail-desktop-price-card">
+              <span>{property.operation === 'alquiler' ? 'Alquiler' : property.operation === 'venta' ? 'Precio' : 'Operación'}</span>
+              <strong>
+                {property.operation === 'permuta'
+                  ? 'Permuta'
+                  : formatPrice(property.priceUsd)}
+              </strong>
+              {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
+            </div>
+            <div className="detail-desktop-cta-row">
+              <button type="button" className="detail-desktop-primary-cta" onClick={scrollToContact}>
+                Contactar
+              </button>
+              <button
+                type="button"
+                className="detail-desktop-secondary-cta"
+                onClick={() => {
+                  const phone = property.contact_info?.phone
+                  if (phone) {
+                    window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
+                  } else {
+                    scrollToContact()
+                  }
+                }}
+              >
+                <MessageCircle size={17} />
+                Consultar
+              </button>
+            </div>
+          </div>
+          <div className="detail-desktop-media">
+            <ImageGallery
+              property={property}
+              isOpenModal={isMediaModalOpen}
+              setIsOpenModal={setIsMediaModalOpen}
+              activeTab={mediaModalTab}
+              setActiveTab={setMediaModalTab}
+            />
+            <div className="detail-desktop-media-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('photos')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Fotos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaModalTab('map')
+                  setIsMediaModalOpen(true)
+                }}
+              >
+                Mapa
+              </button>
+            </div>
           </div>
         </div>
 
@@ -363,6 +525,84 @@ export function DetailPage({
 
             {/* Media Viewer Container */}
             <div className="media-viewer-container">
+              <div className="detail-mobile-media-overlay" aria-label="Acciones de la propiedad">
+                <div className="detail-mobile-media-topbar">
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      onBack()
+                    }}
+                    aria-label="Regresar a la búsqueda"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                  <div>
+                    <button
+                    type="button"
+                    aria-label="Compartir propiedad"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                        handleShare()
+                      }}
+                    >
+                      <Share2 size={18} />
+                    </button>
+                    <SavePropertyButton
+                      propertyId={property.id}
+                      iconSize={18}
+                      iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : ''}
+                      preventDefault
+                      stopPropagation
+                    />
+                  </div>
+                </div>
+                <h1>{property.title}</h1>
+                {property.view_count !== undefined && (
+                  <p className="detail-mobile-views flex items-center gap-1 text-[11px] text-neutral-500 font-bold mb-3 mt-1.5">
+                    <Eye size={12} className="text-neutral-400" />
+                    <span>{property.view_count} visitas</span>
+                  </p>
+                )}
+                <div className="detail-mobile-media-pills">
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setMediaModalTab('photos')
+                      setIsMediaModalOpen(true)
+                    }}
+                  >
+                    Fotos
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setMediaModalTab('map')
+                      setIsMediaModalOpen(true)
+                    }}
+                  >
+                    Mapa
+                  </button>
+                </div>
+              </div>
               <ImageGallery 
                 property={property} 
                 isOpenModal={isMediaModalOpen}
@@ -453,7 +693,7 @@ export function DetailPage({
 
           {/* Columna Derecha: Tarjeta de Contacto (Sticky) */}
           <div className="space-y-6">
-            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} />
+            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} onSelectAgent={onSelectAgent} />
           </div>
 
         </div>
@@ -467,29 +707,31 @@ export function DetailPage({
       </div>
 
       <div className="mobile-detail-cta" aria-label="Acciones de contacto">
-        <button
-          type="button"
-          className="mobile-detail-cta-icon"
-          onClick={() => {
-            const phone = property.contact_info?.phone
-            if (phone) {
-              window.location.href = `tel:${phone}`
-            } else {
-              scrollToContact()
-            }
-          }}
-          aria-label="Llamar al anunciante"
-        >
-          <Phone size={16} />
-        </button>
+        {property.contact_info?.phone ? (
+          <a
+            className="mobile-detail-cta-icon"
+            href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
+            aria-label="Llamar al anunciante"
+          >
+            <Phone size={16} />
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="mobile-detail-cta-icon"
+            onClick={scrollToContact}
+            aria-label="Ver datos de contacto"
+          >
+            <Phone size={16} />
+          </button>
+        )}
         <button
           type="button"
           className="mobile-detail-cta-primary"
           onClick={() => {
             const phone = property.contact_info?.phone
             if (phone) {
-              const cleanPhone = phone.replace(/[^0-9+]/g, '')
-              window.open(`https://wa.me/${cleanPhone}`, '_blank')
+              window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
             } else {
               scrollToContact()
             }
@@ -573,6 +815,14 @@ export function DetailPage({
                   />
                 </div>
 
+                <TurnstileWidget
+                  key={reportTurnstileKey}
+                  action="report-property"
+                  onVerify={(token) => setReportTurnstileToken(token)}
+                  onExpire={() => setReportTurnstileToken(null)}
+                  onError={() => setReportTurnstileToken(null)}
+                />
+
                 {reportError && (
                   <p className="text-xs text-red-600 font-semibold">{reportError}</p>
                 )}
@@ -615,12 +865,14 @@ function ImageGallery({
   setIsOpenModal,
   activeTab,
   setActiveTab,
+  renderModal = true,
 }: {
   property: Property
   isOpenModal: boolean
   setIsOpenModal: (open: boolean) => void
   activeTab: 'photos' | 'map'
   setActiveTab: (tab: 'photos' | 'map') => void
+  renderModal?: boolean
 }) {
   const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -641,9 +893,9 @@ function ImageGallery({
   }
 
   return (
-    <div className="detail-gallery space-y-4">
-      {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
-      <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100">
+      <div className="detail-gallery space-y-4">
+        {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
+      <div className={`hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100 ${images.length < 3 ? 'detail-gallery-grid--single' : ''}`}>
         
         {/* Foto principal grande */}
         <div 
@@ -660,7 +912,7 @@ function ImageGallery({
             key={idx}
             onClick={() => { setActiveImage(img); setActiveTab('photos'); setIsOpenModal(true); }}
             className="bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
-            style={{ backgroundImage: `url("${img}")` }}
+            style={{ backgroundImage: `url("${img}")`, backgroundColor: property.coverTone || '#f3f4f6' }}
           >
             <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
             {idx === 3 && images.length > 5 && (
@@ -692,7 +944,14 @@ function ImageGallery({
               }}
               aria-label={`Abrir foto ${idx + 1} de ${images.length}`}
             >
-              <img src={img} alt={`Foto ${idx + 1} de la propiedad`} loading={idx === 0 ? 'eager' : 'lazy'} />
+              <img
+                src={img}
+                alt={`Foto ${idx + 1} de la propiedad`}
+                loading={idx === 0 ? 'eager' : 'lazy'}
+                onError={(event) => {
+                  event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                }}
+              />
             </button>
           ))}
         </div>
@@ -717,7 +976,7 @@ function ImageGallery({
       </div>
 
       {/* Modal visor de pantalla completa */}
-      {isOpenModal && (
+      {renderModal && isOpenModal && (
         <div 
           className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-4 animate-fadeIn"
           onClick={(e) => { if (e.target === e.currentTarget) setIsOpenModal(false) }}
@@ -759,6 +1018,9 @@ function ImageGallery({
                 src={activeImage} 
                 alt="Detalle de propiedad" 
                 className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-scaleUp"
+                onError={(event) => {
+                  event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                }}
               />
 
               <div className="flex gap-2 mt-6 overflow-x-auto max-w-full py-2">
@@ -777,15 +1039,9 @@ function ImageGallery({
             </>
           ) : (
             <div className="w-full max-w-4xl h-[50vh] md:h-[65vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-scaleUp">
-              <iframe
-                title="Mapa de ubicación de la propiedad"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.coordinates.longitude - 0.01}%2C${property.coordinates.latitude - 0.008}%2C${property.coordinates.longitude + 0.01}%2C${property.coordinates.latitude + 0.008}&layer=mapnik&marker=${property.coordinates.latitude}%2C${property.coordinates.longitude}`}
-                className="w-full h-full"
+              <DetailLocationMap
+                latitude={property.coordinates.latitude}
+                longitude={property.coordinates.longitude}
               />
             </div>
           )}
@@ -795,28 +1051,206 @@ function ImageGallery({
   )
 }
 
-/* Subcomponente: Tarjeta de Contacto */
-function ContactCard({ property, onReport }: { property: Property; onReport: () => void }) {
-  const [contactSent, setContactSent] = useState(false)
+function DetailLocationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
+  const markerRef = useRef<maplibregl.Marker | null>(null)
 
-  function handleContactSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return
+
+    const abortController = new AbortController()
+
+    async function initMap() {
+      if (!containerRef.current || mapRef.current) return
+
+      const style = await getOpenFreeMapStyle(abortController.signal)
+      const center: [number, number] = [longitude, latitude]
+
+      mapRef.current = new maplibregl.Map({
+        container: containerRef.current,
+        style,
+        center,
+        zoom: 15,
+        attributionControl: false,
+      })
+
+      mapRef.current.addControl(
+        new maplibregl.NavigationControl({ showCompass: false }),
+        'top-right',
+      )
+      mapRef.current.addControl(
+        new maplibregl.AttributionControl({ compact: true }),
+        'bottom-right',
+      )
+
+      const el = document.createElement('div')
+      el.className = 'custom-detail-map-marker'
+      el.innerHTML = `
+        <div class="pulse-ring"></div>
+        <div class="marker-pin"></div>
+      `
+
+      markerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat(center)
+        .addTo(mapRef.current)
+    }
+
+    initMap().catch((error) => {
+      if (!abortController.signal.aborted) {
+        logSafeEvent({
+          module: 'maps',
+          action: 'init_detail_map',
+          level: 'error',
+          code: sanitizeErrorReason(error),
+        })
+      }
+    })
+
+    return () => {
+      abortController.abort()
+      markerRef.current?.remove()
+      markerRef.current = null
+      mapRef.current?.remove()
+      mapRef.current = null
+    }
+  }, [latitude, longitude])
+
+  return <div ref={containerRef} className="h-full w-full bg-neutral-100" aria-label="Mapa de ubicación de la propiedad" />
+}
+
+/* Subcomponente: Tarjeta de Contacto */
+function ContactCard({
+  property,
+  onReport,
+  onSelectAgent,
+}: {
+  property: Property
+  onReport: () => void
+  onSelectAgent?: (agentId: string) => void
+}) {
+  const [contactSent, setContactSent] = useState(() => {
+    const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
+    if (saved) {
+      const diff = Date.now() - Number(saved)
+      return diff < 300000 // 5 minutos de bloqueo
+    }
+    return false
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [contactTurnstileToken, setContactTurnstileToken] = useState<string | null>(null)
+  const [contactTurnstileKey, setContactTurnstileKey] = useState(0)
+  const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
+
+  useEffect(() => {
+    if (PHASE_TWO_ENABLED && property.user_id) {
+      fetchAgentProfile(property.user_id).then((prof) => {
+        if (prof) setAgentProfile(prof)
+      })
+    }
+  }, [property.user_id])
+
+  async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setContactSent(true)
-    setTimeout(() => setContactSent(false), 4000)
+    if (loading) return
+    // React no garantiza que currentTarget siga disponible después de un await.
+    // Capturamos los valores enviados antes de verificar Turnstile.
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('contact-name') as string
+    const phone = formData.get('contact-phone') as string
+    const message = formData.get('contact-message') as string
+
+    setLoading(true)
+    setError(null)
+
+    // Verificar spam en local storage antes de enviar
+    const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
+    if (saved) {
+      const diff = Date.now() - Number(saved)
+      if (diff < 300000) {
+        const remaining = Math.ceil((300000 - diff) / 1000)
+        setError(`Has enviado un mensaje recientemente. Espera ${remaining} segundos.`)
+        setLoading(false)
+        return
+      }
+    }
+
+    if (!contactTurnstileToken) {
+      setError('Por favor, completa la verificación de seguridad.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      await submitPublicContact({
+        turnstileToken: contactTurnstileToken,
+        propertyId: property.id,
+        contactName: name,
+        contactPhone: phone,
+        message,
+      })
+
+      localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
+      setContactSent(true)
+    } catch (err: unknown) {
+      logSafeEvent({
+        module: 'detail',
+        action: 'submit_contact_lead',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
+      setContactTurnstileToken(null)
+      setContactTurnstileKey(prev => prev + 1)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <Card id="contactar-anunciante" className="border border-neutral-100 rounded-2xl shadow-xl p-6 sticky top-6 bg-white">
       <CardContent className="p-0 space-y-5">
         <div>
-          <h2 className="text-lg font-bold text-neutral-900 mb-1">
-            Contactar anunciante
-          </h2>
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+            <h2 className="text-lg font-bold text-neutral-900">
+              Contactar anunciante
+            </h2>
+            {PHASE_TWO_ENABLED && agentProfile && (
+              <TrustScoreBadge
+                profileData={{
+                  verificationStatus: agentProfile.verification_status,
+                  createdAt: agentProfile.created_at,
+                  activePropertiesCount: agentProfile.active_properties_count,
+                  reportsCount: agentProfile.reports_count,
+                }}
+                compact
+              />
+            )}
+          </div>
           <p className="text-[11px] text-neutral-500 flex items-center gap-1">
             <Calendar size={12} />
             Publicado recientemente
           </p>
+
+          {PHASE_TWO_ENABLED && property.user_id && onSelectAgent && (
+            <button
+              type="button"
+              onClick={() => onSelectAgent(property.user_id!)}
+              className="w-full mt-3 py-2 px-3 bg-teal-50 hover:bg-teal-100 text-[#035f53] font-bold text-xs rounded-xl flex items-center justify-center gap-2 border border-teal-200/60 transition-colors cursor-pointer"
+            >
+              <Building2 size={14} />
+              <span>Ver perfil del agente / anunciante</span>
+            </button>
+          )}
         </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 text-xs leading-relaxed flex items-center gap-2">
+            <AlertTriangle className="shrink-0 text-red-500" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {contactSent ? (
           <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-xs leading-relaxed">
@@ -830,7 +1264,9 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
               </label>
               <Textarea
                 id="contact-message"
+                name="contact-message"
                 required
+                disabled={loading}
                 defaultValue={`Hola, estoy interesado en "${property.title}" en ${property.location}. Quisiera recibir más detalles.`}
                 className="min-h-[100px] text-xs"
               />
@@ -840,22 +1276,55 @@ function ContactCard({ property, onReport }: { property: Property; onReport: () 
               <label htmlFor="contact-name" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Nombre completo
               </label>
-              <Input id="contact-name" required placeholder="Escribe tu nombre" className="text-xs" />
+              <Input 
+                id="contact-name" 
+                name="contact-name" 
+                required 
+                disabled={loading}
+                placeholder="Escribe tu nombre" 
+                className="text-xs" 
+              />
             </div>
 
             <div className="space-y-1">
               <label htmlFor="contact-phone" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                 Teléfono o WhatsApp
               </label>
-              <Input id="contact-phone" required type="tel" placeholder="+53 50000000" className="text-xs" />
+              <Input 
+                id="contact-phone" 
+                name="contact-phone" 
+                required 
+                type="tel" 
+                disabled={loading}
+                placeholder="+53 50000000" 
+                className="text-xs" 
+              />
             </div>
+
+            <TurnstileWidget
+              key={contactTurnstileKey}
+              action="contact-owner"
+              onVerify={(token) => setContactTurnstileToken(token)}
+              onExpire={() => setContactTurnstileToken(null)}
+              onError={() => setContactTurnstileToken(null)}
+            />
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-[#035f53] hover:bg-[#024a41] text-white rounded-full h-11 text-xs font-bold flex items-center justify-center gap-2 mt-4 transition-colors duration-200"
             >
-              <Phone size={14} />
-              Enviar mensaje y ver contacto
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={14} />
+                  Enviando mensaje...
+                </>
+              ) : (
+                <>
+                  <Phone size={14} />
+                  Enviar mensaje y ver contacto
+                </>
+              )}
             </Button>
           </form>
         )}
@@ -927,7 +1396,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
           .select('*')
           .eq('property_type', currentProperty.propertyType)
           .eq('operation', currentProperty.operation)
-          .not('id', 'in', `(${excludeIds.map(id => `'${id}'`).join(',')})`)
+          .not('id', 'in', `(${excludeIds.join(',')})`)
           .limit(3 - data.length)
           
         if (fallbackData) {
@@ -954,16 +1423,17 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             badge: item.badge || undefined,
             status: item.status,
             coverTone: item.cover_tone || '#f3f4f6',
-            coverImage: item.cover_image || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+            coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
-            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 }
+            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
         }))
         setSimilar(mapped)
       }
     }
     fetchSimilar()
-  }, [currentProperty.id])
+  }, [currentProperty.id, currentProperty.operation, currentProperty.propertyType, province])
   
   if (similar.length === 0) return null
   

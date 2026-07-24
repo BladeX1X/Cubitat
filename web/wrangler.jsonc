@@ -10,13 +10,56 @@
   "assets": {
     "directory": "./dist/",
     "not_found_handling": "single-page-application",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": true
   },
   "vars": {
     "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
-    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo"
+    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
+  },
+  "env": {
+    "dev": {
+      "name": "cubitat1-phase2-dev",
+      "workers_dev": true,
+      "routes": [],
+      "vars": {
+        "PHASE2_ENABLED": "true",
+        "VITE_SUPABASE_URL": "https://dev-supabase.invalid",
+        "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "RATE_LIMITER",
+            "class_name": "RateLimiter"
+          }
+        ]
+      },
+      "triggers": {
+        "crons": ["*/15 * * * *"]
+      }
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "RateLimiter"
+      }
+    ]
+  },
+  "exports": {
+    "RateLimiter": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": false
+    }
   }
 }

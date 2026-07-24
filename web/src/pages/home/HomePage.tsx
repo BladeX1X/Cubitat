@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import {
   Building2,
   FileCheck,
@@ -8,6 +8,8 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { SearchBar } from '../../modules/search/components/SearchBar'
+import { useSEO } from '../../shared/hooks/useSEO'
+import { slugifySeo } from '../../modules/search/seoRoutes'
 import type { LocationSuggestion, SearchFilters } from '../../modules/search/types'
 
 type HomePageProps = {
@@ -25,13 +27,18 @@ export function HomePage({
   onClearFilters,
   onSubmitSearch,
 }: HomePageProps) {
+  useSEO({
+    title: 'Cubitat | El portal de propiedades para Cuba',
+    description: 'Encuentra casas, apartamentos y terrenos en venta y renta en toda Cuba. Fotos reales, mapa geográfico interactivo y contacto directo con el anunciante sin intermediarios.',
+  })
+
   return (
     <>
       <section className="hero">
         <img
           className="hero-media"
-          src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50"
-          srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=45 800w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=50 1200w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=55 1600w"
+          src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=45"
+          srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=480&q=38 480w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=768&q=40 768w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=45 1200w"
           sizes="100vw"
           alt=""
           fetchPriority="high"
@@ -45,6 +52,11 @@ export function HomePage({
             Búscalo en Cubitat.
             <span>El portal de propiedades para Cuba.</span>
           </h1>
+          <div className="hero-mobile-trust" aria-label="Beneficios de Cubitat">
+            <span>Fotos reales</span>
+            <span>Mapa por zona</span>
+            <span>Contacto directo</span>
+          </div>
           <SearchBar
             filters={filters}
             locationSuggestions={locationSuggestions}
@@ -56,8 +68,9 @@ export function HomePage({
       </section>
 
       <PopularLocations />
-      <ServicesSection />
-      <ProductsSection />
+      {/* Reactivar cuando Servicios y Productos tengan contenido final de Fase 1. */}
+      {/* <ServicesSection /> */}
+      {/* <ProductsSection /> */}
     </>
   )
 }
@@ -82,6 +95,13 @@ const POPULAR_LOCATIONS = [
 ]
 
 export function PopularLocations() {
+  const randomizedLocations = useMemo(() => {
+    return [...POPULAR_LOCATIONS]
+      .map((location) => ({ location, sortKey: Math.random() }))
+      .sort((a, b) => a.sortKey - b.sortKey)
+      .map(({ location }) => location)
+  }, [])
+
   return (
     <section className="content-section">
       <div className="section-heading-centered">
@@ -89,9 +109,10 @@ export function PopularLocations() {
         <p className="section-description">Compra, venta y renta de inmuebles en toda Cuba.</p>
       </div>
       <div className="location-grid-cards">
-        {POPULAR_LOCATIONS.map(({ province, image }) => {
+        {randomizedLocations.map(({ province, image }) => {
           const name = `Departamentos en venta en ${province}`
-          const href = `/resultados?q=${encodeURIComponent(province)}&tipo=apartamento&operacion=venta`
+          const href = `/apartamentos-en-venta/${slugifySeo(province)}`
+          const optimizedImage = image.replace('w=500&q=60', 'w=420&q=45')
           
           return (
             <a
@@ -106,10 +127,11 @@ export function PopularLocations() {
             >
               <img
                 className="location-card-image"
-                src={image}
-                alt=""
+                src={optimizedImage}
+                alt={province}
                 loading="lazy"
                 decoding="async"
+                fetchPriority="low"
               />
               <div className="location-card-content">
                 <h3>{name}</h3>

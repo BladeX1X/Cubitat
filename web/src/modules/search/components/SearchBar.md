@@ -102,7 +102,8 @@ Tablet y movil:
 - El formulario previene submit nativo y delega la navegacion a `/resultados` mediante `onSubmitSearch`.
 - El selector usa `aria-haspopup="listbox"` y `aria-expanded`.
 - El campo de ubicacion usa `aria-label="Buscar propiedades"` y `list` asociado a un `datalist` generado con `useId`.
-- El boton de busqueda usa `aria-label="Buscar"`.
+- Provincia y municipio mantienen un nombre accesible dinamico igual al valor o instruccion visibles.
+- El boton de busqueda usa `aria-label="Buscar inmuebles"`.
 
 ## Sugerencias de Ubicacion
 

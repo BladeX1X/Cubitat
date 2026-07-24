@@ -149,7 +149,7 @@ Carousel.displayName = 'Carousel'
 const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(({ className, style, ...props }, ref) => {
   const { carouselRef, orientation } = useCarousel()
 
   return (
@@ -161,6 +161,10 @@ const CarouselContent = React.forwardRef<
           orientation === 'horizontal' ? '' : 'flex-col',
           className
         )}
+        style={{
+          touchAction: orientation === 'horizontal' ? 'pan-y pinch-zoom' : 'pan-x pinch-zoom',
+          ...style
+        }}
         {...props}
       />
     </div>
@@ -204,7 +208,14 @@ const CarouselPrevious = React.forwardRef<
         className
       )}
       disabled={!canScrollPrev}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation()
+      }}
       onClick={(e) => {
+        e.preventDefault()
         e.stopPropagation()
         scrollPrev()
       }}
@@ -235,7 +246,14 @@ const CarouselNext = React.forwardRef<
         className
       )}
       disabled={!canScrollNext}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation()
+      }}
       onClick={(e) => {
+        e.preventDefault()
         e.stopPropagation()
         scrollNext()
       }}

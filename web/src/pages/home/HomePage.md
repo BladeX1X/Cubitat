@@ -121,3 +121,8 @@ npm run lint
 - El menú móvil se renderiza como panel fijo con acceso a cuenta, favoritos, contenidos, publicar y operaciones principales.
 - Se corrigieron textos visibles con tildes en portada y provincias (`Búscalo`, `Pinar del Río`, `Sancti Spíritus`, `Camagüey`, `Holguín`, `Guantánamo`) para evitar mojibake.
 - Verificación visual realizada con viewport `390x844`: captura de portada y captura del menú móvil abierto.
+
+## Hardening de imágenes 2026-07-13
+
+- El hero usa variantes responsive más ligeras de 480, 768 y 1200 px y conserva `fetchPriority="high"` como único recurso visual prioritario de la portada.
+- Las 16 tarjetas de provincias usan `loading="lazy"`, prioridad baja y variantes Unsplash de 420 px con calidad 45.

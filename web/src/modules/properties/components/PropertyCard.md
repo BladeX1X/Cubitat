@@ -23,6 +23,7 @@ type PropertyCardProps = {
 ## Estructura Visual
 
 - Imagen de portada grande:
+  - Usa el fallback SVG local inmediato cuando el anuncio no tiene portada, evitando una descarga genérica remota en el LCP.
   - Usa `property.coverImage`, `property.images` y `property.coverTone`.
   - Muestra badge editorial cuando existe.
   - Incluye flechas laterales solo cuando existen varias imagenes reales.
@@ -88,6 +89,7 @@ Clases principales en `app.css`:
 - Guardar y flechas tienen `aria-label`.
 - El grupo de caracteristicas usa `aria-label`.
 - Guardar y flechas deben tener minimo `44x44 px` de area interactiva para usabilidad tactil.
+- Los puntos del carrusel conservan un indicador visual pequeno dentro de un area tactil de `44x44 px` en movil.
 
 ## Pendientes Recomendados
 
@@ -108,3 +110,4 @@ Cada cambio visual importante debe verificarse con:
 
 - Si se agregan nuevos datos de propiedad, actualizar `Property` y esta documentacion.
 - Mantener la tarjeta escaneable: no mostrar demasiadas amenidades ni texto largo dentro del listado.
+- En resultados, `prioritizeImage` se reserva para la primera tarjeta. Las imágenes Unsplash de catálogo se solicitan a 420 px y calidad 45; las demás usan `loading="lazy"` y `fetchPriority="low"`.

@@ -44,10 +44,10 @@ El modal se compone de dos zonas principales:
 ## Decisiones de Implementación y Base de Datos
 
 - **Supabase Auth:** Integrado mediante `supabase.auth.signInWithPassword`, `supabase.auth.signUp` y `supabase.auth.signInWithOAuth`.
-- **OAuth Google:** El boton Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })` y redirige a `/auth/callback?flow=oauth` para que el callback cierre sesion de OAuth directo al inicio sin mostrar pantalla de correo confirmado.
+- **OAuth Google:** El boton Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })`, solicita `prompt=select_account` para mostrar siempre el selector de cuenta y redirige a `/auth/callback?flow=oauth` para que el callback cierre sesion de OAuth directo al inicio sin mostrar pantalla de correo confirmado.
 - **Metadata en el Registro:** El flujo de registro envía `options.data` con el nombre completo y el rol del usuario (`buyer`, `seller` o `agent`).
 - **Trigger en Base de Datos (PostgreSQL):** Al crear una cuenta en la nube, el disparador automático `on_auth_user_created` captura el registro en `auth.users` y propaga los metadatos para inicializar automáticamente la ficha del usuario en la tabla pública `profiles` en la nube.
-- **Portales de React:** Se utiliza `createPortal` hacia `document.body` para garantizar que la superposición z-index funcione perfectamente sobre mapas y galerías.
+- **Portales de React:** `LoginModal` y la invitación previa de favoritos usan `createPortal` hacia `document.body`. Ambos comparten `MODAL_LAYER_STYLE` (`z-index: 10030`), por encima de `MAP_FULLSCREEN_LAYER_STYLE` (`z-index: 9999`), para permanecer visibles sobre mapas y galerías a pantalla completa.
 - **Accesibilidad:** Se mantiene el atributo `aria-modal="true"`, `role="dialog"` y el control de cierre mediante escape.
 
 ## Responsive
@@ -66,8 +66,25 @@ El diseño se adapta automáticamente:
 
 - **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. Esa pagina intercambia el `code` de Supabase por sesion cuando aplica y muestra el resultado de verificacion.
 - **Recuperacion de contrasena:** El boton `Olvide mi contrasena` usa `supabase.auth.resetPasswordForEmail` y redirige a `/recuperar-contrasena`.
+- **Turnstile unido a Auth:** Registro y recuperacion entregan el token como
+  `captchaToken` dentro de la misma llamada a Supabase Auth. El navegador no lo
+  consume antes mediante `siteverify`; Supabase valida el token y el widget se
+  renueva despues de cualquier fallo para impedir su reutilizacion.
 - **Privacidad en recuperacion:** El mensaje de recuperacion no confirma si el correo existe. Siempre debe decir: `Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.`
+- **Enlaces legales:** Los enlaces del modal navegan a `/terminos` y `/privacidad`; no usan hashes internos.
 - **Rate limit de Supabase:** Si Supabase devuelve `email rate limit exceeded`, el modal muestra un mensaje amable de limite temporal. El arreglo real es configurar SMTP propio con dominio verificado.
+- **Politica de contrasena compartida:** Registro y recuperacion usan
+  `src/modules/auth/passwordPolicy.ts`. La misma regla se versiona en
+  `supabase/config.toml`: minimo 8 caracteres con mayuscula, minuscula, numero y
+  simbolo. Supabase vuelve a validarla aunque se omita el navegador.
+- **Frecuencia de Auth:** Supabase exige al menos 1 minuto entre correos y el
+  Worker agrega limites por IP y por hash del correo para login, registro,
+  recuperacion, OTP y reenvios.
+- **Contrasenas filtradas:** El registro pasa por el Worker, que consulta Pwned
+  Passwords mediante k-anonimato. Solo envia los primeros 5 caracteres del
+  SHA-1; nunca transmite la contrasena ni el hash completo. Una coincidencia se
+  rechaza como `weak_password`. Si el corpus externo falla, permanece activa la
+  politica fuerte de Supabase para no interrumpir por completo Auth.
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.

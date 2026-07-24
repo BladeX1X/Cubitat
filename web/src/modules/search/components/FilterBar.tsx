@@ -1,6 +1,18 @@
-import { useState, useMemo } from 'react'
-import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState } from 'react'
+import { BellPlus, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { SearchFilters } from '../types'
+import {
+  getActiveExtraFiltersCount,
+  getOperationLabel,
+  getPriceLabel,
+  getPropertyTypeLabel,
+  parkingOptions,
+  propertyTypeOptions,
+  purchasePriceOptions,
+  rentPriceOptions,
+  segmentOptions,
+} from '../lib/filterOptions'
+import { useMobileFilterSheet } from '../hooks/useMobileFilterSheet'
 import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
 import { Input } from '../../../shared/ui/input'
@@ -11,6 +23,10 @@ export type FilterBarProps = {
   onClearFilters: () => void
   onChangeFilters?: (filters: SearchFilters) => void
   totalResults?: number
+  onCreateAlert?: () => void
+  creatingAlert?: boolean
+  alertMessage?: string | null
+  alertError?: string | null
 }
 
 export function FilterBar({
@@ -19,28 +35,27 @@ export function FilterBar({
   onClearFilters,
   onChangeFilters,
   totalResults = 0,
+  onCreateAlert,
+  creatingAlert = false,
+  alertMessage: _alertMessage,
+  alertError: _alertError,
 }: FilterBarProps) {
   const [isOperationOpen, setIsOperationOpen] = useState(false)
   const [isTypeOpen, setIsTypeOpen] = useState(false)
   const [isPriceOpen, setIsPriceOpen] = useState(false)
   const [isMoreOpen, setIsMoreOpen] = useState(false)
-  
   const [minPriceInput, setMinPriceInput] = useState('')
   const [maxPriceInput, setMaxPriceInput] = useState('')
 
   const isRent = filters.operations.includes('alquiler')
   const isPermuta = filters.operations.includes('permuta')
-
-  // Calculate active extra filters count (bedrooms, bathrooms, parking, priceRange)
-  const activeFiltersCount = useMemo(() => {
-    let count = 0
-    if (filters.bedrooms && filters.bedrooms !== 'all') count++
-    if (filters.bathrooms && filters.bathrooms !== 'all') count++
-    if (filters.parking && filters.parking !== 'all') count++
-    if (filters.priceRange && filters.priceRange !== 'all' && !isPermuta) count++
-    return count
-  }, [filters, isPermuta])
-
+  const {
+    isMobileViewport,
+    isMounted: isMobileSheetMounted,
+    isVisible: isMobileSheetVisible,
+    close: closeMobileFilterSheet,
+  } = useMobileFilterSheet(isMoreOpen, setIsMoreOpen)
+  const activeFiltersCount = getActiveExtraFiltersCount(filters)
   const handleFilterUpdate = (updatedFields: Partial<SearchFilters>) => {
     if (onChangeFilters) {
       onChangeFilters({
@@ -73,59 +88,53 @@ export function FilterBar({
     setMaxPriceInput('')
   }
 
-  // Get human readable labels
-  const operationLabel = (() => {
-    if (filters.operations.length === 0) return 'Operación'
-    const labels = filters.operations.map(op => op === 'alquiler' ? 'Renta' : op === 'venta' ? 'Venta' : 'Permuta')
-    return labels.join(' + ')
-  })()
+  const handleSegmentUpdate = (
+    field: 'bedrooms' | 'bathrooms' | 'parking',
+    value: 'all' | number,
+  ) => {
+    handleFilterUpdate({ [field]: value } as Partial<SearchFilters>)
+  }
 
-  const typeLabel = (() => {
-    if (filters.propertyType === 'casa') return 'Casas'
-    if (filters.propertyType === 'apartamento') return 'Departamentos'
-    if (filters.propertyType === 'terreno') return 'Terrenos'
-    return 'Inmueble'
-  })()
+  const handleCustomPriceApply = () => {
+    const min = minPriceInput.trim()
+    const max = maxPriceInput.trim()
+    if (min || max) {
+      handleFilterUpdate({ priceRange: `${min}-${max}` })
+      setIsPriceOpen(false)
+      if (isMobileViewport) {
+        closeMobileFilterSheet()
+      }
+    }
+  }
 
-  const priceLabel = (() => {
-    if (!filters.priceRange || filters.priceRange === 'all') return 'Precio'
-    
-    if (isRent) {
-      if (filters.priceRange === '0-200') return 'Hasta $200'
-      if (filters.priceRange === '200-500') return '$200 - $500'
-      if (filters.priceRange === '500-1000') return '$500 - $1000'
-      if (filters.priceRange === '1000-') return 'Más de $1000'
-    } else {
-      if (filters.priceRange === '0-50000') return 'Hasta $50k'
-      if (filters.priceRange === '50000-100000') return '$50k - $100k'
-      if (filters.priceRange === '100000-200000') return '$100k - $200k'
-      if (filters.priceRange === '200000-') return 'Más de $200k'
-    }
 
-    // Custom label parsing: "min-max"
-    const [minStr, maxStr] = filters.priceRange.split('-')
-    const minVal = minStr ? Number(minStr) : 0
-    const maxVal = maxStr ? Number(maxStr) : null
+  const operationLabel = getOperationLabel(filters)
+  const typeLabel = getPropertyTypeLabel(filters)
+  const priceLabel = getPriceLabel(filters)
+  const activePriceOptions = isRent ? rentPriceOptions : purchasePriceOptions
 
-    if (minVal > 0 && maxVal) {
-      return `$${minVal} - $${maxVal}`
-    }
-    if (minVal > 0) {
-      return `Más de $${minVal}`
-    }
-    if (maxVal) {
-      return `Hasta $${maxVal}`
-    }
-    return 'Precio'
-  })()
+  const mobileSummaryParts = [
+    operationLabel === 'Operación' ? 'Operación' : operationLabel,
+    typeLabel,
+    priceLabel === 'Precio' ? null : priceLabel,
+  ].filter(Boolean)
 
   return (
-    <div
-      className={`results-toolbar-full border-b border-neutral-100 bg-white py-3 px-4 flex flex-wrap items-center gap-3 ${
-        isSticky ? 'is-sticky shadow-sm' : ''
-      }`}
-      aria-label="Filtros activos"
-    >
+    <>
+      <div className="mobile-results-summary-card" aria-label="Resumen de busqueda">
+        <div>
+          <strong>{filters.query || 'Cuba'}</strong>
+          <span>{mobileSummaryParts.join(' · ')}</span>
+        </div>
+        <small>{totalResults} inmuebles</small>
+      </div>
+
+      <div
+        className={`results-toolbar-full border-b border-neutral-100 bg-white py-3 px-4 flex flex-wrap items-center gap-3 ${
+          isSticky ? 'is-sticky shadow-sm' : ''
+        }`}
+        aria-label="Filtros activos"
+      >
       {/* 1. Selector de Lugares / Búsqueda */}
       <div className="filter-search-field flex items-center border border-neutral-300 rounded-md px-3 py-1 bg-white min-w-[200px] max-w-[300px] h-10 shadow-sm focus-within:border-[#035f53] transition-colors relative">
         <input
@@ -133,6 +142,7 @@ export function FilterBar({
           name="filter-query"
           type="text"
           placeholder="Buscar zona..."
+          aria-label="Buscar zona"
           className="w-full text-sm outline-none text-neutral-800 placeholder-neutral-400 pr-6"
           value={filters.query}
           onChange={(e) => handleQueryChange(e.target.value)}
@@ -141,7 +151,7 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => handleQueryChange('')}
-            className="absolute right-2.5 text-neutral-400 hover:text-neutral-900 transition-colors"
+            className="filter-search-clear absolute right-0 text-neutral-400 hover:text-neutral-900 transition-colors"
             aria-label="Limpiar búsqueda"
           >
             <X size={14} className="stroke-[2.5px]" />
@@ -165,7 +175,7 @@ export function FilterBar({
             {isOperationOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-48 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
+        <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-48 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
           <div className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700 cursor-pointer"
                onClick={() => { handleOperationToggle('venta'); setIsOperationOpen(false) }}>
             <input
@@ -221,8 +231,8 @@ export function FilterBar({
             {isTypeOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-52 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
-          {(['casa', 'apartamento', 'terreno'] as const).map((type) => (
+        <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-52 p-2 flex flex-col gap-1 bg-white border border-neutral-200 shadow-lg rounded-md">
+          {propertyTypeOptions.map((type) => (
             <div
               key={type}
               className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700"
@@ -259,22 +269,9 @@ export function FilterBar({
               {isPriceOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-64 p-3 flex flex-col gap-2 bg-white border border-neutral-200 shadow-lg rounded-md">
+          <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-64 p-3 flex flex-col gap-2 bg-white border border-neutral-200 shadow-lg rounded-md">
             <div className="flex flex-col gap-1">
-              {(isRent
-                ? [
-                    { label: 'Hasta $200', value: '0-200' },
-                    { label: '$200 - $500', value: '200-500' },
-                    { label: '$500 - $1000', value: '500-1000' },
-                    { label: 'Más de $1000', value: '1000-' },
-                  ]
-                : [
-                    { label: 'Hasta $50k', value: '0-50000' },
-                    { label: '$50k - $100k', value: '50000-100000' },
-                    { label: '$100k - $200k', value: '100000-200000' },
-                    { label: 'Más de $200k', value: '200000-' },
-                  ]
-              ).map((item, idx) => (
+              {(isRent ? rentPriceOptions : purchasePriceOptions).map((item, idx) => (
                 <div
                   key={item.value}
                   className="flex items-center gap-3 px-3 py-1.5 hover:bg-neutral-50 rounded-md text-sm font-medium text-neutral-700"
@@ -322,14 +319,7 @@ export function FilterBar({
             <Button
               type="button"
               size="sm"
-              onClick={() => {
-                const min = minPriceInput.trim()
-                const max = maxPriceInput.trim()
-                if (min || max) {
-                  handleFilterUpdate({ priceRange: `${min}-${max}` })
-                  setIsPriceOpen(false)
-                }
-              }}
+              onClick={handleCustomPriceApply}
               className="bg-[#035f53] text-white hover:bg-[#024a41] h-8 text-xs font-bold w-full mt-1"
             >
               Aplicar rango
@@ -353,15 +343,16 @@ export function FilterBar({
               </span>
             ) : null}
             <span>Filtros</span>
-            <Filter size={14} />
+            <SlidersHorizontal size={14} />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-5 bg-white border border-neutral-200 shadow-2xl rounded-lg flex flex-col gap-5">
+        {!isMobileViewport ? (
+        <PopoverContent side="bottom" align="end" sideOffset={8} avoidCollisions={false} className="w-80 p-5 bg-white border border-neutral-200 shadow-2xl rounded-lg flex flex-col gap-5">
           {/* Segmento Recámaras */}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Recámaras</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.bedrooms ?? 'all') === num
                 return (
                   <button
@@ -385,7 +376,7 @@ export function FilterBar({
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Baños</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.bathrooms ?? 'all') === num
                 return (
                   <button
@@ -409,7 +400,7 @@ export function FilterBar({
           <div className="flex flex-col gap-2">
             <span className="text-sm font-bold text-neutral-800">Estacionamientos</span>
             <div className="flex border border-neutral-200 rounded-md overflow-hidden bg-neutral-50">
-              {['all', 1, 2, 3, 4].map((num) => {
+              {segmentOptions.map((num) => {
                 const isActive = (filters.parking ?? 'all') === num
                 return (
                   <button
@@ -452,7 +443,232 @@ export function FilterBar({
             </Button>
           </div>
         </PopoverContent>
+        ) : null}
       </Popover>
-    </div>
+      {onCreateAlert ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="filter-alert-control"
+          onClick={onCreateAlert}
+          disabled={creatingAlert}
+        >
+          <BellPlus size={14} />
+          {creatingAlert ? 'Guardando...' : 'Crear alerta'}
+        </Button>
+      ) : null}
+      </div>
+      {isMobileViewport && isMobileSheetMounted ? (
+        <div
+          className={`mobile-filter-sheet ${isMobileSheetVisible ? 'is-open' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filtros de búsqueda"
+          onClick={closeMobileFilterSheet}
+        >
+          <div className="mobile-filter-sheet__panel" onClick={(event) => event.stopPropagation()}>
+            <div className="mobile-filter-sheet__handle" aria-hidden="true" />
+            <div className="mobile-filter-sheet__header">
+              <button
+                type="button"
+                className="mobile-filter-sheet__close"
+                onClick={closeMobileFilterSheet}
+                aria-label="Cerrar filtros"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="mobile-filter-sheet__body">
+              <div className="mobile-filter-segment" aria-label="Operación">
+                {[
+                  { label: 'Comprar', value: 'venta' as const },
+                  { label: 'Alquilar', value: 'alquiler' as const },
+                  { label: 'Permuta', value: 'permuta' as const },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={filters.operations.includes(item.value) ? 'is-active' : ''}
+                    onClick={() => handleOperationToggle(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+            <section className="mobile-filter-section">
+              <h3>Ubicación</h3>
+              <label className="mobile-filter-location">
+                <input
+                  type="text"
+                  value={filters.query}
+                  onChange={(event) => handleQueryChange(event.target.value)}
+                  placeholder="Cuba"
+                  aria-label="Buscar ubicación"
+                />
+              </label>
+            </section>
+
+            {!isPermuta ? (
+              <section className="mobile-filter-section">
+                <h3>Valor</h3>
+                <div className="mobile-filter-price-mode">
+                  <button
+                    type="button"
+                    className={isRent ? '' : 'is-active'}
+                    onClick={() => handleFilterUpdate({ operations: ['venta'], priceRange: 'all' })}
+                  >
+                    Valor total
+                  </button>
+                  <button
+                    type="button"
+                    className={isRent ? 'is-active' : ''}
+                    onClick={() => handleFilterUpdate({ operations: ['alquiler'], priceRange: 'all' })}
+                  >
+                    Alquiler
+                  </button>
+                </div>
+                <div className="mobile-filter-price-grid">
+                  <label>
+                    <span>Mínimo</span>
+                    <Input
+                      type="number"
+                      placeholder="USD 0"
+                      value={minPriceInput}
+                      onChange={(event) => setMinPriceInput(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Máximo</span>
+                    <Input
+                      type="number"
+                      placeholder="USD"
+                      value={maxPriceInput}
+                      onChange={(event) => setMaxPriceInput(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="mobile-filter-chips" aria-label="Rangos de precio">
+                  {activePriceOptions.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={filters.priceRange === item.value ? 'is-active' : ''}
+                      onClick={() => handlePriceRangeSelect(item.value)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="mobile-filter-apply-price" onClick={handleCustomPriceApply}>
+                  Aplicar precio
+                </button>
+              </section>
+            ) : null}
+
+            <section className="mobile-filter-section">
+              <h3>Tipos de inmueble</h3>
+              {propertyTypeOptions.map((type) => (
+                <label key={type} className="mobile-filter-check">
+                  <input
+                    type="checkbox"
+                    checked={filters.propertyType === type}
+                    onChange={() => handlePropertyTypeSelect(type)}
+                  />
+                  <span>{type === 'apartamento' ? 'Apartamento' : type === 'casa' ? 'Casa' : 'Terreno'}</span>
+                </label>
+              ))}
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Recámaras</h3>
+              <div className="mobile-filter-chips">
+                {segmentOptions.map((num) => {
+                  const isActive = (filters.bedrooms ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('bedrooms', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Todos' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Parqueo</h3>
+              <div className="mobile-filter-chips">
+                {parkingOptions.map((num) => {
+                  const isActive = (filters.parking ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('parking', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Cualquiera' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="mobile-filter-section">
+              <h3>Baños</h3>
+              <div className="mobile-filter-chips">
+                {segmentOptions.map((num) => {
+                  const isActive = (filters.bathrooms ?? 'all') === num
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={isActive ? 'is-active' : ''}
+                      onClick={() => handleSegmentUpdate('bathrooms', num === 'all' ? 'all' : Number(num))}
+                    >
+                      {num === 'all' ? 'Todos' : `${num}+`}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
+
+            <div className="mobile-filter-sheet__footer">
+              <button
+                type="button"
+                className="mobile-filter-clear"
+                onClick={() => {
+                  onClearFilters()
+                  setMinPriceInput('')
+                  setMaxPriceInput('')
+                }}
+              >
+                Limpiar
+              </button>
+              {onCreateAlert ? (
+                <button
+                  type="button"
+                  className="mobile-filter-alert"
+                  onClick={onCreateAlert}
+                  disabled={creatingAlert}
+                >
+                  <BellPlus size={15} />
+                  {creatingAlert ? 'Guardando...' : 'Alerta'}
+                </button>
+              ) : null}
+              <button type="button" className="mobile-filter-submit" onClick={closeMobileFilterSheet}>
+                Ver {totalResults} inmuebles
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }
