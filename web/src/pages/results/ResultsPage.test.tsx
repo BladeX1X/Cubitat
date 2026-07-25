@@ -260,4 +260,33 @@ describe('ResultsPage', () => {
     render(<ResultsPage {...props} />)
     expect(screen.getByRole('button', { name: 'Ocultar mapa' })).toBeInTheDocument()
   })
+
+  it('filtra propiedades no verificadas cuando verifiedOnly esta activo en DEV', () => {
+    const verifiedProperties: Property[] = [
+      {
+        ...mockProperties[0],
+        id: 'ver-1',
+        title: 'Propiedad Verificada',
+        contact_info: { verification_status: 'verified' } as any,
+      },
+      {
+        ...mockProperties[1],
+        id: 'unver-1',
+        title: 'Propiedad No Verificada',
+        contact_info: { verification_status: 'unverified' } as any,
+      },
+    ]
+
+    render(
+      <ResultsPage
+        filters={{ ...mockFilters, verifiedOnly: true }}
+        properties={verifiedProperties}
+        onSelectProperty={vi.fn()}
+        onClearFilters={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Propiedad Verificada')).toBeInTheDocument()
+    expect(screen.queryByText('Propiedad No Verificada')).not.toBeInTheDocument()
+  })
 })

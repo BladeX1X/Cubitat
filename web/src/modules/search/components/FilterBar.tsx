@@ -16,6 +16,7 @@ import { useMobileFilterSheet } from '../hooks/useMobileFilterSheet'
 import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
 import { Input } from '../../../shared/ui/input'
+import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 
 export type FilterBarProps = {
   filters: SearchFilters
@@ -329,6 +330,21 @@ export function FilterBar({
       </Popover>
     )}
 
+      {PHASE_TWO_ENABLED && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => handleFilterUpdate({ verifiedOnly: !filters.verifiedOnly })}
+          className={`filter-control flex items-center gap-1.5 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
+            filters.verifiedOnly
+              ? 'border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+              : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+          }`}
+        >
+          <span>🛡️ Solo Verificados</span>
+        </Button>
+      )}
+
       {/* 5. Botón de Más Filtros ("Filtros") */}
       <Popover open={isMoreOpen} onOpenChange={setIsMoreOpen}>
         <PopoverTrigger asChild>
@@ -419,6 +435,27 @@ export function FilterBar({
               })}
             </div>
           </div>
+
+          {PHASE_TWO_ENABLED && (
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-bold text-neutral-800">Reputación y Confianza</span>
+              <div
+                className="flex items-center gap-3 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 rounded-md text-sm font-medium text-neutral-700 cursor-pointer"
+                onClick={() => handleFilterUpdate({ minTrustScore: filters.minTrustScore === 4.0 ? 'all' : 4.0 })}
+              >
+                <input
+                  type="checkbox"
+                  id="filter-trust-score"
+                  checked={filters.minTrustScore === 4.0}
+                  onChange={() => {}}
+                  className="h-4 w-4 rounded border-neutral-300 text-[#035f53] focus:ring-[#035f53]"
+                />
+                <label htmlFor="filter-trust-score" className="cursor-pointer select-none text-xs font-semibold">
+                  ⭐ Reputación Alta (Trust Score ≥ 4.0)
+                </label>
+              </div>
+            </div>
+          )}
 
           <hr className="border-neutral-100 my-1" />
 

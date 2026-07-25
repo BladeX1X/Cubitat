@@ -38,6 +38,15 @@ export function TurnstileWidget({
 
     let active = true;
 
+    if (!(window as any).turnstile && !document.getElementById('cloudflare-turnstile-script')) {
+      const script = document.createElement('script');
+      script.id = 'cloudflare-turnstile-script';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
     function renderWidget() {
       const turnstile = (window as any).turnstile;
       if (!turnstile || !containerRef.current || !active) return;
