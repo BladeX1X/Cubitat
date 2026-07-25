@@ -107,10 +107,12 @@ export function PropertyCard({
                       className="property-photo-slide"
                       src={image}
                       alt=""
+                      width="400"
+                      height="225"
                       loading={prioritizeImage && index === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                       fetchPriority={prioritizeImage && index === 0 ? 'high' : 'low'}
-                      style={{ backgroundColor: property.coverTone }}
+                      style={{ backgroundColor: property.coverTone, aspectRatio: '16/9' }}
                       onError={(event) => {
                         event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
                       }}
