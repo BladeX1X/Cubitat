@@ -40,12 +40,16 @@ export function KycSubmissionModal({ userId, isOpen, onClose, onSuccess }: KycSu
           <KycDocumentForm
             documentType={submission.documentType}
             onDocumentTypeChange={submission.setDocumentType}
-            file={submission.file}
-            previewUrl={submission.previewUrl}
+            documentFile={submission.documentFile}
+            documentPreviewUrl={submission.documentPreviewUrl}
+            selfieFile={submission.selfieFile}
+            selfiePreviewUrl={submission.selfiePreviewUrl}
             loading={submission.loading}
             error={submission.error}
-            onFileChange={submission.selectFile}
-            onClearFile={submission.clearFile}
+            onDocumentFileChange={submission.selectDocumentFile}
+            onSelfieFileChange={submission.selectSelfieFile}
+            onClearDocumentFile={submission.clearDocumentFile}
+            onClearSelfieFile={submission.clearSelfieFile}
             onCancel={onClose}
             onSubmit={submission.submit}
           />

@@ -19,12 +19,17 @@ describe('kycRepository', () => {
       statusText: 'OK',
     } as any)
 
-    const result = await submitKycRequest('identity_card', 'user-123/private-doc.jpg')
+    const result = await submitKycRequest(
+      'identity_card',
+      'user-123/document-private.jpg',
+      'user-123/selfie-private.jpg',
+    )
     expect(result.success).toBe(true)
     expect(result.requestId).toBe('req-uuid-123')
     expect(supabase.rpc).toHaveBeenCalledWith('submit_kyc_request', {
       p_document_type: 'identity_card',
-      p_document_path: 'user-123/private-doc.jpg',
+      p_document_path: 'user-123/document-private.jpg',
+      p_selfie_path: 'user-123/selfie-private.jpg',
     })
   })
 
@@ -37,7 +42,11 @@ describe('kycRepository', () => {
       statusText: 'Error',
     } as any)
 
-    const result = await submitKycRequest('passport', 'user-123/private-doc.jpg')
+    const result = await submitKycRequest(
+      'passport',
+      'user-123/document-private.jpg',
+      'user-123/selfie-private.jpg',
+    )
     expect(result.success).toBe(false)
     expect(result.error).toBe('No se pudo enviar la solicitud de verificación.')
   })

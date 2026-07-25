@@ -223,6 +223,16 @@ reportó errores. No persistieron cambios ni se mostraron identificadores.
 - Reproduce los permisos mínimos de API que el proyecto productivo histórico ya tenía, pero que las primeras migraciones no versionaron: perfil propio, propiedades legibles bajo RLS y notificaciones propias.
 - No abre tablas nuevas ni evita RLS; únicamente permite que `authenticated`/`anon` lleguen a las políticas existentes en el stack reconstruido desde cero.
 
+### DEV-F2.2. `dev-migrations/20260801002000_kyc_identity_selfie.sql`
+
+- **Estado 2026-07-23**: aplicada y verificada exclusivamente en Supabase local; fuera de `supabase/migrations/` y de la cadena productiva.
+- Añade `selfie_path` y sustituye la RPC de alta para exigir dos objetos privados distintos: documento de identidad y foto de la persona sosteniéndolo.
+- Solo acepta carnet de identidad o pasaporte para solicitudes nuevas; la licencia profesional permanece como dato separado del perfil de agente.
+- Las rutas nuevas deben usar los prefijos del propietario `document-` y `selfie-`; la RPC comprueba que ambos objetos existen antes de crear la solicitud.
+- La RPC administrativa rechaza la aprobación si falta una ruta o cualquiera de los dos objetos, aunque el cliente intente saltarse la interfaz.
+- Las solicitudes pendientes del flujo anterior se conservan como historial rechazado para que el usuario presente nuevamente ambas evidencias.
+- **Prohibido**: no aplicar esta migración, sus datos QA ni el bucket KYC al proyecto productivo sin la autorización posterior expresa de Rodolfo.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.

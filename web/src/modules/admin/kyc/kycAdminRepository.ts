@@ -6,7 +6,9 @@ export type PendingKycRequest = {
   user_id: string
   document_type: string
   document_path: string
+  selfie_path: string | null
   document_signed_url: string | null
+  selfie_signed_url: string | null
   status: string
   rejection_reason?: string | null
   created_at: string
@@ -19,6 +21,21 @@ export type PendingKycRequest = {
   } | null
 }
 
+async function createEvidenceSignedUrl(path: string | null): Promise<string | null> {
+  if (!path) return null
+  const { data, error } = await supabase.storage.from('kyc_documents').createSignedUrl(path, 300)
+  if (error) {
+    logSafeEvent({
+      module: 'admin_kyc',
+      action: 'sign_document',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
+    return null
+  }
+  return data?.signedUrl ?? null
+}
+
 export async function fetchPendingKycRequests(): Promise<PendingKycRequest[]> {
   const { data, error } = await supabase
     .from('kyc_requests')
@@ -27,6 +44,7 @@ export async function fetchPendingKycRequests(): Promise<PendingKycRequest[]> {
       user_id,
       document_type,
       document_path,
+      selfie_path,
       status,
       rejection_reason,
       created_at,
@@ -49,6 +67,7 @@ export async function fetchPendingKycRequests(): Promise<PendingKycRequest[]> {
     user_id: string
     document_type: string
     document_path: string
+    selfie_path: string | null
     status: string
     rejection_reason?: string | null
     created_at: string
@@ -61,25 +80,19 @@ export async function fetchPendingKycRequests(): Promise<PendingKycRequest[]> {
 
   return Promise.all(rawData.map(async (item) => {
     const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('kyc_documents')
-      .createSignedUrl(item.document_path, 300)
-
-    if (signedError) {
-      logSafeEvent({
-        module: 'admin_kyc',
-        action: 'sign_document',
-        level: 'warn',
-        code: sanitizeErrorReason(signedError),
-      })
-    }
+    const [documentSignedUrl, selfieSignedUrl] = await Promise.all([
+      createEvidenceSignedUrl(item.document_path),
+      createEvidenceSignedUrl(item.selfie_path),
+    ])
 
     return {
       id: item.id,
       user_id: item.user_id,
       document_type: item.document_type,
       document_path: item.document_path,
-      document_signed_url: signedData?.signedUrl ?? null,
+      selfie_path: item.selfie_path,
+      document_signed_url: documentSignedUrl,
+      selfie_signed_url: selfieSignedUrl,
       status: item.status,
       rejection_reason: item.rejection_reason ?? null,
       created_at: item.created_at,

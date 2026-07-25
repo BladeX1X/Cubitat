@@ -14,7 +14,9 @@ const mockRequests: PendingKycRequest[] = [
     user_id: 'user-100',
     document_type: 'identity_card',
     document_path: 'user-100/identity.jpg',
+    selfie_path: 'user-100/selfie.jpg',
     document_signed_url: 'https://example.com/identity.jpg',
+    selfie_signed_url: 'https://example.com/selfie.jpg',
     status: 'pending',
     rejection_reason: null,
     created_at: '2026-07-21T12:00:00.000Z',
@@ -26,7 +28,9 @@ const mockRequests: PendingKycRequest[] = [
     user_id: 'user-200',
     document_type: 'passport',
     document_path: 'user-200/passport.jpg',
+    selfie_path: 'user-200/selfie.jpg',
     document_signed_url: 'https://example.com/passport.jpg',
+    selfie_signed_url: 'https://example.com/selfie-2.jpg',
     status: 'pending',
     rejection_reason: null,
     created_at: '2026-07-21T14:00:00.000Z',
@@ -97,9 +101,11 @@ describe('KycModerationTab', () => {
     })
 
     const images = screen.getAllByRole('img')
-    expect(images).toHaveLength(2)
+    expect(images).toHaveLength(4)
     expect(images[0]).toHaveAttribute('src', 'https://example.com/identity.jpg')
-    expect(images[1]).toHaveAttribute('src', 'https://example.com/passport.jpg')
+    expect(images[1]).toHaveAttribute('src', 'https://example.com/selfie.jpg')
+    expect(images[2]).toHaveAttribute('src', 'https://example.com/passport.jpg')
+    expect(images[3]).toHaveAttribute('src', 'https://example.com/selfie-2.jpg')
   })
 
   it('approves a request when clicking Aprobar', async () => {
@@ -117,6 +123,18 @@ describe('KycModerationTab', () => {
       expect(screen.queryByText('Carlos Ruiz')).not.toBeInTheDocument()
       expect(screen.getByText('Solicitud KYC aprobada exitosamente.')).toBeInTheDocument()
     })
+  })
+
+  it('disables approval when the selfie evidence is unavailable', async () => {
+    vi.mocked(fetchPendingKycRequests).mockResolvedValueOnce([
+      { ...mockRequests[0], selfie_path: null, selfie_signed_url: null },
+    ])
+
+    render(<KycModerationTab />)
+
+    const approveButton = await screen.findByRole('button', { name: /aprobar/i })
+    expect(approveButton).toBeDisabled()
+    expect(screen.getByText(/evidencia privada no está disponible/i)).toBeInTheDocument()
   })
 
   it('opens rejection modal, inputs reason, and approves rejection', async () => {

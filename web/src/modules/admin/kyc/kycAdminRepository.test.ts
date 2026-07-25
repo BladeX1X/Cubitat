@@ -45,6 +45,7 @@ describe('kycAdminRepository', () => {
           user_id: 'user-1',
           document_type: 'identity_card',
           document_path: 'user-1/id.jpg',
+          selfie_path: 'user-1/selfie.jpg',
           status: 'pending',
           rejection_reason: null,
           created_at: '2026-07-21T10:00:00Z',
@@ -57,6 +58,9 @@ describe('kycAdminRepository', () => {
       ]
 
       orderMock.mockResolvedValueOnce({ data: mockData, error: null })
+      createSignedUrlMock
+        .mockResolvedValueOnce({ data: { signedUrl: 'https://signed.example/document' }, error: null })
+        .mockResolvedValueOnce({ data: { signedUrl: 'https://signed.example/selfie' }, error: null })
 
       const result = await fetchPendingKycRequests()
 
@@ -71,7 +75,9 @@ describe('kycAdminRepository', () => {
         user_id: 'user-1',
         document_type: 'identity_card',
         document_path: 'user-1/id.jpg',
-        document_signed_url: 'https://signed.example/doc',
+        selfie_path: 'user-1/selfie.jpg',
+        document_signed_url: 'https://signed.example/document',
+        selfie_signed_url: 'https://signed.example/selfie',
         status: 'pending',
         rejection_reason: null,
         created_at: '2026-07-21T10:00:00Z',
@@ -83,6 +89,7 @@ describe('kycAdminRepository', () => {
         full_name: 'María Delgado',
         email: 'maria@example.com',
       })
+      expect(createSignedUrlMock).toHaveBeenCalledTimes(2)
     })
 
     it('throws error when database query fails', async () => {

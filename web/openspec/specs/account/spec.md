@@ -82,3 +82,22 @@ El sistema MUST manejar expiracion o cierre de sesion mientras el usuario navega
 - THEN el sistema MUST limpiar datos privados en memoria
 - AND MUST abrir login o redirigir a inicio
 - AND MUST evitar mostrar datos antiguos de otro usuario
+
+### Requirement: Evidencias KYC de identidad
+El sistema MUST exigir dos imágenes privadas para crear una solicitud KYC: un documento oficial de identidad y una foto de la persona sosteniendo ese mismo documento.
+
+#### Scenario: Usuario prepara una solicitud KYC completa
+- GIVEN un usuario autenticado sin una solicitud pendiente
+- WHEN abre el formulario KYC
+- THEN MUST poder seleccionar carnet de identidad o pasaporte
+- AND MUST adjuntar una imagen del documento
+- AND MUST adjuntar otra imagen donde aparezca sosteniendo el documento
+- AND el envío MUST permanecer deshabilitado mientras falte cualquiera de las dos imágenes
+
+#### Scenario: Almacenamiento de evidencias KYC
+- GIVEN el usuario adjuntó ambas imágenes válidas
+- WHEN envía la solicitud
+- THEN cada archivo MUST almacenarse en el bucket privado bajo la carpeta del propietario
+- AND la RPC MUST comprobar que las dos rutas son distintas y que ambos objetos existen
+- AND un usuario distinto o anónimo MUST NOT leer las evidencias
+- AND si falla el envío parcial, el cliente MUST intentar retirar los objetos huérfanos

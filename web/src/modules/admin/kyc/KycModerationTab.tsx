@@ -27,7 +27,7 @@ export function KycModerationTab() {
       <div className="flex flex-col gap-1 rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 id="kyc-moderation-title" className="text-lg font-bold text-neutral-900">Verificación de Identidad (KYC)</h2>
-          <p className="text-xs text-neutral-500">Revisa los documentos presentados por los usuarios para validar su identidad.</p>
+          <p className="text-xs text-neutral-500">Compara el documento de identidad con la foto de la persona sosteniéndolo.</p>
         </div>
         <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
           {moderation.requests.length} {moderation.requests.length === 1 ? 'pendiente' : 'pendientes'}

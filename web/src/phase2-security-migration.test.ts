@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import migrationSql from '../supabase/dev-migrations/20260801000000_phase2_kyc_and_agents.sql?raw'
 import localApiGrantsSql from '../supabase/dev-migrations/20260801001000_local_api_grants.sql?raw'
+import identitySelfieSql from '../supabase/dev-migrations/20260801002000_kyc_identity_selfie.sql?raw'
 
 describe('Phase 2 security migration', () => {
   it('is isolated from the production migration chain', () => {
@@ -32,6 +33,24 @@ describe('Phase 2 security migration', () => {
     expect(migrationSql).toContain('claim_pending_alert_emails')
     expect(migrationSql).toMatch(/FOR UPDATE SKIP LOCKED/i)
     expect(migrationSql).toMatch(/claim_pending_alert_emails\(integer\) TO service_role/i)
+  })
+})
+
+describe('Phase 2 identity and selfie evidence', () => {
+  it('stays isolated from production and requires two owner-scoped objects', () => {
+    expect(identitySelfieSql).toContain('DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT')
+    expect(identitySelfieSql).toMatch(/ADD COLUMN IF NOT EXISTS selfie_path text/i)
+    expect(identitySelfieSql).toMatch(/p_document_path NOT LIKE v_user_id::text \|\| '\/document-%'/i)
+    expect(identitySelfieSql).toMatch(/p_selfie_path NOT LIKE v_user_id::text \|\| '\/selfie-%'/i)
+    expect(identitySelfieSql).toMatch(/p_selfie_path = p_document_path/i)
+    expect(identitySelfieSql).toMatch(/submit_kyc_request\(text, text, text\) TO authenticated/i)
+    expect(identitySelfieSql).toMatch(/status = 'pending' AND selfie_path IS NULL/i)
+  })
+
+  it('prevents approval when either private evidence object is missing', () => {
+    expect(identitySelfieSql).toMatch(/p_status = 'approved'[\s\S]*v_selfie_path IS NULL/i)
+    expect(identitySelfieSql).toMatch(/storage\.objects[\s\S]*name = v_document_path/i)
+    expect(identitySelfieSql).toMatch(/storage\.objects[\s\S]*name = v_selfie_path/i)
   })
 })
 

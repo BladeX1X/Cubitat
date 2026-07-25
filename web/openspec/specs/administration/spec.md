@@ -100,6 +100,22 @@ El sistema MUST permitir revisar usuarios solo a roles autorizados y con exposic
 - AND SHOULD registrar razon y fecha
 - AND MUST evitar aplicar cambios a usuarios fuera del alcance autorizado
 
+### Requirement: Revision KYC con doble evidencia
+El sistema MUST permitir que únicamente un administrador en AAL2 compare el documento de identidad con la foto de la persona sosteniéndolo.
+
+#### Scenario: Admin revisa una solicitud completa
+- GIVEN existe una solicitud KYC pendiente con las dos evidencias privadas
+- WHEN un administrador en AAL2 abre la pestaña KYC
+- THEN MUST recibir URLs firmadas de corta duración para ambas imágenes
+- AND MUST visualizar las dos evidencias con etiquetas diferentes
+- AND MAY aprobar o rechazar la solicitud
+
+#### Scenario: Solicitud incompleta o evidencia ausente
+- GIVEN falta la ruta o el objeto de cualquiera de las dos evidencias
+- WHEN el administrador intenta aprobar la solicitud
+- THEN la interfaz MUST deshabilitar la aprobación
+- AND la RPC MUST rechazar la aprobación aunque se invoque directamente
+
 ### Requirement: Auditoria y trazabilidad
 El sistema MUST dejar trazabilidad atómica de acciones administrativas sensibles.
 
