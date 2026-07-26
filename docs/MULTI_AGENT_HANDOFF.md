@@ -21,6 +21,8 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
+> Actualización 2026-07-25: Submódulo 1.2 de Fase 2 completado en DEV (filtro por Agente Verificado y Trust Score ≥ 4.0 en barra de búsqueda y panel de filtros). 78 archivos y 298 pruebas unitarias aprobadas al 100%. Fusionado en `dev` y subido a GitHub.
+
 > Actualización 2026-07-22: decisión de producto confirmada por Rodolfo: toda la Fase 2 se prueba exclusivamente en DEV. La migración quedó fuera de la cadena productiva, la UI se desactiva en builds de producción y el Cron existe solo en `env.dev`. No desplegar Fase 2 ni aplicar su SQL en producción.
 
 - Rama base funcional confirmada antes de este relevo: `main` en `4bf8fa0`. El

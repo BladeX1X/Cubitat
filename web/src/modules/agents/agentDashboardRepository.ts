@@ -11,6 +11,8 @@ export interface AgentDashboardProperty {
   created_at: string
   user_id: string
   view_count?: number
+  phone_clicks_count?: number
+  whatsapp_clicks_count?: number
 }
 
 export interface AgentDashboardData {
@@ -24,7 +26,7 @@ export async function loadAgentDashboard(ownerId: string): Promise<AgentDashboar
     supabase.from('profiles').select('role, verification_status').eq('id', ownerId).maybeSingle(),
     supabase
       .from('properties')
-      .select('id, title, location, price_usd, cover_image, status, created_at, user_id, view_count')
+      .select('id, title, location, price_usd, cover_image, status, created_at, user_id, view_count, phone_clicks_count, whatsapp_clicks_count')
       .eq('user_id', ownerId)
       .order('created_at', { ascending: false }),
   ])

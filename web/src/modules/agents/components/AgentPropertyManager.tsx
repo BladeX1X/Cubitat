@@ -1,9 +1,10 @@
-import { Building2, ExternalLink, Eye, Loader2, MapPin, PauseCircle, Pencil, PlayCircle, Search } from 'lucide-react'
+import { Building2, ExternalLink, Eye, Loader2, MapPin, MessageCircle, PauseCircle, Pencil, Phone, PlayCircle, Search } from 'lucide-react'
 import { getPropertyStatusConfig } from '../../properties/propertyStatus'
 import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import type { AgentDashboardProperty } from '../agentDashboardRepository'
 import type { AgentStatusFilter } from '../hooks/useAgentDashboard'
+import { getContactClickMetrics } from '../../properties/utils/contactTracking'
 
 interface AgentPropertyManagerProps {
   properties: AgentDashboardProperty[]
@@ -90,7 +91,7 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
           <table className="w-full text-left border-collapse">
             <thead><tr className="border-b border-neutral-100 text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">
               <th className="py-3 px-4">Inmueble</th><th className="py-3 px-4">Precio</th><th className="py-3 px-4">Estado</th>
-              <th className="py-3 px-4 text-center">Visualizaciones</th><th className="py-3 px-4 text-right">Acciones Rápidas</th>
+              <th className="py-3 px-4 text-center">Interacciones</th><th className="py-3 px-4 text-right">Acciones Rápidas</th>
             </tr></thead>
             <tbody className="divide-y divide-neutral-100 text-sm">
               {props.filteredProperties.map((property) => {
@@ -98,6 +99,9 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
                 const isUpdating = props.updatingId === property.id
                 const isPublished = property.status === 'published'
                 const canToggle = isPublished || property.status === 'owner_hidden'
+                const localMetrics = getContactClickMetrics(property.id)
+                const totalPhone = (property.phone_clicks_count ?? 0) + localMetrics.phoneClicks
+                const totalWhatsApp = (property.whatsapp_clicks_count ?? 0) + localMetrics.whatsappClicks
                 return (
                   <tr key={property.id} className="hover:bg-neutral-50/70 transition-colors">
                     <td className="py-4 px-4"><div className="flex items-center gap-3">
@@ -107,7 +111,22 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
                       </div></div></td>
                     <td className="py-4 px-4 font-extrabold text-[#035f53] whitespace-nowrap">{formatPrice(property.price_usd)}</td>
                     <td className="py-4 px-4 whitespace-nowrap"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.text}`}><span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />{status.label}</span></td>
-                    <td className="py-4 px-4 text-center whitespace-nowrap"><span className="inline-flex items-center gap-1 font-bold text-neutral-700 bg-neutral-100/70 px-2.5 py-1 rounded-md text-xs"><Eye size={13} className="text-neutral-400" />{property.view_count ?? 0}</span></td>
+                    <td className="py-4 px-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 font-bold text-neutral-700 bg-neutral-100/80 px-2 py-1 rounded-md text-xs" title="Vistas totales acumuladas">
+                          <Eye size={13} className="text-neutral-400" />
+                          {property.view_count ?? 0}
+                        </span>
+                        <span className="inline-flex items-center gap-1 font-bold text-blue-800 bg-blue-50 px-2 py-1 rounded-md text-xs" title="Llamadas por teléfono">
+                          <Phone size={13} className="text-blue-500" />
+                          {totalPhone}
+                        </span>
+                        <span className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md text-xs" title="Consultas por WhatsApp">
+                          <MessageCircle size={13} className="text-emerald-500" />
+                          {totalWhatsApp}
+                        </span>
+                      </div>
+                    </td>
                     <td className="py-4 px-4 text-right whitespace-nowrap"><div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold text-[#035f53] border-neutral-200 hover:bg-[#035f53]/10" onClick={() => props.onSelectProperty?.(property.id)} title="Ver cómo otros ven esta propiedad"><ExternalLink size={13} /><span className="hidden md:inline">Ver cómo otros lo ven</span></Button>
                       <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold border-neutral-200" onClick={() => props.onEditProperty?.(property.id)} title="Editar propiedad"><Pencil size={13} /><span>Editar</span></Button>

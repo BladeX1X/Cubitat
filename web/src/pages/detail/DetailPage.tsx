@@ -46,6 +46,7 @@ import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
+import { trackContactClick } from '../../modules/properties/utils/contactTracking'
 import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
 import { fetchAgentProfile } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
@@ -427,6 +428,7 @@ export function DetailPage({
                 type="button"
                 className="detail-desktop-secondary-cta"
                 onClick={() => {
+                  trackContactClick(property.id, 'whatsapp')
                   const phone = property.contact_info?.phone
                   if (phone) {
                     window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
@@ -1191,6 +1193,7 @@ function ContactCard({
         message,
       })
 
+      trackContactClick(property.id, 'phone')
       localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
       setContactSent(true)
     } catch (err: unknown) {
