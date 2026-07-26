@@ -324,6 +324,9 @@ Tipo: ${body.property_type}`;
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
           configure: (proxy) => {
+            const remoteUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'
+            const remoteAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo'
+
             proxy.on('proxyReq', (proxyReq, req) => {
               const authHeader = req.headers['authorization'];
               const apiKeyHeader = req.headers['apikey'];
@@ -334,6 +337,36 @@ Tipo: ${body.property_type}`;
                 proxyReq.setHeader('apikey', supabaseAnonKey);
               }
             });
+
+            proxy.on('error', async (err: any, req, res) => {
+              if (err.code === 'ECONNREFUSED' && supabaseUrl.includes('127.0.0.1')) {
+                try {
+                  const targetPath = (req.url || '').replace(/^\/api\/supabase/, '')
+                  const authHeader = req.headers['authorization'] === 'Bearer dummy-key-safe-from-browsers'
+                    ? `Bearer ${remoteAnonKey}`
+                    : (req.headers['authorization'] || `Bearer ${remoteAnonKey}`)
+                  const response = await fetch(`${remoteUrl}${targetPath}`, {
+                    method: req.method,
+                    headers: {
+                      'Content-Type': req.headers['content-type'] || 'application/json',
+                      'apikey': remoteAnonKey,
+                      'Authorization': authHeader,
+                    },
+                  })
+                  res.statusCode = response.status
+                  const body = await response.text()
+                  res.setHeader('Content-Type', 'application/json')
+                  res.end(body)
+                  return
+                } catch {
+                  // Fallback
+                }
+              }
+              if (!res.headersSent) {
+                res.statusCode = 502
+                res.end(JSON.stringify({ error: 'No se pudo conectar con el servidor.' }))
+              }
+            })
           }
         }
       }

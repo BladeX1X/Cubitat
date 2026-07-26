@@ -50,7 +50,7 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
-              {PHASE_TWO_ENABLED && (userRole === 'agent' || onNavigateAgentDashboard) && onNavigateAgentDashboard && (
+              {PHASE_TWO_ENABLED && onNavigateAgentDashboard && (
                 <SideItem
                   active={active === 'agent-dashboard'}
                   icon={<BarChart3 size={20} />}

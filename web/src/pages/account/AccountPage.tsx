@@ -395,6 +395,28 @@ export function AccountPage({
                   )}
                 </section>}
 
+                {PHASE_TWO_ENABLED && onNavigateAgentDashboard && (
+                  <section className="bg-gradient-to-r from-teal-900 to-emerald-900 rounded-2xl p-6 text-white shadow-lg space-y-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="text-teal-300" size={20} />
+                          <h3 className="text-lg font-bold">Panel de Agente & Métricas</h3>
+                        </div>
+                        <p className="text-xs text-teal-100 max-w-md">
+                          Accede al panel profesional para consultar el rendimiento de tus publicaciones, interacciones telefónicas y de WhatsApp en tiempo real.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={onNavigateAgentDashboard}
+                        className="bg-emerald-400 hover:bg-emerald-300 text-teal-950 font-extrabold rounded-full px-6 text-xs transition-colors cursor-pointer"
+                      >
+                        Abrir Panel de Agente →
+                      </Button>
+                    </div>
+                  </section>
+                )}
+
                 <SearchAlertsCard
                   alerts={searchAlerts}
                   loading={loadingSearchAlerts}

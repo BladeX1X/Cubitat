@@ -331,7 +331,7 @@ export function CubitatApp() {
         setError(null)
         const { data, error } = await supabase
           .from('properties')
-          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
+          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
           .eq('status', 'published')
         
         if (error) throw error
@@ -360,7 +360,8 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info)
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            user_id: item.user_id || undefined,
           }))
           setProperties(mapped)
           void saveCachedProperties(mapped) // Guardar copia para uso offline
@@ -400,7 +401,7 @@ export function CubitatApp() {
       try {
         const { data, error } = await supabase
           .from('properties')
-          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
+          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
           .eq('id', selectedPropertyId)
           .single()
 
@@ -429,7 +430,8 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info)
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            user_id: item.user_id || undefined,
           }
           setProperties((prev) => {
             if (prev.some((p) => p.id === mapped.id)) return prev
@@ -970,6 +972,7 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onEditProperty={navigateEditProperty}
             onNewProperty={navigatePublish}
             onSelectProperty={handleSelectProperty}
@@ -1006,6 +1009,7 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onSelectProperty={handleSelectProperty}
             onGoResults={navigateResults}
           />

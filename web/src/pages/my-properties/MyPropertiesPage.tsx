@@ -41,6 +41,7 @@ export type MyPropertiesPageProps = {
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateAgentDashboard?: () => void
   onEditProperty: (propertyId: string) => void
   onNewProperty: (loadDraft?: boolean) => void
   onSelectProperty?: (propertyId: string) => void
@@ -413,6 +414,7 @@ export function MyPropertiesPage({
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
       <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-7 py-8 text-white shadow-sm">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-white/60">

@@ -13,7 +13,7 @@ describe('agentDashboardRepository', () => {
       .mockReturnValueOnce({ select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'property-1' }], error: null }) }) }) } as never)
     const result = await loadAgentDashboard('owner-1')
     expect(result.isVerifiedAgent).toBe(true)
-    expect(result.properties).toEqual([{ id: 'property-1' }])
+    expect(result.properties).toEqual([{ id: 'property-1', phone_clicks_count: 0, whatsapp_clicks_count: 0 }])
   })
 
   it('allows owners to toggle only published and owner-hidden properties', async () => {
