@@ -192,7 +192,7 @@ export function PropertyCard({
               {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
             </span>
           </div>
-          {PHASE_TWO_ENABLED && (
+          {PHASE_TWO_ENABLED && (property.user_id === 'f3000000-0000-0000-0000-000000000001' || property.user_id === 'f3000000-0000-0000-0000-000000000003') && (
             <VerificationBadge status="verified" compact />
           )}
         </div>

@@ -1219,13 +1219,13 @@ function ContactCard({
             <h2 className="text-lg font-bold text-neutral-900">
               Contactar anunciante
             </h2>
-            {PHASE_TWO_ENABLED && (
+            {PHASE_TWO_ENABLED && agentProfile && (
               <TrustScoreBadge
                 profileData={{
-                  verificationStatus: agentProfile?.verification_status || 'verified',
-                  createdAt: agentProfile?.created_at || '2026-07-23T00:00:00.000Z',
-                  activePropertiesCount: agentProfile?.active_properties_count || 1,
-                  reportsCount: agentProfile?.reports_count || 0,
+                  verificationStatus: agentProfile.verification_status,
+                  createdAt: agentProfile.created_at,
+                  activePropertiesCount: agentProfile.active_properties_count,
+                  reportsCount: agentProfile.reports_count,
                 }}
                 compact
               />
@@ -1236,10 +1236,10 @@ function ContactCard({
             Publicado recientemente
           </p>
 
-          {PHASE_TWO_ENABLED && onSelectAgent && (
+          {PHASE_TWO_ENABLED && property.user_id && agentProfile && onSelectAgent && (
             <button
               type="button"
-              onClick={() => onSelectAgent(property.user_id || 'f3000000-0000-0000-0000-000000000001')}
+              onClick={() => onSelectAgent(property.user_id!)}
               className="w-full mt-3 py-2 px-3 bg-teal-50 hover:bg-teal-100 text-[#035f53] font-bold text-xs rounded-xl flex items-center justify-center gap-2 border border-teal-200/60 transition-colors cursor-pointer"
             >
               <Building2 size={14} />
