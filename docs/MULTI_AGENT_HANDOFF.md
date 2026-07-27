@@ -107,6 +107,25 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-27 09:34 — Antigravity — Selección de tipo de cuenta (/mi-cuenta) (NO RESUELTO)
+
+- Estado: **En curso / NO RESUELTO en el navegador del usuario**.
+- Contexto y Petición del usuario: Rodolfo solicitó poder cambiar en `/mi-cuenta` entre perfil **🏠 Anunciante Particular** y **🏢 Agente / Inmobiliaria**. El usuario reportó que la interfaz mostraba el error *"No se pudo actualizar el tipo de cuenta."* o que requería presionar `Ctrl + F5` constantemente para reflejar los cambios.
+- Trabajo Realizado en este turno:
+  1. **Protección contra nulos en `AccountPage.tsx`**: Se blindaron los accesos a `user.id`, `user.user_metadata` y llamadas a `.trim()` con `safeFullName` y `userId` para evitar errores de renderizado en frío.
+  2. **Importación faltante de Lucide**: Se agregó `UserRound` a la lista de importaciones de `lucide-react` en `AccountPage.tsx` (estaba causando un `ReferenceError: UserRound is not defined` no capturado).
+  3. **Mapeo de valores Enum Postgres**: Se corrigió el envío de `'user'` a `'buyer'` (el tipo `user_role` en PostgreSQL solo permite `'buyer'`, `'seller'`, `'agent'`, `'admin'`).
+  4. **Migración RLS y Trigger de Seguridad**: Se creó y aplicó localmente la migración `web/supabase/migrations/20260727100000_allow_self_role_toggle.sql`. La función trigger `check_profile_role_update()` bloqueaba cualquier modificación de `role` para no-administradores; la nueva migración permite a los usuarios alternar su propio rol entre `buyer` y `agent`, manteniendo el bloqueo 100% estricto contra la elevación a `admin`.
+  5. **Sincronización en tiempo real (`onRoleChange`)**: Se agregó la propiedad `onRoleChange` a `AccountPage` y se conectó con `setUserRole` en `CubitatApp.tsx`.
+  6. **Pruebas y Calidad**: Se creó la suite `AccountPage.test.tsx`. Todos los 81 archivos de prueba y 304 unit tests pasaron al 100% sin errores. Se realizó commit y push a la rama `dev` (`3a802ee` y `34e9413`).
+- Problema NO Resuelto / Tarea para el Siguiente Agente:
+  - En la máquina/navegador real del usuario, al presionar las tarjetas de rol sigue arrojando el mensaje rojo *"No se pudo actualizar el tipo de cuenta."* o requiere `Ctrl + F5` para actualizar.
+  - Se debe investigar si:
+    a) El `user` de Supabase Auth mantiene el rol en `user_metadata` además de la tabla `profiles`.
+    b) Hay una política RLS o trigger adicional en la BD local de Supabase bloqueando la consulta o el `upsert`.
+    c) La sesión de Auth o token de localStorage requiere refresco explícito via `supabase.auth.updateUser({ data: { role: dbRole } })`.
+    d) Usar el navegador headless / Playwright para inspeccionar exactamente la respuesta del network `POST /rest/v1/profiles` en la sesión del usuario.
+
 ### 2026-07-24 — Codex / Rodolfo — KYC local con documento y foto sosteniéndolo (Verificación completada)
 
 - Estado: **Terminado, exclusivamente DEV/local**. Rama `bugfix/phase2-kyc-identity-selfie`; producción, Supabase remoto y Cloudflare no se consultaron ni modificaron.
