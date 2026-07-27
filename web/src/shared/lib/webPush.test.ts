@@ -7,9 +7,8 @@ describe('webPush', () => {
     expect(typeof supported).toBe('boolean')
   })
 
-  it('retorna suscripcion mock o valida al solicitar suscripcion', async () => {
+  it('never fabricates a subscription when native push is unavailable', async () => {
     const sub = await subscribeToWebPush()
-    // En happy-dom / test env, retorna null o el mock DEV de suscripcion
     if (sub) {
       expect(sub).toHaveProperty('endpoint')
     } else {

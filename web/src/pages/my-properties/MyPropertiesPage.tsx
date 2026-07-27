@@ -263,6 +263,7 @@ export function MyPropertiesPage({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateAgentDashboard,
   onEditProperty,
   onNewProperty,
   onSelectProperty,

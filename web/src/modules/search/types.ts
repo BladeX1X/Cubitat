@@ -10,7 +10,6 @@ export type SearchFilters = {
   parking?: number | 'all'
   priceRange?: string | 'all' // e.g. "0-50000", "50000-100000" etc.
   verifiedOnly?: boolean
-  minTrustScore?: number | 'all'
 }
 
 export type LocationSuggestion = {

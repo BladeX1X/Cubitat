@@ -760,6 +760,16 @@ Validar despues de deploy:
 6. Probar aviso offline/online.
 7. Probar actualizacion con dos deploys consecutivos.
 
+En desarrollo local, Vite sirve un worker temporal de autolimpieza en `/sw.js`
+para retirar registros y caches Workbox antiguos del origen. Esto evita que
+`F5` cargue una version anterior mientras `Ctrl+F5` muestra la actual. El flujo
+solo aplica a `vite serve`; el build productivo conserva `autoUpdate`,
+`skipWaiting`, `clientsClaim` y sus cabeceras sin cache.
+
+El service worker productivo no debe cachear Supabase REST. Esas respuestas
+pueden variar por sesion, rol, RLS y cambios recientes. El cache runtime se
+reserva para imagenes publicas de Supabase Storage.
+
 ## 11. Validacion Antes De Subir
 
 Desde `web/`:

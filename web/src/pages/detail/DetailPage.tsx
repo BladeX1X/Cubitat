@@ -47,7 +47,6 @@ import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 import { trackContactClick } from '../../modules/properties/utils/contactTracking'
-import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
 import { fetchAgentProfile } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
@@ -428,7 +427,7 @@ export function DetailPage({
                 type="button"
                 className="detail-desktop-secondary-cta"
                 onClick={() => {
-                  trackContactClick(property.id, 'whatsapp')
+                  void trackContactClick(property.id, 'whatsapp')
                   const phone = property.contact_info?.phone
                   if (phone) {
                     window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
@@ -714,6 +713,9 @@ export function DetailPage({
             className="mobile-detail-cta-icon"
             href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
             aria-label="Llamar al anunciante"
+            onClick={() => {
+              void trackContactClick(property.id, 'phone')
+            }}
           >
             <Phone size={16} />
           </a>
@@ -733,6 +735,7 @@ export function DetailPage({
           onClick={() => {
             const phone = property.contact_info?.phone
             if (phone) {
+              void trackContactClick(property.id, 'whatsapp')
               window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
             } else {
               scrollToContact()
@@ -1146,10 +1149,24 @@ function ContactCard({
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
 
   useEffect(() => {
-    if (PHASE_TWO_ENABLED && property.user_id) {
-      fetchAgentProfile(property.user_id).then((prof) => {
-        if (prof) setAgentProfile(prof)
+    let active = true
+    setAgentProfile(null)
+    if (!PHASE_TWO_ENABLED || !property.user_id) {
+      return () => {
+        active = false
+      }
+    }
+
+    fetchAgentProfile(property.user_id)
+      .then((profile) => {
+        if (active) setAgentProfile(profile)
       })
+      .catch(() => {
+        if (active) setAgentProfile(null)
+      })
+
+    return () => {
+      active = false
     }
   }, [property.user_id])
 
@@ -1193,7 +1210,6 @@ function ContactCard({
         message,
       })
 
-      trackContactClick(property.id, 'phone')
       localStorage.setItem(`cubitat_contact_sent_${property.id}`, Date.now().toString())
       setContactSent(true)
     } catch (err: unknown) {
@@ -1219,17 +1235,6 @@ function ContactCard({
             <h2 className="text-lg font-bold text-neutral-900">
               Contactar anunciante
             </h2>
-            {PHASE_TWO_ENABLED && agentProfile && (
-              <TrustScoreBadge
-                profileData={{
-                  verificationStatus: agentProfile.verification_status,
-                  createdAt: agentProfile.created_at,
-                  activePropertiesCount: agentProfile.active_properties_count,
-                  reportsCount: agentProfile.reports_count,
-                }}
-                compact
-              />
-            )}
           </div>
           <p className="text-[11px] text-neutral-500 flex items-center gap-1">
             <Calendar size={12} />

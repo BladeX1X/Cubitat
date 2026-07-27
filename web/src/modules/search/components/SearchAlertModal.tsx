@@ -5,7 +5,6 @@ import { Button } from '../../../shared/ui/button'
 import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import type { SearchFilters } from '../types'
 import { getOperationLabel, getPropertyTypeLabel, getPriceLabel } from '../lib/filterOptions'
-import { isPushSupported, subscribeToWebPush } from '../../../shared/lib/webPush'
 
 interface SearchAlertModalProps {
   isOpen: boolean
@@ -37,8 +36,6 @@ export function SearchAlertModal({
   isSaving = false,
 }: SearchAlertModalProps) {
   const [localEmail, setLocalEmail] = useState(email || userEmail || '')
-  const [pushEnabled, setPushEnabled] = useState(false)
-  const [pushLoading, setPushLoading] = useState(false)
 
   useEffect(() => {
     if (email) {
@@ -172,38 +169,6 @@ export function SearchAlertModal({
                 </p>
               )}
             </div>
-
-            {isPushSupported() && (
-              <div className="bg-neutral-50 rounded-2xl p-3 mb-4 text-left border border-neutral-100 flex items-center justify-between">
-                <div className="flex flex-col pr-2">
-                  <span className="text-xs font-bold text-neutral-800">📲 Notificaciones Push PWA</span>
-                  <span className="text-[10px] text-neutral-500 leading-tight">Aviso directo en tu pantalla cuando haya coincidencias.</span>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={pushEnabled ? "default" : "outline"}
-                  disabled={pushLoading}
-                  onClick={async () => {
-                    if (pushEnabled) {
-                      setPushEnabled(false)
-                    } else {
-                      setPushLoading(true)
-                      const sub = await subscribeToWebPush()
-                      setPushLoading(false)
-                      if (sub) setPushEnabled(true)
-                    }
-                  }}
-                  className={`h-8 px-3 text-xs font-bold rounded-lg transition-all shrink-0 ${
-                    pushEnabled
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-none'
-                      : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
-                  }`}
-                >
-                  {pushLoading ? 'Activando...' : pushEnabled ? '✓ Activadas' : 'Activar'}
-                </Button>
-              </div>
-            )}
 
             {onSaveAlert && (
               <div className="mb-4">

@@ -63,7 +63,6 @@ export function getActiveExtraFiltersCount(filters: SearchFilters) {
   if (filters.parking && filters.parking !== 'all') count++
   if (filters.priceRange && filters.priceRange !== 'all' && !isPermuta) count++
   if (filters.verifiedOnly) count++
-  if (filters.minTrustScore && filters.minTrustScore !== 'all') count++
 
   return count
 }

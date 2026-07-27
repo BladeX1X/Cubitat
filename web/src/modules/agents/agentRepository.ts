@@ -16,6 +16,25 @@ type AgentPropertyRow = {
   status: 'published'
 }
 
+type VerifiedAgentRow = {
+  id: string
+}
+
+export async function fetchVerifiedAgentIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.rpc('get_verified_agent_ids')
+  if (error) {
+    logSafeEvent({
+      module: 'agents',
+      action: 'fetch_verified_agent_ids',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
+    throw new Error('VERIFIED_AGENT_IDS_LOAD_FAILED')
+  }
+
+  return new Set(((data ?? []) as VerifiedAgentRow[]).map(({ id }) => id))
+}
+
 export async function fetchAgentProfile(agentId: string): Promise<AgentProfile | null> {
   try {
     const { data, error } = await supabase.rpc('get_public_agent_profile', {

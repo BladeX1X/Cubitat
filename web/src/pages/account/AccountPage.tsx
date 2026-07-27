@@ -92,19 +92,26 @@ export function AccountPage({
   const [kycReason, setKycReason] = useState<string | null>(null)
   const [isKycModalOpen, setIsKycModalOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
+  const activeProfileUserIdRef = useRef(user?.id)
+  activeProfileUserIdRef.current = user?.id
 
   useEffect(() => {
-    let cancelled = false
+    if (initialUserRole) {
+      setUserRole(initialUserRole)
+    }
+  }, [initialUserRole])
 
+  useEffect(() => {
     async function loadProfile() {
-      if (!user?.id) return
+      const requestedUserId = user?.id
+      if (!requestedUserId) return
       const { data } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', requestedUserId)
         .maybeSingle()
 
-      if (cancelled || !data) return
+      if (activeProfileUserIdRef.current !== requestedUserId || !data) return
 
       if (data.role) {
         setUserRole(data.role)
@@ -122,7 +129,7 @@ export function AccountPage({
       if (data.phone_verified_at) {
         setPhoneVerifiedAt(data.phone_verified_at)
       }
-      if (PHASE_TWO_ENABLED && data.verification_status) {
+      if (data.verification_status) {
         setKycStatus(data.verification_status as VerificationStatus)
       }
       if (data.verification_reason) {
@@ -131,10 +138,6 @@ export function AccountPage({
     }
 
     loadProfile()
-
-    return () => {
-      cancelled = true
-    }
   }, [user?.id])
 
   const [isSavingRole, setIsSavingRole] = useState(false)
@@ -147,16 +150,51 @@ export function AccountPage({
       setRoleMessage('No se pudo identificar la sesión de usuario.')
       return
     }
-
+    if (!PHASE_TWO_ENABLED) {
+      setRoleMessage('El cambio de tipo de cuenta no está disponible en este entorno.')
+      return
+    }
     setIsSavingRole(true)
     setRoleMessage(null)
 
     try {
-      const { error } = await supabase
+      const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
-        .upsert({ id: userId, role: dbRole, email }, { onConflict: 'id' })
+        .select('role, verification_status')
+        .eq('id', userId)
+        .single()
 
-      if (error) {
+      if (
+        profileError
+        || !currentProfile
+        || !['buyer', 'agent'].includes(currentProfile.role)
+      ) {
+        setRoleMessage('No se pudo validar el tipo de cuenta actual.')
+        return
+      }
+
+      const currentKycStatus = (currentProfile.verification_status || 'unverified') as VerificationStatus
+      setUserRole(currentProfile.role)
+      setKycStatus(currentKycStatus)
+
+      if (dbRole === 'agent' && currentKycStatus !== 'verified') {
+        setRoleMessage('Necesitas completar y aprobar la verificación de identidad (KYC) antes de activar el perfil de agente.')
+        return
+      }
+
+      if (currentProfile.role === dbRole) {
+        setRoleMessage('Tipo de cuenta actualizado correctamente.')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ role: dbRole })
+        .eq('id', userId)
+        .select('role')
+        .single()
+
+      if (error || data?.role !== dbRole) {
         setRoleMessage('No se pudo actualizar el tipo de cuenta.')
       } else {
         setUserRole(dbRole)
@@ -168,7 +206,7 @@ export function AccountPage({
           level: 'info',
         })
       }
-    } catch (err) {
+    } catch {
       setRoleMessage('Ocurrió un error al guardar el tipo de perfil.')
     } finally {
       setIsSavingRole(false)
@@ -376,6 +414,7 @@ export function AccountPage({
                   </section>
                 )}
 
+                {PHASE_TWO_ENABLED && (userRole === 'buyer' || userRole === 'agent') && (
                 <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-teal-50 text-[#035f53] flex items-center justify-center font-bold shrink-0">
@@ -416,11 +455,13 @@ export function AccountPage({
                     <button
                       type="button"
                       onClick={() => handleSaveRole('agent')}
-                      disabled={isSavingRole}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      disabled={isSavingRole || kycStatus !== 'verified'}
+                      className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between ${
                         userRole === 'agent'
                           ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
-                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                          : kycStatus === 'verified'
+                            ? 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 cursor-pointer'
+                            : 'bg-neutral-100 border-neutral-200 opacity-70 cursor-not-allowed'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -436,15 +477,27 @@ export function AccountPage({
                       <p className="text-[11px] text-neutral-600 leading-normal">
                         Gestiono un portafolio profesional de propiedades y contactos.
                       </p>
+                      {kycStatus !== 'verified' && userRole !== 'agent' && (
+                        <p className="mt-2 text-[10px] font-bold text-amber-700">
+                          Requiere verificación de identidad (KYC) aprobada.
+                        </p>
+                      )}
                     </button>
                   </div>
 
                   {roleMessage && (
-                    <p className={`text-xs font-semibold ${roleMessage.includes('correctamente') ? 'text-emerald-700' : 'text-red-600'}`}>
+                    <p className={`text-xs font-semibold ${
+                      roleMessage.includes('correctamente')
+                        ? 'text-emerald-700'
+                        : roleMessage.includes('KYC')
+                          ? 'text-amber-700'
+                          : 'text-red-600'
+                    }`}>
                       {roleMessage}
                     </p>
                   )}
                 </section>
+                )}
 
                 <VerificationCard
                   verifiedCount={verifiedCount}
@@ -508,28 +561,6 @@ export function AccountPage({
                     </div>
                   )}
                 </section>}
-
-                {PHASE_TWO_ENABLED && onNavigateAgentDashboard && (
-                  <section className="bg-gradient-to-r from-teal-900 to-emerald-900 rounded-2xl p-6 text-white shadow-lg space-y-4">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="text-teal-300" size={20} />
-                          <h3 className="text-lg font-bold">Panel de Agente & Métricas</h3>
-                        </div>
-                        <p className="text-xs text-teal-100 max-w-md">
-                          Accede al panel profesional para consultar el rendimiento de tus publicaciones, interacciones telefónicas y de WhatsApp en tiempo real.
-                        </p>
-                      </div>
-                      <Button
-                        onClick={onNavigateAgentDashboard}
-                        className="bg-emerald-400 hover:bg-emerald-300 text-teal-950 font-extrabold rounded-full px-6 text-xs transition-colors cursor-pointer"
-                      >
-                        Abrir Panel de Agente →
-                      </Button>
-                    </div>
-                  </section>
-                )}
 
                 <SearchAlertsCard
                   alerts={searchAlerts}
@@ -647,7 +678,7 @@ function SearchAlertsCard({
               Alertas de busqueda
             </h2>
             <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
-              Guarda filtros importantes y consultalos aqui. El envio automatico por email queda como tarea pendiente.
+              Guarda filtros importantes y consulta aquí las alertas activas. Los avisos por correo se habilitarán cuando el entorno DEV de entrega esté configurado.
             </p>
           </div>
         </div>

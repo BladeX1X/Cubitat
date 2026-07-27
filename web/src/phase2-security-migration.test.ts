@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import migrationSql from '../supabase/dev-migrations/20260801000000_phase2_kyc_and_agents.sql?raw'
 import localApiGrantsSql from '../supabase/dev-migrations/20260801001000_local_api_grants.sql?raw'
 import identitySelfieSql from '../supabase/dev-migrations/20260801002000_kyc_identity_selfie.sql?raw'
+import agentKycGateSql from '../supabase/dev-migrations/20260801003000_require_verified_kyc_for_agent_role.sql?raw'
+import verifiedAgentsAndMetricsSql from '../supabase/dev-migrations/20260801004000_verified_agents_and_contact_metrics.sql?raw'
+import productionRoleSql from '../supabase/migrations/20260727100000_allow_self_role_toggle.sql?raw'
 
 describe('Phase 2 security migration', () => {
   it('is isolated from the production migration chain', () => {
@@ -72,5 +75,34 @@ describe('Phase 2 local API grants', () => {
     expect(localApiGrantsSql).toMatch(
       /GRANT SELECT, UPDATE ON TABLE public\.property_reports TO authenticated/i,
     )
+  })
+})
+
+describe('Phase 2 agent role gate', () => {
+  it('requires approved KYC and keeps the rule outside the production chain', () => {
+    expect(agentKycGateSql).toContain('DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT')
+    expect(agentKycGateSql).toMatch(/NEW\.role = 'agent'[\s\S]*NEW\.verification_status IS DISTINCT FROM 'verified'/i)
+    expect(agentKycGateSql).toMatch(/NEW\.role := 'buyer'/i)
+  })
+
+  it('does not let a regular production user self-assign an agent role', () => {
+    expect(productionRoleSql).toMatch(/OLD\.role IS DISTINCT FROM NEW\.role[\s\S]*NOT public\.is_admin_aal2\(\)/i)
+    expect(productionRoleSql).not.toMatch(/auth\.uid\(\) = OLD\.id[\s\S]*NEW\.role IN/i)
+  })
+})
+
+describe('Phase 2 verified agents and contact metrics', () => {
+  it('publishes only verified agents and removes dismissed reports from the aggregate', () => {
+    expect(verifiedAgentsAndMetricsSql).toContain('DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT')
+    expect(verifiedAgentsAndMetricsSql).toMatch(/profiles\.role = 'agent'/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/profiles\.verification_status = 'verified'/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/reports\.status = 'resolved'/i)
+  })
+
+  it('deduplicates contact metrics per property, channel, visitor and day', () => {
+    expect(verifiedAgentsAndMetricsSql).toMatch(/PRIMARY KEY \(property_id, channel, viewer_key, clicked_on\)/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/ON CONFLICT DO NOTHING/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/increment_contact_clicks\(uuid, text, uuid\) TO anon, authenticated/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/REVOKE ALL ON TABLE public\.property_contact_clicks/i)
   })
 })

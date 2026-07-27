@@ -58,13 +58,6 @@ export async function subscribeToWebPush(): Promise<Record<string, unknown> | nu
       level: 'warn',
       code: sanitizeErrorReason(err),
     })
-    // Return a mock PWA Push payload for local DEV testing if browser native push server throws
-    return {
-      endpoint: 'https://push.cubitathome.com/v1/dev-endpoint',
-      keys: {
-        p256dh: 'BNcRdreALRF8M-v5G5-DEV-P256DH-KEY',
-        auth: 'DEV-AUTH-SECRET-1234',
-      },
-    }
+    return null
   }
 }

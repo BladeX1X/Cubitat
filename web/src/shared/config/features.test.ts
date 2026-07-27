@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { isPhaseTwoEnabled } from './features'
 
 describe('Phase 2 environment boundary', () => {
-  it('is enabled only in development', () => {
-    expect(isPhaseTwoEnabled(true)).toBe(true)
-    expect(isPhaseTwoEnabled(false)).toBe(false)
+  it('is enabled only in development against a local Supabase project', () => {
+    expect(isPhaseTwoEnabled(true, 'http://127.0.0.1:54321')).toBe(true)
+    expect(isPhaseTwoEnabled(true, 'http://localhost:54321')).toBe(true)
+    expect(isPhaseTwoEnabled(false, 'http://127.0.0.1:54321')).toBe(false)
+    expect(isPhaseTwoEnabled(true, 'https://project.supabase.co')).toBe(false)
+    expect(isPhaseTwoEnabled(true, '')).toBe(false)
   })
 })

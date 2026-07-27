@@ -121,6 +121,11 @@ Estado actual (2026-07-01):
 - Las funciones `navigateToSection` y `scrollTo` estan comentadas; reactivar cuando se reimplementen Servicios/Productos.
 - Supabase esta conectado para auth, propiedades (CRUD), storage de imagenes y RLS.
 - Los estados `loading` y `error` de Supabase no bloquean `HomePage`; solo afectan vistas dependientes de datos remotos.
+- Con Fase 2 local habilitada, la carga de propiedades consulta en paralelo la
+  proyeccion de agentes verificados y anota `isVerifiedAgent`. Si esa proyeccion
+  falla, conserva el catalogo base sin otorgar insignias.
+- Las respuestas REST de Supabase no se almacenan en el service worker; los
+  cambios de sesion, rol y KYC deben resolverse siempre contra el backend.
 - Las operaciones de filtro (Venta/Renta/Permuta) son de seleccion exclusiva (no multi-select).
 
 Flujo de paginas:

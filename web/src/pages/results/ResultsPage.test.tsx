@@ -267,13 +267,13 @@ describe('ResultsPage', () => {
         ...mockProperties[0],
         id: 'ver-1',
         title: 'Propiedad Verificada',
-        contact_info: { verification_status: 'verified' } as any,
+        isVerifiedAgent: true,
       },
       {
         ...mockProperties[1],
         id: 'unver-1',
         title: 'Propiedad No Verificada',
-        contact_info: { verification_status: 'unverified' } as any,
+        isVerifiedAgent: false,
       },
     ]
 

@@ -3,6 +3,10 @@ import { defineConfig } from 'vitest/config'
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import {
+  DEVELOPMENT_SERVICE_WORKER_CLEANUP_SCRIPT,
+  isDevelopmentServiceWorkerRequest,
+} from './src/shared/pwa/developmentServiceWorkerCleanup.js'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,11 +16,29 @@ export default defineConfig(({ mode }) => {
   const supabaseUrl =
     env.VITE_SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    'https://tohjzoncoosvjbjcakdl.supabase.co'
+    'http://127.0.0.1:54321'
 
   return {
     plugins: [
       react(),
+      {
+        name: 'development-service-worker-cleanup',
+        apply: 'serve',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (!isDevelopmentServiceWorkerRequest(req.url)) {
+              next()
+              return
+            }
+
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+            res.setHeader('Service-Worker-Allowed', '/')
+            res.end(DEVELOPMENT_SERVICE_WORKER_CLEANUP_SCRIPT)
+          })
+        },
+      },
       {
         name: 'local-api-metrics',
         configureServer(server) {
@@ -285,20 +307,6 @@ Tipo: ${body.property_type}`;
           globIgnores: ['**/vendor-maplibre-*.js', '**/vendor-maplibre-*.css'],
           runtimeCaching: [
             {
-              urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/rest\/v1\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-api-cache',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 semana
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
               urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/storage\/v1\/object\/public\/.*/i,
               handler: 'CacheFirst',
               options: {
@@ -324,9 +332,6 @@ Tipo: ${body.property_type}`;
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
           configure: (proxy) => {
-            const remoteUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'
-            const remoteAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo'
-
             proxy.on('proxyReq', (proxyReq, req) => {
               const authHeader = req.headers['authorization'];
               const apiKeyHeader = req.headers['apikey'];
@@ -338,33 +343,16 @@ Tipo: ${body.property_type}`;
               }
             });
 
-            proxy.on('error', async (err: any, req, res) => {
-              if (err.code === 'ECONNREFUSED' && supabaseUrl.includes('127.0.0.1')) {
-                try {
-                  const targetPath = (req.url || '').replace(/^\/api\/supabase/, '')
-                  const authHeader = req.headers['authorization'] === 'Bearer dummy-key-safe-from-browsers'
-                    ? `Bearer ${remoteAnonKey}`
-                    : (req.headers['authorization'] || `Bearer ${remoteAnonKey}`)
-                  const response = await fetch(`${remoteUrl}${targetPath}`, {
-                    method: req.method,
-                    headers: {
-                      'Content-Type': req.headers['content-type'] || 'application/json',
-                      'apikey': remoteAnonKey,
-                      'Authorization': authHeader,
-                    },
-                  })
-                  res.statusCode = response.status
-                  const body = await response.text()
-                  res.setHeader('Content-Type', 'application/json')
-                  res.end(body)
-                  return
-                } catch {
-                  // Fallback
-                }
+            proxy.on('error', async (_err: unknown, _req, res) => {
+              if (!('statusCode' in res)) {
+                res.end()
+                return
               }
+
               if (!res.headersSent) {
                 res.statusCode = 502
-                res.end(JSON.stringify({ error: 'No se pudo conectar con el servidor.' }))
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ error: 'Supabase local no está disponible.' }))
               }
             })
           }

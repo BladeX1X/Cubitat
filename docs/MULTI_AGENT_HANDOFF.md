@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-22
+Última actualización: 2026-07-27
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,11 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-07-27: auditoría integral de Fase 2 corregida en DEV/local.
+> Trust Score y Web Push quedan expresamente diferidos y fuera de la interfaz;
+> no se usan datos simulados. Verificación de agentes y métricas de contacto
+> provienen del backend. Lint, 82 archivos/317 pruebas, build y Chrome aprobados.
 
 > Actualización 2026-07-25: Submódulo 1.2 de Fase 2 completado en DEV (filtro por Agente Verificado y Trust Score ≥ 4.0 en barra de búsqueda y panel de filtros). 78 archivos y 298 pruebas unitarias aprobadas al 100%. Fusionado en `dev` y subido a GitHub.
 
@@ -107,7 +112,173 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
-### 2026-07-27 09:34 — Antigravity — Selección de tipo de cuenta (/mi-cuenta) (NO RESUELTO)
+### 2026-07-27 17:00 — Codex — Cierre de auditoria Fase 2 sin Trust Score
+
+- Estado: **corregido y verificado exclusivamente en DEV/local**.
+- Decisión de producto: Trust Score todavía no se implementa. Se retiraron su
+  filtro, badge y calculos de resultados, detalle y perfil. Web Push tambien
+  queda diferido y no aparece como capacidad disponible; las alertas conservan
+  persistencia y preparacion de correo DEV sin prometer entrega no configurada.
+- Verificacion canonica: la UI dejó de reconocer agentes por UUIDs sintéticos o
+  valores locales. `get_verified_agent_ids()` exige `role = 'agent'`, KYC
+  `verified` y propiedad publicada; la misma regla protege el perfil publico.
+- Panel: `/panel-agente` exige agente verificado incluso mediante acceso
+  directo. Sus contadores de telefono y WhatsApp salen de PostgreSQL; la RPC
+  deduplica un visitante por propiedad, canal y dia. No se suman contadores en
+  `localStorage` ni dos veces en la UI.
+- PWA/entornos: Vite usa Supabase local como fallback DEV y el service worker
+  ya no cachea Supabase REST. Esto evita respuestas de sesión/rol antiguas con
+  `F5`; solo las imagenes publicas de Storage mantienen cache runtime.
+- Base local: aplicada `DEV-F2.4`
+  (`20260801004000_verified_agents_and_contact_metrics.sql`). La matriz SQL
+  verificó aislamiento de eventos, deduplicación, proyección de agentes,
+  perfiles públicos y RLS, finalizando con
+  `phase2_local_security: ok` y `ROLLBACK`.
+- Evidencia Chrome con `QA Buyer Toggle`: buyer sin enlace lateral de panel;
+  acceso directo denegado; tarjeta `Anunciante Particular` activa después de
+  una recarga normal; selección respondió `Tipo de cuenta actualizado
+  correctamente.` sin mensaje rojo; tarjeta de agente deshabilitada hasta KYC;
+  resultados sin Trust Score, alerta sin Push y consola sin errores.
+- Calidad: lint limpio; 82 archivos/317 pruebas; build TypeScript/Vite/PWA
+  correcto, 45 entradas de precache, 473 URLs. El sitemap generado se restauró.
+- Producción, `main`, Supabase remoto y Cloudflare: **no consultados ni
+  modificados**.
+
+### 2026-07-27 15:10 — Codex — F5 cargaba una versión local antigua
+
+- Estado: **corregido y verificado en Chrome local**.
+- Causa confirmada: un service worker Workbox de un build anterior seguía
+  controlando `127.0.0.1:5173`. Vite respondía `/sw.js` con `text/html`, por lo
+  que Chrome no podía actualizar ni retirar el worker; `Ctrl+F5` sólo evitaba
+  temporalmente esa caché.
+- Corrección DEV: el servidor Vite responde `/sw.js` con JavaScript sin caché
+  que activa inmediatamente, elimina cachés del origen, desregistra el worker y
+  recarga las ventanas locales una sola vez. No borra sesión, cookies,
+  LocalStorage ni datos de usuario y no altera el PWA productivo.
+- Evidencia: endpoint `200`, `application/javascript`,
+  `Cache-Control: no-cache, no-store, must-revalidate` y script de autolimpieza.
+  Dos recargas normales consecutivas en Chrome mostraron la versión actual y
+  conservaron la cuenta `QA Buyer Toggle`; consola sin errores ni advertencias.
+- La prueba visual encontró un segundo CTA duplicado `Panel de Agente &
+  Métricas` fuera del menú. Se retiró: un comprador ya no ve ningún acceso al
+  panel y un agente conserva el único CTA superior protegido por rol.
+- Regresión y calidad: 3 archivos/14 pruebas focalizadas; lint limpio; 84
+  archivos/322 pruebas; build TypeScript/Vite/PWA correcto, 46 entradas de
+  precache y 473 URLs. Sitemap restaurado al hash previo.
+- Producción y datos reales: **no modificados**.
+
+### 2026-07-27 14:50 — Codex — Ocultar Panel de Agente a roles no agentes
+
+- Estado: **corregido y verificado en Chrome contra Supabase local**.
+- Causa raíz: `AccountLayout` recibía `userRole`, pero lo descartaba como
+  `_userRole`; el enlace dependía únicamente de Fase 2 y del callback de
+  navegación, por lo que también aparecía a compradores.
+- Corrección: `Panel de Agente` se renderiza únicamente cuando
+  `PHASE_TWO_ENABLED`, existe el callback y el rol canónico es exactamente
+  `agent`. `buyer`, `seller`, `admin` y rol ausente no reciben el acceso.
+- Evidencia Chrome: la cuenta sintética `QA Buyer Toggle` en `/mi-cuenta`
+  mostró sólo `Mi cuenta`, `Favoritos` y `Mis publicaciones`; el enlace de
+  agente no estuvo en el DOM y la consola terminó sin errores ni advertencias.
+- Regresión: `AccountLayout.test.tsx` cubre cuatro roles no agentes y confirma
+  que un agente sí ve el enlace. Puerta completa: lint limpio, 83 archivos/320
+  pruebas y build TypeScript/Vite/PWA correcto con 473 URLs; sitemap restaurado
+  al hash previo.
+- Producción y datos reales: **no modificados**.
+
+### 2026-07-27 14:20 — Codex — Auditoría Módulo 2 KYC y frontera DEV/producción
+
+- Estado: **código, pruebas y base local verificados; comprobación visual final
+  pendiente de que Chrome vuelva a compartir la pestaña abierta**.
+- Hallazgo Módulo 2: el roadmap afirmaba compresión WebP, pero el cliente subía
+  los JPG/PNG originales. `kycImageCompression.ts` convierte ahora las dos
+  evidencias localmente a WebP (calidad 0.82), limita el lado mayor a 1600 px y
+  aborta antes de Storage si cualquiera de las conversiones falla.
+- Seguridad de rol: la migración productiva 50 ya no deja una futura vía
+  `buyer → agent` sin KYC. Los cambios de rol de cliente quedan cerrados por
+  defecto; exclusivamente en DEV, `20260801003000` permite `buyer ↔ agent`
+  cuando el KYC está aprobado y degrada al agente si pierde la verificación.
+- Aislamiento: `PHASE_TWO_ENABLED` requiere simultáneamente build DEV y URL de
+  Supabase local (`localhost`/`127.0.0.1`). El proxy Vite dejó de usar un URL y
+  una clave productivos como fallback; si Supabase local no responde retorna
+  `502` sin reintentar contra ningún entorno remoto.
+- Matriz SQL real: `phase2_local_security.sql` usa la RPC vigente de tres
+  argumentos y dos objetos privados. Verificó propietario, tercero, admin AAL1,
+  admin AAL2, bloqueo de agente sin KYC, activación tras aprobación y degradación
+  al retirar KYC. Resultado `phase2_local_security: ok`; toda la fixture terminó
+  en `ROLLBACK`.
+- Calidad: lint limpio; 82 archivos/315 pruebas; build TypeScript/Vite/PWA y
+  sitemap de 473 URLs correctos. El sitemap generado se restauró al hash previo
+  `6ACCCCA81A43CF187063DB06C0496F7F5DAA47F87C93DCC03216828E988C30B2`.
+- Producción: **no consultada ni modificada**. Docker/Supabase y Vite se
+  levantaron únicamente en local.
+
+### 2026-07-27 09:55 — Codex — Selección de tipo de cuenta (/mi-cuenta) (RESUELTO EN LOCAL)
+
+- Estado: **resuelto y verificado en navegador contra Supabase local**.
+- Causa raíz confirmada: `AccountPage` usaba `profiles.upsert`, que generaba
+  `POST /rest/v1/profiles?on_conflict=id`. El rol SQL `authenticated` tiene
+  `UPDATE`, pero no `INSERT`; Kong registró HTTP `403` y PostgreSQL confirmó
+  `permission denied for table profiles` (`42501`).
+- Corrección cliente: el selector usa ahora `UPDATE` acotado por `id`, solicita
+  de vuelta `role` y solo confirma éxito cuando la fila retornada coincide. No
+  se añadió `INSERT` ni se amplió la RLS.
+- Auth metadata: la cuenta QA no contiene `user_metadata.role`; no se llama
+  `supabase.auth.updateUser` porque `profiles.role` sigue siendo la fuente de
+  verdad.
+- Migración: `20260727100000_allow_self_role_toggle.sql` quedó registrada en el
+  stack local, limitada a `buyer ↔ agent`, sin referencias a columnas KYC
+  exclusivas de DEV. La migración DEV KYC conserva la misma excepción segura
+  para no revertirla al reconstruir el entorno. La rama de autoservicio exige
+  además un `auth.uid()` no nulo; una prueba SQL local confirmó
+  `QA_NULL_UID_REJECTED`.
+- Evidencia Chrome: sin `Ctrl+F5`, `Agente / Inmobiliaria → Anunciante
+  Particular → Agente / Inmobiliaria` cambió inmediatamente la tarjeta activa,
+  mostró `Tipo de cuenta actualizado correctamente.`, sin errores ni
+  advertencias. Kong registró `PATCH ...&select=role` con HTTP `200`.
+- Seguridad/limpieza: la sesión disponible era la cuenta QA administrativa. Se
+  restauró su fila a `admin` después de la prueba y se confirmó
+  `on_profile_role_update` habilitado (`tgenabled = O`). El selector solo se
+  renderiza para `buyer` o `agent`, evitando una degradación administrativa,
+  el rol legado `seller` y un estado inicial todavía sin rol.
+- Regresión: `AccountPage.test.tsx` exige `update({ role })`, filtro por `id`,
+  retorno de `role`, ausencia de `upsert` y ausencia de escritura en Auth
+  metadata; también comprueba que un admin no vea el selector. Calidad
+  completa: lint limpio, 81 archivos/310 pruebas aprobadas y
+  build TypeScript/Vite/PWA correcto con 473 URLs; el sitemap se restauró al
+  hash previo `6ACCCCA81A43CF187063DB06C0496F7F5DAA47F87C93DCC03216828E988C30B2`.
+- La primera compilación detectó dos errores TypeScript ya presentes en `dev`:
+  faltaba desestructurar `onNavigateAgentDashboard` en `MyPropertiesPage` y el
+  callback de error del proxy Vite no estrechaba `ServerResponse | Socket`.
+  Ambos se corrigieron de forma mínima para completar la puerta obligatoria.
+- Producción: **no consultada ni modificada**.
+
+### 2026-07-27 10:45 — Codex — KYC obligatorio para activar agente (/mi-cuenta)
+
+- Estado: **implementado y verificado exclusivamente en DEV/local**.
+- Regla: un perfil solo puede pasar de `buyer` a `agent` cuando
+  `profiles.verification_status = 'verified'`. La vuelta `agent → buyer` sigue
+  disponible. Si una operación interna retira el KYC a un agente, el trigger lo
+  degrada a `buyer` en la misma transacción.
+- Frontend: la tarjeta Agente muestra `Requiere verificación de identidad
+  (KYC) aprobada`, consulta el perfil canónico antes de escribir y no envía el
+  cambio si el KYC no está aprobado.
+- Backend: nueva migración DEV
+  `20260801003000_require_verified_kyc_for_agent_role.sql`; el trigger bloquea
+  también intentos REST directos y conserva la protección de los campos KYC.
+- Evidencia: cuenta sintética `buyer/unverified`; Supabase rechazó el `PATCH`
+  directo con `P0001`. Con KYC QA temporal `verified`, Chrome permitió
+  `buyer → agent → buyer` con actualización inmediata. La cuenta quedó
+  restaurada a `buyer/unverified` y la consola terminó sin errores.
+- El origen `127.0.0.1` conservaba un módulo PWA anterior; la validación final
+  se realizó en la misma pestaña mediante `localhost:5173`, origen local limpio.
+- Alcance: el selector y sus consultas KYC solo se renderizan con Fase 2
+  habilitada. El build productivo no consulta columnas DEV ni expone este flujo
+  antes de promover formalmente su migración.
+- Calidad final: lint limpio, 81 archivos/310 pruebas y build TypeScript/Vite/PWA
+  correcto con 473 URLs.
+- Producción y `main`: **no consultados ni modificados**.
+
+### 2026-07-27 09:34 — Antigravity — Selección de tipo de cuenta (/mi-cuenta) (NO RESUELTO; HISTÓRICO)
 
 - Estado: **En curso / NO RESUELTO en el navegador del usuario**.
 - Contexto y Petición del usuario: Rodolfo solicitó poder cambiar en `/mi-cuenta` entre perfil **🏠 Anunciante Particular** y **🏢 Agente / Inmobiliaria**. El usuario reportó que la interfaz mostraba el error *"No se pudo actualizar el tipo de cuenta."* o que requería presionar `Ctrl + F5` constantemente para reflejar los cambios.

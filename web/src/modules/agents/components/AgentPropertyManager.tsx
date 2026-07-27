@@ -4,7 +4,6 @@ import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import type { AgentDashboardProperty } from '../agentDashboardRepository'
 import type { AgentStatusFilter } from '../hooks/useAgentDashboard'
-import { getContactClickMetrics } from '../../properties/utils/contactTracking'
 
 interface AgentPropertyManagerProps {
   properties: AgentDashboardProperty[]
@@ -99,9 +98,8 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
                 const isUpdating = props.updatingId === property.id
                 const isPublished = property.status === 'published'
                 const canToggle = isPublished || property.status === 'owner_hidden'
-                const localMetrics = getContactClickMetrics(property.id)
-                const totalPhone = (property.phone_clicks_count ?? 0) + localMetrics.phoneClicks
-                const totalWhatsApp = (property.whatsapp_clicks_count ?? 0) + localMetrics.whatsappClicks
+                const totalPhone = property.phone_clicks_count ?? 0
+                const totalWhatsApp = property.whatsapp_clicks_count ?? 0
                 return (
                   <tr key={property.id} className="hover:bg-neutral-50/70 transition-colors">
                     <td className="py-4 px-4"><div className="flex items-center gap-3">

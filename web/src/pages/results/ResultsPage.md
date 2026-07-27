@@ -65,6 +65,10 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 - Las tarjetas oficiales son `PropertyCard`.
 - La busqueda desde portada conserva filtros en estado local.
 - El control `Ordenar` usa un popover funcional con opciones: `Relevancia`, `Menor precio`, `Mayor precio` y `Mayor superficie`.
+- `Solo Verificados` filtra exclusivamente la marca `isVerifiedAgent` obtenida
+  de la proyeccion canonica del backend; no usa identificadores sinteticos.
+- Trust Score esta diferido por decision de producto. Resultados no debe mostrar
+  filtros, badges ni puntuaciones hasta que exista un contrato de datos aprobado.
 - `Relevancia` conserva el orden base recibido por la pagina.
 - Cambiar el ordenamiento reinicia la paginacion a la primera pagina.
 - El popover de ordenamiento se cierra al seleccionar una opcion para evitar que tape el grid.

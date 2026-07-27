@@ -1,6 +1,5 @@
 import { supabase } from '../../shared/lib/supabaseClient'
 import type { PropertyStatus } from '../properties/propertyStatus'
-import { getContactClickMetrics } from '../properties/utils/contactTracking'
 
 export interface AgentDashboardProperty {
   id: string
@@ -27,24 +26,20 @@ export async function loadAgentDashboard(ownerId: string): Promise<AgentDashboar
     supabase.from('profiles').select('role, verification_status').eq('id', ownerId).maybeSingle(),
     supabase
       .from('properties')
-      .select('id, title, location, price_usd, cover_image, status, created_at, user_id, view_count')
+      .select('id, title, location, price_usd, cover_image, status, created_at, user_id, view_count, phone_clicks_count, whatsapp_clicks_count')
       .eq('user_id', ownerId)
       .order('created_at', { ascending: false }),
   ])
+  if (profileResult.error) throw new Error('agent_profile_load_failed')
   if (propertiesResult.error) throw new Error('agent_dashboard_load_failed')
-  
-  const properties = (propertiesResult.data ?? []).map((item: any) => {
-    const stats = getContactClickMetrics(item.id)
-    return {
-      ...item,
-      phone_clicks_count: item.phone_clicks_count ?? stats.phoneClicks,
-      whatsapp_clicks_count: item.whatsapp_clicks_count ?? stats.whatsappClicks,
-    } as AgentDashboardProperty
-  })
+
+  const properties = (propertiesResult.data ?? []) as AgentDashboardProperty[]
 
   return {
     role: profileResult.data?.role ?? 'user',
-    isVerifiedAgent: profileResult.data?.verification_status === 'verified' || profileResult.data?.role === 'admin',
+    isVerifiedAgent:
+      (profileResult.data?.role === 'agent' && profileResult.data?.verification_status === 'verified')
+      || profileResult.data?.role === 'admin',
     properties,
   }
 }
@@ -58,12 +53,15 @@ export async function setOwnerPropertyVisibility(
     throw new Error('property_visibility_transition_not_allowed')
   }
   const nextStatus: PropertyStatus = currentStatus === 'published' ? 'owner_hidden' : 'published'
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('properties')
     .update({ status: nextStatus })
     .eq('id', propertyId)
     .eq('user_id', ownerId)
     .eq('status', currentStatus)
+    .select('id, status')
+    .maybeSingle()
   if (error) throw new Error('property_visibility_update_failed')
+  if (!data || data.status !== nextStatus) throw new Error('property_visibility_update_conflict')
   return nextStatus
 }

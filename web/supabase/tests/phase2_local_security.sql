@@ -144,14 +144,25 @@ SELECT pg_temp.assert_raises(
   $$UPDATE public.profiles SET verification_status = 'verified' WHERE id = 'f2000000-0000-0000-0000-000000000001'$$,
   'No tienes permisos para modificar la verificacion de identidad'
 );
+SELECT pg_temp.assert_raises(
+  $$UPDATE public.profiles SET role = 'agent' WHERE id = 'f2000000-0000-0000-0000-000000000001'$$,
+  'Debes completar y aprobar la verificacion de identidad'
+);
 
 INSERT INTO storage.objects (bucket_id, name, owner, metadata)
-VALUES (
-  'kyc_documents',
-  'f2000000-0000-0000-0000-000000000001/identity.webp',
-  'f2000000-0000-0000-0000-000000000001',
-  '{"mimetype":"image/webp","size":128}'
-);
+VALUES
+  (
+    'kyc_documents',
+    'f2000000-0000-0000-0000-000000000001/document-identity.webp',
+    'f2000000-0000-0000-0000-000000000001',
+    '{"mimetype":"image/webp","size":128}'
+  ),
+  (
+    'kyc_documents',
+    'f2000000-0000-0000-0000-000000000001/selfie-identity.webp',
+    'f2000000-0000-0000-0000-000000000001',
+    '{"mimetype":"image/webp","size":128}'
+  );
 
 SELECT pg_temp.assert_raises(
   $$INSERT INTO storage.objects (bucket_id, name, owner, metadata) VALUES ('kyc_documents', 'f2000000-0000-0000-0000-000000000002/forbidden.webp', 'f2000000-0000-0000-0000-000000000001', '{"mimetype":"image/webp","size":128}')$$,
@@ -160,7 +171,8 @@ SELECT pg_temp.assert_raises(
 
 SELECT public.submit_kyc_request(
   'identity_card',
-  'f2000000-0000-0000-0000-000000000001/identity.webp'
+  'f2000000-0000-0000-0000-000000000001/document-identity.webp',
+  'f2000000-0000-0000-0000-000000000001/selfie-identity.webp'
 );
 SELECT pg_temp.assert_true(
   (SELECT count(*) = 1 FROM public.kyc_requests WHERE status = 'pending'),
@@ -171,9 +183,9 @@ SELECT pg_temp.assert_true(
   'submission must mark owner pending'
 );
 SELECT pg_temp.assert_true(
-  (SELECT phone IS NULL AND license_number IS NULL
+  (SELECT count(*) = 0
    FROM public.get_public_agent_profile('f2000000-0000-0000-0000-000000000001')),
-  'unverified public profile must hide phone and license'
+  'unverified advertiser must not be exposed as a public agent'
 );
 
 RESET ROLE;
@@ -193,7 +205,7 @@ SELECT pg_temp.assert_true(
   'other user must not read owner document'
 );
 SELECT pg_temp.assert_raises(
-  $$SELECT public.submit_kyc_request('identity_card', 'f2000000-0000-0000-0000-000000000001/identity.webp')$$,
+  $$SELECT public.submit_kyc_request('identity_card', 'f2000000-0000-0000-0000-000000000001/document-identity.webp', 'f2000000-0000-0000-0000-000000000001/selfie-identity.webp')$$,
   'Ruta de documento no valida'
 );
 
@@ -242,15 +254,72 @@ SELECT pg_temp.assert_true(
 );
 SELECT pg_temp.assert_true((SELECT count(*) = 1 FROM public.kyc_requests), 'admin AAL2 reads pending KYC');
 SELECT pg_temp.assert_true(
-  (SELECT count(*) = 1 FROM storage.objects WHERE bucket_id = 'kyc_documents'),
-  'admin AAL2 reads private KYC document'
+  (SELECT count(*) = 2 FROM storage.objects WHERE bucket_id = 'kyc_documents'),
+  'admin AAL2 reads both private KYC evidences'
 );
 SELECT public.review_kyc_request((SELECT id FROM public.kyc_requests), 'approved', NULL);
 SELECT pg_temp.assert_true(
   (SELECT status = 'approved' FROM public.kyc_requests),
   'admin AAL2 approval must update request'
 );
+SELECT pg_temp.assert_true(
+  (SELECT count(*) = 0
+   FROM public.get_public_agent_profile('f2000000-0000-0000-0000-000000000001')),
+  'verified buyer must not be exposed as a public agent'
+);
 
+RESET ROLE;
+
+-- Tras la aprobacion, el propietario ya puede activar el rol de agente.
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+UPDATE public.profiles
+SET role = 'agent'
+WHERE id = 'f2000000-0000-0000-0000-000000000001';
+SELECT pg_temp.assert_true(
+  (SELECT role = 'agent' FROM public.profiles),
+  'verified owner must be able to activate the agent role'
+);
+RESET ROLE;
+
+-- Las métricas aceptan llamadas públicas, deduplican por visitante/día y
+-- nunca exponen la tabla de eventos.
+SELECT set_config('request.jwt.claims', '{"role":"anon","aal":"aal1"}', true);
+SET LOCAL ROLE anon;
+SELECT pg_temp.assert_true(
+  (SELECT phone_clicks_count = 1 AND whatsapp_clicks_count = 0
+   FROM public.increment_contact_clicks(
+     'f2100000-0000-0000-0000-000000000001',
+     'phone',
+     'f2300000-0000-0000-0000-000000000001'
+   )),
+  'first phone click must increment the aggregate'
+);
+SELECT pg_temp.assert_true(
+  (SELECT phone_clicks_count = 1 AND whatsapp_clicks_count = 0
+   FROM public.increment_contact_clicks(
+     'f2100000-0000-0000-0000-000000000001',
+     'phone',
+     'f2300000-0000-0000-0000-000000000001'
+   )),
+  'same visitor and channel must be deduplicated for the day'
+);
+SELECT pg_temp.assert_raises(
+  $$SELECT * FROM public.property_contact_clicks$$,
+  'permission denied'
+);
+SELECT pg_temp.assert_true(
+  (SELECT EXISTS (
+    SELECT 1
+    FROM public.get_verified_agent_ids()
+    WHERE id = 'f2000000-0000-0000-0000-000000000001'
+  )),
+  'public projection must include the verified agent'
+);
 RESET ROLE;
 
 -- Cola de alertas: el trigger encola, solo service_role reclama y el reclamo es atomico.
@@ -317,6 +386,21 @@ SELECT pg_temp.assert_raises(
 );
 
 RESET ROLE;
+
+-- Si una revision interna retira el KYC, el trigger degrada al agente a buyer.
+SELECT set_config('app.kyc_internal', 'true', true);
+UPDATE public.profiles
+SET verification_status = 'rejected',
+    verification_reason = 'QA: revocacion sintetica'
+WHERE id = 'f2000000-0000-0000-0000-000000000001';
+SELECT pg_temp.assert_true(
+  (
+    SELECT role = 'buyer' AND verification_status = 'rejected'
+    FROM public.profiles
+    WHERE id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'losing verified KYC must demote the agent to buyer'
+);
 
 ROLLBACK;
 

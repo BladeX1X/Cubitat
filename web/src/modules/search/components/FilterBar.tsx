@@ -436,27 +436,6 @@ export function FilterBar({
             </div>
           </div>
 
-          {PHASE_TWO_ENABLED && (
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-bold text-neutral-800">Reputación y Confianza</span>
-              <div
-                className="flex items-center gap-3 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 rounded-md text-sm font-medium text-neutral-700 cursor-pointer"
-                onClick={() => handleFilterUpdate({ minTrustScore: filters.minTrustScore === 4.0 ? 'all' : 4.0 })}
-              >
-                <input
-                  type="checkbox"
-                  id="filter-trust-score"
-                  checked={filters.minTrustScore === 4.0}
-                  onChange={() => {}}
-                  className="h-4 w-4 rounded border-neutral-300 text-[#035f53] focus:ring-[#035f53]"
-                />
-                <label htmlFor="filter-trust-score" className="cursor-pointer select-none text-xs font-semibold">
-                  ⭐ Reputación Alta (Trust Score ≥ 4.0)
-                </label>
-              </div>
-            </div>
-          )}
-
           <hr className="border-neutral-100 my-1" />
 
           {/* Footer Popover */}

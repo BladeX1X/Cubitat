@@ -8,57 +8,48 @@ export interface ContactMetrics {
   whatsappClicks: number
 }
 
-const STORAGE_KEY = 'cubitat-contact-clicks-v1'
+const VIEWER_KEY_STORAGE = 'cubitat-contact-viewer-key-v1'
 
-function getLocalClickStore(): Record<string, ContactMetrics> {
-  if (typeof window === 'undefined') return {}
+function getViewerKey(): string | null {
+  if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
-
-function saveLocalClickStore(store: Record<string, ContactMetrics>) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
+    const stored = window.localStorage.getItem(VIEWER_KEY_STORAGE)
+    if (stored) return stored
+    const viewerKey = crypto.randomUUID()
+    window.localStorage.setItem(VIEWER_KEY_STORAGE, viewerKey)
+    return viewerKey
   } catch (err) {
     logSafeEvent({
       module: 'properties',
-      action: 'save_local_store',
+      action: 'contact_viewer_key',
       level: 'warn',
       code: sanitizeErrorReason(err),
     })
+    return null
   }
-}
-
-export function getContactClickMetrics(propertyId: string): ContactMetrics {
-  const store = getLocalClickStore()
-  return store[propertyId] || { phoneClicks: 0, whatsappClicks: 0 }
 }
 
 export async function trackContactClick(
   propertyId: string,
   channel: ContactChannel,
-): Promise<ContactMetrics> {
-  // 1. Update local storage state for immediate responsiveness
-  const store = getLocalClickStore()
-  const current = store[propertyId] || { phoneClicks: 0, whatsappClicks: 0 }
-  const nextMetrics: ContactMetrics = {
-    phoneClicks: channel === 'phone' ? current.phoneClicks + 1 : current.phoneClicks,
-    whatsappClicks: channel === 'whatsapp' ? current.whatsappClicks + 1 : current.whatsappClicks,
-  }
-  store[propertyId] = nextMetrics
-  saveLocalClickStore(store)
-
-  // 2. Fire and forget database sync
+): Promise<ContactMetrics | null> {
   try {
-    await supabase.rpc('increment_contact_clicks', {
+    const viewerKey = getViewerKey()
+    if (!viewerKey) return null
+
+    const { data, error } = await supabase.rpc('increment_contact_clicks', {
       p_property_id: propertyId,
       p_channel: channel,
+      p_viewer_key: viewerKey,
     })
+    if (error) throw error
+
+    const row = Array.isArray(data) ? data[0] : data
+    if (!row) return null
+    return {
+      phoneClicks: Number(row.phone_clicks_count) || 0,
+      whatsappClicks: Number(row.whatsapp_clicks_count) || 0,
+    }
   } catch (err) {
     logSafeEvent({
       module: 'properties',
@@ -66,7 +57,6 @@ export async function trackContactClick(
       level: 'info',
       code: sanitizeErrorReason(err),
     })
+    return null
   }
-
-  return nextMetrics
 }
