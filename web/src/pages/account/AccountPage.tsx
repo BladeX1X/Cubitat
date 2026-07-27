@@ -12,6 +12,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  UserRound,
   XCircle,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
