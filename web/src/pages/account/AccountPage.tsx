@@ -138,21 +138,26 @@ export function AccountPage({
   const [isSavingRole, setIsSavingRole] = useState(false)
   const [roleMessage, setRoleMessage] = useState<string | null>(null)
 
-  async function handleSaveRole(newRole: 'user' | 'agent') {
-    if (newRole === userRole || isSavingRole) return
+  async function handleSaveRole(targetMode: 'user' | 'agent') {
+    const dbRole = targetMode === 'agent' ? 'agent' : 'buyer'
+    if (isSavingRole) return
+    if (!userId) {
+      setRoleMessage('No se pudo identificar la sesión de usuario.')
+      return
+    }
+
     setIsSavingRole(true)
     setRoleMessage(null)
 
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId)
+        .upsert({ id: userId, role: dbRole, email }, { onConflict: 'id' })
 
       if (error) {
         setRoleMessage('No se pudo actualizar el tipo de cuenta.')
       } else {
-        setUserRole(newRole)
+        setUserRole(dbRole)
         setRoleMessage('Tipo de cuenta actualizado correctamente.')
         logSafeEvent({
           module: 'account',
@@ -385,7 +390,7 @@ export function AccountPage({
                       onClick={() => handleSaveRole('user')}
                       disabled={isSavingRole}
                       className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        (userRole || 'user') === 'user'
+                        userRole !== 'agent'
                           ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
                           : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                       }`}
@@ -394,7 +399,7 @@ export function AccountPage({
                         <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
                           🏠 Anunciante Particular
                         </span>
-                        {(userRole || 'user') === 'user' && (
+                        {userRole !== 'agent' && (
                           <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2.5 py-0.5 rounded-full shadow-xs">
                             Perfil Activo
                           </span>
