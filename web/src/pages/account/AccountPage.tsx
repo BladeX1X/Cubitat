@@ -69,14 +69,15 @@ export function AccountPage({
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const email = user.email || 'Sin correo registrado'
-  const initial = (fullName || email).substring(0, 1).toUpperCase()
+  const safeFullName = typeof fullName === 'string' ? fullName : (initialName || 'Usuario Cubitat')
+  const initial = (safeFullName || email).substring(0, 1).toUpperCase()
   const {
     alerts: searchAlerts,
     loading: loadingSearchAlerts,
     deleteAlert: deleteSearchAlert,
   } = useSearchAlerts(user.id)
   const verifiedItems = [
-    Boolean(fullName.trim()),
+    Boolean(safeFullName.trim()),
     Boolean(email),
     Boolean(phoneVerifiedAt),
   ]
@@ -163,7 +164,7 @@ export function AccountPage({
   }
 
   async function handleSaveName() {
-    const cleanName = draftName.trim()
+    const cleanName = (draftName || '').trim()
     if (cleanName.length < 2) {
       setNameMessage('Escribe un nombre valido.')
       return
