@@ -146,7 +146,7 @@ export function AccountPage({
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('id', user.id)
+        .eq('id', userId)
 
       if (error) {
         setRoleMessage('No se pudo actualizar el tipo de cuenta.')
@@ -188,11 +188,10 @@ export function AccountPage({
       setNameMessage('No se pudo actualizar el nombre.')
       return
     }
-
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ full_name: cleanName })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     setIsSavingName(false)
 
@@ -236,7 +235,7 @@ export function AccountPage({
       return
     }
 
-    const filePath = `${user.id}/avatar.webp`
+    const filePath = `${userId}/avatar.webp`
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -265,14 +264,14 @@ export function AccountPage({
       },
     })
 
-    const { error: profileError } = await supabase
+    const { error: profileError2 } = await supabase
       .from('profiles')
       .update({ avatar_url: nextAvatarUrl })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     setIsUploadingAvatar(false)
 
-    if (profileError) {
+    if (profileError2) {
       setAvatarMessage('Avatar subido. Falta sincronizar el perfil.')
       setAvatarUrl(nextAvatarUrl)
       return
@@ -589,7 +588,7 @@ export function AccountPage({
             </div>
 
       {PHASE_TWO_ENABLED && <KycSubmissionModal
-        userId={user.id}
+        userId={userId}
         isOpen={isKycModalOpen}
         onClose={() => setIsKycModalOpen(false)}
         onSuccess={() => {
