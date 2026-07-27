@@ -475,14 +475,12 @@ export function AccountPage({
                     status="verified"
                     icon={<Mail size={16} />}
                   />
-                </AccountSection>
 
-                <AccountSection title="Tipo de Cuenta / Perfil">
-                  <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-4">
+                  <div className="pt-3 border-t border-neutral-100 mt-2 space-y-3">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-neutral-800">¿Cómo deseas anunciarte en Cubitat?</h4>
+                      <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Tipo de Cuenta / Perfil</h4>
                       <p className="text-xs text-neutral-500">
-                        Selecciona tu modalidad para personalizar las opciones de tu cuenta y la forma en que te contactan los compradores.
+                        Selecciona cómo deseas anunciarte en Cubitat para adaptar tu experiencia y las opciones de tu cuenta.
                       </p>
                     </div>
 
@@ -491,13 +489,13 @@ export function AccountPage({
                         type="button"
                         onClick={() => handleSaveRole('user')}
                         disabled={isSavingRole}
-                        className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                           (userRole || 'user') === 'user'
-                            ? 'bg-teal-50/80 border-[#035f53] ring-1 ring-[#035f53]'
+                            ? 'bg-teal-50/90 border-[#035f53] ring-1 ring-[#035f53]'
                             : 'bg-white border-neutral-200 hover:border-neutral-300'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-xs text-neutral-900 flex items-center gap-1.5">
                             🏠 Anunciante Particular
                           </span>
@@ -516,13 +514,13 @@ export function AccountPage({
                         type="button"
                         onClick={() => handleSaveRole('agent')}
                         disabled={isSavingRole}
-                        className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                           userRole === 'agent'
-                            ? 'bg-teal-50/80 border-[#035f53] ring-1 ring-[#035f53]'
+                            ? 'bg-teal-50/90 border-[#035f53] ring-1 ring-[#035f53]'
                             : 'bg-white border-neutral-200 hover:border-neutral-300'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-xs text-neutral-900 flex items-center gap-1.5">
                             🏢 Agente / Inmobiliaria
                           </span>

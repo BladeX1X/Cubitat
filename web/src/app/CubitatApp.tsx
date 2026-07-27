@@ -862,7 +862,7 @@ export function CubitatApp() {
 
       <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
 
-        {error && pageMode !== 'home' && (
+        {error && (pageMode === 'results' || pageMode === 'detail') && (
           <div className="max-w-md mx-auto my-12 p-4 bg-red-50 border border-red-200 rounded-xl text-center space-y-2">
             <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
             <p className="text-[11px] text-red-500">{error}</p>
