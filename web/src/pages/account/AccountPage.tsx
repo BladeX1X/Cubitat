@@ -35,6 +35,7 @@ import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 type AccountPageProps = {
   user: User
   userRole?: string
+  onRoleChange?: (newRole: string) => void
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
@@ -45,6 +46,7 @@ type AccountPageProps = {
 export function AccountPage({
   user,
   userRole: initialUserRole,
+  onRoleChange,
   onBack,
   onNavigateAccount,
   onNavigateFavorites,
@@ -158,6 +160,7 @@ export function AccountPage({
         setRoleMessage('No se pudo actualizar el tipo de cuenta.')
       } else {
         setUserRole(dbRole)
+        onRoleChange?.(dbRole)
         setRoleMessage('Tipo de cuenta actualizado correctamente.')
         logSafeEvent({
           module: 'account',

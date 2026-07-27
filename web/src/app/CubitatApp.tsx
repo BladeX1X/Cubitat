@@ -982,6 +982,7 @@ export function CubitatApp() {
           <AccountPage
             user={user}
             userRole={userRole}
+            onRoleChange={(newRole) => setUserRole(newRole)}
             onBack={navigateAccount}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
