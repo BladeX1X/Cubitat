@@ -53,14 +53,15 @@ export function AccountPage({
   useSEO({
     title: 'Mi Cuenta',
   })
+
   const initialName =
-    user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Cubitat'
+    user?.user_metadata?.full_name || user?.user_metadata?.name || 'Usuario Cubitat'
   const [fullName, setFullName] = useState(initialName)
   const [draftName, setDraftName] = useState(initialName)
   const [phone, setPhone] = useState('')
   const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string>(
-    user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '',
   )
   const [isEditingName, setIsEditingName] = useState(false)
   const [isSavingName, setIsSavingName] = useState(false)
@@ -68,14 +69,15 @@ export function AccountPage({
   const [nameMessage, setNameMessage] = useState<string | null>(null)
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const email = user.email || 'Sin correo registrado'
+  const email = user?.email || 'Sin correo registrado'
+  const userId = user?.id || ''
   const safeFullName = typeof fullName === 'string' ? fullName : (initialName || 'Usuario Cubitat')
   const initial = (safeFullName || email).substring(0, 1).toUpperCase()
   const {
     alerts: searchAlerts,
     loading: loadingSearchAlerts,
     deleteAlert: deleteSearchAlert,
-  } = useSearchAlerts(user.id)
+  } = useSearchAlerts(userId)
   const verifiedItems = [
     Boolean(safeFullName.trim()),
     Boolean(email),
@@ -92,6 +94,7 @@ export function AccountPage({
     let cancelled = false
 
     async function loadProfile() {
+      if (!user?.id) return
       const { data } = await supabase
         .from('profiles')
         .select('*')
@@ -129,7 +132,7 @@ export function AccountPage({
     return () => {
       cancelled = true
     }
-  }, [user.id])
+  }, [user?.id])
 
   const [isSavingRole, setIsSavingRole] = useState(false)
   const [roleMessage, setRoleMessage] = useState<string | null>(null)
