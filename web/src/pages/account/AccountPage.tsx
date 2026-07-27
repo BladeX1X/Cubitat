@@ -437,7 +437,7 @@ export function AccountPage({
 
                 <VerificationCard
                   verifiedCount={verifiedCount}
-                  hasName={Boolean(fullName.trim())}
+                  hasName={Boolean(safeFullName.trim())}
                   hasEmail={Boolean(email)}
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
                 />
