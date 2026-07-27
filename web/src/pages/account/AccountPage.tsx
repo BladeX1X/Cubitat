@@ -312,7 +312,7 @@ export function AccountPage({
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
-                      alt={`Avatar de ${fullName}`}
+                      alt={`Avatar de ${safeFullName}`}
                       className="h-24 w-24 rounded-full object-cover shadow-sm sm:h-52 sm:w-52"
                     />
                   ) : (
@@ -530,7 +530,7 @@ export function AccountPage({
 
                 <AccountSection title="Informacion de usuario">
                   <EditableNameRow
-                    value={fullName}
+                    value={safeFullName}
                     draftValue={draftName}
                     isEditing={isEditingName}
                     isSaving={isSavingName}
