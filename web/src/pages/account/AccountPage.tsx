@@ -123,6 +123,13 @@ export function AccountPage({
       }
     }
 
+    loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user.id])
+
   const [isSavingRole, setIsSavingRole] = useState(false)
   const [roleMessage, setRoleMessage] = useState<string | null>(null)
 
@@ -357,6 +364,76 @@ export function AccountPage({
                   </section>
                 )}
 
+                <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-teal-50 text-[#035f53] flex items-center justify-center font-bold shrink-0">
+                      <UserRound size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-neutral-900">Tipo de Cuenta / Modalidad de Anuncio</h2>
+                      <p className="text-xs text-neutral-500">Selecciona cómo deseas anunciarte en Cubitat para adaptar tu experiencia.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRole('user')}
+                      disabled={isSavingRole}
+                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        (userRole || 'user') === 'user'
+                          ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
+                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
+                          🏠 Anunciante Particular
+                        </span>
+                        {(userRole || 'user') === 'user' && (
+                          <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2.5 py-0.5 rounded-full shadow-xs">
+                            Perfil Activo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-600 leading-normal">
+                        Publico propiedades personales o familiares de forma directa.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRole('agent')}
+                      disabled={isSavingRole}
+                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        userRole === 'agent'
+                          ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
+                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
+                          🏢 Agente / Inmobiliaria
+                        </span>
+                        {userRole === 'agent' && (
+                          <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2.5 py-0.5 rounded-full shadow-xs">
+                            Perfil Activo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-600 leading-normal">
+                        Gestiono un portafolio profesional de propiedades y contactos.
+                      </p>
+                    </button>
+                  </div>
+
+                  {roleMessage && (
+                    <p className={`text-xs font-semibold ${roleMessage.includes('correctamente') ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {roleMessage}
+                    </p>
+                  )}
+                </section>
+
                 <VerificationCard
                   verifiedCount={verifiedCount}
                   hasName={Boolean(fullName.trim())}
@@ -475,73 +552,6 @@ export function AccountPage({
                     status="verified"
                     icon={<Mail size={16} />}
                   />
-
-                  <div className="pt-3 border-t border-neutral-100 mt-2 space-y-3">
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Tipo de Cuenta / Perfil</h4>
-                      <p className="text-xs text-neutral-500">
-                        Selecciona cómo deseas anunciarte en Cubitat para adaptar tu experiencia y las opciones de tu cuenta.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveRole('user')}
-                        disabled={isSavingRole}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                          (userRole || 'user') === 'user'
-                            ? 'bg-teal-50/90 border-[#035f53] ring-1 ring-[#035f53]'
-                            : 'bg-white border-neutral-200 hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="font-bold text-xs text-neutral-900 flex items-center gap-1.5">
-                            🏠 Anunciante Particular
-                          </span>
-                          {(userRole || 'user') === 'user' && (
-                            <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2 py-0.5 rounded-full">
-                              Activo
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-neutral-600 leading-normal">
-                          Publico propiedades personales o familiares de forma directa.
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSaveRole('agent')}
-                        disabled={isSavingRole}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                          userRole === 'agent'
-                            ? 'bg-teal-50/90 border-[#035f53] ring-1 ring-[#035f53]'
-                            : 'bg-white border-neutral-200 hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="font-bold text-xs text-neutral-900 flex items-center gap-1.5">
-                            🏢 Agente / Inmobiliaria
-                          </span>
-                          {userRole === 'agent' && (
-                            <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2 py-0.5 rounded-full">
-                              Activo
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-neutral-600 leading-normal">
-                          Gestiono un portafolio profesional de propiedades y contactos.
-                        </p>
-                      </button>
-                    </div>
-
-                    {roleMessage && (
-                      <p className={`text-xs font-semibold ${roleMessage.includes('correctamente') ? 'text-emerald-700' : 'text-red-600'}`}>
-                        {roleMessage}
-                      </p>
-                    )}
-                  </div>
                 </AccountSection>
 
                 <AccountSection title="Informacion de contacto">

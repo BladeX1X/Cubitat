@@ -19,6 +19,7 @@ import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveS
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../shared/config/features'
+import { AccountPage } from '../pages/account/AccountPage'
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -38,9 +39,7 @@ const PublishPage = lazy(() =>
 const MyPropertiesPage = lazy(() =>
   import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
 )
-const AccountPage = lazy(() =>
-  import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
-)
+
 const AgentProfilePage = lazy(() =>
   import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
 )
