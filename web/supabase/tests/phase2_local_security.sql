@@ -252,15 +252,47 @@ SELECT pg_temp.assert_true(
   ),
   'admin AAL2 reads all local QA profiles'
 );
-SELECT pg_temp.assert_true((SELECT count(*) = 1 FROM public.kyc_requests), 'admin AAL2 reads pending KYC');
 SELECT pg_temp.assert_true(
-  (SELECT count(*) = 2 FROM storage.objects WHERE bucket_id = 'kyc_documents'),
+  (
+    SELECT count(*) = 1
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'admin AAL2 reads the pending QA KYC'
+);
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 2
+    FROM storage.objects
+    WHERE bucket_id = 'kyc_documents'
+      AND name LIKE 'f2000000-0000-0000-0000-000000000001/%'
+  ),
   'admin AAL2 reads both private KYC evidences'
 );
-SELECT public.review_kyc_request((SELECT id FROM public.kyc_requests), 'approved', NULL);
+SELECT public.review_kyc_request(
+  (
+    SELECT id
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'approved',
+  NULL
+);
 SELECT pg_temp.assert_true(
-  (SELECT status = 'approved' FROM public.kyc_requests),
+  (
+    SELECT status = 'approved'
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
   'admin AAL2 approval must update request'
+);
+SELECT pg_temp.assert_true(
+  (
+    SELECT evidence_purge_after >= updated_at + interval '23 hours 59 minutes'
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'approved KYC must schedule evidence purge after 24 hours'
 );
 SELECT pg_temp.assert_true(
   (SELECT count(*) = 0
@@ -269,6 +301,97 @@ SELECT pg_temp.assert_true(
 );
 
 RESET ROLE;
+
+CREATE TEMP TABLE fresh_claimed_kyc_evidence (
+  id uuid,
+  document_path text,
+  selfie_path text
+) ON COMMIT DROP;
+GRANT SELECT, INSERT ON fresh_claimed_kyc_evidence TO service_role;
+
+SET LOCAL ROLE service_role;
+INSERT INTO fresh_claimed_kyc_evidence
+SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25);
+RESET ROLE;
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 0
+    FROM fresh_claimed_kyc_evidence c
+    JOIN public.kyc_requests r ON r.id = c.id
+    WHERE r.user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'freshly approved KYC must not be claimed before 24 hours'
+);
+
+UPDATE public.kyc_requests
+SET evidence_purge_after = now() - interval '1 minute'
+WHERE user_id = 'f2000000-0000-0000-0000-000000000001';
+
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000003","role":"authenticated","aal":"aal2"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_raises(
+  $$SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25)$$,
+  'permission denied'
+);
+RESET ROLE;
+
+CREATE TEMP TABLE claimed_kyc_evidence (
+  id uuid,
+  document_path text,
+  selfie_path text
+) ON COMMIT DROP;
+GRANT SELECT, INSERT ON claimed_kyc_evidence TO service_role;
+
+SET LOCAL ROLE service_role;
+INSERT INTO claimed_kyc_evidence
+SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25);
+RESET ROLE;
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 1
+    FROM claimed_kyc_evidence c
+    JOIN public.kyc_requests r ON r.id = c.id
+    WHERE r.user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'service role must claim one due approved KYC request'
+);
+
+SET LOCAL ROLE service_role;
+SELECT pg_temp.assert_raises(
+  format(
+    'SELECT public.complete_kyc_evidence_purge(%L)',
+    (SELECT id FROM claimed_kyc_evidence)
+  ),
+  'siguen presentes en Storage'
+);
+SELECT public.release_kyc_evidence_purge((SELECT id FROM claimed_kyc_evidence));
+RESET ROLE;
+
+SELECT pg_temp.assert_true(
+  (
+    SELECT document_path IS NOT NULL
+      AND selfie_path IS NOT NULL
+      AND evidence_purged_at IS NULL
+      AND evidence_purge_claimed_at IS NULL
+      AND status = 'approved'
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'database paths must remain when Storage has not confirmed deletion'
+);
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 2
+    FROM storage.objects
+    WHERE bucket_id = 'kyc_documents'
+      AND name LIKE 'f2000000-0000-0000-0000-000000000001/%'
+  ),
+  'failed completion must preserve both private evidence objects'
+);
 
 -- Tras la aprobacion, el propietario ya puede activar el rol de agente.
 SELECT set_config(
@@ -323,13 +446,14 @@ SELECT pg_temp.assert_true(
 RESET ROLE;
 
 -- Cola de alertas: el trigger encola, solo service_role reclama y el reclamo es atomico.
-INSERT INTO public.notifications (id, user_id, title, message, event_key)
+INSERT INTO public.notifications (id, user_id, title, message, event_key, created_at)
 VALUES (
   'f2200000-0000-0000-0000-000000000001',
   'f2000000-0000-0000-0000-000000000001',
   'Alerta QA local',
   'Mensaje sintetico; nunca se envia fuera del entorno local.',
-  'search-alert:local-qa:property:f2100000-0000-0000-0000-000000000001'
+  'search-alert:local-qa:property:f2100000-0000-0000-0000-000000000001',
+  '2000-01-01 00:00:00+00'
 );
 SELECT pg_temp.assert_true(
   (SELECT email_delivery_status = 'pending' AND email_attempts = 0
@@ -350,16 +474,45 @@ SELECT pg_temp.assert_raises(
 );
 RESET ROLE;
 
+CREATE TEMP TABLE first_alert_claim (
+  id uuid,
+  user_id uuid,
+  title text,
+  message text,
+  email_attempts integer
+) ON COMMIT DROP;
+CREATE TEMP TABLE second_alert_claim (
+  id uuid,
+  user_id uuid,
+  title text,
+  message text,
+  email_attempts integer
+) ON COMMIT DROP;
+GRANT SELECT, INSERT ON first_alert_claim, second_alert_claim TO service_role;
+
 SET LOCAL ROLE service_role;
-SELECT pg_temp.assert_true(
-  (SELECT count(*) = 1 FROM public.claim_pending_alert_emails(1)),
-  'service role must claim one pending alert'
-);
-SELECT pg_temp.assert_true(
-  (SELECT count(*) = 0 FROM public.claim_pending_alert_emails(1)),
-  'second overlapping claim must not duplicate processing'
-);
+INSERT INTO first_alert_claim
+SELECT * FROM public.claim_pending_alert_emails(1);
+INSERT INTO second_alert_claim
+SELECT * FROM public.claim_pending_alert_emails(1);
 RESET ROLE;
+
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 1
+    FROM first_alert_claim
+    WHERE id = 'f2200000-0000-0000-0000-000000000001'
+  ),
+  'service role must claim the QA pending alert'
+);
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 0
+    FROM second_alert_claim
+    WHERE id = 'f2200000-0000-0000-0000-000000000001'
+  ),
+  'second overlapping claim must not duplicate the QA alert'
+);
 
 SELECT pg_temp.assert_true(
   (SELECT email_delivery_status = 'processing' AND email_attempts = 1

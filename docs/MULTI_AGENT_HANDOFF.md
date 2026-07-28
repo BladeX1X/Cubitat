@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-27
+Última actualización: 2026-07-28
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,14 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-07-28: política KYC decidida e implementada solo en
+> DEV/local. Documento y selfie se eliminan al cumplir 24 horas desde la
+> aprobación, mediante API de Storage y Cron `service_role`; la fila mínima de
+> auditoría permanece con rutas `NULL` y fecha de purga. Reclamo atómico,
+> reintentos y comprobación previa al cierre verificados. Matriz SQL:
+> `phase2_local_security: ok` con `ROLLBACK`. Gate: lint, 83 archivos/326
+> pruebas y build. Producción y Worker remoto no modificados.
 
 > Actualización 2026-07-27 (continuación paso a paso): `dev` fue subida en
 > `2523b33`. En Chrome, una cuenta QA KYC aprobada cambió buyer → agent sin
@@ -129,6 +137,35 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 9. Al cerrar el carril, añadir una entrada al registro de relevo de abajo.
 
 ## Registro de relevo
+
+### 2026-07-28 10:00 — Codex — Retención KYC de 24 horas implementada en DEV/local
+
+- Decisión de producto: documento y selfie de una solicitud KYC aprobada se
+  eliminan al cumplir 24 horas. Con el Cron DEV actual, la ejecución ocurre en
+  el primer intervalo posterior, como máximo aproximadamente 15 minutos después.
+- Migración DEV-F2.5:
+  `web/supabase/dev-migrations/20260801005000_kyc_evidence_retention.sql`.
+  Añade fecha programada, reclamo/lease, contador de intentos y fecha de purga;
+  permite poner las dos rutas en `NULL` sin borrar la fila de auditoría.
+- Seguridad: las RPC de reclamo, finalización y liberación están revocadas para
+  `PUBLIC`, `anon` y `authenticated`, y concedidas exclusivamente a
+  `service_role`. `FOR UPDATE SKIP LOCKED` evita solapamientos y el lease se
+  recupera a los 30 minutos.
+- Storage: el Worker usa `DELETE /storage/v1/object/kyc_documents` con ambas
+  rutas. No elimina directamente desde `storage.objects`; Supabase local bloqueó
+  explícitamente ese intento durante TDD. La RPC de finalización también se
+  niega a poner rutas en `NULL` mientras cualquier objeto siga presente.
+- Fallos: si Storage rechaza el borrado, se conservan las rutas y se libera el
+  reclamo. Si falla la confirmación posterior, el lease expira y permite repetir
+  la operación idempotente. Los logs usan eventos cerrados sin IDs, rutas,
+  secretos ni cuerpos externos.
+- Evidencia: migración aplicada solo a `supabase_db_web`; matriz completa
+  `phase2_local_security: ok` y `ROLLBACK`; pruebas focales 57/57; gate final
+  lint limpio, 83 archivos/326 pruebas y build PWA correcto con 473 URLs.
+  `wrangler deploy --env dev --dry-run` empaquetó el Worker sin desplegarlo.
+- Alcance pendiente: la política de evidencias rechazadas no fue definida y se
+  conserva sin cambios. No se desplegó el Worker actualizado ni se tocó
+  Supabase/Cloudflare de producción.
 
 ### 2026-07-27 19:15 — Codex — Worker de alertas DEV desplegado; Supabase DEV bloqueado por capacidad
 

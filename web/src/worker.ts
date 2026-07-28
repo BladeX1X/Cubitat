@@ -7,6 +7,7 @@ import {
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
 import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
+import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 
 export { RateLimiter };
 
@@ -580,7 +581,10 @@ async function resendSignupConfirmation(email: string, env: Env): Promise<void> 
 export default {
   scheduled(_controller: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): void {
     if (env.PHASE2_ENABLED !== 'true') return
-    ctx.waitUntil(dispatchPendingAlertEmails(env))
+    ctx.waitUntil(Promise.all([
+      dispatchPendingAlertEmails(env),
+      purgeApprovedKycEvidence(env),
+    ]))
   },
   async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
     const url = new URL(request.url);

@@ -13,6 +13,9 @@ const EVENTS = new Set([
   'transactional_email_skipped',
   'alert_email_dispatch_failed',
   'alert_email_dispatch_skipped',
+  'kyc_evidence_claim_failed',
+  'kyc_evidence_retention_unavailable',
+  'kyc_evidence_retention_partial_failure',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -39,6 +42,9 @@ export type WorkerLogEvent =
   | 'transactional_email_skipped'
   | 'alert_email_dispatch_failed'
   | 'alert_email_dispatch_skipped'
+  | 'kyc_evidence_claim_failed'
+  | 'kyc_evidence_retention_unavailable'
+  | 'kyc_evidence_retention_partial_failure'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'
