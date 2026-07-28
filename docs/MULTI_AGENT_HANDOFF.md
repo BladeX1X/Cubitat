@@ -29,10 +29,15 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 > `buyer/pending`, sin propiedades y sin acceso al panel. El dispatcher de
 > correo ahora admite proveedor, remitente y URL pública DEV y tolera caídas de
 > red sin rechazar el Cron. Gate: lint, 82 archivos/319 pruebas y build.
-> Entrega real de correo sigue bloqueada: `wrangler` no tiene autenticación
-> vigente, falta `RESEND_API_KEY` local y `env.dev.VITE_SUPABASE_URL` continúa
-> siendo `https://dev-supabase.invalid`. No usar credenciales ni Supabase de
-> producción para cerrar esta prueba.
+> El Worker aislado `cubitat1-phase2-dev` ya fue desplegado y verificado con
+> respuesta HTTP 200 en `workers.dev`; no tiene rutas productivas ni secretos.
+> Entrega real de correo sigue bloqueada: la organización Supabase ya ocupa sus
+> dos proyectos gratuitos y el segundo contiene 8 recursos REST y 1 usuario,
+> por lo que no se reutilizó ni eliminó. Falta autorizar un tercer proyecto DEV
+> de pago y proporcionar una `RESEND_API_KEY` DEV. `env.dev.VITE_SUPABASE_URL`
+> continúa en `https://dev-supabase.invalid`, y el Cron omite la entrega de
+> forma segura. No usar credenciales ni Supabase de producción para cerrar esta
+> prueba.
 
 > Actualización 2026-07-27: auditoría integral de Fase 2 corregida en DEV/local.
 > Trust Score y Web Push quedan expresamente diferidos y fuera de la interfaz;
@@ -124,6 +129,33 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 9. Al cerrar el carril, añadir una entrada al registro de relevo de abajo.
 
 ## Registro de relevo
+
+### 2026-07-27 19:15 — Codex — Worker de alertas DEV desplegado; Supabase DEV bloqueado por capacidad
+
+- Estado: **Worker DEV desplegado; entrega real de correo bloqueada sin tocar
+  producción**.
+- Cloudflare CLI autenticado y despliegue confirmado:
+  `cubitat1-phase2-dev`, versión
+  `a6c7056e-1776-40f9-a14b-9f83b4963fbb`, URL
+  `https://cubitat1-phase2-dev.pochiprats18.workers.dev`, HTTP 200 y contenido
+  Cubitat. El entorno usa `workers.dev`, `routes: []` y Cron cada 15 minutos.
+- El Worker no recibió secretos. Mantiene
+  `VITE_SUPABASE_URL=https://dev-supabase.invalid`; por el manejo defensivo del
+  dispatcher, el Cron sale sin reclamar ni enviar alertas cuando falta
+  configuración.
+- Supabase CLI confirmó dos proyectos activos en la organización. El proyecto
+  Cubitat enlazado es producción y no se modificó. El otro proyecto candidato
+  tiene 8 recursos REST, 1 usuario Auth y 0 buckets; al no estar vacío, no se
+  borró, reinició ni reutilizó.
+- Bloqueo observable para el siguiente paso: autorizar el costo de un tercer
+  proyecto Supabase DEV (o indicar explícitamente qué proyecto existente se
+  puede eliminar/reutilizar) y aportar una clave Resend separada para DEV.
+  Después: aplicar la cadena base y `dev-migrations`, configurar secretos
+  `SUPABASE_SERVICE_ROLE_KEY` y `RESEND_API_KEY`, crear fixtures sintéticas y
+  verificar una entrega real.
+- Producción intacta: no se desplegó `cubitat1`, no se cambiaron rutas/DNS, no
+  se aplicaron migraciones al Supabase Cubitat y no se copiaron secretos
+  productivos.
 
 ### 2026-07-27 17:00 — Codex — Cierre de auditoria Fase 2 sin Trust Score
 
