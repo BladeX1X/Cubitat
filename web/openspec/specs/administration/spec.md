@@ -116,8 +116,8 @@ El sistema MUST permitir que únicamente un administrador en AAL2 compare el doc
 - THEN la interfaz MUST deshabilitar la aprobación
 - AND la RPC MUST rechazar la aprobación aunque se invoque directamente
 
-### Requirement: Retención mínima de evidencias KYC aprobadas
-El sistema MUST eliminar el documento y la selfie privados cuando hayan transcurrido 24 horas desde la aprobación, conservando únicamente el registro mínimo de auditoría.
+### Requirement: Retención mínima de evidencias KYC procesadas
+El sistema MUST eliminar el documento y la selfie privados cuando hayan transcurrido 24 horas desde la aprobación o 1 hora desde el rechazo, conservando únicamente el registro mínimo de auditoría.
 
 #### Scenario: Solicitud recién aprobada
 - GIVEN una solicitud KYC completa acaba de ser aprobada
@@ -132,6 +132,18 @@ El sistema MUST eliminar el documento y la selfie privados cuando hayan transcur
 - AND MUST eliminar documento y selfie mediante la API de Storage
 - AND MUST sustituir ambas rutas por `NULL`
 - AND MUST registrar la fecha de purga sin borrar el estado, usuario ni fechas de auditoría
+
+#### Scenario: Solicitud rechazada hace menos de 1 hora
+- GIVEN una solicitud KYC fue rechazada y todavía no ha cumplido 1 hora
+- WHEN el Cron de retención se ejecuta
+- THEN MUST conservar ambas evidencias privadas
+- AND MUST evitar reclamar la solicitud para borrado
+
+#### Scenario: Solicitud rechazada hace 1 hora
+- GIVEN una solicitud KYC rechazada conserva ambas evidencias y ya cumplió 1 hora
+- WHEN el Cron DEV ejecuta la retención con credenciales `service_role`
+- THEN MUST eliminar documento y selfie mediante el mismo flujo seguro de Storage
+- AND MUST conservar la fila mínima de auditoría con estado `rejected`
 
 #### Scenario: Borrado de Storage falla
 - GIVEN una solicitud elegible fue reclamada

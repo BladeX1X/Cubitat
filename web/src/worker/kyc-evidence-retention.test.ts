@@ -33,7 +33,7 @@ describe('purgeApprovedKycEvidence', () => {
     })
 
     expect(fetchFn.mock.calls[0]?.[0]).toBe(
-      'https://project.supabase.co/rest/v1/rpc/claim_approved_kyc_evidence_for_purge',
+      'https://project.supabase.co/rest/v1/rpc/claim_kyc_evidence_for_purge',
     )
     expect(fetchFn.mock.calls[1]?.[0]).toBe(
       'https://project.supabase.co/storage/v1/object/kyc_documents',

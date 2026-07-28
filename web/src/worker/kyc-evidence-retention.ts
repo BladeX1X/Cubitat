@@ -68,7 +68,7 @@ export async function purgeApprovedKycEvidence(
   let claimed: ClaimedKycEvidence[]
   try {
     const claimResponse = await fetchFn(
-      `${env.VITE_SUPABASE_URL}/rest/v1/rpc/claim_approved_kyc_evidence_for_purge`,
+      `${env.VITE_SUPABASE_URL}/rest/v1/rpc/claim_kyc_evidence_for_purge`,
       {
         method: 'POST',
         headers: serviceHeaders(serviceRoleKey),

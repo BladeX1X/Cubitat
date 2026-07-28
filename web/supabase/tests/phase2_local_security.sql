@@ -311,7 +311,7 @@ GRANT SELECT, INSERT ON fresh_claimed_kyc_evidence TO service_role;
 
 SET LOCAL ROLE service_role;
 INSERT INTO fresh_claimed_kyc_evidence
-SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25);
+SELECT * FROM public.claim_kyc_evidence_for_purge(25);
 RESET ROLE;
 SELECT pg_temp.assert_true(
   (
@@ -334,7 +334,7 @@ SELECT set_config(
 );
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_raises(
-  $$SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25)$$,
+  $$SELECT * FROM public.claim_kyc_evidence_for_purge(25)$$,
   'permission denied'
 );
 RESET ROLE;
@@ -348,7 +348,7 @@ GRANT SELECT, INSERT ON claimed_kyc_evidence TO service_role;
 
 SET LOCAL ROLE service_role;
 INSERT INTO claimed_kyc_evidence
-SELECT * FROM public.claim_approved_kyc_evidence_for_purge(25);
+SELECT * FROM public.claim_kyc_evidence_for_purge(25);
 RESET ROLE;
 SELECT pg_temp.assert_true(
   (
@@ -392,6 +392,74 @@ SELECT pg_temp.assert_true(
   ),
   'failed completion must preserve both private evidence objects'
 );
+
+UPDATE public.kyc_requests
+SET status = 'rejected',
+    rejection_reason = 'Rechazo QA para validar retencion de una hora.',
+    updated_at = now()
+WHERE user_id = 'f2000000-0000-0000-0000-000000000001';
+
+SELECT pg_temp.assert_true(
+  (
+    SELECT evidence_purge_after >= updated_at + interval '59 minutes'
+      AND evidence_purge_after <= updated_at + interval '61 minutes'
+    FROM public.kyc_requests
+    WHERE user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'rejected KYC must schedule evidence purge after one hour'
+);
+
+CREATE TEMP TABLE fresh_rejected_claim (
+  id uuid,
+  document_path text,
+  selfie_path text
+) ON COMMIT DROP;
+GRANT SELECT, INSERT ON fresh_rejected_claim TO service_role;
+
+SET LOCAL ROLE service_role;
+INSERT INTO fresh_rejected_claim
+SELECT * FROM public.claim_kyc_evidence_for_purge(25);
+RESET ROLE;
+
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 0
+    FROM fresh_rejected_claim c
+    JOIN public.kyc_requests r ON r.id = c.id
+    WHERE r.user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'freshly rejected KYC must not be claimed before one hour'
+);
+
+UPDATE public.kyc_requests
+SET evidence_purge_after = now() - interval '1 minute'
+WHERE user_id = 'f2000000-0000-0000-0000-000000000001';
+
+CREATE TEMP TABLE due_rejected_claim (
+  id uuid,
+  document_path text,
+  selfie_path text
+) ON COMMIT DROP;
+GRANT SELECT, INSERT ON due_rejected_claim TO service_role;
+
+SET LOCAL ROLE service_role;
+INSERT INTO due_rejected_claim
+SELECT * FROM public.claim_kyc_evidence_for_purge(25);
+RESET ROLE;
+
+SELECT pg_temp.assert_true(
+  (
+    SELECT count(*) = 1
+    FROM due_rejected_claim c
+    JOIN public.kyc_requests r ON r.id = c.id
+    WHERE r.user_id = 'f2000000-0000-0000-0000-000000000001'
+  ),
+  'service role must claim rejected KYC after one hour'
+);
+
+SET LOCAL ROLE service_role;
+SELECT public.release_kyc_evidence_purge((SELECT id FROM due_rejected_claim));
+RESET ROLE;
 
 -- Tras la aprobacion, el propietario ya puede activar el rol de agente.
 SELECT set_config(

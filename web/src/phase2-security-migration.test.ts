@@ -5,6 +5,7 @@ import identitySelfieSql from '../supabase/dev-migrations/20260801002000_kyc_ide
 import agentKycGateSql from '../supabase/dev-migrations/20260801003000_require_verified_kyc_for_agent_role.sql?raw'
 import verifiedAgentsAndMetricsSql from '../supabase/dev-migrations/20260801004000_verified_agents_and_contact_metrics.sql?raw'
 import kycEvidenceRetentionSql from '../supabase/dev-migrations/20260801005000_kyc_evidence_retention.sql?raw'
+import rejectedKycRetentionSql from '../supabase/dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql?raw'
 import productionRoleSql from '../supabase/migrations/20260727100000_allow_self_role_toggle.sql?raw'
 
 describe('Phase 2 security migration', () => {
@@ -127,6 +128,21 @@ describe('Phase 2 KYC evidence retention', () => {
     )
     expect(kycEvidenceRetentionSql).toMatch(
       /Las evidencias KYC siguen presentes en Storage/i,
+    )
+  })
+
+  it('schedules rejected evidence for one hour through an incremental DEV migration', () => {
+    expect(rejectedKycRetentionSql).toContain(
+      'DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT',
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /NEW\.status = 'rejected'[\s\S]*interval '1 hour'/i,
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /status IN \('approved', 'rejected'\)[\s\S]*evidence_purge_after <= now\(\)/i,
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /claim_kyc_evidence_for_purge\(integer\)[\s\S]*TO service_role/i,
     )
   })
 })

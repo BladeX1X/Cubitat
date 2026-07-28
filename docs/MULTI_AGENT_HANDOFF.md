@@ -23,11 +23,12 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 > Actualización 2026-07-28: política KYC decidida e implementada solo en
 > DEV/local. Documento y selfie se eliminan al cumplir 24 horas desde la
-> aprobación, mediante API de Storage y Cron `service_role`; la fila mínima de
-> auditoría permanece con rutas `NULL` y fecha de purga. Reclamo atómico,
-> reintentos y comprobación previa al cierre verificados. Matriz SQL:
-> `phase2_local_security: ok` con `ROLLBACK`. Gate: lint, 83 archivos/326
-> pruebas y build. Producción y Worker remoto no modificados.
+> aprobación o 1 hora desde el rechazo, mediante API de Storage y Cron
+> `service_role`; la fila mínima de auditoría permanece con rutas `NULL` y fecha
+> de purga. Reclamo atómico, reintentos y comprobación previa al cierre
+> verificados. Matriz SQL: `phase2_local_security: ok` con `ROLLBACK`. Gate:
+> lint, 83 archivos/327 pruebas y build. Producción y Worker remoto no
+> modificados. Trust Score y Web Push continúan diferidos.
 
 > Actualización 2026-07-27 (continuación paso a paso): `dev` fue subida en
 > `2523b33`. En Chrome, una cuenta QA KYC aprobada cambió buyer → agent sin
@@ -138,6 +139,29 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-28 12:15 — Codex — Retención KYC rechazada de 1 hora
+
+- Decisión de producto: evidencias aprobadas conservan la ventana de 24 horas;
+  evidencias rechazadas se conservan 1 hora. Después, ambas usan el mismo flujo
+  seguro de purga por API de Storage.
+- Migración incremental DEV-F2.6:
+  `web/supabase/dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql`.
+  No se reescribió DEV-F2.5 ya aplicada.
+- La RPC general `claim_kyc_evidence_for_purge(integer)` reemplaza el reclamo
+  exclusivo de aprobadas y selecciona estados `approved` o `rejected` únicamente
+  cuando su fecha de purga venció. Conserva `SKIP LOCKED`, lease de 30 minutos y
+  acceso exclusivo de `service_role`.
+- Evidencia local: rechazado reciente no reclamado; después de adelantar solo la
+  fecha QA a más de 1 hora, reclamado exactamente una vez. La ventana aprobada
+  de 24 horas no cambió. Matriz completa:
+  `phase2_local_security: ok` y `ROLLBACK`.
+- Gate final: lint limpio, 83 archivos/327 pruebas, build PWA con 473 URLs y
+  Wrangler DEV dry-run correcto. No se desplegó el Worker actualizado ni se
+  modificaron Supabase/Cloudflare productivos.
+- Producto: Trust Score no se implementa todavía. Web Push —notificaciones del
+  navegador aun con Cubitat cerrado— también queda diferido y fuera de la
+  interfaz.
+
 ### 2026-07-28 10:00 — Codex — Retención KYC de 24 horas implementada en DEV/local
 
 - Decisión de producto: documento y selfie de una solicitud KYC aprobada se
@@ -163,8 +187,8 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   `phase2_local_security: ok` y `ROLLBACK`; pruebas focales 57/57; gate final
   lint limpio, 83 archivos/326 pruebas y build PWA correcto con 473 URLs.
   `wrangler deploy --env dev --dry-run` empaquetó el Worker sin desplegarlo.
-- Alcance pendiente: la política de evidencias rechazadas no fue definida y se
-  conserva sin cambios. No se desplegó el Worker actualizado ni se tocó
+- Alcance histórico resuelto por DEV-F2.6: las evidencias rechazadas ahora usan
+  una ventana de 1 hora. No se desplegó el Worker actualizado ni se tocó
   Supabase/Cloudflare de producción.
 
 ### 2026-07-27 19:15 — Codex — Worker de alertas DEV desplegado; Supabase DEV bloqueado por capacidad
