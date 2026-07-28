@@ -24,7 +24,7 @@ scripts/optimize-images.mjs
 # Local env files and secrets
 .env
 .env.*
-.dev.vars
+.dev.vars*
 !.env.example
 
 # Editor directories and files
