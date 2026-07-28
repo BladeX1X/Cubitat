@@ -21,6 +21,19 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
+> Actualización 2026-07-27 (continuación paso a paso): `dev` fue subida en
+> `2523b33`. En Chrome, una cuenta QA KYC aprobada cambió buyer → agent sin
+> recarga forzada, accedió al panel, mostró insignia pública y reflejó
+> `1` llamada/`1` WhatsApp; repetir cada clave no duplicó eventos. La propiedad
+> y elevación KYC sintéticas fueron eliminadas y la cuenta terminó
+> `buyer/pending`, sin propiedades y sin acceso al panel. El dispatcher de
+> correo ahora admite proveedor, remitente y URL pública DEV y tolera caídas de
+> red sin rechazar el Cron. Gate: lint, 82 archivos/319 pruebas y build.
+> Entrega real de correo sigue bloqueada: `wrangler` no tiene autenticación
+> vigente, falta `RESEND_API_KEY` local y `env.dev.VITE_SUPABASE_URL` continúa
+> siendo `https://dev-supabase.invalid`. No usar credenciales ni Supabase de
+> producción para cerrar esta prueba.
+
 > Actualización 2026-07-27: auditoría integral de Fase 2 corregida en DEV/local.
 > Trust Score y Web Push quedan expresamente diferidos y fuera de la interfaz;
 > no se usan datos simulados. Verificación de agentes y métricas de contacto

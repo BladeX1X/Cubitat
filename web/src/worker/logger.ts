@@ -24,7 +24,7 @@ const SOURCES = new Set([
   'resend',
   'service_role',
 ] as const)
-const REASONS = new Set(['missing_configuration'] as const)
+const REASONS = new Set(['missing_configuration', 'network_unavailable'] as const)
 
 export type WorkerLogEvent =
   | 'auth_rate_limit_blocked'
@@ -45,7 +45,7 @@ export interface WorkerLogFields {
   dimension?: 'ip' | 'email'
   source?: 'google_analytics' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
   status?: number
-  reason?: 'missing_configuration'
+  reason?: 'missing_configuration' | 'network_unavailable'
 }
 
 export function logWorkerEvent(

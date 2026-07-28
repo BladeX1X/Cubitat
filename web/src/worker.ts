@@ -22,6 +22,9 @@ export interface Env extends PublicSubmissionEnv {
   SUPABASE_PROJECT_ID?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
+  ALERT_EMAIL_PROVIDER_URL?: string;
+  ALERT_EMAIL_FROM?: string;
+  PUBLIC_SITE_URL?: string;
   PHASE2_ENABLED?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GA_PROPERTY_ID?: string;

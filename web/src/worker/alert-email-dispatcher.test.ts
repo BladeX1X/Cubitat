@@ -37,6 +37,38 @@ describe('dispatchPendingAlertEmails', () => {
     expect(String(fetchFn.mock.calls[3][1]?.body)).toContain('"email_delivery_status":"sent"')
   })
 
+  it('uses the DEV provider, sender and public URL when configured', async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{
+        id: 'notification-dev', user_id: 'user-dev', title: 'Nueva casa', message: 'Disponible', email_attempts: 1,
+      }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'user-dev', email: 'qa@example.com' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    await dispatchPendingAlertEmails({
+      ...env,
+      ALERT_EMAIL_PROVIDER_URL: 'http://127.0.0.1:8788/emails',
+      ALERT_EMAIL_FROM: 'Cubitat DEV <onboarding@resend.dev>',
+      PUBLIC_SITE_URL: 'http://localhost:5173',
+    }, fetchFn)
+
+    expect(fetchFn.mock.calls[2][0]).toBe('http://127.0.0.1:8788/emails')
+    const providerBody = String(fetchFn.mock.calls[2][1]?.body)
+    expect(providerBody).toContain('"from":"Cubitat DEV <onboarding@resend.dev>"')
+    expect(providerBody).toContain('http://localhost:5173/resultados')
+  })
+
+  it('returns an empty summary when Supabase is unavailable instead of rejecting the cron', async () => {
+    const fetchFn = vi.fn().mockRejectedValueOnce(new Error('network unavailable'))
+
+    await expect(dispatchPendingAlertEmails(env, fetchFn)).resolves.toEqual({
+      scanned: 0,
+      sent: 0,
+      failed: 0,
+    })
+  })
+
   it('records a terminal failure on the third attempt without returning sensitive data', async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([{

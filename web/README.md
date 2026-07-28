@@ -136,6 +136,33 @@ No usar este script hasta verificar `cubitat.com` o `mail.cubitat.com` en Resend
 
 Importante: no guardar `RESEND_API_KEY` real en el repositorio.
 
+### Alertas de búsqueda por correo (Fase 2, solo DEV)
+
+El Cron Worker reclama alertas pendientes desde Supabase y las entrega mediante
+la API de Resend. Para probarlo en DEV se requieren bindings separados de
+producción:
+
+- `VITE_SUPABASE_URL`: URL del proyecto Supabase DEV accesible por el Worker.
+- `SUPABASE_SERVICE_ROLE_KEY`: secreto del proyecto Supabase DEV.
+- `RESEND_API_KEY`: secreto de Resend limitado a pruebas.
+- `ALERT_EMAIL_FROM`: remitente DEV, por ejemplo
+  `Cubitat DEV <onboarding@resend.dev>` mientras no exista un dominio verificado.
+- `PUBLIC_SITE_URL`: URL pública que se incluirá en el correo.
+- `ALERT_EMAIL_PROVIDER_URL`: opcional; permite usar un capturador HTTP local.
+
+El entorno `dev` de `wrangler.jsonc` conserva intencionalmente
+`https://dev-supabase.invalid` como marcador seguro. No desplegar el Cron hasta
+reemplazarlo por un proyecto DEV real; nunca apuntarlo al Supabase productivo
+para validar Fase 2. Los secretos se cargan mediante `.dev.vars.dev` en local o
+`wrangler secret put <NOMBRE> --env dev` en Cloudflare, y no se versionan.
+
+Prueba local del handler programado:
+
+```powershell
+npx wrangler dev --env dev --test-scheduled
+Invoke-WebRequest "http://localhost:8787/cdn-cgi/handler/scheduled?format=json"
+```
+
 ## Login social con Google
 
 El boton de Google del modal de login ya esta conectado a Supabase OAuth. Para terminar la activacion hay que crear el OAuth Client en Google Cloud Console y pegar `Client ID` / `Client Secret` en:
