@@ -139,6 +139,28 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-28 19:22 — Codex — Purga KYC verificada contra Storage local real
+
+- Prueba integral ejecutada desde `supabase_network_web` con el Worker real
+  compilado desde `dev`, dos usuarios sintéticos, dos solicitudes KYC y cuatro
+  objetos WebP temporales en el bucket privado `kyc_documents`.
+- Las fechas programadas resultaron correctas: 24 horas para `approved` y
+  1 hora para `rejected`. Antes del vencimiento, el Worker devolvió
+  `claimed: 0`, `purged: 0`, `failed: 0`.
+- Tras adelantar exclusivamente las fechas de los fixtures, el Worker devolvió
+  `claimed: 2`, `purged: 2`, `failed: 0`; Storage quedó sin los cuatro objetos
+  sintéticos y ambas filas conservaron auditoría con rutas `NULL`, fecha de
+  purga y un intento.
+- Limpieza confirmada: 0 usuarios sintéticos, 0 solicitudes sintéticas y
+  0 objetos sintéticos residuales. El estado previo local se preservó en
+  1 solicitud pendiente y 2 objetos ajenos a esta prueba; no existe ninguna
+  purga vencida.
+- Hallazgo de entorno: el port-forward de Windows hacia `127.0.0.1:54321`
+  reinició conexiones durante la prueba, aunque Kong estaba sano dentro de
+  Docker. La validación se ejecutó dentro de la red local sin reiniciar
+  contenedores ni modificar permisos. Producción y Worker remoto permanecieron
+  intactos.
+
 ### 2026-07-28 12:15 — Codex — Retención KYC rechazada de 1 hora
 
 - Decisión de producto: evidencias aprobadas conservan la ventana de 24 horas;
