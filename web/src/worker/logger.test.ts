@@ -37,4 +37,15 @@ describe('logWorkerEvent', () => {
     expect(info).toHaveBeenCalledWith({ event: 'auth_rate_limit_blocked' })
     info.mockRestore()
   })
+
+  it('allows KYC retention events without paths or request identifiers', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    logWorkerEvent('warn', 'kyc_evidence_retention_partial_failure')
+
+    expect(warn).toHaveBeenCalledWith({
+      event: 'kyc_evidence_retention_partial_failure',
+    })
+    warn.mockRestore()
+  })
 })

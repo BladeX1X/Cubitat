@@ -290,6 +290,55 @@ local usa DEV-F2.3, que exige `verification_status = 'verified'`.
   `phase2_local_security: ok` y `ROLLBACK`; la UI y repositorios quedaron
   cubiertos por la puerta de 82 archivos y 317 pruebas.
 
+### DEV-F2.5. `dev-migrations/20260801005000_kyc_evidence_retention.sql`
+
+- **Estado 2026-07-28**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de la cadena
+  productiva.
+- Al aprobar una solicitud programa `evidence_purge_after` exactamente 24 horas
+  después. El Cron DEV puede ejecutarla en su siguiente intervalo de 15
+  minutos.
+- `claim_approved_kyc_evidence_for_purge(integer)` reclama trabajos con
+  `FOR UPDATE SKIP LOCKED`, recupera reclamos abandonados después de 30 minutos
+  y está reservada a `service_role`.
+- El Worker elimina documento y selfie mediante la API oficial de Storage. Solo
+  después llama `complete_kyc_evidence_purge(uuid)`, que comprueba que los
+  objetos ya no existan antes de poner ambas rutas en `NULL` y registrar
+  `evidence_purged_at`.
+- Un fallo de Storage conserva las rutas y libera el reclamo; un fallo posterior
+  se recupera por expiración sin registrar IDs, rutas, credenciales ni errores
+  externos.
+- Se conserva únicamente el registro mínimo: solicitud, usuario, tipo, estado y
+  fechas. La ventana para solicitudes rechazadas se añade después en DEV-F2.6.
+- Evidencia local: matriz SQL completa con aislamiento de roles, ventana de 24
+  horas, reclamo atómico y protección contra completar antes de Storage;
+  resultado `phase2_local_security: ok` y `ROLLBACK`. Gate: lint limpio,
+  83 archivos/326 pruebas y build TypeScript/Vite/PWA correcto con 473 URLs;
+  dry-run de Wrangler DEV correcto, sin despliegue remoto.
+- **Prohibido**: no aplicar esta migración ni desplegar el Cron actualizado en
+  producción sin autorización expresa posterior.
+
+### DEV-F2.6. `dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql`
+
+- **Estado 2026-07-28**: aplicada y verificada únicamente en
+  `supabase_db_web`; incremental sobre DEV-F2.5 y fuera de la cadena productiva.
+- Mantiene 24 horas para solicitudes `approved` y programa una hora para
+  solicitudes `rejected`.
+- Reemplaza el reclamo exclusivo de aprobadas por
+  `claim_kyc_evidence_for_purge(integer)`, que procesa ambos estados con
+  `FOR UPDATE SKIP LOCKED`, lease de 30 minutos y acceso exclusivo de
+  `service_role`.
+- Reutiliza la eliminación por API de Storage, la comprobación de ausencia
+  física antes de poner rutas en `NULL` y los reintentos seguros de DEV-F2.5.
+- Evidencia: la matriz local confirmó que un rechazo reciente no se reclama y
+  que queda elegible al superar una hora, sin alterar la ventana aprobada.
+  Resultado `phase2_local_security: ok` y `ROLLBACK`. Gate: lint limpio,
+  83 archivos/327 pruebas, build PWA con 473 URLs y Wrangler DEV dry-run
+  correcto.
+- Trust Score y Web Push permanecen diferidos por decisión de producto.
+- **Prohibido**: no aplicar ni desplegar esta retención en producción sin
+  autorización expresa posterior.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
