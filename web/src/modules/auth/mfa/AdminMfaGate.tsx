@@ -1,7 +1,12 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
-import { getAdminMfaStatus, startTotpEnrollment, verifyTotp } from './mfaService'
+import {
+  getAdminMfaStatus,
+  MfaVerificationError,
+  startTotpEnrollment,
+  verifyTotp,
+} from './mfaService'
 
 type GateState = 'loading' | 'allowed' | 'setup' | 'challenge' | 'enrolling' | 'error'
 
@@ -11,6 +16,20 @@ type AdminMfaGateProps = {
 function qrSource(value: string) {
   if (value.startsWith('data:')) return value
   return `data:image/svg+xml;utf-8,${encodeURIComponent(value)}`
+}
+
+function verificationFailureMessage(error: unknown) {
+  if (error instanceof MfaVerificationError) {
+    if (error.reason === 'session_expired') {
+      return 'Tu sesión expiró. Inicia sesión nuevamente para verificar el segundo factor.'
+    }
+
+    if (error.reason === 'invalid_code') {
+      return 'El código no es válido o expiró. Usa el código actual e intenta de nuevo.'
+    }
+  }
+
+  return 'No pudimos verificar el código. Revisa tu conexión e intenta de nuevo.'
 }
 
 export function AdminMfaGate({ children }: AdminMfaGateProps) {
@@ -72,8 +91,8 @@ export function AdminMfaGate({ children }: AdminMfaGateProps) {
       setCode('')
       setQrCode(null)
       await loadStatus()
-    } catch {
-      setMessage('El código no es válido o expiró. Usa el código actual e intenta de nuevo.')
+    } catch (error) {
+      setMessage(verificationFailureMessage(error))
     }
   }
 
