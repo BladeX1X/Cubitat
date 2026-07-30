@@ -78,6 +78,75 @@ describe('AdminMfaGate', () => {
     expect(await screen.findByText('Contenido administrativo')).toBeInTheDocument()
   })
 
+  it('explica que la sesión expiró cuando Supabase ya no reconoce la sesión MFA', async () => {
+    getAal.mockResolvedValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    })
+    listFactors.mockResolvedValue({
+      data: { all: [{ id: 'factor-1', factor_type: 'totp', status: 'verified' }], totp: [{ id: 'factor-1' }] },
+      error: null,
+    })
+    challengeAndVerify.mockResolvedValue({
+      data: null,
+      error: { code: 'session_not_found', message: 'Session not found', status: 403 },
+    })
+
+    render(<AdminMfaGate><div>Contenido administrativo</div></AdminMfaGate>)
+    fireEvent.change(await screen.findByLabelText(/código de 6 dígitos/i), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: /verificar y entrar/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Tu sesión expiró. Inicia sesión nuevamente para verificar el segundo factor.',
+    )
+  })
+
+  it('mantiene el mensaje específico cuando el código TOTP es inválido', async () => {
+    getAal.mockResolvedValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    })
+    listFactors.mockResolvedValue({
+      data: { all: [{ id: 'factor-1', factor_type: 'totp', status: 'verified' }], totp: [{ id: 'factor-1' }] },
+      error: null,
+    })
+    challengeAndVerify.mockResolvedValue({
+      data: null,
+      error: { code: 'mfa_verification_failed', message: 'Invalid TOTP code', status: 422 },
+    })
+
+    render(<AdminMfaGate><div>Contenido administrativo</div></AdminMfaGate>)
+    fireEvent.change(await screen.findByLabelText(/código de 6 dígitos/i), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: /verificar y entrar/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'El código no es válido o expiró. Usa el código actual e intenta de nuevo.',
+    )
+  })
+
+  it('distingue un fallo de servicio o red de un código TOTP inválido', async () => {
+    getAal.mockResolvedValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    })
+    listFactors.mockResolvedValue({
+      data: { all: [{ id: 'factor-1', factor_type: 'totp', status: 'verified' }], totp: [{ id: 'factor-1' }] },
+      error: null,
+    })
+    challengeAndVerify.mockResolvedValue({
+      data: null,
+      error: { code: 'unexpected_failure', message: 'Failed to fetch', status: 503 },
+    })
+
+    render(<AdminMfaGate><div>Contenido administrativo</div></AdminMfaGate>)
+    fireEvent.change(await screen.findByLabelText(/código de 6 dígitos/i), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: /verificar y entrar/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No pudimos verificar el código. Revisa tu conexión e intenta de nuevo.',
+    )
+  })
+
   it('crea el enrolamiento solo tras confirmación explícita y limpia factores abandonados', async () => {
     getAal.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
     listFactors.mockResolvedValue({

@@ -139,6 +139,27 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-07-30 — Codex — Errores MFA administrativos diferenciados
+
+- Estado: **corregido y verificado exclusivamente en DEV/local**.
+- Causa raíz observada en Supabase Auth: `AdminMfaGate` mostraba siempre
+  “código no válido” porque `mfaService.verifyTotp()` descartaba `error.code` y
+  lanzaba un error genérico, incluso cuando Auth respondía
+  `session_not_found` antes de validar el TOTP.
+- Corrección: el servicio conserva únicamente una categoría segura
+  (`session_expired`, `invalid_code` o `unavailable`) sin exponer mensajes,
+  tokens ni cuerpos crudos de Supabase. La interfaz muestra instrucciones
+  específicas para volver a iniciar sesión, usar el código actual o revisar la
+  conexión.
+- Regresión: `AdminMfaGate.test.tsx` cubre sesión inexistente, TOTP inválido y
+  fallo de servicio/red, además del acceso AAL2 válido y el enrolamiento.
+- Calidad: lint limpio, 83 archivos/330 pruebas aprobadas y build
+  TypeScript/Vite/PWA correcto con 45 entradas de precache y 473 URLs. El
+  sitemap generado se restauró al estado previo porque no hubo cambios de
+  rutas.
+- Alcance: no se introdujo el TOTP del usuario, no se revisó la solicitud KYC y
+  no se consultó ni modificó producción.
+
 ### 2026-07-28 19:22 — Codex — Purga KYC verificada contra Storage local real
 
 - Prueba integral ejecutada desde `supabase_network_web` con el Worker real
