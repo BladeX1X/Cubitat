@@ -674,6 +674,11 @@ export function CubitatApp() {
     navigateHome()
   }
 
+  async function handleExpiredAdminSession() {
+    await handleSignOut()
+    window.setTimeout(openLogin, 0)
+  }
+
   function navigateEditProperty(propertyId: string) {
     window.history.pushState(null, '', `/editar/${propertyId}`)
     setEditPropertyId(propertyId)
@@ -1049,7 +1054,11 @@ export function CubitatApp() {
         )}
 
         {pageMode === 'moderar' && (
-          <AdminPage userRole={userRole} onNavigateHome={navigateHome} />
+          <AdminPage
+            userRole={userRole}
+            onNavigateHome={navigateHome}
+            onSessionExpired={handleExpiredAdminSession}
+          />
         )}
 
         {pageMode === 'privacy' && (

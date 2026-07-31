@@ -123,6 +123,15 @@ El sistema MUST exigir TOTP verificado y una sesion `aal2` antes de abrir funcio
 - WHEN usa funciones propias de su cuenta
 - THEN el sistema MUST NOT exigir MFA administrativo
 
+#### Scenario: Sesión expirada durante el desafío administrativo
+- GIVEN un administrador intenta verificar TOTP y Supabase responde que la sesión ya no existe
+- WHEN la interfaz muestra el estado de sesión expirada
+- THEN MUST ocultar el formulario TOTP que ya no puede completar la verificación
+- AND MUST ofrecer la acción "Cerrar sesión e iniciar nuevamente"
+- AND al confirmar MUST limpiar la sesión y la caché local mediante el flujo central de cierre
+- AND MUST regresar al inicio y abrir el login sin mostrar datos administrativos
+- AND si la recuperación falla MUST conservar el panel bloqueado y mostrar un error seguro
+
 ### Requirement: Modal de autenticacion reutilizable
 El sistema MUST usar el mismo flujo de login para acciones protegidas en cualquier modulo.
 

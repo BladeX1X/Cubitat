@@ -128,7 +128,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('debería renderizar la lista de propiedades pendientes de revisión por defecto', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
 
     // Debería cambiar la pestaña inicial a la lista
     await waitFor(() => {
@@ -137,13 +137,13 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('oculta KYC cuando Fase 2 está deshabilitada en producción', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} phaseTwoEnabled={false} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} phaseTwoEnabled={false} />)
     await screen.findByText('Panel de moderación')
     expect(screen.queryByRole('button', { name: 'KYC' })).not.toBeInTheDocument()
   })
 
   it('debería alternar a la pestaña de "Reportes" y listar las quejas activas', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
 
     // Hacer clic en la pestaña Reportes
@@ -158,7 +158,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('debería llamar a la acción de ocultar propiedad y resolver reporte al hacer clic en "Ocultar propiedad"', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
 
     // Cambiar a pestaña reportes
@@ -180,7 +180,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('debería descartar el reporte al hacer clic en "Descartar reporte"', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
 
     // Cambiar a pestaña reportes
@@ -204,7 +204,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       .mockResolvedValueOnce({ data: null, error: { message: 'Fallo temporal' } })
       .mockResolvedValueOnce({ data: databaseMetrics, error: null })
 
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
     fireEvent.click(screen.getByRole('button', { name: 'Métricas' }))
 
@@ -222,7 +222,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('abre la bitácora como una sección administrativa aislada', async () => {
-    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} />)
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
     fireEvent.click(screen.getByRole('button', { name: 'Bitácora' }))
 
