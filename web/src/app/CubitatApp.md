@@ -182,3 +182,14 @@ Verificacion reciente (2026-07-01):
 - Se retiro el banner/franja de `Verificar cuenta` del header movil y del layout de cuenta.
 - El panel de cuenta ya no debe usar `navigateHome` para acciones internas de regreso. El boton de cuenta usa `navigateAccount`, de modo que vuelve al inicio del panel y no a la portada publica.
 - El menu movil autenticado incluye `Cerrar sesion`; al cerrar sesion vuelve a `/` sin abrir el modal de login.
+
+## Recuperación de sesión MFA administrativa — 2026-07-30
+
+- `handleExpiredAdminSession` reutiliza `handleSignOut`, vuelve a `/` y abre el
+  login después de limpiar la sesión, la caché de propiedades y el borrador
+  legado de publicación.
+- `CubitatApp.test.tsx` monta el proveedor real del modal y simula la expiración
+  desde `AdminPage`; comprueba el orden del cierre y la limpieza, la navegación
+  al inicio y la reapertura del diálogo de autenticación.
+- La prueba no usa un TOTP real, no consulta KYC y no realiza llamadas a
+  Supabase.
