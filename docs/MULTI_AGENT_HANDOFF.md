@@ -158,6 +158,12 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   transformados 329 → 312, precache PWA 45 → 42 entradas y 1077.61 → 1045.01
   KiB; `AdminPage` bajó de 64.69 a 54.75 kB y el verificador confirmó la
   ausencia de los tres módulos exclusivos.
+- QA navegador DEV/local: Supabase Auth local respondió HTTP 200; el perfil
+  sintético `/agente/f3000000-0000-0000-0000-000000000001` cargó “Agente QA
+  Local” y una propiedad; `/panel-agente` anónimo volvió a `/` y abrió el login.
+  Los tres módulos exclusivos respondieron HTTP 200 desde Vite DEV y la consola
+  quedó con 0 errores/advertencias. La pestaña KYC AAL2 no se abrió porque la QA
+  con TOTP permanece diferida por decisión del usuario.
 - Alcance: no se modificaron datos, Supabase, KYC, Worker ni producción.
 
 ### 2026-07-30 — Codex — Recuperación accionable de sesión MFA expirada
