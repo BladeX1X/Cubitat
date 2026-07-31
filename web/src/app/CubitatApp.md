@@ -193,3 +193,12 @@ Verificacion reciente (2026-07-01):
   al inicio y la reapertura del diálogo de autenticación.
 - La prueba no usa un TOTP real, no consulta KYC y no realiza llamadas a
   Supabase.
+
+## Aislamiento del bundle de Fase 2 — 2026-07-31
+
+- `AgentProfilePage` y `AgentDashboardPage` se cargan de forma lazy únicamente
+  cuando `import.meta.env.DEV` es verdadero. Un build productivo ya no genera
+  sus chunks, aunque DEV/local conserva ambas rutas.
+- La moderación KYC aplica la misma frontera dentro de `AdminPage`.
+- El build ejecuta `verify-phase2-production-bundle.mjs` y falla si detecta los
+  chunks exclusivos o el marcador `review_kyc_request`.

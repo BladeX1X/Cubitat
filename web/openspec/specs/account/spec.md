@@ -43,6 +43,17 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - THEN el sistema MUST denegar el panel
 - AND MUST NOT cargar propiedades ni metricas privadas del agente
 
+### Requirement: Aislamiento físico de Fase 2
+El build productivo MUST excluir los módulos que solo existen en Fase 2 DEV.
+
+#### Scenario: Compilar para producción
+- GIVEN Fase 2 solo está habilitada en el servidor Vite DEV con Supabase local
+- WHEN se genera el build productivo
+- THEN MUST NOT incluir los chunks de panel o perfil público de agente
+- AND MUST NOT incluir el repositorio ni la interfaz de moderación KYC
+- AND el build MUST fallar si cualquiera de esos módulos vuelve a aparecer
+- AND DEV MUST conservar las mismas rutas y capacidades para pruebas locales
+
 ### Requirement: Informacion de usuario
 El sistema MUST permitir revisar y mantener datos basicos del perfil.
 

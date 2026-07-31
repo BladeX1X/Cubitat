@@ -111,6 +111,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | Q. Recuperación MFA administrativa | Terminado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`. Simulacro no destructivo completado el 2026-07-21: contratos de SDK y API Admin validados, 8/8 pruebas de regresión aprobadas y 0 factores modificados. |
 | R. Logs seguros del frontend | Terminado | Codex | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
 | S. Recuperación de sesión MFA expirada | Terminado | Codex | Implementación y regresiones completas en DEV/local: tras `session_not_found` se oculta el desafío obsoleto, se ofrece cerrar sesión e iniciar nuevamente y se mantiene el guard bloqueado ante fallos. La integración de `CubitatApp` confirma cierre, limpieza, inicio y login; QA visual autenticada diferida por decisión del usuario. |
+| T. Aislamiento físico del bundle Fase 2 | Terminado | Codex | El build productivo excluye los chunks de panel/perfil de agente y el módulo de moderación KYC; DEV/local conserva las capacidades y una verificación automática bloquea regresiones. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -139,6 +140,25 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 9. Al cerrar el carril, añadir una entrada al registro de relevo de abajo.
 
 ## Registro de relevo
+
+### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
+
+- Estado: **terminado y verificado en build local de producción; listo para
+  publicar en `dev`**.
+- Causa: las capacidades estaban correctamente bloqueadas por la bandera, pero
+  Vite aún generaba chunks para `AgentDashboardPage`, `AgentProfilePage` y
+  empaquetaba `review_kyc_request` dentro de `AdminPage`.
+- Corrección: las tres superficies usan imports lazy detrás de
+  `import.meta.env.DEV`; producción puede eliminarlas por tree shaking y
+  DEV/local conserva las rutas y KYC.
+- Regresión: `verify-phase2-production-bundle.mjs` falla si reaparecen los
+  chunks exclusivos o el marcador de la RPC KYC. La reproducción inicial falló
+  con los tres hallazgos y el build corregido pasó.
+- Evidencia: lint limpio, 84 archivos/333 pruebas y build aprobados. Módulos
+  transformados 329 → 312, precache PWA 45 → 42 entradas y 1077.61 → 1045.01
+  KiB; `AdminPage` bajó de 64.69 a 54.75 kB y el verificador confirmó la
+  ausencia de los tres módulos exclusivos.
+- Alcance: no se modificaron datos, Supabase, KYC, Worker ni producción.
 
 ### 2026-07-30 — Codex — Recuperación accionable de sesión MFA expirada
 

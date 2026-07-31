@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Building2, Loader2 } from 'lucide-react'
 import { MetricsTab } from '../../modules/admin/metrics/MetricsTab'
 import { PropertiesTab } from '../../modules/admin/properties/PropertiesTab'
 import { ReportsTab } from '../../modules/admin/reports/ReportsTab'
 import { AuditLogTab } from '../../modules/admin/audit-log/AuditLogTab'
-import { KycModerationTab } from '../../modules/admin/kyc/KycModerationTab'
 import { AdminMfaGate } from '../../modules/auth/mfa/AdminMfaGate'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -25,6 +24,14 @@ const BASE_SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'metrics', label: 'Métricas' },
 ]
 
+const KycModerationTab = import.meta.env.DEV
+  ? lazy(() =>
+      import('../../modules/admin/kyc/KycModerationTab').then((module) => ({
+        default: module.KycModerationTab,
+      })),
+    )
+  : null
+
 export function AdminPage({
   userRole,
   onNavigateHome,
@@ -34,7 +41,8 @@ export function AdminPage({
   useSEO({ title: 'Panel de Administración' })
 
   const [activeSection, setActiveSection] = useState<AdminSection>('properties')
-  const sections = phaseTwoEnabled
+  const hasPhaseTwoAdmin = phaseTwoEnabled && KycModerationTab !== null
+  const sections = hasPhaseTwoAdmin
     ? [...BASE_SECTIONS.slice(0, 2), { id: 'kyc' as const, label: 'KYC' }, ...BASE_SECTIONS.slice(2)]
     : BASE_SECTIONS
 
@@ -101,7 +109,11 @@ export function AdminPage({
 
         {activeSection === 'properties' && <PropertiesTab />}
         {activeSection === 'reports' && <ReportsTab />}
-        {phaseTwoEnabled && activeSection === 'kyc' && <KycModerationTab />}
+        {hasPhaseTwoAdmin && activeSection === 'kyc' && (
+          <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}>
+            <KycModerationTab />
+          </Suspense>
+        )}
         {activeSection === 'metrics' && <MetricsTab />}
         {activeSection === 'audit' && <AuditLogTab />}
       </div>
