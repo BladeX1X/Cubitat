@@ -41,12 +41,16 @@ const MyPropertiesPage = lazy(() =>
   import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
 )
 
-const AgentProfilePage = lazy(() =>
-  import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
-)
-const AgentDashboardPage = lazy(() =>
-  import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
-)
+const AgentProfilePage = import.meta.env.DEV
+  ? lazy(() =>
+      import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
+    )
+  : null
+const AgentDashboardPage = import.meta.env.DEV
+  ? lazy(() =>
+      import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
+    )
+  : null
 const FavoritesPage = lazy(() =>
   import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -935,7 +939,7 @@ export function CubitatApp() {
           />
         )}
 
-        {PHASE_TWO_ENABLED && pageMode === 'agent-profile' && selectedAgentId && (
+        {PHASE_TWO_ENABLED && AgentProfilePage && pageMode === 'agent-profile' && selectedAgentId && (
           <AgentProfilePage
             agentId={selectedAgentId}
             onBack={() => {
@@ -1009,7 +1013,7 @@ export function CubitatApp() {
           />
         )}
 
-        {PHASE_TWO_ENABLED && pageMode === 'agent-dashboard' && user && (
+        {PHASE_TWO_ENABLED && AgentDashboardPage && pageMode === 'agent-dashboard' && user && (
           <AgentDashboardPage
             user={user}
             onNavigateAccount={navigateAccount}
