@@ -110,6 +110,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Terminado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`. Simulacro no destructivo completado el 2026-07-21: contratos de SDK y API Admin validados, 8/8 pruebas de regresión aprobadas y 0 factores modificados. |
 | R. Logs seguros del frontend | Terminado | Codex | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
+| S. Recuperación de sesión MFA expirada | En curso | Codex | Implementación y regresiones completas en DEV/local: tras `session_not_found` se oculta el desafío obsoleto, se ofrece cerrar sesión e iniciar nuevamente y se mantiene el guard bloqueado ante fallos. Falta QA visual autenticada porque Chrome no cedió el control de la pestaña. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -138,6 +139,28 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 9. Al cerrar el carril, añadir una entrada al registro de relevo de abajo.
 
 ## Registro de relevo
+
+### 2026-07-30 — Codex — Recuperación accionable de sesión MFA expirada
+
+- Estado: **implementado y verificado automáticamente en DEV/local; QA visual
+  autenticada pendiente**.
+- Flujo: ante `session_not_found`, `AdminMfaGate` descarta el factor, el código
+  introducido y cualquier QR de enrolamiento obsoleto; oculta el formulario y
+  ofrece “Cerrar sesión e iniciar nuevamente”.
+- Recuperación: `CubitatApp` reutiliza el cierre central de sesión, limpia el
+  estado local, navega al inicio y abre el login. Si el cierre falla, el guard
+  permanece bloqueado, permite reintentar y no expone el error crudo.
+- Regresión: 17 pruebas focales aprobadas, incluida la expiración durante el
+  enrolamiento. El ciclo obligatorio terminó con lint limpio, 83 archivos/332
+  pruebas y build TypeScript/Vite/PWA correcto con 45 entradas de precache y
+  473 URLs. El sitemap generado se restauró porque no cambiaron las rutas.
+- Navegador: el servidor local respondió HTTP 200. La sesión del navegador
+  integrado era anónima; la pestaña Chrome autenticada de `/moderar` existía,
+  pero dos intentos de control agotaron el tiempo de espera. No se introdujo
+  ningún TOTP, no se consultó KYC y no se tocó producción.
+- Cierre pendiente observable: recuperar el control de la pestaña Chrome,
+  reproducir `session_not_found`, comprobar que aparece la acción y que al
+  pulsarla se abre el login sin mostrar el desafío anterior.
 
 ### 2026-07-30 — Codex — Errores MFA administrativos diferenciados
 

@@ -44,6 +44,9 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 7. El boton `Ingresar` abre `LoginModal`.
 8. Cuando hay sesion activa, el Header muestra campanita de notificaciones y `UserMenu`.
 9. `UserMenu` permite navegar a `Mi cuenta`, `Favoritos`, `Ver mis contenidos` y ejecutar `Cerrar sesion`.
+10. Si Supabase invalida la sesión durante el desafío MFA administrativo,
+    `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
+    `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.
 
 ## Decisiones de Implementacion
 
@@ -57,6 +60,10 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - El login esta fuera del flujo de scroll y se renderiza como modal.
 - Las rutas privadas (`/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`) abren login y vuelven a portada si no hay usuario.
 - `Favoritos` reutiliza `saved_properties` y las tarjetas oficiales para no duplicar logica visual.
+- La recuperación de una sesión MFA expirada permanece centralizada:
+  `AdminPage` no cierra sesiones ni consulta Auth; únicamente propaga el
+  callback hasta el guard. El cierre limpia la caché offline y el borrador
+  legado antes de volver a abrir el login.
 
 ## Pendientes
 

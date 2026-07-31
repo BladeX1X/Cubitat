@@ -10,6 +10,18 @@ El guard principal de ruta sigue en `CubitatApp`; el guard de esta página se
 mantiene como segunda barrera visual. La autorización efectiva continúa
 dependiendo de las políticas RLS y de las funciones administrativas del backend.
 
+## Recuperación de sesión MFA expirada
+
+`AdminMfaGate` distingue `session_not_found` de un TOTP inválido. Cuando la
+sesión ya no existe, oculta el formulario que no puede completarse y muestra
+`Cerrar sesión e iniciar nuevamente`.
+
+La acción no accede directamente a Supabase desde `AdminPage`: propaga
+`onSessionExpired` hasta `CubitatApp`, que reutiliza el cierre central para
+limpiar Auth, caché offline y borrador legado, volver a `/` y abrir el login.
+Si el callback falla, el guard permanece bloqueado, no muestra datos
+administrativos y ofrece reintentar con un mensaje seguro.
+
 ## Módulos
 
 Cada capacidad vive bajo `src/modules/admin`:
@@ -71,3 +83,6 @@ La regresión de aislamiento comprueba además que KYC no aparece cuando Fase 2
 está deshabilitada. El 2026-07-23 el build de producción de
 `bugfix/phase2-security-integration` compiló el flag como `false`; la promoción
 a `main` y la verificación en `cubitathome.com` permanecen pendientes.
+`AdminMfaGate.test.tsx` cubre también que una sesión expirada oculte el
+formulario, ejecute el callback de recuperación y mantenga el guard bloqueado
+si ese cierre falla.

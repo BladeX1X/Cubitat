@@ -14,6 +14,7 @@ import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 type AdminPageProps = {
   userRole?: string
   onNavigateHome: () => void
+  onSessionExpired: () => Promise<void> | void
   phaseTwoEnabled?: boolean
 }
 
@@ -24,7 +25,12 @@ const BASE_SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'metrics', label: 'Métricas' },
 ]
 
-export function AdminPage({ userRole, onNavigateHome, phaseTwoEnabled = PHASE_TWO_ENABLED }: AdminPageProps) {
+export function AdminPage({
+  userRole,
+  onNavigateHome,
+  onSessionExpired,
+  phaseTwoEnabled = PHASE_TWO_ENABLED,
+}: AdminPageProps) {
   useSEO({ title: 'Panel de Administración' })
 
   const [activeSection, setActiveSection] = useState<AdminSection>('properties')
@@ -61,7 +67,7 @@ export function AdminPage({ userRole, onNavigateHome, phaseTwoEnabled = PHASE_TW
   }
 
   return (
-    <AdminMfaGate>
+    <AdminMfaGate onSessionExpired={onSessionExpired}>
       <div className="mx-auto max-w-5xl px-4 py-8">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
