@@ -36,16 +36,8 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
-  it('does not schedule Phase 2 jobs in the production environment', () => {
-    const context = createContext()
-    worker.scheduled({}, createEnv(), context)
-    expect(context.waitUntil).not.toHaveBeenCalled()
-  })
-
-  it('allows the Phase 2 scheduler only in the dev environment', () => {
-    const context = createContext()
-    worker.scheduled({}, { ...createEnv(), PHASE2_ENABLED: 'true' }, context)
-    expect(context.waitUntil).toHaveBeenCalledTimes(1)
+  it('does not expose a scheduler from the production worker', () => {
+    expect('scheduled' in worker).toBe(false)
   })
 
   it('reads realtime GA4 active users with service-account credentials', async () => {
@@ -458,8 +450,8 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(allowedResponse.status).toBe(200)
-    expect(publicProfileResponse.status).toBe(200)
-    expect(kycResponse.status).toBe(200)
+    expect(publicProfileResponse.status).toBe(403)
+    expect(kycResponse.status).toBe(403)
     expect(blockedResponse.status).toBe(403)
   })
 

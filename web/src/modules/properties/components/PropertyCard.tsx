@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
   Bath,
   BedDouble,
@@ -25,8 +25,13 @@ import {
   optimizePropertyCardImage,
   PROPERTY_IMAGE_FALLBACK,
 } from '../utils/images'
-import { VerificationBadge } from '../../kyc/components/VerificationBadge'
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
+
+const VerificationBadge = import.meta.env.DEV
+  ? lazy(() => import('../../kyc/components/VerificationBadge').then((module) => ({
+      default: module.VerificationBadge,
+    })))
+  : null
 
 type PropertyCardProps = {
   property: Property
@@ -192,9 +197,11 @@ export function PropertyCard({
               {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
             </span>
           </div>
-          {PHASE_TWO_ENABLED && property.isVerifiedAgent && (
-            <VerificationBadge status="verified" compact />
-          )}
+          {PHASE_TWO_ENABLED && VerificationBadge && property.isVerifiedAgent ? (
+            <Suspense fallback={null}>
+              <VerificationBadge status="verified" compact />
+            </Suspense>
+          ) : null}
         </div>
 
         {/* Row 2: Price */}

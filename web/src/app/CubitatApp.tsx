@@ -20,7 +20,10 @@ import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
-import { fetchVerifiedAgentIds } from '../modules/agents/agentRepository'
+
+const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
+  ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
+  : null
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -338,8 +341,8 @@ export function CubitatApp() {
             .from('properties')
             .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
             .eq('status', 'published'),
-          PHASE_TWO_ENABLED
-            ? fetchVerifiedAgentIds().catch(() => new Set<string>())
+          PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
+            ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
             : Promise.resolve(new Set<string>()),
         ])
         
@@ -415,8 +418,8 @@ export function CubitatApp() {
             .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
             .eq('id', selectedPropertyId)
             .single(),
-          PHASE_TWO_ENABLED
-            ? fetchVerifiedAgentIds().catch(() => new Set<string>())
+          PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
+            ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
             : Promise.resolve(new Set<string>()),
         ])
 

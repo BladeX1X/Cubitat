@@ -1939,3 +1939,31 @@ sensibles en los logs migrados, pruebas nuevas aprobadas, gate completo, PR
 fusionado, versión productiva identificada, navegación/consola verificadas y
 documentación del repositorio y vault actualizada. Si queda un módulo sin
 auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
+
+## 2026-07-31 — Codex — Frontera física Fase 2 / producción (implementado en rama)
+
+- Rama: `bugfix/phase2-release-boundary-hardening`; no desplegada ni fusionada.
+- Frontend productivo: la UI de cuenta KYC/rol vive en
+  `AccountPhaseTwoSections.tsx` y solo se importa con `import.meta.env.DEV`.
+  Perfil público, panel, insignias, repositorio de agentes y métricas de clic
+  siguen disponibles en DEV, pero no se generan como chunks de producción.
+- Worker productivo: `src/worker.ts` ya no importa jobs de alertas/retención, no
+  expone `scheduled` y solo permite RPC de Fase 1. Fase 2 usa el entrypoint
+  separado `src/worker-phase2-dev.ts` y `wrangler.phase2-dev.jsonc`.
+- Guardas automáticas: el build inspecciona tanto los assets Vite como el bundle
+  real generado por `wrangler deploy --dry-run`, y falla ante RPC o jobs de
+  Fase 2. Las pruebas de aislamiento también verifican que la capacidad siga en
+  el entrypoint DEV.
+- Web Push: se retiró el prototipo sin consumidores; continúa expresamente
+  diferido y fuera del alcance actual, igual que Trust Score.
+- Verificación cerrada en local: lint limpio; 84 archivos/333 pruebas sin
+  avisos `act`; build Vite/PWA con 473 URLs; verificadores de bundles Vite y
+  Wrangler aprobados; dry-run del Worker DEV aprobado. Chrome confirmó el
+  perfil público del agente, KYC visible en la cuenta admin, selector y panel
+  ausentes para el rol admin, y consola con 0 errores/advertencias. No se
+  desplegó ni se consultó producción.
+- QA final 2026-08-01: con `QA Buyer Toggle` temporalmente en KYC verificado,
+  el navegador confirmó `buyer → agent → buyer` sin recarga, sin mensaje rojo
+  y con aparición/desaparición inmediata del panel. Un F5 normal conservó el
+  rol canónico; `user_metadata` permaneció sin copia del rol. La cuenta quedó
+  restaurada a `buyer/pending` y la consola terminó limpia.

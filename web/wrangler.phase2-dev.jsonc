@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": "src/worker-phase2-dev.ts",
+  "name": "cubitat1-phase2-dev",
+  "compatibility_date": "2026-07-03",
+  "workers_dev": true,
+  "routes": [],
+  "assets": {
+    "directory": "./dist/",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "PHASE2_ENABLED": "true",
+    "VITE_SUPABASE_URL": "https://dev-supabase.invalid",
+    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "RateLimiter"
+      }
+    ]
+  },
+  "exports": {
+    "RateLimiter": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": false
+    }
+  }
+}

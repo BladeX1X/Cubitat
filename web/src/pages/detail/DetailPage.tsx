@@ -46,12 +46,21 @@ import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
-import { trackContactClick } from '../../modules/properties/utils/contactTracking'
-import { fetchAgentProfile } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 import type { SearchFilters } from '../../modules/search/types'
+
+const trackContactClickInPhaseTwoDev = import.meta.env.DEV
+  ? (propertyId: string, channel: 'phone' | 'whatsapp') =>
+      import('../../modules/properties/utils/contactTracking')
+        .then((module) => module.trackContactClick(propertyId, channel))
+  : null
+
+const fetchAgentProfileInPhaseTwoDev = import.meta.env.DEV
+  ? (agentId: string) => import('../../modules/agents/agentRepository')
+      .then((module) => module.fetchAgentProfile(agentId))
+  : null
 
 type DetailPageProps = {
   property: Property
@@ -427,7 +436,9 @@ export function DetailPage({
                 type="button"
                 className="detail-desktop-secondary-cta"
                 onClick={() => {
-                  void trackContactClick(property.id, 'whatsapp')
+                  if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                    void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
+                  }
                   const phone = property.contact_info?.phone
                   if (phone) {
                     window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
@@ -714,7 +725,9 @@ export function DetailPage({
             href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
             aria-label="Llamar al anunciante"
             onClick={() => {
-              void trackContactClick(property.id, 'phone')
+              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                void trackContactClickInPhaseTwoDev(property.id, 'phone')
+              }
             }}
           >
             <Phone size={16} />
@@ -735,7 +748,9 @@ export function DetailPage({
           onClick={() => {
             const phone = property.contact_info?.phone
             if (phone) {
-              void trackContactClick(property.id, 'whatsapp')
+              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
+              }
               window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
             } else {
               scrollToContact()
@@ -1151,13 +1166,13 @@ function ContactCard({
   useEffect(() => {
     let active = true
     setAgentProfile(null)
-    if (!PHASE_TWO_ENABLED || !property.user_id) {
+    if (!PHASE_TWO_ENABLED || !fetchAgentProfileInPhaseTwoDev || !property.user_id) {
       return () => {
         active = false
       }
     }
 
-    fetchAgentProfile(property.user_id)
+    fetchAgentProfileInPhaseTwoDev(property.user_id)
       .then((profile) => {
         if (active) setAgentProfile(profile)
       })

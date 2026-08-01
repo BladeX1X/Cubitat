@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
-  BarChart3,
   Camera,
   Bell,
   Check,
@@ -12,7 +11,6 @@ import {
   Search,
   ShieldCheck,
   Trash2,
-  UserRound,
   XCircle,
 } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
@@ -27,10 +25,12 @@ import {
   validateImageDimensions,
   validateImageFile,
 } from '../../shared/lib/imageSecurity'
-import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
-import { KycSubmissionModal } from '../../modules/kyc/components/KycSubmissionModal'
-import type { VerificationStatus } from '../../modules/kyc/types'
-import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+
+const AccountPhaseTwoSections = import.meta.env.DEV
+  ? lazy(() => import('./AccountPhaseTwoSections').then((module) => ({
+      default: module.AccountPhaseTwoSections,
+    })))
+  : null
 
 type AccountPageProps = {
   user: User
@@ -88,9 +88,6 @@ export function AccountPage({
   ]
   const verifiedCount = verifiedItems.filter(Boolean).length
 
-  const [kycStatus, setKycStatus] = useState<VerificationStatus>('unverified')
-  const [kycReason, setKycReason] = useState<string | null>(null)
-  const [isKycModalOpen, setIsKycModalOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
   const activeProfileUserIdRef = useRef(user?.id)
   activeProfileUserIdRef.current = user?.id
@@ -107,7 +104,7 @@ export function AccountPage({
       if (!requestedUserId) return
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('role, full_name, phone, avatar_url, phone_verified_at')
         .eq('id', requestedUserId)
         .maybeSingle()
 
@@ -129,89 +126,14 @@ export function AccountPage({
       if (data.phone_verified_at) {
         setPhoneVerifiedAt(data.phone_verified_at)
       }
-      if (data.verification_status) {
-        setKycStatus(data.verification_status as VerificationStatus)
-      }
-      if (data.verification_reason) {
-        setKycReason(data.verification_reason)
-      }
     }
 
     loadProfile()
   }, [user?.id])
 
-  const [isSavingRole, setIsSavingRole] = useState(false)
-  const [roleMessage, setRoleMessage] = useState<string | null>(null)
-
-  async function handleSaveRole(targetMode: 'user' | 'agent') {
-    const dbRole = targetMode === 'agent' ? 'agent' : 'buyer'
-    if (isSavingRole) return
-    if (!userId) {
-      setRoleMessage('No se pudo identificar la sesión de usuario.')
-      return
-    }
-    if (!PHASE_TWO_ENABLED) {
-      setRoleMessage('El cambio de tipo de cuenta no está disponible en este entorno.')
-      return
-    }
-    setIsSavingRole(true)
-    setRoleMessage(null)
-
-    try {
-      const { data: currentProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, verification_status')
-        .eq('id', userId)
-        .single()
-
-      if (
-        profileError
-        || !currentProfile
-        || !['buyer', 'agent'].includes(currentProfile.role)
-      ) {
-        setRoleMessage('No se pudo validar el tipo de cuenta actual.')
-        return
-      }
-
-      const currentKycStatus = (currentProfile.verification_status || 'unverified') as VerificationStatus
-      setUserRole(currentProfile.role)
-      setKycStatus(currentKycStatus)
-
-      if (dbRole === 'agent' && currentKycStatus !== 'verified') {
-        setRoleMessage('Necesitas completar y aprobar la verificación de identidad (KYC) antes de activar el perfil de agente.')
-        return
-      }
-
-      if (currentProfile.role === dbRole) {
-        setRoleMessage('Tipo de cuenta actualizado correctamente.')
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ role: dbRole })
-        .eq('id', userId)
-        .select('role')
-        .single()
-
-      if (error || data?.role !== dbRole) {
-        setRoleMessage('No se pudo actualizar el tipo de cuenta.')
-      } else {
-        setUserRole(dbRole)
-        onRoleChange?.(dbRole)
-        setRoleMessage('Tipo de cuenta actualizado correctamente.')
-        logSafeEvent({
-          module: 'account',
-          action: 'update_role',
-          level: 'info',
-        })
-      }
-    } catch {
-      setRoleMessage('Ocurrió un error al guardar el tipo de perfil.')
-    } finally {
-      setIsSavingRole(false)
-    }
-  }
+  const handleResolvedRole = useCallback((nextRole: string) => {
+    setUserRole(nextRole)
+  }, [])
 
   async function handleSaveName() {
     const cleanName = (draftName || '').trim()
@@ -392,112 +314,17 @@ export function AccountPage({
               </section>
 
               <section className="grid gap-5 sm:gap-8">
-                {PHASE_TWO_ENABLED && (userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
-                  <section className="rounded-xl border border-[#035f53]/20 bg-emerald-50/60 p-4 shadow-sm sm:p-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#035f53] text-white flex items-center justify-center font-bold shrink-0">
-                          <BarChart3 size={20} />
-                        </div>
-                        <div>
-                          <h2 className="text-base font-bold text-neutral-900">Panel de Agente</h2>
-                          <p className="text-xs text-neutral-600">Revisa métricas acumuladas, leads estimados y gestiona la visibilidad de tus propiedades.</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={onNavigateAgentDashboard}
-                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold px-5 h-9 shrink-0 shadow-xs"
-                      >
-                        Ir al Panel de Agente
-                      </Button>
-                    </div>
-                  </section>
-                )}
-
-                {PHASE_TWO_ENABLED && (userRole === 'buyer' || userRole === 'agent') && (
-                <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-teal-50 text-[#035f53] flex items-center justify-center font-bold shrink-0">
-                      <UserRound size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-neutral-900">Tipo de Cuenta / Modalidad de Anuncio</h2>
-                      <p className="text-xs text-neutral-500">Selecciona cómo deseas anunciarte en Cubitat para adaptar tu experiencia.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handleSaveRole('user')}
-                      disabled={isSavingRole}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        userRole !== 'agent'
-                          ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
-                          : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
-                          🏠 Anunciante Particular
-                        </span>
-                        {userRole !== 'agent' && (
-                          <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2.5 py-0.5 rounded-full shadow-xs">
-                            Perfil Activo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-neutral-600 leading-normal">
-                        Publico propiedades personales o familiares de forma directa.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSaveRole('agent')}
-                      disabled={isSavingRole || kycStatus !== 'verified'}
-                      className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                        userRole === 'agent'
-                          ? 'bg-teal-50/90 border-[#035f53] ring-2 ring-[#035f53]/20'
-                          : kycStatus === 'verified'
-                            ? 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 cursor-pointer'
-                            : 'bg-neutral-100 border-neutral-200 opacity-70 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
-                          🏢 Agente / Inmobiliaria
-                        </span>
-                        {userRole === 'agent' && (
-                          <span className="text-[10px] font-extrabold bg-[#035f53] text-white px-2.5 py-0.5 rounded-full shadow-xs">
-                            Perfil Activo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-neutral-600 leading-normal">
-                        Gestiono un portafolio profesional de propiedades y contactos.
-                      </p>
-                      {kycStatus !== 'verified' && userRole !== 'agent' && (
-                        <p className="mt-2 text-[10px] font-bold text-amber-700">
-                          Requiere verificación de identidad (KYC) aprobada.
-                        </p>
-                      )}
-                    </button>
-                  </div>
-
-                  {roleMessage && (
-                    <p className={`text-xs font-semibold ${
-                      roleMessage.includes('correctamente')
-                        ? 'text-emerald-700'
-                        : roleMessage.includes('KYC')
-                          ? 'text-amber-700'
-                          : 'text-red-600'
-                    }`}>
-                      {roleMessage}
-                    </p>
-                  )}
-                </section>
-                )}
+                {AccountPhaseTwoSections ? (
+                  <Suspense fallback={null}>
+                    <AccountPhaseTwoSections
+                      userId={userId}
+                      userRole={userRole}
+                      onRoleChange={onRoleChange}
+                      onResolvedRole={handleResolvedRole}
+                      onNavigateAgentDashboard={onNavigateAgentDashboard}
+                    />
+                  </Suspense>
+                ) : null}
 
                 <VerificationCard
                   verifiedCount={verifiedCount}
@@ -505,62 +332,6 @@ export function AccountPage({
                   hasEmail={Boolean(email)}
                   hasVerifiedPhone={Boolean(phoneVerifiedAt)}
                 />
-
-                {PHASE_TWO_ENABLED && <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
-                        <ShieldCheck size={20} />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-bold text-neutral-900">Verificación de Identidad (KYC)</h2>
-                        <p className="text-xs text-neutral-500">Obtén la insignia oficial en tus publicaciones</p>
-                      </div>
-                    </div>
-                    <VerificationBadge status={kycStatus} />
-                  </div>
-
-                  {kycStatus === 'unverified' && (
-                    <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <p className="text-xs text-neutral-600">
-                        Sube tu documento de identidad y una foto tuya sosteniéndolo para verificar tu cuenta.
-                      </p>
-                      <Button
-                        onClick={() => setIsKycModalOpen(true)}
-                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold shrink-0"
-                      >
-                        Solicitar Verificación
-                      </Button>
-                    </div>
-                  )}
-
-                  {kycStatus === 'pending' && (
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
-                      <strong>Tus evidencias están en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
-                    </div>
-                  )}
-
-                  {kycStatus === 'verified' && (
-                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-xs text-emerald-800">
-                      <strong>¡Cuenta Verificada!</strong> Tu perfil cuenta con el distintivo oficial de confianza.
-                    </div>
-                  )}
-
-                  {kycStatus === 'rejected' && (
-                    <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-xs text-red-800 space-y-2">
-                      <p>
-                        <strong>Solicitud Rechazada:</strong> {kycReason || 'Las evidencias presentadas no pudieron validarse.'}
-                      </p>
-                      <Button
-                        onClick={() => setIsKycModalOpen(true)}
-                        variant="outline"
-                        className="rounded-full text-xs font-bold border-red-200 text-red-700 bg-white"
-                      >
-                        Reenviar evidencias
-                      </Button>
-                    </div>
-                  )}
-                </section>}
 
                 <SearchAlertsCard
                   alerts={searchAlerts}
@@ -627,15 +398,6 @@ export function AccountPage({
               </section>
             </div>
 
-      {PHASE_TWO_ENABLED && <KycSubmissionModal
-        userId={userId}
-        isOpen={isKycModalOpen}
-        onClose={() => setIsKycModalOpen(false)}
-        onSuccess={() => {
-          setKycStatus('pending')
-          setKycReason(null)
-        }}
-      />}
     </AccountLayout>
   )
 }

@@ -51,6 +51,8 @@ El build productivo MUST excluir los módulos que solo existen en Fase 2 DEV.
 - WHEN se genera el build productivo
 - THEN MUST NOT incluir los chunks de panel o perfil público de agente
 - AND MUST NOT incluir el repositorio ni la interfaz de moderación KYC
+- AND el Worker productivo MUST NOT incluir RPC, Cron, retención ni correo de Fase 2
+- AND DEV MUST usar un entrypoint y una configuración Wrangler físicamente separados
 - AND el build MUST fallar si cualquiera de esos módulos vuelve a aparecer
 - AND DEV MUST conservar las mismas rutas y capacidades para pruebas locales
 
