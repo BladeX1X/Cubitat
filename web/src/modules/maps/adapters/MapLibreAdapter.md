@@ -15,3 +15,4 @@
 5. **Interacción:** Hacer click en un cluster acerca el mapa hasta expandirlo. Hacer click en una propiedad individual dispara `onSelectProperty`.
 6. **UI:** El encabezado flotante del mapa fue retirado para dejar el área del mapa limpia.
 7. **Limpieza:** Al desmontarse, se llama a `map.remove()` para liberar WebGL y listeners internos.
+8. **Coordenadas defensivas:** Normaliza tanto `latitude/longitude` como el formato legado `lat/lng` y omite de la fuente GeoJSON cualquier coordenada no finita o fuera de rango para que una fila defectuosa no derribe resultados.

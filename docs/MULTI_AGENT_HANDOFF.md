@@ -1967,3 +1967,28 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   y con aparición/desaparición inmediata del panel. Un F5 normal conservó el
   rol canónico; `user_metadata` permaneció sin copia del rol. La cuenta quedó
   restaurada a `buyer/pending` y la consola terminó limpia.
+
+## 2026-08-01 — Codex — Resultados: coordenadas inválidas no derriban MapLibre
+
+- Rama: `bugfix/map-invalid-coordinates`; parte de `dev` después de fusionar el
+  PR #82. No desplegada ni fusionada al redactar este relevo.
+- Causa reproducida en local: la propiedad sintética publicada
+  `f3100000-0000-0000-0000-000000000001` almacenaba `coordinates` como
+  `{ "lat": 23.135, "lng": -82.383 }`. `CubitatApp` esperaba
+  `latitude/longitude`, propagaba `undefined` y `MapLibreAdapter` ejecutaba
+  `LngLatBounds.extend([NaN, NaN])`, activando el `ErrorBoundary` global.
+- Corrección: `normalizePropertyCoordinates` acepta el contrato canónico y el
+  formato legado, convierte cadenas numéricas y rechaza valores no finitos o
+  fuera de rango. La carga de Supabase lo usa para canonizar datos y el
+  adaptador vuelve a validarlos antes de construir bounds o GeoJSON, cubriendo
+  también caché local antigua.
+- Regresión: 9 pruebas nuevas cubren formatos canónico/legado, cadenas y datos
+  inválidos; el gate completo cerró con lint limpio, 86 archivos/342 pruebas y
+  build Vite/PWA correcto, incluidos los verificadores de aislamiento Fase 2 y
+  sitemap de 473 URLs. El sitemap generado por datos locales se restauró al
+  contenido previo.
+- QA en navegador: `/resultados?operacion=venta` mostró 7 propiedades, el mapa
+  desktop abrió con la fila legado, un F5 conservó la vista y la consola quedó
+  sin errores ni advertencias. No se consultó ni modificó producción.
+- Vault: la unidad `G:` no estaba disponible; falta replicar esta evidencia en
+  la checklist/dashboard cuando vuelva a montarse.
