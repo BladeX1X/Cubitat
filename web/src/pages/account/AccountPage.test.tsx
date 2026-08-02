@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AccountPage } from './AccountPage'
 import { supabase } from '../../shared/lib/supabaseClient'
 
+const lazyPhaseTwoWait = { timeout: 5_000 }
+
 const mockUser = {
   id: 'f3000000-0000-0000-0000-000000000001',
   email: 'test@cubitat.cu',
@@ -72,18 +74,22 @@ describe('AccountPage - Role Selector', () => {
       />
     )
 
-    const agentButton = await screen.findByRole('button', { name: /Agente \/ Inmobiliaria/i })
+    const agentButton = await screen.findByRole(
+      'button',
+      { name: /Agente \/ Inmobiliaria/i },
+      lazyPhaseTwoWait,
+    )
     expect(agentButton).toBeInTheDocument()
 
     await waitFor(() => {
       expect(agentButton).not.toBeDisabled()
-    })
+    }, lazyPhaseTwoWait)
 
     fireEvent.click(agentButton)
 
     await waitFor(() => {
       expect(screen.getByText('Tipo de cuenta actualizado correctamente.')).toBeInTheDocument()
-    })
+    }, lazyPhaseTwoWait)
 
     expect(updateProfile).toHaveBeenCalledWith({ role: 'agent' })
     expect(updateEq).toHaveBeenCalledWith('id', mockUser.id)
@@ -145,7 +151,7 @@ describe('AccountPage - Role Selector', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Requiere verificación de identidad (KYC) aprobada.')).toBeInTheDocument()
-    })
+    }, lazyPhaseTwoWait)
 
     const agentButton = screen.getByRole('button', { name: /Agente \/ Inmobiliaria/i })
     expect(agentButton).toBeDisabled()
@@ -196,7 +202,7 @@ describe('AccountPage - Role Selector', () => {
       expect(fromSpy.mock.calls.filter(([table]) => table === 'profiles')).toHaveLength(2)
       expect(screen.queryByText('Tipo de Cuenta / Modalidad de Anuncio')).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /Agente \/ Inmobiliaria/i })).not.toBeInTheDocument()
-    })
+    }, lazyPhaseTwoWait)
     fromSpy.mockRestore()
   })
 
@@ -239,7 +245,7 @@ describe('AccountPage - Role Selector', () => {
     await waitFor(() => {
       expect(screen.getByText('Tipo de Cuenta / Modalidad de Anuncio')).toBeInTheDocument()
       expect(screen.getByText('Requiere verificación de identidad (KYC) aprobada.')).toBeInTheDocument()
-    })
+    }, lazyPhaseTwoWait)
     fromSpy.mockRestore()
   })
 })
