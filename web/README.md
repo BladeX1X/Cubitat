@@ -150,18 +150,24 @@ producción:
 - `PUBLIC_SITE_URL`: URL pública que se incluirá en el correo.
 - `ALERT_EMAIL_PROVIDER_URL`: opcional; permite usar un capturador HTTP local.
 
-El entorno `dev` de `wrangler.jsonc` conserva intencionalmente
+La configuración dedicada `wrangler.phase2-dev.jsonc` conserva intencionalmente
 `https://dev-supabase.invalid` como marcador seguro. No desplegar el Cron hasta
 reemplazarlo por un proyecto DEV real; nunca apuntarlo al Supabase productivo
 para validar Fase 2. Los secretos se cargan mediante `.dev.vars.dev` en local o
-`wrangler secret put <NOMBRE> --env dev` en Cloudflare, y no se versionan.
+`wrangler secret put <NOMBRE> --config wrangler.phase2-dev.jsonc` en Cloudflare,
+y no se versionan. `wrangler.jsonc` es exclusivamente productivo y no contiene
+Cron, RPC ni imports de KYC o métricas de agente.
 
 Prueba local del handler programado:
 
 ```powershell
-npx wrangler dev --env dev --test-scheduled
+npx wrangler dev --config wrangler.phase2-dev.jsonc --test-scheduled
 Invoke-WebRequest "http://localhost:8787/cdn-cgi/handler/scheduled?format=json"
 ```
+
+Fase 2 continúa siendo exclusivamente local: Vite solo activa estos módulos
+durante `npm run dev`. La configuración Wrangler separada permite probar el
+Worker DEV con `wrangler dev`, pero no autoriza un despliegue.
 
 ## Login social con Google
 

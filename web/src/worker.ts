@@ -6,8 +6,6 @@ import {
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
-import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
-import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 
 export { RateLimiter };
 
@@ -23,10 +21,6 @@ export interface Env extends PublicSubmissionEnv {
   SUPABASE_PROJECT_ID?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
-  ALERT_EMAIL_PROVIDER_URL?: string;
-  ALERT_EMAIL_FROM?: string;
-  PUBLIC_SITE_URL?: string;
-  PHASE2_ENABLED?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
@@ -578,15 +572,14 @@ async function resendSignupConfirmation(email: string, env: Env): Promise<void> 
   });
 }
 
-export default {
-  scheduled(_controller: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): void {
-    if (env.PHASE2_ENABLED !== 'true') return
-    ctx.waitUntil(Promise.all([
-      dispatchPendingAlertEmails(env),
-      purgeApprovedKycEvidence(env),
-    ]))
-  },
-  async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
+export interface WorkerOptions {
+  additionalPublicRpcs?: readonly string[];
+  additionalAuthenticatedRpcs?: readonly string[];
+}
+
+export function createWorker(options: WorkerOptions = {}) {
+  return {
+    async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
     const url = new URL(request.url);
     const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
     
@@ -948,8 +941,14 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
       const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
-      const allowedPublicRpcs = ['get_public_agent_profile', 'increment_property_view_count'];
-      const allowedAuthenticatedRpcs = ['get_admin_metrics', 'submit_kyc_request', 'review_kyc_request'];
+      const allowedPublicRpcs = [
+        'increment_property_view_count',
+        ...(options.additionalPublicRpcs ?? []),
+      ];
+      const allowedAuthenticatedRpcs = [
+        'get_admin_metrics',
+        ...(options.additionalAuthenticatedRpcs ?? []),
+      ];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
@@ -1368,5 +1367,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
     response = await rewriteCanonicalLink(response, url);
 
     return withSecurityHeaders(response, url);
-  }
-};
+    }
+  };
+}
+
+export default createWorker();

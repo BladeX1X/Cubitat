@@ -72,7 +72,7 @@ describe('AccountPage - Role Selector', () => {
       />
     )
 
-    const agentButton = screen.getByRole('button', { name: /Agente \/ Inmobiliaria/i })
+    const agentButton = await screen.findByRole('button', { name: /Agente \/ Inmobiliaria/i })
     expect(agentButton).toBeInTheDocument()
 
     await waitFor(() => {
@@ -158,7 +158,7 @@ describe('AccountPage - Role Selector', () => {
 
   it.each(['admin', 'seller', 'future-role', undefined] as const)(
     'no muestra el selector para un rol no elegible: %s',
-    (userRole) => {
+    async (userRole) => {
     const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
       if (table === 'profiles') {
         return {
@@ -192,8 +192,11 @@ describe('AccountPage - Role Selector', () => {
       />
     )
 
-    expect(screen.queryByText('Tipo de Cuenta / Modalidad de Anuncio')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Agente \/ Inmobiliaria/i })).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(fromSpy.mock.calls.filter(([table]) => table === 'profiles')).toHaveLength(2)
+      expect(screen.queryByText('Tipo de Cuenta / Modalidad de Anuncio')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Agente \/ Inmobiliaria/i })).not.toBeInTheDocument()
+    })
     fromSpy.mockRestore()
   })
 

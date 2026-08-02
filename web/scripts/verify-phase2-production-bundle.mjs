@@ -18,7 +18,12 @@ const leakedAssetNames = javascriptAssets.filter((name) =>
 )
 
 const forbiddenContentMarkers = [
+  'submit_kyc_request',
   'review_kyc_request',
+  'kyc_documents',
+  'get_verified_agent_ids',
+  'get_public_agent_profile',
+  'increment_contact_clicks',
 ]
 
 const leakedContent = []
