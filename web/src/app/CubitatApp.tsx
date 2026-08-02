@@ -20,6 +20,7 @@ import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
+import { normalizePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
 
 const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
   ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
@@ -371,7 +372,7 @@ export function CubitatApp() {
             coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
-            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
+            coordinates: normalizePropertyCoordinates(item.coordinates) || { latitude: 23.1136, longitude: -82.3666 },
             contact_info: getPropertyContactInfo(item.id, item.contact_info),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
