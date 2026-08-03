@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-08-02
+Última actualización: 2026-08-03
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,14 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-08-03: la remediación de auditoría Fase 2 fue fusionada
+> mediante PR #85 en `dev` como `7d24355`. El PR cerró sin conflictos después
+> de lint, 87 archivos/348 pruebas y build/PWA con 473 URLs. La rama local y
+> remota `bugfix/phase2-audit-remediation` fue eliminada después de confirmar el
+> merge; `main` permanece en `42f5f9a` y producción no fue desplegada ni
+> consultada. El cambio local ajeno de `web/public/sitemap.xml` no formó parte
+> del PR y se conserva sin alteraciones.
 
 > Actualización 2026-08-02: remediación de auditoría Fase 2 en la rama
 > `bugfix/phase2-audit-remediation`, solo DEV/local. El panel de agente dejó de
