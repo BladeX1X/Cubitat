@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-28
+Última actualización: 2026-08-02
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,23 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-08-02: remediación de auditoría Fase 2 en la rama
+> `bugfix/phase2-audit-remediation`, solo DEV/local. El panel de agente dejó de
+> estimar leads al 5 % y ahora suma clics reales de teléfono y WhatsApp; `admin`
+> ya no satisface el guard de agente verificado; `/mi-cuenta` limpia el estado
+> al cambiar de sesión y descarta respuestas tardías. El modal KYC y las tarjetas
+> del perfil público recibieron semántica y navegación por teclado. DEV-F2.7
+> revoca la RPC de contactos a `anon/authenticated`: el Worker limita por IP y
+> deriva una clave diaria HMAC sin aceptar identidad del navegador. Matriz SQL:
+> `phase2_local_security: ok` con `ROLLBACK`. Gate: lint limpio, 87 archivos y
+> 348 pruebas, build/PWA de 473 URLs, tipos Wrangler actualizados y dry-run DEV.
+> Chrome confirmó `buyer → agent → buyer`, F5 normal sin versión antigua ni
+> error rojo, panel oculto para buyer/admin, modal KYC con foco/Escape y consola
+> limpia. El endpoint local deduplicó dos clics idénticos en un único evento y
+> los datos QA fueron eliminados. El Worker remoto sigue sin secretos;
+> no confundir implementación con entrega remota operativa. Producción no fue
+> consultada ni modificada. Trust Score y Web Push continúan diferidos.
 
 > Actualización 2026-07-28: política KYC decidida e implementada solo en
 > DEV/local. Documento y selfie se eliminan al cumplir 24 horas desde la

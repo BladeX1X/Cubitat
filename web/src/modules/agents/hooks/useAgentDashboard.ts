@@ -63,7 +63,15 @@ export function useAgentDashboard(userId: string) {
     () => properties.reduce((sum, property) => sum + (property.view_count || 0), 0),
     [properties],
   )
-  const estimatedLeads = Math.round(totalAccumulatedViews * 0.05)
+  const totalContactClicks = useMemo(
+    () => properties.reduce(
+      (sum, property) => sum
+        + (property.phone_clicks_count || 0)
+        + (property.whatsapp_clicks_count || 0),
+      0,
+    ),
+    [properties],
+  )
   const filteredProperties = useMemo(() => {
     const normalizedSearch = searchQuery.toLowerCase()
     return properties.filter((property) => {
@@ -130,7 +138,7 @@ export function useAgentDashboard(userId: string) {
     actionMessage,
     activePropertiesCount,
     totalAccumulatedViews,
-    estimatedLeads,
+    totalContactClicks,
     toggleVisibility,
   }
 }

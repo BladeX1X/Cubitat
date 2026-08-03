@@ -284,6 +284,8 @@ local usa DEV-F2.3, que exige `verification_status = 'verified'`.
 - `increment_contact_clicks(uuid, text, uuid)` registra telefono o WhatsApp,
   deduplica por propiedad, canal, visitante y dia, y actualiza contadores
   persistentes no negativos en `properties`.
+- Su concesion publica historica queda revocada por DEV-F2.7; el navegador ya
+  no puede elegir el identificador de visitante.
 - La tabla privada `property_contact_clicks` tiene RLS habilitada y no concede
   lectura directa a `anon` ni `authenticated`.
 - Verificacion local 2026-07-27: matriz SQL completa terminada con
@@ -337,6 +339,24 @@ local usa DEV-F2.3, que exige `verification_status = 'verified'`.
   correcto.
 - Trust Score y Web Push permanecen diferidos por decisión de producto.
 - **Prohibido**: no aplicar ni desplegar esta retención en producción sin
+  autorización expresa posterior.
+
+### DEV-F2.7. `dev-migrations/20260802001000_harden_contact_metrics.sql`
+
+- **Estado 2026-08-02**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de producción.
+- Revoca a `anon` y `authenticated` la ejecución directa de
+  `increment_contact_clicks(uuid, text, uuid)` y la concede solo a
+  `service_role`.
+- El Worker Fase 2 valida el payload, limita por IP y deriva mediante HMAC un
+  UUID seudónimo diario a partir de IP y agente de usuario. El navegador no
+  recibe el secreto ni controla la clave de deduplicación.
+- Evidencia local: pruebas unitarias del cliente y handler, y matriz SQL
+  `phase2_local_security: ok` con `ROLLBACK`.
+- Para habilitarlo en el Worker DEV remoto se requieren los secretos
+  `SUPABASE_SERVICE_ROLE_KEY` y `CONTACT_METRICS_SALT`; no usar credenciales de
+  producción para cerrar esta prueba.
+- **Prohibido**: no aplicar ni desplegar esta migración en producción sin
   autorización expresa posterior.
 
 ## Verificación después de aplicar

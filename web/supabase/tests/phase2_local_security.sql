@@ -477,10 +477,20 @@ SELECT pg_temp.assert_true(
 );
 RESET ROLE;
 
--- Las métricas aceptan llamadas públicas, deduplican por visitante/día y
--- nunca exponen la tabla de eventos.
+-- El navegador no puede invocar la mutacion; solo service_role registra el
+-- identificador seudonimo derivado por el Worker. La tabla sigue privada.
 SELECT set_config('request.jwt.claims', '{"role":"anon","aal":"aal1"}', true);
 SET LOCAL ROLE anon;
+SELECT pg_temp.assert_raises(
+  $$SELECT * FROM public.increment_contact_clicks(
+    'f2100000-0000-0000-0000-000000000001',
+    'phone',
+    'f2300000-0000-0000-0000-000000000001'
+  )$$,
+  'permission denied'
+);
+RESET ROLE;
+SET LOCAL ROLE service_role;
 SELECT pg_temp.assert_true(
   (SELECT phone_clicks_count = 1 AND whatsapp_clicks_count = 0
    FROM public.increment_contact_clicks(
@@ -499,6 +509,8 @@ SELECT pg_temp.assert_true(
    )),
   'same visitor and channel must be deduplicated for the day'
 );
+RESET ROLE;
+SET LOCAL ROLE anon;
 SELECT pg_temp.assert_raises(
   $$SELECT * FROM public.property_contact_clicks$$,
   'permission denied'

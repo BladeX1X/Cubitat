@@ -171,10 +171,12 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((prop) => (
-                <div
+                <button
+                  type="button"
                   key={prop.id}
                   onClick={() => onSelectProperty?.(prop.id)}
-                  className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
+                  disabled={!onSelectProperty}
+                  className="bg-white text-left rounded-2xl border border-neutral-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer disabled:cursor-default group"
                 >
                   <div className="h-48 bg-neutral-100 relative overflow-hidden">
                     {prop.coverImage ? (
@@ -198,7 +200,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                     </h3>
                     <p className="text-xs text-neutral-500 mt-1">{prop.location}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}

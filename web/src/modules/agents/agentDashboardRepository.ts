@@ -36,10 +36,9 @@ export async function loadAgentDashboard(ownerId: string): Promise<AgentDashboar
   const properties = (propertiesResult.data ?? []) as AgentDashboardProperty[]
 
   return {
-    role: profileResult.data?.role ?? 'user',
+    role: profileResult.data?.role ?? 'buyer',
     isVerifiedAgent:
-      (profileResult.data?.role === 'agent' && profileResult.data?.verification_status === 'verified')
-      || profileResult.data?.role === 'admin',
+      profileResult.data?.role === 'agent' && profileResult.data?.verification_status === 'verified',
     properties,
   }
 }

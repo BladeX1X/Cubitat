@@ -59,13 +59,13 @@ export function AccountPage({
 
   const initialName =
     user?.user_metadata?.full_name || user?.user_metadata?.name || 'Usuario Cubitat'
+  const initialAvatarUrl =
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''
   const [fullName, setFullName] = useState(initialName)
   const [draftName, setDraftName] = useState(initialName)
   const [phone, setPhone] = useState('')
   const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(null)
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '',
-  )
+  const [avatarUrl, setAvatarUrl] = useState<string>(initialAvatarUrl)
   const [isEditingName, setIsEditingName] = useState(false)
   const [isSavingName, setIsSavingName] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -89,18 +89,22 @@ export function AccountPage({
   const verifiedCount = verifiedItems.filter(Boolean).length
 
   const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
-  const activeProfileUserIdRef = useRef(user?.id)
-  activeProfileUserIdRef.current = user?.id
 
   useEffect(() => {
-    if (initialUserRole) {
-      setUserRole(initialUserRole)
-    }
-  }, [initialUserRole])
+    let active = true
+    const requestedUserId = user?.id
 
-  useEffect(() => {
+    setFullName(initialName)
+    setDraftName(initialName)
+    setPhone('')
+    setPhoneVerifiedAt(null)
+    setAvatarUrl(initialAvatarUrl)
+    setUserRole(initialUserRole)
+    setIsEditingName(false)
+    setNameMessage(null)
+    setAvatarMessage(null)
+
     async function loadProfile() {
-      const requestedUserId = user?.id
       if (!requestedUserId) return
       const { data } = await supabase
         .from('profiles')
@@ -108,28 +112,22 @@ export function AccountPage({
         .eq('id', requestedUserId)
         .maybeSingle()
 
-      if (activeProfileUserIdRef.current !== requestedUserId || !data) return
+      if (!active || !data) return
 
-      if (data.role) {
-        setUserRole(data.role)
-      }
-      if (data.full_name) {
-        setFullName(data.full_name)
-        setDraftName(data.full_name)
-      }
-      if (data.phone) {
-        setPhone(data.phone)
-      }
-      if (data.avatar_url) {
-        setAvatarUrl(data.avatar_url)
-      }
-      if (data.phone_verified_at) {
-        setPhoneVerifiedAt(data.phone_verified_at)
-      }
+      const resolvedName = data.full_name || initialName
+      setUserRole(data.role || initialUserRole)
+      setFullName(resolvedName)
+      setDraftName(resolvedName)
+      setPhone(data.phone || '')
+      setAvatarUrl(data.avatar_url || initialAvatarUrl)
+      setPhoneVerifiedAt(data.phone_verified_at || null)
     }
 
-    loadProfile()
-  }, [user?.id])
+    void loadProfile()
+    return () => {
+      active = false
+    }
+  }, [initialAvatarUrl, initialName, initialUserRole, user?.id])
 
   const handleResolvedRole = useCallback((nextRole: string) => {
     setUserRole(nextRole)
