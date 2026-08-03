@@ -9,9 +9,9 @@ vi.mock('../../modules/agents/agentDashboardRepository', () => ({
 }))
 
 const properties = [
-  { id: 'prop-1', title: 'Apartamento de Lujo en El Vedado', location: 'Vedado, La Habana', price_usd: 120000, cover_image: null, status: 'published', created_at: '2026-07-21', user_id: 'agent-123', view_count: 350 },
-  { id: 'prop-2', title: 'Casa Colonial con Garaje', location: 'Playa, La Habana', price_usd: 85000, cover_image: null, status: 'published', created_at: '2026-07-20', user_id: 'agent-123', view_count: 150 },
-  { id: 'prop-3', title: 'Terreno Urbanizable', location: 'Miramar, La Habana', price_usd: 45000, cover_image: null, status: 'paused', created_at: '2026-07-19', user_id: 'agent-123', view_count: 0 },
+  { id: 'prop-1', title: 'Apartamento de Lujo en El Vedado', location: 'Vedado, La Habana', price_usd: 120000, cover_image: null, status: 'published', created_at: '2026-07-21', user_id: 'agent-123', view_count: 350, phone_clicks_count: 2, whatsapp_clicks_count: 4 },
+  { id: 'prop-2', title: 'Casa Colonial con Garaje', location: 'Playa, La Habana', price_usd: 85000, cover_image: null, status: 'published', created_at: '2026-07-20', user_id: 'agent-123', view_count: 150, phone_clicks_count: 1, whatsapp_clicks_count: 3 },
+  { id: 'prop-3', title: 'Terreno Urbanizable', location: 'Miramar, La Habana', price_usd: 45000, cover_image: null, status: 'paused', created_at: '2026-07-19', user_id: 'agent-123', view_count: 0, phone_clicks_count: 0, whatsapp_clicks_count: 1 },
 ] as const
 
 const mockUser = { id: 'agent-123', email: 'agente@cubitat.cu', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: '2026-07-21' } as never
@@ -28,7 +28,8 @@ describe('AgentDashboardPage', () => {
     render(<AgentDashboardPage user={mockUser} />)
     await waitFor(() => expect(screen.getByTestId('metric-active-properties')).toHaveTextContent('2'))
     expect(screen.getByTestId('metric-total-views')).toHaveTextContent('500')
-    expect(screen.getByTestId('metric-estimated-leads')).toHaveTextContent('25')
+    expect(screen.getByTestId('metric-contact-clicks')).toHaveTextContent('11')
+    expect(screen.queryByText(/5% conv/i)).not.toBeInTheDocument()
   })
 
   it('denies the dashboard to a user without verified agent status', async () => {

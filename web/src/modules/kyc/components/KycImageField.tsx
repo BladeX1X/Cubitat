@@ -15,7 +15,7 @@ interface KycImageFieldProps {
 export function KycImageField(props: KycImageFieldProps) {
   return (
     <div>
-      <label className="block text-xs font-bold text-neutral-700 mb-1">{props.label}</label>
+      <label htmlFor={props.id} className="block text-xs font-bold text-neutral-700 mb-1">{props.label}</label>
       {props.previewUrl ? (
         <div className="relative rounded-xl overflow-hidden border border-neutral-200 h-40 bg-neutral-100 flex items-center justify-center">
           <img src={props.previewUrl} alt={props.previewAlt} className="max-h-full object-contain" />

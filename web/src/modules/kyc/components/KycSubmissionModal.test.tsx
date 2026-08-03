@@ -33,6 +33,18 @@ describe('KycSubmissionModal', () => {
     expect(screen.getByText('Tipo de documento de identidad')).toBeInTheDocument()
   })
 
+  it('closes from the backdrop without treating clicks inside the dialog as dismissals', () => {
+    const onClose = vi.fn()
+    render(<KycSubmissionModal userId="u1" isOpen={true} onClose={onClose} onSuccess={vi.fn()} />)
+
+    const dialog = screen.getByRole('dialog', { name: 'Solicitud de verificacion KYC' })
+    fireEvent.click(dialog)
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('allows file selection and calls submit repository functions', async () => {
     const compressedDocument = new File(['compressed-document'], 'carnet.webp', { type: 'image/webp' })
     const compressedSelfie = new File(['compressed-selfie'], 'selfie.webp', { type: 'image/webp' })

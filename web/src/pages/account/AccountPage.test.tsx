@@ -248,4 +248,85 @@ describe('AccountPage - Role Selector', () => {
     }, lazyPhaseTwoWait)
     fromSpy.mockRestore()
   })
+
+  it('descarta una respuesta tardia y limpia los datos al cambiar de sesion', async () => {
+    let resolveFirstProfile: ((value: unknown) => void) | undefined
+    const firstProfile = new Promise((resolve) => {
+      resolveFirstProfile = resolve
+    })
+    const secondUser = {
+      ...mockUser,
+      id: 'f3000000-0000-0000-0000-000000000002',
+      email: 'segundo@cubitat.cu',
+      user_metadata: { full_name: 'Usuario Segundo' },
+    }
+
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: (columns: string) => ({
+            eq: (_column: string, id: string) => ({
+              maybeSingle: () => {
+                if (columns.includes('phone_verified_at')) {
+                  if (id === mockUser.id) return firstProfile
+                  return Promise.resolve({
+                    data: {
+                      role: 'buyer',
+                      full_name: 'Usuario Segundo',
+                      phone: '+5355550002',
+                      avatar_url: '',
+                      phone_verified_at: null,
+                    },
+                    error: null,
+                  })
+                }
+                return Promise.resolve({
+                  data: { role: 'buyer', verification_status: 'unverified' },
+                  error: null,
+                })
+              },
+            }),
+          }),
+        } as any
+      }
+      if (table === 'search_alerts') {
+        return {
+          select: () => ({
+            eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }),
+          }),
+        } as any
+      }
+      return {} as any
+    })
+
+    const props = {
+      userRole: 'buyer',
+      onBack: vi.fn(),
+      onNavigateAccount: vi.fn(),
+      onNavigateFavorites: vi.fn(),
+      onNavigateMyProperties: vi.fn(),
+    }
+    const { rerender } = render(<AccountPage {...props} user={mockUser} />)
+
+    rerender(<AccountPage {...props} user={secondUser as any} />)
+    expect(await screen.findByText('+5355550002')).toBeInTheDocument()
+
+    resolveFirstProfile?.({
+      data: {
+        role: 'agent',
+        full_name: 'Usuario Anterior',
+        phone: '+5355550001',
+        avatar_url: 'https://example.test/anterior.webp',
+        phone_verified_at: '2026-08-01T00:00:00Z',
+      },
+      error: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText('Usuario Anterior')).not.toBeInTheDocument()
+      expect(screen.queryByText('+5355550001')).not.toBeInTheDocument()
+      expect(screen.getByText('Usuario Segundo')).toBeInTheDocument()
+    })
+    fromSpy.mockRestore()
+  })
 })

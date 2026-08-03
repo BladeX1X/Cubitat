@@ -144,15 +144,17 @@ El sistema MUST derivar las metricas del panel desde datos canonicos del backend
 #### Scenario: Registrar una accion real de contacto
 - GIVEN una propiedad publicada
 - WHEN un visitante abre la accion de telefono o WhatsApp
-- THEN el sistema MUST registrar el canal mediante una RPC
+- THEN el sistema MUST registrar el canal mediante un endpoint del Worker que invoque la RPC con `service_role`
 - AND MUST incrementar el agregado persistente de la propiedad
 - AND MUST deduplicar el mismo visitante, propiedad, canal y dia
+- AND el navegador MUST NOT elegir ni enviar el identificador de deduplicacion
 - AND MUST NOT simular el contador en `localStorage`
 
 #### Scenario: Consultar metricas del panel
 - GIVEN un agente con KYC aprobado abre su panel
 - WHEN carga sus propiedades
-- THEN el sistema MUST mostrar los contadores persistidos por propiedad
+- THEN el sistema MUST mostrar la suma real de clics persistidos de telefono y WhatsApp
+- AND MUST NOT estimar contactos a partir de las visualizaciones
 - AND un buyer, un agente sin KYC o un tercero MUST NOT obtener ese panel
 
 ### Requirement: Sesion expirada en area privada

@@ -1,4 +1,3 @@
-import { supabase } from '../../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export type ContactChannel = 'phone' | 'whatsapp'
@@ -8,43 +7,22 @@ export interface ContactMetrics {
   whatsappClicks: number
 }
 
-const VIEWER_KEY_STORAGE = 'cubitat-contact-viewer-key-v1'
-
-function getViewerKey(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = window.localStorage.getItem(VIEWER_KEY_STORAGE)
-    if (stored) return stored
-    const viewerKey = crypto.randomUUID()
-    window.localStorage.setItem(VIEWER_KEY_STORAGE, viewerKey)
-    return viewerKey
-  } catch (err) {
-    logSafeEvent({
-      module: 'properties',
-      action: 'contact_viewer_key',
-      level: 'warn',
-      code: sanitizeErrorReason(err),
-    })
-    return null
-  }
-}
-
 export async function trackContactClick(
   propertyId: string,
   channel: ContactChannel,
 ): Promise<ContactMetrics | null> {
   try {
-    const viewerKey = getViewerKey()
-    if (!viewerKey) return null
-
-    const { data, error } = await supabase.rpc('increment_contact_clicks', {
-      p_property_id: propertyId,
-      p_channel: channel,
-      p_viewer_key: viewerKey,
+    const response = await fetch('/api/phase2/contact-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId, channel }),
     })
-    if (error) throw error
+    if (!response.ok) throw new Error(`contact_metric_${response.status}`)
 
-    const row = Array.isArray(data) ? data[0] : data
+    const row = await response.json() as {
+      phone_clicks_count?: number | string
+      whatsapp_clicks_count?: number | string
+    }
     if (!row) return null
     return {
       phoneClicks: Number(row.phone_clicks_count) || 0,

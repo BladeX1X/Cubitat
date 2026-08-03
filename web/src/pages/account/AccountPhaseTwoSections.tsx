@@ -118,7 +118,7 @@ export function AccountPhaseTwoSections({
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#035f53] text-white"><BarChart3 size={20} /></div>
               <div>
                 <h2 className="text-base font-bold text-neutral-900">Panel de Agente</h2>
-                <p className="text-xs text-neutral-600">Revisa métricas acumuladas, leads estimados y gestiona la visibilidad de tus propiedades.</p>
+                <p className="text-xs text-neutral-600">Revisa visualizaciones, contactos registrados y gestiona la visibilidad de tus propiedades.</p>
               </div>
             </div>
             <Button onClick={onNavigateAgentDashboard} className="h-9 shrink-0 rounded-full bg-[#035f53] px-5 text-xs font-bold text-white hover:bg-[#024a41]">Ir al Panel de Agente</Button>

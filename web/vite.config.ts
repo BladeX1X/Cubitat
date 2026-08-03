@@ -1,5 +1,8 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
+import { execFileSync } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
+import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -7,6 +10,27 @@ import {
   DEVELOPMENT_SERVICE_WORKER_CLEANUP_SCRIPT,
   isDevelopmentServiceWorkerRequest,
 } from './src/shared/pwa/developmentServiceWorkerCleanup.js'
+import { handleContactMetric } from './src/worker/contact-metrics.js'
+
+let cachedLocalServiceRoleKey: string | undefined
+const localContactMetricsSalt = randomBytes(32).toString('hex')
+
+function readLocalSupabaseServiceRoleKey(): string {
+  if (cachedLocalServiceRoleKey !== undefined) return cachedLocalServiceRoleKey
+  try {
+    const supabaseCli = process.env.SUPABASE_CLI_PATH
+      || resolve(process.env.USERPROFILE || '', 'scoop/shims/supabase.exe')
+    const output = execFileSync(supabaseCli, ['status', '-o', 'env'], {
+      cwd: __dirname,
+      encoding: 'utf8',
+      windowsHide: true,
+    })
+    cachedLocalServiceRoleKey = output.match(/^SERVICE_ROLE_KEY="?([^"\r\n]+)"?$/m)?.[1] || ''
+  } catch {
+    cachedLocalServiceRoleKey = ''
+  }
+  return cachedLocalServiceRoleKey
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -42,6 +66,55 @@ export default defineConfig(({ mode }) => {
       {
         name: 'local-api-metrics',
         configureServer(server) {
+          const contactRateLimits = new Map<string, { count: number; resetAt: number }>()
+          server.middlewares.use('/api/phase2/contact-click', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.end('Method Not Allowed')
+              return
+            }
+
+            const clientIp = req.socket.remoteAddress || '127.0.0.1'
+            const now = Date.now()
+            const currentLimit = contactRateLimits.get(clientIp)
+            const nextLimit = !currentLimit || currentLimit.resetAt <= now
+              ? { count: 1, resetAt: now + 60_000 }
+              : { count: currentLimit.count + 1, resetAt: currentLimit.resetAt }
+            contactRateLimits.set(clientIp, nextLimit)
+            if (nextLimit.count > 20) {
+              res.statusCode = 429
+              res.setHeader('Content-Type', 'application/json; charset=utf-8')
+              res.end(JSON.stringify({ error: 'Demasiados intentos.' }))
+              return
+            }
+
+            let body = ''
+            req.on('data', (chunk) => {
+              if (body.length <= 1_024) body += chunk.toString()
+            })
+            req.on('end', async () => {
+              const serviceRoleKey = readLocalSupabaseServiceRoleKey()
+              const request = new Request('http://127.0.0.1:5173/api/phase2/contact-click', {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'user-agent': req.headers['user-agent'] || 'local-vite',
+                  'x-forwarded-for': req.socket.remoteAddress || '127.0.0.1',
+                },
+                body,
+              })
+              const response = await handleContactMetric(request, {
+                VITE_SUPABASE_URL: supabaseUrl,
+                SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+                CONTACT_METRICS_SALT: serviceRoleKey ? localContactMetricsSalt : undefined,
+              })
+
+              res.statusCode = response.status
+              response.headers.forEach((value: string, name: string) => res.setHeader(name, value))
+              res.end(await response.text())
+            })
+          })
+
           server.middlewares.use('/api/metrics', async (req, res) => {
             let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID en .env' };
             let supabaseData = { storage_bytes: null as number | null, egress_bytes: null as number | null, db_bytes: null as number | null, error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID en .env' };

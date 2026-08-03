@@ -9,6 +9,19 @@ import { logWorkerEvent } from './worker/logger';
 
 export { RateLimiter };
 
+export interface WorkerExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+interface RateLimiterStub {
+  fetch(input: string | URL | Request): Promise<Response>;
+}
+
+interface RateLimiterNamespace {
+  idFromName(name: string): unknown;
+  get(id: unknown): RateLimiterStub;
+}
+
 export interface Env extends PublicSubmissionEnv {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
@@ -26,7 +39,7 @@ export interface Env extends PublicSubmissionEnv {
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
   TURNSTILE_VERIFY_URL?: string;
-  RATE_LIMITER: any;
+  RATE_LIMITER: RateLimiterNamespace;
 }
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -208,7 +221,7 @@ async function isRateLimited(env: Env, ip: string, limit: number, windowMs: numb
   return !data.allowed;
 }
 
-async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+export async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
   const id = env.RATE_LIMITER.idFromName('global');
   const stub = env.RATE_LIMITER.get(id);
   const url = `https://dummy/check?key=${encodeURIComponent(key)}&limit=${limit}&windowMs=${windowMs}`;
@@ -216,7 +229,7 @@ async function checkRateLimit(env: Env, key: string, limit: number, windowMs: nu
   return await res.json() as { allowed: boolean; remaining: number; resetAt: number };
 }
 
-function rateLimitResponse(resetAt: number): Response {
+export function rateLimitResponse(resetAt: number): Response {
   const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
   return withSecurityHeaders(new Response(JSON.stringify({
     error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
@@ -579,7 +592,7 @@ export interface WorkerOptions {
 
 export function createWorker(options: WorkerOptions = {}) {
   return {
-    async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
+    async fetch(request: Request, env: Env, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
     

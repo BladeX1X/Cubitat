@@ -16,6 +16,16 @@ describe('agentDashboardRepository', () => {
     expect(result.properties).toEqual([{ id: 'property-1', phone_clicks_count: 2, whatsapp_clicks_count: 3 }])
   })
 
+  it('does not treat an administrator as a verified agent', async () => {
+    vi.mocked(supabase.from)
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { role: 'admin', verification_status: 'verified' }, error: null }) }) }) } as never)
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) } as never)
+
+    const result = await loadAgentDashboard('admin-1')
+
+    expect(result.isVerifiedAgent).toBe(false)
+  })
+
   it('allows owners to toggle only published and owner-hidden properties', async () => {
     const chain = { eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn() }
     chain.eq.mockReturnValue(chain)
