@@ -2017,3 +2017,27 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   sin errores ni advertencias. No se consultó ni modificó producción.
 - Vault: la unidad `G:` no estaba disponible; falta replicar esta evidencia en
   la checklist/dashboard cuando vuelva a montarse.
+
+## 2026-08-03 — Codex — Panel de Agente: reactivación y métricas reales (verificado en local)
+
+- Rama: `dev`; producción y `main` no fueron consultados ni modificados.
+- Causa reproducida en navegador: ocultar una propiedad cambiaba
+  `published → owner_hidden`, pero reactivarla enviaba un `PATCH` directo a
+  Supabase REST y recibía HTTP `403`. La política RLS permite ocultar, pero
+  excluye deliberadamente `published` en `WITH CHECK`; la restauración segura
+  ya estaba prevista mediante la RPC `restore_own_property`.
+- Corrección: `setOwnerPropertyVisibility` usa las RPC protegidas
+  `hide_own_property` y `restore_own_property`, conservando la validación de
+  sesión y de transiciones permitidas. La regresión cubre ambas direcciones y
+  el error de la RPC.
+- QA en navegador: búsqueda por título, filtros Todas/Activas/Pausadas,
+  ocultamiento y reactivación funcionaron en tiempo real. El panel mostró el
+  éxito de reactivación sin alerta roja y volvió a 1 activa/1 pausada.
+- Métricas: el endpoint DEV real contabilizó teléfono `1`, deduplicó el segundo
+  clic idéntico en `1` y registró WhatsApp `1`; el panel mostró 2 contactos y
+  los contadores `1/1`. Después se eliminaron únicamente los eventos y la
+  notificación de QA; la propiedad quedó `published`, con 24 vistas y contacto
+  `0/0`.
+- Gate: lint limpio, 87 archivos/348 pruebas y build/PWA correcto con los
+  verificadores de aislamiento de Fase 2 y sitemap de 473 URLs. El
+  `web/public/sitemap.xml` ajeno conservó exactamente su hash previo.

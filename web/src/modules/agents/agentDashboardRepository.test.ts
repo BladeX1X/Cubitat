@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadAgentDashboard, setOwnerPropertyVisibility } from './agentDashboardRepository'
 import { supabase } from '../../shared/lib/supabaseClient'
 
-vi.mock('../../shared/lib/supabaseClient', () => ({ supabase: { from: vi.fn() } }))
+vi.mock('../../shared/lib/supabaseClient', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+  },
+}))
 
 describe('agentDashboardRepository', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -27,23 +32,21 @@ describe('agentDashboardRepository', () => {
   })
 
   it('allows owners to toggle only published and owner-hidden properties', async () => {
-    const chain = { eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn() }
-    chain.eq.mockReturnValue(chain)
-    chain.select.mockReturnValue(chain)
-    chain.maybeSingle.mockResolvedValue({ data: { id: 'property-1', status: 'owner_hidden' }, error: null })
-    vi.mocked(supabase.from).mockReturnValue({ update: () => chain } as never)
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never)
+
     await expect(setOwnerPropertyVisibility('property-1', 'owner-1', 'published')).resolves.toBe('owner_hidden')
+    expect(supabase.rpc).toHaveBeenLastCalledWith('hide_own_property', { p_property_id: 'property-1' })
+
+    await expect(setOwnerPropertyVisibility('property-1', 'owner-1', 'owner_hidden')).resolves.toBe('published')
+    expect(supabase.rpc).toHaveBeenLastCalledWith('restore_own_property', { p_property_id: 'property-1' })
+
     await expect(setOwnerPropertyVisibility('property-1', 'owner-1', 'paused')).rejects.toThrow('not_allowed')
   })
 
-  it('rejects a visibility change when no matching row was updated', async () => {
-    const chain = { eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn() }
-    chain.eq.mockReturnValue(chain)
-    chain.select.mockReturnValue(chain)
-    chain.maybeSingle.mockResolvedValue({ data: null, error: null })
-    vi.mocked(supabase.from).mockReturnValue({ update: () => chain } as never)
+  it('rejects a visibility change when the protected RPC fails', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: { message: 'forbidden' } } as never)
 
     await expect(setOwnerPropertyVisibility('property-1', 'owner-1', 'published'))
-      .rejects.toThrow('conflict')
+      .rejects.toThrow('update_failed')
   })
 })

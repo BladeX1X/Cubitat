@@ -48,19 +48,13 @@ export async function setOwnerPropertyVisibility(
   ownerId: string,
   currentStatus: PropertyStatus,
 ): Promise<PropertyStatus> {
+  if (!ownerId) throw new Error('property_visibility_session_required')
   if (currentStatus !== 'published' && currentStatus !== 'owner_hidden') {
     throw new Error('property_visibility_transition_not_allowed')
   }
   const nextStatus: PropertyStatus = currentStatus === 'published' ? 'owner_hidden' : 'published'
-  const { data, error } = await supabase
-    .from('properties')
-    .update({ status: nextStatus })
-    .eq('id', propertyId)
-    .eq('user_id', ownerId)
-    .eq('status', currentStatus)
-    .select('id, status')
-    .maybeSingle()
+  const rpcName = currentStatus === 'published' ? 'hide_own_property' : 'restore_own_property'
+  const { error } = await supabase.rpc(rpcName, { p_property_id: propertyId })
   if (error) throw new Error('property_visibility_update_failed')
-  if (!data || data.status !== nextStatus) throw new Error('property_visibility_update_conflict')
   return nextStatus
 }
