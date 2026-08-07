@@ -41,7 +41,7 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
     <div className={`notification-menu relative z-[60] ${className}`} ref={notifRef}>
       <button
         onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-        className={`notification-trigger relative p-2 transition-colors focus:outline-none rounded-full ${isNotificationsOpen ? 'bg-neutral-100 text-[#035f53]' : 'text-neutral-500 hover:text-[#035f53] hover:bg-neutral-50'}`}
+        className={`notification-trigger relative inline-grid min-h-11 min-w-11 place-items-center rounded-full p-2 transition-colors focus:outline-none ${isNotificationsOpen ? 'bg-neutral-100 text-[#035f53]' : 'text-neutral-500 hover:text-[#035f53] hover:bg-neutral-50'}`}
         aria-label="Ver notificaciones"
         aria-expanded={isNotificationsOpen}
         aria-haspopup="true"

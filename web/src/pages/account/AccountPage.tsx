@@ -298,7 +298,7 @@ export function AccountPage({
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={isUploadingAvatar}
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-3 py-1 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:px-4 sm:py-1.5 sm:text-xs"
+                    className="absolute bottom-0 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#008f79] px-4 py-2 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:text-xs"
                   >
                     {isUploadingAvatar ? <Edit3 size={13} /> : <Camera size={13} />}
                     {isUploadingAvatar ? 'Subiendo...' : 'Editar'}
@@ -387,7 +387,7 @@ export function AccountPage({
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
-                    className="rounded-full h-10 px-5 text-sm font-bold"
+                    className="h-11 rounded-full px-5 text-sm font-bold"
                     onClick={onBack}
                   >
                     Volver a mi cuenta
@@ -467,7 +467,7 @@ function SearchAlertsCard({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
+                  className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
                   disabled={deletingId === alert.id}
                   onClick={() => handleDelete(alert.id)}
                 >
@@ -522,7 +522,7 @@ function EditableNameRow({
           <Input
             value={draftValue}
             onChange={(event) => onChange(event.target.value)}
-            className="max-w-md h-10"
+            className="h-11 max-w-md"
             autoFocus
           />
         ) : (
@@ -537,7 +537,7 @@ function EditableNameRow({
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Button
             variant="outline"
-            className="rounded-full h-9 px-4 text-sm font-black border-neutral-200"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black"
             type="button"
             onClick={onCancel}
             disabled={isSaving}
@@ -545,7 +545,7 @@ function EditableNameRow({
             Cancelar
           </Button>
           <Button
-            className="rounded-full h-9 px-4 text-sm font-black bg-[#008f79] hover:bg-[#007565] text-white"
+            className="h-11 rounded-full bg-[#008f79] px-4 text-sm font-black text-white hover:bg-[#007565]"
             type="button"
             onClick={onSave}
             disabled={isSaving}
@@ -556,7 +556,7 @@ function EditableNameRow({
       ) : (
         <Button
           variant="outline"
-          className="rounded-full h-9 px-4 text-sm font-black text-[#008f79] border-neutral-200"
+          className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
           type="button"
           onClick={onEdit}
         >
@@ -695,7 +695,7 @@ function AccountRow({
         {actionLabel ? (
           <Button
             variant="outline"
-            className="rounded-full h-9 px-4 text-sm font-black border-neutral-200 text-[#008f79]"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
             type="button"
           >
             {actionLabel}

@@ -2041,3 +2041,23 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Gate: lint limpio, 87 archivos/348 pruebas y build/PWA correcto con los
   verificadores de aislamiento de Fase 2 y sitemap de 473 URLs. El
   `web/public/sitemap.xml` ajeno conservó exactamente su hash previo.
+
+## 2026-08-04 — Codex — Panel de Agente responsive y objetivos táctiles (verificado en local)
+
+- Rama: `dev`; producción, `main`, Supabase remoto y Workers remotos no fueron
+  consultados ni modificados.
+- El listado del Panel de Agente conserva una sola estructura semántica: debajo
+  de `lg` transforma las filas en tarjetas de dos columnas y en escritorio
+  vuelve a la tabla. Precio, estado, interacciones y acciones permanecen
+  visibles sin duplicar lógica ni requerir desplazamiento horizontal.
+- Los controles principales del panel, `/mi-cuenta`, perfil público, cabecera y
+  pie alcanzan un objetivo táctil mínimo de 44 px en móvil/tablet. Se añadieron
+  estados y jerarquía mobile-first sin cambiar las acciones existentes.
+- QA en navegador a 390×844 y 768×1024: `/panel-agente`, `/mi-cuenta` y
+  `/agente/f3000000-0000-0000-0000-000000000001` quedaron sin desbordamiento
+  de página, elementos recortados ni controles visibles menores de 44 px. La
+  tabla pasó de 993/1126 px de ancho a 310/655 px, respectivamente; consola
+  limpia y fixtures sin cambios.
+- Regresión nueva para el layout responsive y acciones. Gate: lint limpio,
+  88 archivos/349 pruebas y build/PWA correcto con verificadores de aislamiento
+  Fase 2 y sitemap de 473 URLs.

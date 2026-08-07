@@ -69,7 +69,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
       <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-xl font-bold text-neutral-800">No se pudo cargar el perfil</h2>
         <p className="text-neutral-500 mt-2 text-sm">Comprueba tu conexión e inténtalo nuevamente.</p>
-        <Button onClick={onBack} className="mt-6 rounded-full bg-[#035f53] text-white">
+        <Button onClick={onBack} className="mt-6 h-11 rounded-full bg-[#035f53] text-white">
           Volver
         </Button>
       </div>
@@ -81,7 +81,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
       <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-xl font-bold text-neutral-800">Agente no encontrado</h2>
         <p className="text-neutral-500 mt-2 text-sm">El perfil que buscas no está disponible o ha sido retirado.</p>
-        <Button onClick={onBack} className="mt-6 rounded-full bg-[#035f53] text-white">
+        <Button onClick={onBack} className="mt-6 h-11 rounded-full bg-[#035f53] text-white">
           Volver
         </Button>
       </div>
@@ -95,7 +95,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 font-semibold text-sm transition-colors"
+            className="-ml-2 flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Volver</span>
@@ -148,7 +148,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
               href={`https://wa.me/${agent.phone.replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold px-5 py-2.5 rounded-full text-sm shadow-xs transition-all self-stretch sm:self-auto justify-center"
+              className="inline-flex min-h-11 items-center justify-center gap-2 self-stretch rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#20bd5a] sm:self-auto"
             >
               <Phone className="w-4 h-4 fill-current" />
               <span>Contactar por WhatsApp</span>
