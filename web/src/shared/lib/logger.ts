@@ -1,24 +1,27 @@
-export type LogModule =
-  | 'auth'
-  | 'admin'
-  | 'admin_kyc'
-  | 'properties'
-  | 'publish'
-  | 'account'
-  | 'detail'
-  | 'my_properties'
-  | 'maps'
-  | 'cache'
-  | 'app'
-  | 'referrals'
-  | 'kyc'
-  | 'agents'
-  | 'agent_dashboard'
-  | 'alerts'
-  | 'reputation'
-  | 'error_boundary'
-  | 'ui'
-  | 'core';
+const LOG_MODULES = [
+  'auth',
+  'admin',
+  'admin_kyc',
+  'properties',
+  'publish',
+  'account',
+  'detail',
+  'my_properties',
+  'maps',
+  'cache',
+  'app',
+  'referrals',
+  'kyc',
+  'agents',
+  'agent_dashboard',
+  'alerts',
+  'reputation',
+  'error_boundary',
+  'ui',
+  'core',
+] as const;
+
+export type LogModule = (typeof LOG_MODULES)[number];
 
 export type LogLevel = 'info' | 'warn' | 'error';
 
@@ -58,6 +61,27 @@ const SENSITIVE_PATTERNS = [
   /bearer\s+[a-zA-Z0-9._~+/-]+=*/gi,                     // Bearer tokens
   /eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, // JWT tokens
 ];
+
+const SAFE_LOG_CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,63}$/;
+const SAFE_LOG_ACTION_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+const SAFE_LOG_MODULES = new Set<string>(LOG_MODULES);
+
+function sanitizeLogCode(code?: string): string | undefined {
+  if (!code) return undefined;
+  return SAFE_LOG_CODE_PATTERN.test(code) ? code : 'UNCLASSIFIED_ERROR';
+}
+
+function sanitizeLogModule(module: LogModule): LogModule {
+  return SAFE_LOG_MODULES.has(module) ? module : 'core';
+}
+
+function sanitizeLogAction(action: string): string {
+  return SAFE_LOG_ACTION_PATTERN.test(action) ? action : 'invalid_action';
+}
+
+function sanitizeLogLevel(level: LogLevel): LogLevel {
+  return level === 'info' || level === 'warn' || level === 'error' ? level : 'error';
+}
 
 /**
  * Classifies an unknown error into a safe, closed error string code.
@@ -117,12 +141,13 @@ function sanitizeContext(
  */
 export function logSafeEvent(event: FrontendLogEvent): void {
   const safeContext = sanitizeContext(event.context);
+  const safeCode = sanitizeLogCode(event.code);
 
   const payload: FrontendLogEvent = {
-    module: event.module,
-    action: event.action,
-    level: event.level,
-    ...(event.code ? { code: event.code } : {}),
+    module: sanitizeLogModule(event.module),
+    action: sanitizeLogAction(event.action),
+    level: sanitizeLogLevel(event.level),
+    ...(safeCode ? { code: safeCode } : {}),
     ...(safeContext ? { context: safeContext } : {}),
   };
 

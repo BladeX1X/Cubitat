@@ -944,6 +944,14 @@ parámetros, tokens, cuerpos de terceros ni objetos `Error`. `wrangler tail` se
 debe ejecutar solo durante una investigación concreta y su salida no debe
 copiarse al repositorio o al vault.
 
+En el frontend, `src/shared/lib/logger.ts` es la única salida autorizada a
+`console.*`. `module`, `action`, `level` y `code` se validan en runtime contra
+formatos cerrados; los valores no válidos se sustituyen por categorías seguras.
+No registrar errores crudos, `ErrorInfo`, mensajes libres, IDs, URLs, tokens ni
+datos personales. La prueba de arquitectura
+`src/shared/lib/frontendLoggingArchitecture.test.mjs` bloquea nuevas llamadas
+directas a consola fuera del logger y de los Workers expresamente excluidos.
+
 Cloudflare aplica la retención de Workers Logs según el plan contratado. Los
 Auth Audit Logs de Supabase tienen retención y disponibilidad propias del plan;
 no purgar `auth.audit_log_entries` ni desactivar su escritura sin autorización

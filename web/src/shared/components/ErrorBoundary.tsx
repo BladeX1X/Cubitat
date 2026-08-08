@@ -34,7 +34,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, _errorInfo: ErrorInfo) {
-    console.error('[UNCAUGHT_ERROR_BOUNDARY]', error, _errorInfo)
     logSafeEvent({
       module: 'error_boundary',
       action: 'uncaught_error',

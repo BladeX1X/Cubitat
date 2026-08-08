@@ -134,7 +134,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Terminado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`. Simulacro no destructivo completado el 2026-07-21: contratos de SDK y API Admin validados, 8/8 pruebas de regresión aprobadas y 0 factores modificados. |
-| R. Logs seguros del frontend | Terminado | Codex | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
+| R. Logs seguros del frontend | En curso | Codex | Implementación y gate local cerrados el 2026-08-08: única salida autorizada en `logger.ts`, campos estructurales validados en runtime y guard arquitectónico. Falta verificar navegación/consola y versión desplegada en producción antes de marcarlo `Terminado`. |
 | S. Recuperación de sesión MFA expirada | Terminado | Codex | Implementación y regresiones completas en DEV/local: tras `session_not_found` se oculta el desafío obsoleto, se ofrece cerrar sesión e iniciar nuevamente y se mantiene el guard bloqueado ante fallos. La integración de `CubitatApp` confirma cierre, limpieza, inicio y login; QA visual autenticada diferida por decisión del usuario. |
 | T. Aislamiento físico del bundle Fase 2 | Terminado | Codex | El build productivo excluye los chunks de panel/perfil de agente y el módulo de moderación KYC; DEV/local conserva las capacidades y una verificación automática bloquea regresiones. |
 
@@ -2078,3 +2078,27 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   `DDCCA3FD67C3EFFC4A3B7E868E0A948011E35B71F7E66AA8A9A500DC24EE1939`.
 - Gate: lint limpio, 89 archivos/352 pruebas y build/PWA correcto; 473 URLs y
   verificadores de aislamiento Fase 2 aprobados.
+
+## 2026-08-08 - Codex - Carril R: cierre técnico local de logs seguros
+
+- Estado: **implementado y verificado en local; permanece En curso** hasta la
+  comprobación productiva exigida por el criterio de cierre. No hubo despliegue,
+  escrituras en Supabase ni cambios de base de datos.
+- Auditoría vigente: 75 llamadas a `logSafeEvent` en 26 archivos del frontend.
+  Ningún caller actual envía IDs, URLs, mensajes libres, tokens ni datos
+  personales en `code`, `action` o `context`. La cifra histórica de 56 llamadas
+  `console.*` ya no describía el árbol actual.
+- Corrección: `ErrorBoundary` dejó de imprimir el objeto `Error` y `ErrorInfo`
+  crudos. `logger.ts` valida en runtime `module`, `action`, `level` y `code`, con
+  categorías seguras de respaldo; el error visible al usuario no cambió.
+- Regresiones: una prueba arquitectónica impide nuevas llamadas directas a
+  `console.*` fuera del logger y Workers excluidos; las pruebas del logger y del
+  boundary verifican que texto libre y errores crudos no lleguen a consola.
+- Gate local: `npm run lint` limpio, 90/90 archivos y 355/355 pruebas aprobadas,
+  y `npm run build` correcto con PWA, aislamiento Fase 2 y sitemap de 473 URLs.
+- QA local en navegador: `/resultados?operacion=venta` mostró 7 propiedades, el
+  detalle de “Apartamento luminoso en Vedado” abrió correctamente y
+  `/mi-cuenta` anónimo mostró el acceso público sin exponer contenido privado.
+  Las tres comprobaciones terminaron con 0 errores y 0 advertencias en consola.
+  Solo con autorización explícita queda identificar y verificar la versión
+  productiva.

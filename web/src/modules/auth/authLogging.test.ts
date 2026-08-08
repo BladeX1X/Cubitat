@@ -15,7 +15,7 @@ describe('Auth Module - Safe Logging', () => {
       module: 'auth',
       action: 'login',
       level: 'error',
-      code: 'Invalid login credentials',
+      code: 'AUTH_FAILED',
       context: {
         attempted_email: 'secret@domain.com',
         user_id: 'secret_id',
@@ -24,7 +24,7 @@ describe('Auth Module - Safe Logging', () => {
 
     expect(console.error).toHaveBeenCalledTimes(1)
     const [msg, context] = vi.mocked(console.error).mock.calls[0]
-    expect(msg).toContain('[AUTH:login] ERROR (Invalid login credentials)')
+    expect(msg).toContain('[AUTH:login] ERROR (AUTH_FAILED)')
     expect(context.attempted_email).toBeUndefined()
     expect(context.user_id).toBeUndefined()
   })

@@ -121,16 +121,14 @@ export function DetailPage({
             action: 'increment_view_count_failed',
             level: 'warn',
             code: 'DB_ERROR',
-            context: { error: sanitizeErrorReason(error) },
           })
         }
-      } catch (err: unknown) {
+      } catch {
         logSafeEvent({
           module: 'properties',
           action: 'increment_view_count_failed',
           level: 'warn',
           code: 'DB_ERROR',
-          context: { error: sanitizeErrorReason(err) },
         })
       }
     }
