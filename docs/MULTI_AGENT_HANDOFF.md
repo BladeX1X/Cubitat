@@ -2061,3 +2061,20 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Regresión nueva para el layout responsive y acciones. Gate: lint limpio,
   88 archivos/349 pruebas y build/PWA correcto con verificadores de aislamiento
   Fase 2 y sitemap de 473 URLs.
+
+## 2026-08-08 - Codex - Sitemap determinista (verificado en local)
+
+- Rama: `dev`; no hubo escrituras en Supabase, despliegues ni cambios de base
+  de datos.
+- Causa: `generate-sitemap.mjs` aplicaba la fecha del build a todas las URLs y
+  conservaba el orden recibido desde Supabase. El mismo inventario producia un
+  diff completo por fecha y reordenamiento.
+- Correccion: las rutas se ordenan por URL canonica; propiedades y landings
+  usan `properties.updated_at`; las rutas estaticas omiten `lastmod` cuando no
+  existe una fecha real. Las landings compartidas conservan la fecha mas nueva.
+- Regresion: el documento es identico con entradas invertidas, normaliza fechas
+  validas y no inventa `lastmod`. Dos ejecuciones directas y el build completo
+  conservaron el SHA-256
+  `DDCCA3FD67C3EFFC4A3B7E868E0A948011E35B71F7E66AA8A9A500DC24EE1939`.
+- Gate: lint limpio, 89 archivos/352 pruebas y build/PWA correcto; 473 URLs y
+  verificadores de aislamiento Fase 2 aprobados.

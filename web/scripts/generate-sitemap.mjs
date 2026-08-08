@@ -1,24 +1,15 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
+import { buildSitemapDocument } from './sitemap-document.mjs'
 import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 
 const SITE_URL = 'https://cubitathome.com'
-const TODAY = new Date().toISOString().slice(0, 10)
 
 const staticRoutes = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
   { path: '/resultados', priority: '0.9', changefreq: 'daily' },
 ]
-
-function escapeXml(value) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
-}
 
 function slugify(value) {
   return value
@@ -86,9 +77,8 @@ async function readPublishedProperties() {
   const supabase = createClient(supabaseUrl, supabaseAnonKey)
   const { data, error } = await supabase
     .from('properties')
-    .select('id, location, operation, property_type, status')
+    .select('id, location, operation, property_type, status, updated_at')
     .eq('status', 'published')
-    .order('created_at', { ascending: false })
 
   if (error) throw error
   return data ?? []
@@ -106,6 +96,7 @@ function buildPropertyRoutes(properties) {
       path: `/propiedad/${typeSlug}-en-${operationSlug}-en-${locationSlug}-${property.id}`,
       priority: '0.8',
       changefreq: 'weekly',
+      lastmod: property.updated_at,
     }]
   })
 }
@@ -117,16 +108,7 @@ const routes = [
   ...buildPropertyRoutes(publishedProperties),
 ]
 
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${routes.map(({ path, priority, changefreq }) => `  <url>
-    <loc>${escapeXml(new URL(path, SITE_URL).toString())}</loc>
-    <lastmod>${TODAY}</lastmod>
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>
-  </url>`).join('\n')}
-</urlset>
-`
+const sitemap = buildSitemapDocument(routes, SITE_URL)
 
 const robots = `User-agent: *
 Allow: /

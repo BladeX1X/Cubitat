@@ -40,8 +40,16 @@ function findLocation(propertyLocation, locations) {
   return { province, municipality }
 }
 
-function addRoute(routes, path, priority, changefreq) {
-  if (!routes.has(path)) routes.set(path, { path, priority, changefreq })
+function addRoute(routes, path, priority, changefreq, lastmod) {
+  const existing = routes.get(path)
+  if (!existing) {
+    routes.set(path, { path, priority, changefreq, ...(lastmod ? { lastmod } : {}) })
+    return
+  }
+
+  if (lastmod && (!existing.lastmod || Date.parse(lastmod) > Date.parse(existing.lastmod))) {
+    existing.lastmod = lastmod
+  }
 }
 
 /** Build only landing pages backed by at least one published property. */
@@ -58,11 +66,11 @@ export function buildInventorySeoRoutes(properties, locations) {
 
     const provinceSlug = slugify(matchedLocation.province)
     const changefreq = operation === 'permuta' ? 'weekly' : 'daily'
-    addRoute(routes, `/${operation}/${provinceSlug}`, operation === 'permuta' ? '0.82' : '0.86', changefreq)
-    addRoute(routes, `/${propertyType}-en-${operation}/${provinceSlug}`, propertyType === 'terrenos' ? '0.78' : '0.84', changefreq)
+    addRoute(routes, `/${operation}/${provinceSlug}`, operation === 'permuta' ? '0.82' : '0.86', changefreq, property.updated_at)
+    addRoute(routes, `/${propertyType}-en-${operation}/${provinceSlug}`, propertyType === 'terrenos' ? '0.78' : '0.84', changefreq, property.updated_at)
 
     if (matchedLocation.municipality) {
-      addRoute(routes, `/${operation}/${provinceSlug}/${slugify(matchedLocation.municipality)}`, '0.72', changefreq)
+      addRoute(routes, `/${operation}/${provinceSlug}/${slugify(matchedLocation.municipality)}`, '0.72', changefreq, property.updated_at)
     }
   }
 

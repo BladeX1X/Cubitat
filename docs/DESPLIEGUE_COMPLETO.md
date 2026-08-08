@@ -545,6 +545,12 @@ Durante el proceso de compilación (`npm run build`), el compilador ejecuta el s
 
 Para que la compilación no falle en entornos de integración continua (CI/CD) como GitHub Actions o el motor de build automático de Cloudflare Pages:
 
+La salida es determinista: las rutas se ordenan por URL canonica y `lastmod`
+proviene de `properties.updated_at`. Las rutas estaticas sin una fecha real
+conocida omiten ese elemento opcional. Por tanto, dos builds con el mismo
+inventario producen exactamente el mismo archivo y no generan diffs por la
+fecha u orden de ejecucion.
+
 1.  **Configurar Variables de Build**:
     *   En el dashboard de Cloudflare, ve a tu proyecto > **Settings > Builds > Build variables**.
     *   Registra las siguientes dos variables y sus valores productivos:

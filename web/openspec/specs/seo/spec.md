@@ -70,3 +70,12 @@ publicadas y landings SEO respaldadas por inventario publicado.
 - GIVEN dos o mas propiedades publicadas coinciden con la misma landing
 - WHEN se genera `sitemap.xml`
 - THEN la landing MUST aparecer una sola vez
+
+#### Scenario: Regeneracion sin cambios de inventario
+- GIVEN el inventario publicado y sus fechas de actualizacion no cambiaron
+- WHEN se genera `sitemap.xml` en dias distintos o Supabase devuelve las filas
+  en otro orden
+- THEN el contenido generado MUST ser identico
+- AND las rutas MUST estar ordenadas por URL canonica
+- AND `lastmod` MUST provenir de una fecha real de actualizacion, no de la
+  fecha de ejecucion del build
