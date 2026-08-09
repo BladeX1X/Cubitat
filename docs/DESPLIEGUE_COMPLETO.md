@@ -957,6 +957,12 @@ Auth Audit Logs de Supabase tienen retención y disponibilidad propias del plan;
 no purgar `auth.audit_log_entries` ni desactivar su escritura sin autorización
 destructiva explícita y una política de conservación aprobada.
 
+La propuesta vigente está en `docs/AUDIT_LOG_RETENTION_POLICY.md`: 90 días
+móviles para `auth.audit_log_entries`, 180 días para evidencia sanitizada de un
+incidente confirmado y retención nativa del proveedor para logs externos. Su
+estado es **pendiente de aprobación**; no ejecutar SQL, Cron, Log Drain o purga
+basándose únicamente en el borrador.
+
 Listar versiones:
 
 ```powershell

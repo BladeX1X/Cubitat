@@ -2126,3 +2126,20 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Alcance: no se enviaron formularios, no se escribieron datos y no hubo
   cambios en Supabase ni bases de datos. El build productivo continuó
   excluyendo los módulos exclusivos de Fase 2.
+
+## 2026-08-08 - Codex - Propuesta de retención de auditoría
+
+- Estado: **documentada y pendiente de aprobación humana** en
+  `docs/AUDIT_LOG_RETENTION_POLICY.md`.
+- Propuesta: retención nativa para Cloudflare/Supabase Logs Explorer, 90 días
+  móviles para `auth.audit_log_entries` y 180 días para evidencia mínima y
+  sanitizada de incidentes confirmados.
+- Evidencia oficial revalidada: Workers Logs conserva 3 días en Free y 7 en
+  Paid; Supabase Logs Explorer conserva 1/7/28/90 días según Free/Pro/Team/
+  Enterprise. `auth.audit_log_entries` es almacenamiento Postgres separado.
+- Seguridad: `invocation_logs` continúa deshabilitado; no se abrió `wrangler
+  tail`, no se consultaron registros productivos y no se ejecutó SQL, Cron,
+  Log Drain, purga o cambio de plan.
+- Pendiente exacto: el propietario debe aprobar o ajustar las ventanas. Una
+  implementación futura requiere otro cambio y autorización destructiva
+  independiente para la primera ejecución.
