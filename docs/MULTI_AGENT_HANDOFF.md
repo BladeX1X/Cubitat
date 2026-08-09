@@ -134,7 +134,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Terminado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`. Simulacro no destructivo completado el 2026-07-21: contratos de SDK y API Admin validados, 8/8 pruebas de regresión aprobadas y 0 factores modificados. |
-| R. Logs seguros del frontend | En curso | Codex | Implementación y gate local cerrados el 2026-08-08: única salida autorizada en `logger.ts`, campos estructurales validados en runtime y guard arquitectónico. Producción actual (`c56a7e66…`, 2026-07-25) navegó limpia, pero no contiene el parche `8abf03a`; falta desplegarlo y verificar esa versión antes de marcarlo `Terminado`. |
+| R. Logs seguros del frontend | Terminado | Codex | Parche `8abf03a` integrado en `dev` y desplegado el 2026-08-08 como Worker `f4688058-d178-4243-bc4f-7f6ef28e8aca`. Logger cerrado en runtime, guard arquitectónico, 355 pruebas y build aprobados; inicio, resultados, detalle y login verificados en producción con consola limpia. |
 | S. Recuperación de sesión MFA expirada | Terminado | Codex | Implementación y regresiones completas en DEV/local: tras `session_not_found` se oculta el desafío obsoleto, se ofrece cerrar sesión e iniciar nuevamente y se mantiene el guard bloqueado ante fallos. La integración de `CubitatApp` confirma cierre, limpieza, inicio y login; QA visual autenticada diferida por decisión del usuario. |
 | T. Aislamiento físico del bundle Fase 2 | Terminado | Codex | El build productivo excluye los chunks de panel/perfil de agente y el módulo de moderación KYC; DEV/local conserva las capacidades y una verificación automática bloquea regresiones. |
 
@@ -2108,3 +2108,21 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - El carril permanece **En curso**: esa versión productiva es anterior al
   commit `8abf03a`. Se requiere autorización explícita para desplegar una
   versión que contenga el hardening y repetir la misma verificación.
+
+## 2026-08-08 - Codex - Carril R desplegado y verificado en producción
+
+- Estado: **Terminado**. El commit de hardening `8abf03a`, documentado en
+  `2526a44`, se desplegó desde `dev` al Worker `cubitat1` como versión
+  `f4688058-d178-4243-bc4f-7f6ef28e8aca` (creada el 2026-08-09 01:24:59 UTC,
+  equivalente al 2026-08-08 en `America/Mexico_City`).
+- Predespliegue: árbol limpio y sincronizado; `npm run lint`, 90/90 archivos y
+  355/355 pruebas, `npm run build`, verificadores de aislamiento de Fase 2 y
+  sitemap de 473 URLs aprobados. `wrangler deploy --dry-run` correcto.
+- Evidencia de artefacto: producción sirvió `/assets/index-C6L7QW7P.js`, el
+  mismo entrypoint generado localmente desde `2526a44`.
+- QA productiva: inicio, `/resultados?operacion=venta` con 140 propiedades,
+  detalle “Apartamento luminoso en Vedado” y acceso anónimo a `/mi-cuenta`
+  funcionaron con 0 errores y 0 advertencias en consola.
+- Alcance: no se enviaron formularios, no se escribieron datos y no hubo
+  cambios en Supabase ni bases de datos. El build productivo continuó
+  excluyendo los módulos exclusivos de Fase 2.
