@@ -2143,3 +2143,16 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Pendiente exacto: el propietario debe aprobar o ajustar las ventanas. Una
   implementación futura requiere otro cambio y autorización destructiva
   independiente para la primera ejecución.
+
+## 2026-08-09 - Codex - Política de retención aprobada
+
+- Estado: **aprobación humana completada**. El propietario aprobó 90 días
+  móviles para `auth.audit_log_entries` y 180 días desde el cierre para
+  evidencia mínima y sanitizada de incidentes confirmados.
+- Documentación: `docs/AUDIT_LOG_RETENTION_POLICY.md` registra fecha, alcance,
+  excepciones por investigación activa y criterios de implementación.
+- Acciones no ejecutadas: no hubo SQL, migración, Cron, Log Drain, cambio de
+  plan, consulta de filas productivas ni purga.
+- Pendiente exacto: diseñar y revisar la implementación con modo simulación.
+  Desplegarla no autoriza la primera eliminación; esa ejecución destructiva
+  requiere revisar previamente el conteo y recibir otra autorización explícita.

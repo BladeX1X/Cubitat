@@ -1,13 +1,18 @@
 # Política de retención de logs y auditoría
 
-Estado: **propuesta pendiente de aprobación humana**  
-Fecha: 2026-08-08  
+Estado: **aprobada por el propietario del producto**
+
+Fecha de propuesta: 2026-08-08
+
+Fecha de aprobación: 2026-08-09
+
 Responsable de aprobación: propietario del producto
 
 Esta política separa los logs efímeros de proveedores, los eventos de
-autenticación persistidos en Postgres y la evidencia de un incidente. No
-autoriza por sí sola ninguna purga, cambio de plan, Log Drain ni desactivación
-de auditoría.
+autenticación persistidos en Postgres y la evidencia de un incidente. Su
+aprobación no autoriza por sí sola ninguna purga, cambio de plan, Log Drain ni
+desactivación de auditoría. La implementación y la primera ejecución destructiva
+requieren revisiones y autorizaciones independientes.
 
 ## Decisión propuesta
 
@@ -82,9 +87,13 @@ debe ser otro cambio revisable que incluya:
 
 ## Aprobación
 
-- [ ] Propietario del producto aprueba 90 días para `auth.audit_log_entries`.
-- [ ] Propietario del producto aprueba 180 días para evidencia sanitizada de
-  incidentes confirmados.
+- [x] Propietario del producto aprueba 90 días para `auth.audit_log_entries`
+  (2026-08-09).
+- [x] Propietario del producto aprueba 180 días para evidencia sanitizada de
+  incidentes confirmados (2026-08-09).
+- [ ] Implementación técnica revisada y desplegada sin ejecutar la primera
+  purga.
+- [ ] Primera ejecución destructiva autorizada expresamente después de revisar
+  el conteo en modo simulación.
 - [ ] Revisión jurídica confirma o ajusta las ventanas antes de alegar
   cumplimiento regulatorio.
-
