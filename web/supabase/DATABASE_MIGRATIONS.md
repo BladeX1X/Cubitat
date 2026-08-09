@@ -359,6 +359,31 @@ local usa DEV-F2.3, que exige `verification_status = 'verified'`.
 - **Prohibido**: no aplicar ni desplegar esta migración en producción sin
   autorización expresa posterior.
 
+### DEV-OPS.1. `dev-migrations/20260809000000_audit_log_retention.sql`
+
+- **Estado 2026-08-09**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de producción.
+- Implementa `preview_auth_audit_retention()` con corte fijo de 90 días y salida
+  exclusivamente agregada: corte, conteo y rango temporal.
+- Prepara `purge_auth_audit_log_entries(integer, boolean)` para lotes de 1 a
+  1000; el modo simulación es obligatorio por defecto y la migración no invoca
+  la rama destructiva.
+- `auth_audit_retention_holds` excluye rangos temporales bajo incidente,
+  retención legal o revisión regulatoria; tiene RLS y solo `service_role` puede
+  gestionarla.
+- `anon` y `authenticated` no pueden consultar la tabla ni ejecutar preview o
+  purga. No se crea Cron ni otra invocación automática.
+- Evidencia local: matriz transaccional
+  `supabase/tests/audit_log_retention_local.sql` terminó con
+  `audit_log_retention_local: ok`; preview y dry-run devolvieron cero elegibles
+  y `deleted_count = 0`, y una consulta posterior confirmó cero fixtures QA.
+- Gate: `supabase db lint --local` sin errores, lint frontend limpio, 91/91
+  archivos y 359/359 pruebas, y build/PWA correcto con verificadores de
+  aislamiento y sitemap de 473 URLs.
+- **Prohibido**: no mover esta migración a la cadena productiva, ejecutar la
+  purga con `p_dry_run = false` ni crear un Cron sin autorización posterior
+  explícita y respaldo aprobado.
+
 ## Verificación después de aplicar
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
