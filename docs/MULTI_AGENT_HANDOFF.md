@@ -2156,3 +2156,29 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Pendiente exacto: diseñar y revisar la implementación con modo simulación.
   Desplegarla no autoriza la primera eliminación; esa ejecución destructiva
   requiere revisar previamente el conteo y recibir otra autorización explícita.
+
+## 2026-08-09 - Codex - Retención Auth implementada en DEV/local
+
+- Estado: **implementación local completada; primera purga no autorizada ni
+  ejecutada**.
+- Migración: `web/supabase/dev-migrations/20260809000000_audit_log_retention.sql`.
+  Crea preview agregado a 90 días, purga servidor en lotes de hasta 1000 con
+  dry-run por defecto y rangos de retención legal con RLS.
+- Seguridad: funciones y tabla reservadas a `service_role`; `anon` y
+  `authenticated` reciben permiso denegado. No existe Cron ni invocación
+  automática y la migración permanece fuera de la cadena productiva.
+- Evidencia: prueba contractual TDD y matriz SQL transaccional aprobadas. La
+  matriz insertó fixtures sintéticas dentro de `BEGIN`/`ROLLBACK`, verificó
+  exclusión de un rango retenido y conservó las tres filas en dry-run. Consulta
+  posterior: 0 fixtures persistentes, preview `eligible_count = 0` y
+  `deleted_count = 0`.
+- Gate: `supabase db lint --local` sin errores, lint limpio, 91/91 archivos y
+  359/359 pruebas, y build/PWA correcto con verificadores de aislamiento Fase 2
+  y sitemap de 473 URLs.
+- Git: rama `feature/audit-log-retention-dev`, commit `8278098`, publicada en
+  `origin`. Tres intentos de crear el PR hacia `dev` mediante GitHub CLI/API
+  agotaron el timeout sin crear el PR; no se evitó el flujo integrando directo.
+- Pendiente exacto: cualquier promoción productiva requiere otra autorización;
+  la primera llamada con
+  `p_dry_run = false` requiere además conteo previo y autorización destructiva
+  independiente.

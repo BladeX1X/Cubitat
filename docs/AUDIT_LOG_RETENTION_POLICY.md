@@ -76,6 +76,28 @@ debe ser otro cambio revisable que incluya:
 7. rollback documentado antes del primer uso productivo;
 8. ejecución manual inicial con autorización destructiva independiente.
 
+### Implementación DEV/local
+
+Implementada el 2026-08-09 mediante:
+
+- `web/supabase/dev-migrations/20260809000000_audit_log_retention.sql`;
+- `web/supabase/tests/audit_log_retention_local.sql`;
+- `web/src/audit-log-retention-migration.test.ts`.
+
+La migración crea un preview agregado, una purga limitada a 1000 filas con
+`p_dry_run = true` por defecto y rangos de retención legal. Solo
+`service_role` puede ejecutar las funciones o gestionar los rangos. No crea
+Cron ni invoca la rama destructiva.
+
+### Reversión
+
+Antes de cualquier uso productivo, la reversión consiste en una nueva migración
+correctiva que revoque y elimine las dos funciones y, si no existen rangos
+operativos, la tabla `auth_audit_retention_holds`. No modificar ni borrar el
+archivo histórico ya aplicado. Una eliminación de filas Auth no puede
+revertirse mediante estas funciones; por eso la primera purga exige conteo en
+simulación, autorización independiente y una estrategia de respaldo aprobada.
+
 ## Fuera de alcance
 
 - Esta política no modifica la retención KYC de Fase 2 DEV: evidencia aprobada
@@ -91,8 +113,8 @@ debe ser otro cambio revisable que incluya:
   (2026-08-09).
 - [x] Propietario del producto aprueba 180 días para evidencia sanitizada de
   incidentes confirmados (2026-08-09).
-- [ ] Implementación técnica revisada y desplegada sin ejecutar la primera
-  purga.
+- [x] Implementación técnica creada, revisada y aplicada solo en DEV/local sin
+  ejecutar la primera purga (2026-08-09).
 - [ ] Primera ejecución destructiva autorizada expresamente después de revisar
   el conteo en modo simulación.
 - [ ] Revisión jurídica confirma o ajusta las ventanas antes de alegar
