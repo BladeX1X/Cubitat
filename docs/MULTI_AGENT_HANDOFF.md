@@ -2175,6 +2175,9 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Gate: `supabase db lint --local` sin errores, lint limpio, 91/91 archivos y
   359/359 pruebas, y build/PWA correcto con verificadores de aislamiento Fase 2
   y sitemap de 473 URLs.
+- Git: rama `feature/audit-log-retention-dev`, commit `8278098`, publicada en
+  `origin`. Tres intentos de crear el PR hacia `dev` mediante GitHub CLI/API
+  agotaron el timeout sin crear el PR; no se evitó el flujo integrando directo.
 - Pendiente exacto: cualquier promoción productiva requiere otra autorización;
   la primera llamada con
   `p_dry_run = false` requiere además conteo previo y autorización destructiva
