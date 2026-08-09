@@ -2175,10 +2175,34 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - Gate: `supabase db lint --local` sin errores, lint limpio, 91/91 archivos y
   359/359 pruebas, y build/PWA correcto con verificadores de aislamiento Fase 2
   y sitemap de 473 URLs.
-- Git: rama `feature/audit-log-retention-dev`, commit `8278098`, publicada en
-  `origin`. Tres intentos de crear el PR hacia `dev` mediante GitHub CLI/API
-  agotaron el timeout sin crear el PR; no se evitó el flujo integrando directo.
+- Git: PR #87 fusionado mediante squash en `dev` como `2a798d6`. La rama
+  `feature/audit-log-retention-dev` fue eliminada y `dev` quedó sincronizada
+  con `origin/dev`.
 - Pendiente exacto: cualquier promoción productiva requiere otra autorización;
   la primera llamada con
   `p_dry_run = false` requiere además conteo previo y autorización destructiva
   independiente.
+
+## 2026-08-09 - Codex - Reconciliación de cierre Fase 2
+
+- Estado: **núcleo de Fase 2 cerrado y verificado en DEV/local**. El único
+  pendiente activo de este alcance es repetir la matriz completa contra un
+  proyecto Supabase DEV remoto nuevo e independiente.
+- Integración: PR #87 fusionado en `dev` como `2a798d6`; no se fusionó hacia
+  `main`, no se desplegó Fase 2 y no se ejecutó ninguna purga real.
+- Revalidación local: `supabase db lint --local` limpio; matriz
+  `audit_log_retention_local: ok` dentro de `BEGIN`/`ROLLBACK`; lint limpio;
+  91/91 archivos y 359/359 pruebas; build/PWA correcto con 473 URLs y ambos
+  verificadores de aislamiento Fase 2 aprobados.
+- Verificación productiva de solo lectura: con la sesión administrativa AAL1
+  existente, `/moderar` mostró exclusivamente el guard MFA y no renderizó KYC.
+  `/panel-agente` y `/agente/:id` cayeron a la portada sin renderizar módulos de
+  agente. La consola terminó con 0 errores y 0 advertencias; no se enviaron
+  formularios ni se modificaron datos.
+- Diferidos por decisión de producto y fuera del cierre actual: Trust Score,
+  Web Push, gestión de varios factores MFA, promoción de Fase 2 a producción y
+  primera purga real de auditoría.
+- Pendiente exacto para un trabajo posterior: crear o designar un proyecto
+  Supabase DEV remoto vacío, aplicar exclusivamente las migraciones DEV,
+  configurar secretos DEV no productivos y repetir KYC, rol agente, métricas,
+  Cron/retención y matrices RLS/AAL2. No reutilizar producción.
