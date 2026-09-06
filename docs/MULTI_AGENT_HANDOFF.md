@@ -237,7 +237,10 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   con el client id correcto y sin `localhost` ni `invalid_client`.
 - Pendiente: probar un enlace real nuevo de confirmación generado después de la
   actualización de plantilla. Los enlaces anteriores a este cambio pueden seguir
-  fallando porque ya fueron emitidos como PKCE.
+  fallando porque ya fueron emitidos como PKCE. Se solicitó reenvío de
+  confirmación en producción para el correo indicado por el usuario y el
+  endpoint respondió `{"ok":true}`; falta que el usuario abra ese correo nuevo y
+  confirme el resultado visible.
 
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 
