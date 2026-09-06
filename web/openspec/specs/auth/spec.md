@@ -181,8 +181,10 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - WHEN aterriza en `/recuperar-contrasena`
 - THEN el sistema MUST preparar la sesion temporal de recuperacion
 - AND el sistema MUST pedir nueva contrasena y confirmacion
+- AND si la cuenta tiene MFA activo y Supabase requiere `aal2`, el sistema MUST pedir el codigo TOTP antes de guardar
 - AND el sistema MUST validar la fortaleza de la contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial) y la coincidencia entre ambos campos
 - AND el sistema MUST guardar la nueva contrasena mediante Supabase Auth
+- AND el sistema MUST mostrar un mensaje seguro en espanol en vez del error tecnico `AAL2 session is required`
 
 #### Scenario: Contraseña conocida en filtraciones
 - GIVEN un usuario intenta registrarse o establecer una nueva contraseña

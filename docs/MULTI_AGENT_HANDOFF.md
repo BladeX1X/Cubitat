@@ -241,6 +241,22 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   confirmación en producción para el correo indicado por el usuario y el
   endpoint respondió `{"ok":true}`; falta que el usuario abra ese correo nuevo y
   confirme el resultado visible.
+- Incidencia móvil posterior de recuperación: una captura al guardar nueva
+  contraseña mostró el error crudo `AAL2 session is required to update email or
+  password when MFA is enabled`. Causa: `ResetPasswordPage` preparaba la sesión
+  de recovery, pero no elevaba a `aal2` con TOTP antes de `updateUser` cuando la
+  cuenta tenía MFA verificado.
+- Corrección de recuperación en curso: `ResetPasswordPage` detecta el estado MFA
+  de la sesión temporal, pide código TOTP si hay un factor verificado pendiente
+  de `aal2`, ejecuta `challengeAndVerify` antes de cambiar la contraseña y mapea
+  el error técnico AAL2 a español.
+- Evidencia de recuperación MFA: prueba focal nueva aprobada, lint limpio, 92
+  archivos y 374 pruebas aprobadas, build Vite/PWA correcto con verificadores de
+  aislamiento Fase 2. Desplegado como Worker
+  `086bf206-9579-43cb-9130-070cd5b5141e`; producción carga
+  `/recuperar-contrasena`, muestra el mensaje seguro para enlace incompleto y no
+  expone el error crudo AAL2. Pendiente prueba real con enlace de recuperación y
+  código TOTP del usuario para confirmar el cambio de contraseña end-to-end.
 
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 
