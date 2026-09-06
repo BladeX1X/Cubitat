@@ -170,7 +170,9 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 - Estado: **corregido, desplegado y verificado en producción** desde la rama
   `bugfix/auth-production-redirect`; Worker
-  `d938fb7e-d9b4-46a0-9063-7444914225e2`.
+  `d938fb7e-d9b4-46a0-9063-7444914225e2`. Actualización posterior del mismo
+  hotfix desplegada como Worker `d6e4c941-e7c3-468d-93f6-9769c1beff0b` para
+  cubrir CAPTCHA en login por contraseña.
 - Hallazgo reproducido en producción: el botón Google del modal enviaba a
   `http://127.0.0.1:54321/auth/v1/authorize` y pasaba
   `redirect_to=http://127.0.0.1:5173/auth/callback?flow=oauth`, por lo que el
@@ -196,6 +198,20 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   `https://cubitathome.com/auth/callback?flow=oauth`, después a
   `accounts.google.com`; no apareció `127.0.0.1` en la ruta final. No se inició
   sesión, no se resolvió CAPTCHA y no se creó cuenta.
+- Incidencia móvil posterior: una captura de celular mostró que el login por
+  correo devolvía `captcha protection: request disallowed (no captcha_token
+  found)`. Causa: Supabase Attack Protection también exige `captchaToken` para
+  `signInWithPassword`, pero el modal solo renderizaba Turnstile en registro y
+  recuperación.
+- Corrección adicional: el login por contraseña ahora renderiza
+  `TurnstileWidget` con acción `login-password`, bloquea el submit hasta tener
+  token, envía `options.captchaToken` a `signInWithPassword` y renueva el widget
+  ante cualquier fallo.
+- Evidencia adicional: lint limpio, 91 archivos y 368 pruebas aprobadas, build
+  Vite/PWA correcto con verificadores de aislamiento Fase 2. En producción móvil
+  simulada se abrió el modal desde `Cuenta`, apareció el contenedor Turnstile
+  `login-password`, y al intentar enviar sin token se mostró el mensaje seguro
+  local sin hacer ninguna petición a `/auth/v1/token`.
 
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 

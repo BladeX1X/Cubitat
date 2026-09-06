@@ -73,6 +73,13 @@ El sistema MUST limitar intentos repetidos de autenticacion y recuperacion para 
 - AND un token ausente, invalido, reutilizado o expirado MUST impedir que Supabase Auth procese la solicitud
 - AND tras un fallo el widget MUST renovarse para impedir la reutilizacion del token consumido
 
+#### Scenario: CAPTCHA unido a login con contrasena
+- GIVEN un usuario no autenticado introduce correo y contrasena
+- WHEN intenta iniciar sesion mediante Supabase Auth
+- THEN MUST completar Turnstile antes de enviar credenciales
+- AND MUST incluir el token como `captchaToken` dentro de `signInWithPassword`
+- AND si falta el token MUST mostrar una solicitud de verificacion sin llamar a Supabase Auth
+
 #### Scenario: Demasiados intentos de login por IP
 - GIVEN una misma IP realiza multiples intentos de login por contrasena en una ventana corta
 - WHEN supera el limite configurado

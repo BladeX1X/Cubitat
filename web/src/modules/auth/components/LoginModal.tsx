@@ -54,6 +54,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setTurnstileToken(null)
   }, [isRegistering, isResettingPassword])
 
+  const turnstileAction = isResettingPassword
+    ? 'forgot-password'
+    : isRegistering
+      ? 'register-user'
+      : 'login-password'
+
   function resetTurnstileChallenge() {
     setTurnstileToken(null)
     setTurnstileKey((current) => current + 1)
@@ -179,11 +185,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     }
 
+    if (!turnstileToken) {
+      setErrorMsg('Por favor, completa la verificación de seguridad.')
+      return
+    }
+
     if (isRegistering) {
-      if (!turnstileToken) {
-        setErrorMsg('Por favor, completa la verificación de seguridad.')
-        return
-      }
       setLoading(true)
     } else {
       setLoading(true)
@@ -213,9 +220,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
         // Sign In
         const { error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
-          password
+          password,
+          options: {
+            captchaToken: turnstileToken,
+          },
         })
         if (error) throw error
+        setTurnstileToken(null)
         onClose?.()
       }
     } catch (err: any) {
@@ -225,7 +236,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         level: 'error',
         code: sanitizeErrorReason(err),
       })
-      if (isRegistering || isResettingPassword) resetTurnstileChallenge()
+      resetTurnstileChallenge()
       let msg = 'Ocurrió un error inesperado.'
       if (err?.message && err.message !== '{}') {
         msg = err.message
@@ -495,15 +506,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
               </div>
             )}
 
-            {(isRegistering || isResettingPassword) && (
-              <TurnstileWidget
-                key={turnstileKey}
-                action={isResettingPassword ? "forgot-password" : "register-user"}
-                onVerify={(token) => setTurnstileToken(token)}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-              />
-            )}
+            <TurnstileWidget
+              key={turnstileKey}
+              action={turnstileAction}
+              onVerify={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+            />
 
             <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
               {loading ? (
