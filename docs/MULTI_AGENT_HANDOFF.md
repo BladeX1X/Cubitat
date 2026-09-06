@@ -257,6 +257,16 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   `/recuperar-contrasena`, muestra el mensaje seguro para enlace incompleto y no
   expone el error crudo AAL2. Pendiente prueba real con enlace de recuperación y
   código TOTP del usuario para confirmar el cambio de contraseña end-to-end.
+- Verificación integral solicitada por el usuario: se repitieron `npm run lint`,
+  `npm run test:run` y `npm run build` sin fallos. Matriz móvil productiva:
+  home `200`; login por contraseña muestra Turnstile `login-password`, bloquea
+  sin token, no llama `/auth/v1/token` y no expone el error crudo de CAPTCHA;
+  Google OAuth termina en `accounts.google.com` con client id correcto, callback
+  productivo y sin `localhost`/`invalid_client`; confirmación con
+  `token_hash` inválido muestra el mensaje seguro en español sin PKCE crudo;
+  recuperación sin enlace muestra mensaje seguro y no expone AAL2; reenvío de
+  confirmación responde `{"ok":true}`. Único pendiente no automatizable:
+  completar un CAPTCHA real y un TOTP real desde el dispositivo del usuario.
 
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 
