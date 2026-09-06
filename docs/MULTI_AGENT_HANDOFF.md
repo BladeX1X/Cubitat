@@ -212,6 +212,32 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
   simulada se abrió el modal desde `Cuenta`, apareció el contenedor Turnstile
   `login-password`, y al intentar enviar sin token se mostró el mensaje seguro
   local sin hacer ninguna petición a `/auth/v1/token`.
+- Incidencia móvil posterior de confirmación: una captura al abrir el enlace de
+  confirmación mostró `PKCE code verifier not found in storage`, típico cuando
+  el correo se abre en un navegador/dispositivo distinto al que inició el
+  registro.
+- Corrección de confirmación: `confirmation.html` ahora genera
+  `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=signup`, y
+  `AuthCallbackPage` confirma esos enlaces con `supabase.auth.verifyOtp`.
+  El callback conserva compatibilidad con `code` PKCE para enlaces antiguos y
+  reemplaza errores técnicos de PKCE/OTP/token por un mensaje seguro en español.
+- Evidencia local de confirmación: pruebas focales de callback aprobadas,
+  suite completa con 91 archivos y 370 pruebas aprobadas, lint limpio y build
+  Vite/PWA correcto.
+- Estado productivo de confirmación: `supabase config push --project-ref
+  tohjzoncoosvjbjcakdl --yes` aplicó la plantilla remota y se corrigió
+  inmediatamente `auth.captcha.enabled = true` después de detectar que el
+  `config.toml` local anterior intentaba apagar CAPTCHA. También se restauró el
+  `client_id` público de Google en Supabase Auth porque el push inicial lo había
+  enviado como texto `env(...)`. Frontend desplegado como Worker
+  `b23a0b39-9e64-46d9-ba77-764f8bcf4a29`.
+- Evidencia productiva de confirmación: `/auth/callback?token_hash=invalid&type=signup`
+  muestra el mensaje seguro en español y no expone `PKCE code verifier` ni el
+  error inglés de Supabase. Google OAuth volvió a abrir `accounts.google.com`
+  con el client id correcto y sin `localhost` ni `invalid_client`.
+- Pendiente: probar un enlace real nuevo de confirmación generado después de la
+  actualización de plantilla. Los enlaces anteriores a este cambio pueden seguir
+  fallando porque ya fueron emitidos como PKCE.
 
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 

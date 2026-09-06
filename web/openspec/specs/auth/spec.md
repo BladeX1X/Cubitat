@@ -171,8 +171,10 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - GIVEN un usuario recibe el correo de verificacion de Supabase
 - WHEN abre el enlace de confirmacion
 - THEN el sistema MUST aterrizar en `/auth/callback`
-- AND el sistema MUST intercambiar el codigo por una sesion cuando Supabase incluya `code`
+- AND el sistema MUST confirmar el correo con `token_hash` y `type=signup` cuando el enlace use el formato portable
+- AND el sistema MUST intercambiar el codigo por una sesion cuando Supabase incluya `code` por compatibilidad
 - AND el sistema MUST mostrar confirmacion visual antes de continuar al inicio
+- AND el sistema MUST mostrar un error seguro en espanol si Supabase devuelve un fallo tecnico de PKCE, OTP o token
 
 #### Scenario: Cambio de contrasena desde enlace de recuperacion
 - GIVEN un usuario abre el enlace de recuperacion enviado por Supabase

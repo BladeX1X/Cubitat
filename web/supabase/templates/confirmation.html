@@ -20,10 +20,10 @@
               <td style="padding:8px 28px 28px;color:#60716e;font-size:16px;line-height:1.55;">
                 <p style="margin:0 0 18px;">Gracias por crear tu cuenta. Confirma este correo para activar tu acceso y publicar o gestionar propiedades en Cubitat.</p>
                 <p style="margin:0 0 26px;">
-                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#006b5d;color:#ffffff;text-decoration:none;font-weight:700;border-radius:12px;padding:13px 20px;">Confirmar correo</a>
+                  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=signup" style="display:inline-block;background:#006b5d;color:#ffffff;text-decoration:none;font-weight:700;border-radius:12px;padding:13px 20px;">Confirmar correo</a>
                 </p>
                 <p style="margin:0 0 10px;font-size:13px;color:#60716e;">Si el boton no funciona, copia y pega este enlace en tu navegador:</p>
-                <p style="margin:0;word-break:break-all;font-size:12px;color:#006b5d;">{{ .ConfirmationURL }}</p>
+                <p style="margin:0;word-break:break-all;font-size:12px;color:#006b5d;">{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=signup</p>
               </td>
             </tr>
           </table>

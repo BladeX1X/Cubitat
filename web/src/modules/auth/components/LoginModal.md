@@ -64,7 +64,7 @@ El diseño se adapta automáticamente:
 
 ## Flujos de Email y Recuperacion
 
-- **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. Esa pagina intercambia el `code` de Supabase por sesion cuando aplica y muestra el resultado de verificacion.
+- **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. La plantilla de confirmacion usa `token_hash&type=signup` para que el enlace funcione aunque el correo se abra desde otro navegador o dispositivo; el callback conserva compatibilidad con enlaces PKCE `code`.
 - **Recuperacion de contrasena:** El boton `Olvide mi contrasena` usa `supabase.auth.resetPasswordForEmail` y redirige a `/recuperar-contrasena`.
 - **Origen de callbacks:** `getAuthRedirectUrl` descarta un `VITE_PUBLIC_SITE_URL`
   local (`localhost` o `127.0.0.1`) cuando la app se ejecuta desde un origen
@@ -95,5 +95,5 @@ El diseño se adapta automáticamente:
   rechaza como `weak_password`. Si el corpus externo falla, permanece activa la
   politica fuerte de Supabase para no interrumpir por completo Auth.
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
-- **Plantillas de correo:** los HTML de Supabase deben usar siempre `{{ .ConfirmationURL }}`; la ruta final la define el frontend mediante `emailRedirectTo` o `redirectTo`.
+- **Plantillas de correo:** confirmacion y recuperacion deben usar enlaces portables con `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=...`. `{{ .ConfirmationURL }}` queda solo como compatibilidad historica del callback, no como formato preferido.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.
