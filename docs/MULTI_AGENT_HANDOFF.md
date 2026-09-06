@@ -166,6 +166,37 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 
 ## Registro de relevo
 
+### 2026-09-05 - Codex - Redirect productivo de Auth corregido y desplegado
+
+- Estado: **corregido, desplegado y verificado en producción** desde la rama
+  `bugfix/auth-production-redirect`; Worker
+  `d938fb7e-d9b4-46a0-9063-7444914225e2`.
+- Hallazgo reproducido en producción: el botón Google del modal enviaba a
+  `http://127.0.0.1:54321/auth/v1/authorize` y pasaba
+  `redirect_to=http://127.0.0.1:5173/auth/callback?flow=oauth`, por lo que el
+  navegador terminaba en `ERR_CONNECTION_REFUSED`.
+- Causa: `getAuthRedirectUrl` confiaba siempre en `VITE_PUBLIC_SITE_URL` cuando
+  existía y `LoginModal` reemplazaba el proxy `/api/supabase` por
+  `VITE_SUPABASE_URL` sin descartar valores locales. Si el build o entorno
+  publicaba accidentalmente valores de desarrollo, los flujos de Google OAuth,
+  registro por correo y recuperación heredaban ese origen incorrecto.
+- Corrección: `resolveAuthRedirectBaseUrl` descarta un `VITE_PUBLIC_SITE_URL`
+  local cuando `window.location.origin` es público, usa el origen visible y
+  conserva callbacks locales solo cuando la app corre en `localhost` o
+  `127.0.0.1`. `resolveSupabaseOAuthUrl` conserva el proxy productivo si
+  `VITE_SUPABASE_URL` apunta a Supabase local.
+- Evidencia local: pruebas focales de auth aprobadas, lint limpio, 91 archivos
+  y 364 pruebas aprobadas, build Vite/PWA correcto con verificadores de
+  aislamiento Fase 2 y sitemap de 473 URLs. El chunk compilado con
+  `VITE_PUBLIC_SITE_URL=http://127.0.0.1:5173` devuelve
+  `https://cubitathome.com/auth/callback?flow=oauth` al simular origen
+  productivo.
+- Evidencia productiva: un navegador aislado abrió el modal, pulsó Google y la
+  cadena navegó a `/api/supabase/auth/v1/authorize` con callback
+  `https://cubitathome.com/auth/callback?flow=oauth`, después a
+  `accounts.google.com`; no apareció `127.0.0.1` en la ruta final. No se inició
+  sesión, no se resolvió CAPTCHA y no se creó cuenta.
+
 ### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
 
 - Estado: **terminado y verificado en build local de producción; listo para

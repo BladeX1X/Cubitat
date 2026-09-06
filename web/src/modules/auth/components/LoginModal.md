@@ -66,6 +66,14 @@ El diseño se adapta automáticamente:
 
 - **Confirmacion de email:** El registro envia `emailRedirectTo` hacia `/auth/callback`. Esa pagina intercambia el `code` de Supabase por sesion cuando aplica y muestra el resultado de verificacion.
 - **Recuperacion de contrasena:** El boton `Olvide mi contrasena` usa `supabase.auth.resetPasswordForEmail` y redirige a `/recuperar-contrasena`.
+- **Origen de callbacks:** `getAuthRedirectUrl` descarta un `VITE_PUBLIC_SITE_URL`
+  local (`localhost` o `127.0.0.1`) cuando la app se ejecuta desde un origen
+  publico, para impedir que un build productivo mal configurado mande Google
+  OAuth, confirmacion o recuperacion hacia la maquina local.
+- **URL nativa de Supabase en OAuth:** el modal solo reemplaza
+  `/api/supabase` por `VITE_SUPABASE_URL` cuando esa URL es segura para el
+  origen actual. Si produccion recibe accidentalmente un Supabase local, conserva
+  el proxy productivo y evita navegar a `127.0.0.1:54321`.
 - **Turnstile unido a Auth:** Registro y recuperacion entregan el token como
   `captchaToken` dentro de la misma llamada a Supabase Auth. El navegador no lo
   consume antes mediante `siteverify`; Supabase valida el token y el widget se

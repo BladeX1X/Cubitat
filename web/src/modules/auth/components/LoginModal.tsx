@@ -14,7 +14,12 @@ import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
-import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
+import {
+  clearAuthReturnPath,
+  getAuthRedirectUrl,
+  resolveSupabaseOAuthUrl,
+  storeAuthReturnPath,
+} from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
@@ -87,10 +92,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
     }
 
     if (data?.url) {
-      // Reemplazar la URL del proxy por la URL nativa de Supabase para evitar interceptaciones del Service Worker PWA
-      const nativeUrl = data.url.replace(
-        window.location.origin + '/api/supabase',
-        import.meta.env.VITE_SUPABASE_URL
+      const nativeUrl = resolveSupabaseOAuthUrl(
+        data.url,
+        import.meta.env.VITE_SUPABASE_URL,
+        window.location.origin,
       )
       window.location.assign(nativeUrl)
     } else {

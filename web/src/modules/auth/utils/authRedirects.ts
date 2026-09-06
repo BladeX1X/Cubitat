@@ -11,6 +11,10 @@ type StoredAuthRedirect = {
   createdAt: number
 }
 
+function isLocalHttpOrigin(value: string | undefined) {
+  return value?.startsWith('http://localhost') || value?.startsWith('http://127.0.0.1')
+}
+
 export function normalizeAuthReturnPath(value: string | null | undefined) {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return null
 
@@ -60,16 +64,43 @@ export function consumeAuthReturnPath(now = Date.now()) {
   }
 }
 
+export function resolveAuthRedirectBaseUrl(
+  configuredUrl: string | undefined,
+  currentOrigin: string | undefined,
+) {
+  const publicSiteUrl = configuredUrl?.trim()
+  const isCurrentLocal = isLocalHttpOrigin(currentOrigin)
+  const isConfiguredLocal = isLocalHttpOrigin(publicSiteUrl)
+
+  if (publicSiteUrl && (!isConfiguredLocal || isCurrentLocal)) {
+    return publicSiteUrl.replace(/\/$/, '')
+  }
+
+  if (currentOrigin) {
+    return currentOrigin
+  }
+
+  return 'https://cubitathome.com'
+}
+
+export function resolveSupabaseOAuthUrl(
+  proxiedUrl: string,
+  configuredSupabaseUrl: string | undefined,
+  currentOrigin: string,
+) {
+  const proxyBaseUrl = `${currentOrigin.replace(/\/$/, '')}/api/supabase`
+  const supabaseUrl = configuredSupabaseUrl?.trim()
+  const canUseConfiguredUrl = Boolean(supabaseUrl)
+    && (!isLocalHttpOrigin(supabaseUrl) || isLocalHttpOrigin(currentOrigin))
+
+  if (!canUseConfiguredUrl) {
+    return proxiedUrl
+  }
+
+  return proxiedUrl.replace(proxyBaseUrl, supabaseUrl!.replace(/\/$/, ''))
+}
+
 export function getAuthRedirectUrl(path: AuthRedirectPath) {
-  const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim()
-
-  if (publicSiteUrl) {
-    return `${publicSiteUrl.replace(/\/$/, '')}${path}`
-  }
-
-  if (typeof window === 'undefined') {
-    return path
-  }
-
-  return `${window.location.origin}${path}`
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : undefined
+  return `${resolveAuthRedirectBaseUrl(import.meta.env.VITE_PUBLIC_SITE_URL, currentOrigin)}${path}`
 }
