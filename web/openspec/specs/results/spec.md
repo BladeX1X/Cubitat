@@ -95,6 +95,30 @@ El sistema MUST permitir crear alertas desde la barra de filtros y desde accione
 - AND MUST abrir login
 - AND despues de iniciar sesion MUST crear la alerta pendiente o mostrar error recuperable
 
+### Requirement: Verificacion canonica de anunciantes
+El sistema MUST mostrar y filtrar agentes verificados usando una proyeccion
+canonica del backend.
+
+#### Scenario: Mostrar la insignia de agente verificado
+- GIVEN una propiedad publicada pertenece a un perfil con rol `agent`
+- AND el perfil tiene KYC `verified`
+- WHEN la propiedad aparece en resultados
+- THEN la tarjeta MUST mostrar la insignia de verificacion
+- AND un buyer, un agente no verificado o un identificador local MUST NOT
+  obtener la insignia
+
+#### Scenario: Filtrar solo verificados
+- GIVEN el usuario activa `Solo Verificados`
+- WHEN el sistema filtra los resultados
+- THEN MUST conservar unicamente propiedades marcadas por la proyeccion
+  canonica de agentes verificados
+
+#### Scenario: Trust Score diferido
+- GIVEN Trust Score no forma parte del alcance aprobado actual
+- WHEN el usuario abre resultados, detalle o perfil de agente
+- THEN el sistema MUST NOT mostrar puntuaciones, filtros ni badges de Trust Score
+- AND MUST NOT calcular una reputacion con datos inventados o valores por defecto
+
 ### Requirement: Vista de mapa desktop (split view)
 El sistema MUST ofrecer vista dividida mapa + lista filtrada en desktop sin overlay.
 

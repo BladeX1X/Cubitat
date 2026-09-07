@@ -62,6 +62,7 @@ export function getActiveExtraFiltersCount(filters: SearchFilters) {
   if (filters.bathrooms && filters.bathrooms !== 'all') count++
   if (filters.parking && filters.parking !== 'all') count++
   if (filters.priceRange && filters.priceRange !== 'all' && !isPermuta) count++
+  if (filters.verifiedOnly) count++
 
   return count
 }

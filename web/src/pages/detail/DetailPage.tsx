@@ -46,12 +46,21 @@ import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
-import { TrustScoreBadge } from '../../modules/reputation/components/TrustScoreBadge'
-import { fetchAgentProfile } from '../../modules/agents/agentRepository'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 import type { SearchFilters } from '../../modules/search/types'
+
+const trackContactClickInPhaseTwoDev = import.meta.env.DEV
+  ? (propertyId: string, channel: 'phone' | 'whatsapp') =>
+      import('../../modules/properties/utils/contactTracking')
+        .then((module) => module.trackContactClick(propertyId, channel))
+  : null
+
+const fetchAgentProfileInPhaseTwoDev = import.meta.env.DEV
+  ? (agentId: string) => import('../../modules/agents/agentRepository')
+      .then((module) => module.fetchAgentProfile(agentId))
+  : null
 
 type DetailPageProps = {
   property: Property
@@ -112,16 +121,14 @@ export function DetailPage({
             action: 'increment_view_count_failed',
             level: 'warn',
             code: 'DB_ERROR',
-            context: { error: sanitizeErrorReason(error) },
           })
         }
-      } catch (err: unknown) {
+      } catch {
         logSafeEvent({
           module: 'properties',
           action: 'increment_view_count_failed',
           level: 'warn',
           code: 'DB_ERROR',
-          context: { error: sanitizeErrorReason(err) },
         })
       }
     }
@@ -427,6 +434,9 @@ export function DetailPage({
                 type="button"
                 className="detail-desktop-secondary-cta"
                 onClick={() => {
+                  if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                    void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
+                  }
                   const phone = property.contact_info?.phone
                   if (phone) {
                     window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
@@ -712,6 +722,11 @@ export function DetailPage({
             className="mobile-detail-cta-icon"
             href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
             aria-label="Llamar al anunciante"
+            onClick={() => {
+              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                void trackContactClickInPhaseTwoDev(property.id, 'phone')
+              }
+            }}
           >
             <Phone size={16} />
           </a>
@@ -731,6 +746,9 @@ export function DetailPage({
           onClick={() => {
             const phone = property.contact_info?.phone
             if (phone) {
+              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
+              }
               window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
             } else {
               scrollToContact()
@@ -1144,10 +1162,24 @@ function ContactCard({
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
 
   useEffect(() => {
-    if (PHASE_TWO_ENABLED && property.user_id) {
-      fetchAgentProfile(property.user_id).then((prof) => {
-        if (prof) setAgentProfile(prof)
+    let active = true
+    setAgentProfile(null)
+    if (!PHASE_TWO_ENABLED || !fetchAgentProfileInPhaseTwoDev || !property.user_id) {
+      return () => {
+        active = false
+      }
+    }
+
+    fetchAgentProfileInPhaseTwoDev(property.user_id)
+      .then((profile) => {
+        if (active) setAgentProfile(profile)
       })
+      .catch(() => {
+        if (active) setAgentProfile(null)
+      })
+
+    return () => {
+      active = false
     }
   }, [property.user_id])
 
@@ -1216,24 +1248,13 @@ function ContactCard({
             <h2 className="text-lg font-bold text-neutral-900">
               Contactar anunciante
             </h2>
-            {PHASE_TWO_ENABLED && agentProfile && (
-              <TrustScoreBadge
-                profileData={{
-                  verificationStatus: agentProfile.verification_status,
-                  createdAt: agentProfile.created_at,
-                  activePropertiesCount: agentProfile.active_properties_count,
-                  reportsCount: agentProfile.reports_count,
-                }}
-                compact
-              />
-            )}
           </div>
           <p className="text-[11px] text-neutral-500 flex items-center gap-1">
             <Calendar size={12} />
             Publicado recientemente
           </p>
 
-          {PHASE_TWO_ENABLED && property.user_id && onSelectAgent && (
+          {PHASE_TWO_ENABLED && property.user_id && agentProfile && onSelectAgent && (
             <button
               type="button"
               onClick={() => onSelectAgent(property.user_id!)}

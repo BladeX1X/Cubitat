@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { compressKycImageToWebP } from '../kycImageCompression'
 import { removeKycDocument, submitKycRequest, uploadKycImage } from '../kycRepository'
 
 export type KycDocumentType = 'identity_card' | 'passport'
@@ -83,14 +84,27 @@ export function useKycSubmission({ userId, onClose, onSuccess }: UseKycSubmissio
 
     setLoading(true)
     setError(null)
-    const documentUpload = await uploadKycImage(userId, documentFile, 'document')
+    let compressedDocument: File
+    let compressedSelfie: File
+    try {
+      ;[compressedDocument, compressedSelfie] = await Promise.all([
+        compressKycImageToWebP(documentFile),
+        compressKycImageToWebP(selfieFile),
+      ])
+    } catch {
+      setError('No se pudieron optimizar las evidencias. Inténtalo con otras imágenes.')
+      setLoading(false)
+      return
+    }
+
+    const documentUpload = await uploadKycImage(userId, compressedDocument, 'document')
     if (!documentUpload.success || !documentUpload.documentPath) {
       setError(documentUpload.error || 'Error al subir la imagen del documento.')
       setLoading(false)
       return
     }
 
-    const selfieUpload = await uploadKycImage(userId, selfieFile, 'selfie')
+    const selfieUpload = await uploadKycImage(userId, compressedSelfie, 'selfie')
     if (!selfieUpload.success || !selfieUpload.documentPath) {
       await removeKycDocument(documentUpload.documentPath)
       setError(selfieUpload.error || 'Error al subir la foto sosteniendo el documento.')

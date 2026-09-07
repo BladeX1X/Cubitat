@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
-import { formatPrice } from '../../../shared/lib/formatPrice'
-import type { Property } from '../../properties/types'
 import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
+import { normalizePropertyCoordinates } from '../lib/propertyCoordinates'
+import { createPropertySourceData } from '../lib/propertySourceData'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
@@ -56,10 +56,10 @@ export function MapLibreAdapter({
   const bounds = useMemo(() => {
     const mapBounds = new maplibregl.LngLatBounds()
     properties.forEach((property) => {
-      mapBounds.extend([
-        property.coordinates.longitude,
-        property.coordinates.latitude,
-      ])
+      const coordinates = normalizePropertyCoordinates(property.coordinates)
+      if (coordinates) {
+        mapBounds.extend([coordinates.longitude, coordinates.latitude])
+      }
     })
     return mapBounds
   }, [properties])
@@ -475,32 +475,4 @@ export function MapLibreAdapter({
       />
     </div>
   )
-}
-
-function createPropertySourceData(
-  properties: Property[],
-  selectedPropertyId?: string,
-): FeatureCollection<Point> {
-  return {
-    type: 'FeatureCollection',
-    features: properties.map((property) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [
-          property.coordinates.longitude,
-          property.coordinates.latitude,
-        ],
-      },
-      properties: {
-        id: property.id,
-        title: property.title,
-        label:
-          property.operation === 'permuta'
-            ? 'Permuta'
-            : formatPrice(property.priceUsd),
-        isSelected: property.id === selectedPropertyId,
-      },
-    })),
-  }
 }

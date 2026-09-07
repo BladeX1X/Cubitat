@@ -36,8 +36,9 @@ export function KycDocumentForm(props: KycDocumentFormProps) {
       )}
 
       <div>
-        <label className="block text-xs font-bold text-neutral-700 mb-1">Tipo de documento de identidad</label>
+        <label htmlFor="kyc-document-type" className="block text-xs font-bold text-neutral-700 mb-1">Tipo de documento de identidad</label>
         <select
+          id="kyc-document-type"
           value={props.documentType}
           onChange={(event) => {
             if (isKycDocumentType(event.target.value)) props.onDocumentTypeChange(event.target.value)

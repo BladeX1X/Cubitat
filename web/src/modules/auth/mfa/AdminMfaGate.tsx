@@ -1,29 +1,52 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
-import { getAdminMfaStatus, startTotpEnrollment, verifyTotp } from './mfaService'
+import {
+  getAdminMfaStatus,
+  MfaVerificationError,
+  startTotpEnrollment,
+  verifyTotp,
+} from './mfaService'
 
 type GateState = 'loading' | 'allowed' | 'setup' | 'challenge' | 'enrolling' | 'error'
 
 type AdminMfaGateProps = {
   children: ReactNode
+  onSessionExpired: () => Promise<void> | void
 }
 function qrSource(value: string) {
   if (value.startsWith('data:')) return value
   return `data:image/svg+xml;utf-8,${encodeURIComponent(value)}`
 }
 
-export function AdminMfaGate({ children }: AdminMfaGateProps) {
+function verificationFailureMessage(error: unknown) {
+  if (error instanceof MfaVerificationError) {
+    if (error.reason === 'session_expired') {
+      return 'Tu sesión expiró. Inicia sesión nuevamente para verificar el segundo factor.'
+    }
+
+    if (error.reason === 'invalid_code') {
+      return 'El código no es válido o expiró. Usa el código actual e intenta de nuevo.'
+    }
+  }
+
+  return 'No pudimos verificar el código. Revisa tu conexión e intenta de nuevo.'
+}
+
+export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) {
   const [state, setState] = useState<GateState>('loading')
   const [factorId, setFactorId] = useState<string | null>(null)
   const [unverifiedFactorIds, setUnverifiedFactorIds] = useState<string[]>([])
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [message, setMessage] = useState('')
+  const [sessionExpired, setSessionExpired] = useState(false)
+  const [recoveringSession, setRecoveringSession] = useState(false)
 
   const loadStatus = useCallback(async () => {
     setState('loading')
     setMessage('')
+    setSessionExpired(false)
     try {
       const status = await getAdminMfaStatus()
       setUnverifiedFactorIds(status.unverifiedFactorIds)
@@ -72,8 +95,28 @@ export function AdminMfaGate({ children }: AdminMfaGateProps) {
       setCode('')
       setQrCode(null)
       await loadStatus()
+    } catch (error) {
+      const hasExpiredSession = (
+        error instanceof MfaVerificationError && error.reason === 'session_expired'
+      )
+      setSessionExpired(hasExpiredSession)
+      if (hasExpiredSession) {
+        setFactorId(null)
+        setQrCode(null)
+        setCode('')
+      }
+      setMessage(verificationFailureMessage(error))
+    }
+  }
+
+  const recoverExpiredSession = async () => {
+    setRecoveringSession(true)
+    try {
+      await onSessionExpired()
     } catch {
-      setMessage('El código no es válido o expiró. Usa el código actual e intenta de nuevo.')
+      setMessage('No pudimos cerrar la sesión. Intenta nuevamente.')
+    } finally {
+      setRecoveringSession(false)
     }
   }
 
@@ -97,7 +140,9 @@ export function AdminMfaGate({ children }: AdminMfaGateProps) {
           {state === 'setup' ? 'Protege el panel administrativo' : 'Verificación administrativa'}
         </h1>
         <p className="mt-2 text-sm leading-6 text-neutral-600">
-          {state === 'setup'
+          {sessionExpired
+            ? 'La verificación anterior ya no puede continuar. Cierra la sesión para identificarte nuevamente.'
+            : state === 'setup'
             ? 'Configura una app autenticadora para exigir un segundo factor antes de consultar o moderar contenido.'
             : state === 'enrolling'
               ? 'Escanea este QR con tu app autenticadora y escribe el código actual.'
@@ -116,7 +161,7 @@ export function AdminMfaGate({ children }: AdminMfaGateProps) {
           </div>
         )}
 
-        {(state === 'challenge' || state === 'enrolling') && (
+        {(state === 'challenge' || state === 'enrolling') && !sessionExpired && (
           <form className="mt-6" onSubmit={(event) => void submitCode(event)}>
             <label className="block text-sm font-bold text-neutral-800" htmlFor="admin-totp-code">
               Código de 6 dígitos
@@ -138,6 +183,18 @@ export function AdminMfaGate({ children }: AdminMfaGateProps) {
         )}
 
         {message && <p className="mt-4 text-sm font-medium text-red-700" role="alert">{message}</p>}
+
+        {sessionExpired && (
+          <Button
+            className="mt-5 w-full rounded-full bg-[#035f53] text-white hover:bg-[#024a41]"
+            type="button"
+            disabled={recoveringSession}
+            onClick={() => void recoverExpiredSession()}
+          >
+            {recoveringSession && <Loader2 className="h-4 w-4 animate-spin" />}
+            {recoveringSession ? 'Cerrando sesión...' : 'Cerrar sesión e iniciar nuevamente'}
+          </Button>
+        )}
 
         {state === 'error' && (
           <Button className="mt-5 rounded-full" variant="outline" onClick={() => void loadStatus()}>

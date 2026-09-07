@@ -6,6 +6,11 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
+import {
+  getAdminMfaStatus,
+  MfaVerificationError,
+  verifyTotp,
+} from '../../modules/auth/mfa/mfaService'
 
 type ResetPasswordPageProps = {
   onDone: () => void
@@ -23,8 +28,12 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
   const [loading, setLoading] = useState(false)
   const [isPreparingSession, setIsPreparingSession] = useState(true)
   const [hasRecoverySession, setHasRecoverySession] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  const requiresMfa = Boolean(mfaFactorId)
 
   useEffect(() => {
     async function prepareSession() {
@@ -74,6 +83,11 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         if (!session) {
           throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
+
+        const mfaStatus = await getAdminMfaStatus()
+        if (mfaStatus.currentLevel !== 'aal2' && mfaStatus.verifiedFactorId) {
+          setMfaFactorId(mfaStatus.verifiedFactorId)
+        }
         setHasRecoverySession(true)
         cleanAuthUrl('/recuperar-contrasena')
       } catch (err: any) {
@@ -115,13 +129,43 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
     }
 
     setLoading(true)
+    if (mfaFactorId) {
+      if (!/^\d{6}$/.test(mfaCode)) {
+        setLoading(false)
+        setErrorMsg('Escribe el codigo de 6 digitos de tu app autenticadora.')
+        return
+      }
+
+      try {
+        await verifyTotp(mfaFactorId, mfaCode)
+        setMfaFactorId(null)
+        setMfaCode('')
+      } catch (err) {
+        setLoading(false)
+        if (err instanceof MfaVerificationError && err.reason === 'invalid_code') {
+          setErrorMsg('El codigo no es valido o expiro. Usa el codigo actual e intenta de nuevo.')
+          return
+        }
+
+        setErrorMsg('No pudimos verificar el segundo factor. Revisa tu conexion e intenta de nuevo.')
+        return
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setLoading(false)
       const weakPassword = error.message.includes('Password should be at least')
         || error.message.includes('Password should contain')
         || error.name === 'AuthWeakPasswordError'
-      setErrorMsg(weakPassword ? PASSWORD_POLICY_MESSAGE : (error.message || 'No pudimos actualizar la contrasena.'))
+      const mfaRequired = error.message.includes('AAL2 session is required')
+      setErrorMsg(
+        weakPassword
+          ? PASSWORD_POLICY_MESSAGE
+          : mfaRequired
+            ? 'Por seguridad, verifica el segundo factor antes de guardar tu nueva contrasena.'
+            : (error.message || 'No pudimos actualizar la contrasena.'),
+      )
       return
     }
 
@@ -153,6 +197,11 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         {successMsg && (
           <div className="p-3 text-xs bg-green-50 border border-green-200 text-green-700 rounded-md">
             {successMsg}
+          </div>
+        )}
+        {requiresMfa && (
+          <div className="p-3 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md">
+            Esta cuenta tiene segundo factor activo. Escribe el codigo de tu app autenticadora para terminar el cambio.
           </div>
         )}
 
@@ -203,6 +252,25 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
             {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
         </label>
+
+        {requiresMfa && (
+          <label className="login-input-group">
+            <span>Codigo de verificacion</span>
+            <ShieldCheck className="login-input-icon" size={18} />
+            <Input
+              className="login-input text-center tracking-[0.35em]"
+              type="text"
+              required
+              inputMode="numeric"
+              maxLength={6}
+              value={mfaCode}
+              onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              autoComplete="one-time-code"
+              disabled={isPreparingSession || !hasRecoverySession || Boolean(successMsg)}
+            />
+          </label>
+        )}
 
         <Button
           className="auth-action-button"

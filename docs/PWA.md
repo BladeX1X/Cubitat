@@ -14,7 +14,7 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 - Aviso visible cuando el navegador queda offline.
 - Aviso breve cuando la conexion vuelve.
 - Aviso de actualizacion disponible con boton `Actualizar`.
-- Cache runtime para Supabase REST y storage publico.
+- Cache runtime unicamente para recursos publicos de Supabase Storage.
 - Exclusion de MapLibre del precache para evitar descargar el motor de mapas al instalar/actualizar la PWA.
 
 ## Archivos principales
@@ -48,11 +48,9 @@ Motivo: MapLibre pesa alrededor de 1 MB minificado. Es util solo cuando el usuar
 
 ### Runtime cache
 
-Supabase REST:
-
-- Estrategia: `NetworkFirst`
-- Uso: datos de propiedades y endpoints REST.
-- Ventaja: intenta datos frescos, pero puede responder desde cache si la red falla.
+Supabase REST no se cachea en el service worker. Las respuestas pueden depender
+de la sesion, el rol, RLS o cambios recientes y una copia anterior provocaria
+estados inconsistentes despues de un `F5`.
 
 Supabase storage publico:
 
@@ -100,6 +98,22 @@ updateServiceWorker(true)
 
 Esto activa el nuevo service worker y recarga la pagina para usar la version nueva.
 
+### Aislamiento durante desarrollo local
+
+El servidor Vite no debe quedar controlado por un service worker generado por
+un build anterior. En modo `serve`, `/sw.js` responde con un worker temporal sin
+cache que:
+
+1. toma control inmediatamente;
+2. elimina los caches PWA del origen local;
+3. desregistra el service worker;
+4. recarga las ventanas locales una sola vez.
+
+De esta forma, una recarga normal (`F5`) vuelve a solicitar los modulos actuales
+de Vite. La limpieza es exclusiva de DEV y no modifica el service worker
+Workbox generado para produccion. Tampoco borra cookies, sesion, LocalStorage ni
+datos de usuario.
+
 ## Flujo offline/online
 
 El componente escucha eventos del navegador:
@@ -124,13 +138,21 @@ El aviso offline no promete que todas las acciones funcionen. El texto indica qu
 - Mantener `vendor-maplibre` fuera del precache salvo que exista una razon fuerte.
 - Probar instalacion en Chrome Android y Safari iOS antes de release.
 - Probar update flow desplegando dos versiones consecutivas.
+- En local, confirmar que `/sw.js` devuelve JavaScript sin cache y que dos
+  recargas normales consecutivas muestran la version actual sin `Ctrl+F5`.
 - Probar offline en DevTools: Application > Service Workers > Offline.
-- No cachear respuestas autenticadas sensibles con `CacheFirst`.
+- No cachear respuestas REST de Supabase ni datos autenticados en el service
+  worker.
 
 ## Estado validado
 
 Ultima validacion local:
 
 - `npm run build`: correcto.
-- `npm run test:run -- ResultsPage FilterBar`: correcto.
-- Precache despues de excluir MapLibre: aproximadamente 844 KB.
+- `npm run test:run`: 82 archivos y 317 pruebas aprobadas (2026-07-27).
+- `/sw.js` DEV: `application/javascript`, `no-cache, no-store` y worker de
+  autolimpieza verificado.
+- Dos recargas normales en Chrome conservaron la version actual y la sesion.
+- Precache de produccion: 45 entradas, aproximadamente 1076 KB.
+- Supabase REST queda fuera de `runtimeCaching`; solo se cachean imagenes
+  publicas de Storage.

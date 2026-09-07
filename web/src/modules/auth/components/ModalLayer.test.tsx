@@ -19,6 +19,10 @@ vi.mock('../../../shared/lib/supabaseClient', () => ({
   },
 }))
 
+vi.mock('../../../shared/ui/TurnstileWidget', () => ({
+  TurnstileWidget: () => <div data-testid="turnstile-widget" />,
+}))
+
 vi.mock('../contexts/AuthModalContext', () => ({
   useAuthModal: () => ({ openLogin: vi.fn() }),
 }))

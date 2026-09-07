@@ -29,4 +29,15 @@ describe('buildInventorySeoRoutes', () => {
     const property = { location: 'Playa, La Habana', operation: 'venta', property_type: 'casa', status: 'published' }
     expect(buildInventorySeoRoutes([property, property], locations)).toHaveLength(3)
   })
+
+  it('keeps the newest real update date for shared landing pages', () => {
+    const older = { location: 'Playa, La Habana', operation: 'venta', property_type: 'casa', status: 'published', updated_at: '2026-07-30T10:00:00.000Z' }
+    const newer = { ...older, updated_at: '2026-08-02T12:00:00.000Z' }
+
+    expect(buildInventorySeoRoutes([newer, older], locations)).toEqual([
+      { path: '/venta/la-habana', priority: '0.86', changefreq: 'daily', lastmod: newer.updated_at },
+      { path: '/casas-en-venta/la-habana', priority: '0.84', changefreq: 'daily', lastmod: newer.updated_at },
+      { path: '/venta/la-habana/playa', priority: '0.72', changefreq: 'daily', lastmod: newer.updated_at },
+    ])
+  })
 })

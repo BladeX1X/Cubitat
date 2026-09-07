@@ -3,11 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { KycSubmissionModal } from './KycSubmissionModal'
 import * as kycRepo from '../kycRepository'
 
+const { compressKycImageToWebPMock } = vi.hoisted(() => ({
+  compressKycImageToWebPMock: vi.fn(),
+}))
+
 vi.mock('../kycRepository')
+vi.mock('../kycImageCompression', () => ({
+  compressKycImageToWebP: compressKycImageToWebPMock,
+}))
 
 describe('KycSubmissionModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    compressKycImageToWebPMock.mockImplementation(async (file: File) => (
+      new File(['compressed'], `${file.name}.webp`, { type: 'image/webp' })
+    ))
   })
 
   it('does not render when isOpen is false', () => {
@@ -23,7 +33,24 @@ describe('KycSubmissionModal', () => {
     expect(screen.getByText('Tipo de documento de identidad')).toBeInTheDocument()
   })
 
+  it('closes from the backdrop without treating clicks inside the dialog as dismissals', () => {
+    const onClose = vi.fn()
+    render(<KycSubmissionModal userId="u1" isOpen={true} onClose={onClose} onSuccess={vi.fn()} />)
+
+    const dialog = screen.getByRole('dialog', { name: 'Solicitud de verificacion KYC' })
+    fireEvent.click(dialog)
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.click(dialog.parentElement as HTMLElement)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('allows file selection and calls submit repository functions', async () => {
+    const compressedDocument = new File(['compressed-document'], 'carnet.webp', { type: 'image/webp' })
+    const compressedSelfie = new File(['compressed-selfie'], 'selfie.webp', { type: 'image/webp' })
+    compressKycImageToWebPMock
+      .mockResolvedValueOnce(compressedDocument)
+      .mockResolvedValueOnce(compressedSelfie)
     vi.mocked(kycRepo.uploadKycImage).mockResolvedValueOnce({
       success: true,
       documentPath: 'u1/private-doc.jpg',
@@ -54,14 +81,31 @@ describe('KycSubmissionModal', () => {
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(kycRepo.uploadKycImage).toHaveBeenNthCalledWith(1, 'u1', documentFile, 'document')
-      expect(kycRepo.uploadKycImage).toHaveBeenNthCalledWith(2, 'u1', selfieFile, 'selfie')
+      expect(compressKycImageToWebPMock).toHaveBeenNthCalledWith(1, documentFile)
+      expect(compressKycImageToWebPMock).toHaveBeenNthCalledWith(2, selfieFile)
+      expect(kycRepo.uploadKycImage).toHaveBeenNthCalledWith(1, 'u1', compressedDocument, 'document')
+      expect(kycRepo.uploadKycImage).toHaveBeenNthCalledWith(2, 'u1', compressedSelfie, 'selfie')
       expect(kycRepo.submitKycRequest).toHaveBeenCalledWith(
         'identity_card',
         'u1/private-doc.jpg',
         'u1/private-selfie.jpg',
       )
     })
+  })
+
+  it('does not upload anything when local WebP compression fails', async () => {
+    compressKycImageToWebPMock.mockRejectedValueOnce(new Error('decode failed'))
+
+    render(<KycSubmissionModal userId="u1" isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} />)
+
+    const documentFile = new File(['fake-document'], 'carnet.jpg', { type: 'image/jpeg' })
+    const selfieFile = new File(['fake-selfie'], 'selfie.jpg', { type: 'image/jpeg' })
+    fireEvent.change(screen.getByLabelText('Documento de identidad'), { target: { files: [documentFile] } })
+    fireEvent.change(screen.getByLabelText('Foto sosteniendo el documento'), { target: { files: [selfieFile] } })
+    fireEvent.click(screen.getByRole('button', { name: /Enviar Solicitud/i }))
+
+    expect(await screen.findByText(/No se pudieron optimizar las evidencias/i)).toBeInTheDocument()
+    expect(kycRepo.uploadKycImage).not.toHaveBeenCalled()
   })
 
   it('keeps submission disabled until both identity images are selected', () => {

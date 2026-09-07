@@ -13,6 +13,9 @@ const EVENTS = new Set([
   'transactional_email_skipped',
   'alert_email_dispatch_failed',
   'alert_email_dispatch_skipped',
+  'kyc_evidence_claim_failed',
+  'kyc_evidence_retention_unavailable',
+  'kyc_evidence_retention_partial_failure',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -24,7 +27,7 @@ const SOURCES = new Set([
   'resend',
   'service_role',
 ] as const)
-const REASONS = new Set(['missing_configuration'] as const)
+const REASONS = new Set(['missing_configuration', 'network_unavailable'] as const)
 
 export type WorkerLogEvent =
   | 'auth_rate_limit_blocked'
@@ -39,13 +42,16 @@ export type WorkerLogEvent =
   | 'transactional_email_skipped'
   | 'alert_email_dispatch_failed'
   | 'alert_email_dispatch_skipped'
+  | 'kyc_evidence_claim_failed'
+  | 'kyc_evidence_retention_unavailable'
+  | 'kyc_evidence_retention_partial_failure'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'
   dimension?: 'ip' | 'email'
   source?: 'google_analytics' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
   status?: number
-  reason?: 'missing_configuration'
+  reason?: 'missing_configuration' | 'network_unavailable'
 }
 
 export function logWorkerEvent(

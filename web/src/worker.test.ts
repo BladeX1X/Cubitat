@@ -36,16 +36,8 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
-  it('does not schedule Phase 2 jobs in the production environment', () => {
-    const context = createContext()
-    worker.scheduled({}, createEnv(), context)
-    expect(context.waitUntil).not.toHaveBeenCalled()
-  })
-
-  it('allows the Phase 2 scheduler only in the dev environment', () => {
-    const context = createContext()
-    worker.scheduled({}, { ...createEnv(), PHASE2_ENABLED: 'true' }, context)
-    expect(context.waitUntil).toHaveBeenCalledTimes(1)
+  it('does not expose a scheduler from the production worker', () => {
+    expect('scheduled' in worker).toBe(false)
   })
 
   it('reads realtime GA4 active users with service-account credentials', async () => {
@@ -458,8 +450,8 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(allowedResponse.status).toBe(200)
-    expect(publicProfileResponse.status).toBe(200)
-    expect(kycResponse.status).toBe(200)
+    expect(publicProfileResponse.status).toBe(403)
+    expect(kycResponse.status).toBe(403)
     expect(blockedResponse.status).toBe(403)
   })
 
@@ -754,6 +746,53 @@ describe('Cloudflare Worker security contract', () => {
     expect(allowedResponse.status).toBe(200)
     expect(blockedResponse.status).toBe(403)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('allows safe authenticated profile updates but blocks anonymous or protected profile writes', async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response('{}', { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const allowedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: '+52 55 1234 5678' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const blockedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: '+52 55 1234 5678' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const protectedFieldResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone_verified_at: new Date().toISOString(), role: 'admin' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(allowedResponse.status).toBe(200)
+    expect(blockedResponse.status).toBe(403)
+    expect(protectedFieldResponse.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/rest/v1/profiles?id=eq.user-1')
   })
 
   it('marks non-canonical environments as non-indexable', async () => {

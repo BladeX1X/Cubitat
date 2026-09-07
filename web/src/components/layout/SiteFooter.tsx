@@ -15,14 +15,14 @@ export function SiteFooter() {
           <button 
             type="button"
             onClick={() => handleNavigate('/privacidad')}
-            className="hover:text-white transition-colors border-none bg-transparent cursor-pointer text-emerald-100/90"
+            className="min-h-11 border-none bg-transparent px-2 text-emerald-100/90 transition-colors hover:text-white cursor-pointer"
           >
             Política de Privacidad
           </button>
           <button 
             type="button"
             onClick={() => handleNavigate('/terminos')}
-            className="hover:text-white transition-colors border-none bg-transparent cursor-pointer text-emerald-100/90"
+            className="min-h-11 border-none bg-transparent px-2 text-emerald-100/90 transition-colors hover:text-white cursor-pointer"
           >
             Términos de Servicio
           </button>

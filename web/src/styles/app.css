@@ -106,6 +106,7 @@ textarea:focus-visible {
 
 .brand {
   display: flex;
+  min-height: 44px;
   align-items: center;
   gap: 9px;
   color: var(--ink);
@@ -3781,6 +3782,7 @@ h2 {
   }
 
   .brand {
+    min-height: 44px;
     font-size: 18px;
     gap: 8px;
   }
@@ -3826,8 +3828,8 @@ h2 {
     position: relative;
     display: inline-grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border: 0;
     border-radius: 999px;
     color: #006b5d;

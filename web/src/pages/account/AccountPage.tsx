@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
-  BarChart3,
   Camera,
   Bell,
   Check,
@@ -26,14 +25,17 @@ import {
   validateImageDimensions,
   validateImageFile,
 } from '../../shared/lib/imageSecurity'
-import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
-import { KycSubmissionModal } from '../../modules/kyc/components/KycSubmissionModal'
-import type { VerificationStatus } from '../../modules/kyc/types'
-import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+
+const AccountPhaseTwoSections = import.meta.env.DEV
+  ? lazy(() => import('./AccountPhaseTwoSections').then((module) => ({
+      default: module.AccountPhaseTwoSections,
+    })))
+  : null
 
 type AccountPageProps = {
   user: User
   userRole?: string
+  onRoleChange?: (newRole: string) => void
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
@@ -44,6 +46,7 @@ type AccountPageProps = {
 export function AccountPage({
   user,
   userRole: initialUserRole,
+  onRoleChange,
   onBack,
   onNavigateAccount,
   onNavigateFavorites,
@@ -53,85 +56,90 @@ export function AccountPage({
   useSEO({
     title: 'Mi Cuenta',
   })
+
   const initialName =
-    user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario Cubitat'
+    user?.user_metadata?.full_name || user?.user_metadata?.name || 'Usuario Cubitat'
+  const initialAvatarUrl =
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''
   const [fullName, setFullName] = useState(initialName)
   const [draftName, setDraftName] = useState(initialName)
   const [phone, setPhone] = useState('')
-  const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(null)
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-  )
+  const [draftPhone, setDraftPhone] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string>(initialAvatarUrl)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingName, setIsSavingName] = useState(false)
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [nameMessage, setNameMessage] = useState<string | null>(null)
+  const [phoneMessage, setPhoneMessage] = useState<string | null>(null)
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const email = user.email || 'Sin correo registrado'
-  const initial = (fullName || email).substring(0, 1).toUpperCase()
+  const email = user?.email || 'Sin correo registrado'
+  const userId = user?.id || ''
+  const safeFullName = typeof fullName === 'string' ? fullName : (initialName || 'Usuario Cubitat')
+  const initial = (safeFullName || email).substring(0, 1).toUpperCase()
   const {
     alerts: searchAlerts,
     loading: loadingSearchAlerts,
     deleteAlert: deleteSearchAlert,
-  } = useSearchAlerts(user.id)
+  } = useSearchAlerts(userId)
   const verifiedItems = [
-    Boolean(fullName.trim()),
+    Boolean(safeFullName.trim()),
     Boolean(email),
-    Boolean(phoneVerifiedAt),
+    Boolean(phone.trim()),
   ]
   const verifiedCount = verifiedItems.filter(Boolean).length
 
-  const [kycStatus, setKycStatus] = useState<VerificationStatus>('unverified')
-  const [kycReason, setKycReason] = useState<string | null>(null)
-  const [isKycModalOpen, setIsKycModalOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | undefined>(initialUserRole)
 
   useEffect(() => {
-    let cancelled = false
+    let active = true
+    const requestedUserId = user?.id
+
+    setFullName(initialName)
+    setDraftName(initialName)
+    setPhone('')
+    setDraftPhone('')
+    setAvatarUrl(initialAvatarUrl)
+    setUserRole(initialUserRole)
+    setIsEditingName(false)
+    setIsEditingPhone(false)
+    setNameMessage(null)
+    setPhoneMessage(null)
+    setAvatarMessage(null)
 
     async function loadProfile() {
+      if (!requestedUserId) return
       const { data } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .select('role, full_name, phone, avatar_url')
+        .eq('id', requestedUserId)
         .maybeSingle()
 
-      if (cancelled || !data) return
+      if (!active || !data) return
 
-      if (data.role) {
-        setUserRole(data.role)
-      }
-      if (data.full_name) {
-        setFullName(data.full_name)
-        setDraftName(data.full_name)
-      }
-      if (data.phone) {
-        setPhone(data.phone)
-      }
-      if (data.avatar_url) {
-        setAvatarUrl(data.avatar_url)
-      }
-      if (data.phone_verified_at) {
-        setPhoneVerifiedAt(data.phone_verified_at)
-      }
-      if (PHASE_TWO_ENABLED && data.verification_status) {
-        setKycStatus(data.verification_status as VerificationStatus)
-      }
-      if (data.verification_reason) {
-        setKycReason(data.verification_reason)
-      }
+      const resolvedName = data.full_name || initialName
+      setUserRole(data.role || initialUserRole)
+      setFullName(resolvedName)
+      setDraftName(resolvedName)
+      setPhone(data.phone || '')
+      setDraftPhone(data.phone || '')
+      setAvatarUrl(data.avatar_url || initialAvatarUrl)
     }
 
-    loadProfile()
-
+    void loadProfile()
     return () => {
-      cancelled = true
+      active = false
     }
-  }, [user.id])
+  }, [initialAvatarUrl, initialName, initialUserRole, user?.id])
+
+  const handleResolvedRole = useCallback((nextRole: string) => {
+    setUserRole(nextRole)
+  }, [])
 
   async function handleSaveName() {
-    const cleanName = draftName.trim()
+    const cleanName = (draftName || '').trim()
     if (cleanName.length < 2) {
       setNameMessage('Escribe un nombre valido.')
       return
@@ -152,11 +160,10 @@ export function AccountPage({
       setNameMessage('No se pudo actualizar el nombre.')
       return
     }
-
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ full_name: cleanName })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     setIsSavingName(false)
 
@@ -171,6 +178,34 @@ export function AccountPage({
     setDraftName(cleanName)
     setIsEditingName(false)
     setNameMessage('Nombre actualizado.')
+  }
+
+  async function handleSavePhone() {
+    const cleanPhone = (draftPhone || '').trim()
+    if (cleanPhone.length > 60) {
+      setPhoneMessage('El numero es demasiado largo.')
+      return
+    }
+
+    setIsSavingPhone(true)
+    setPhoneMessage(null)
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ phone: cleanPhone || null })
+      .eq('id', userId)
+
+    setIsSavingPhone(false)
+
+    if (error) {
+      setPhoneMessage('No se pudo actualizar el numero de celular.')
+      return
+    }
+
+    setPhone(cleanPhone)
+    setDraftPhone(cleanPhone)
+    setIsEditingPhone(false)
+    setPhoneMessage(cleanPhone ? 'Numero de celular actualizado.' : 'Numero de celular eliminado.')
   }
 
   async function handleAvatarFile(file: File | undefined) {
@@ -200,7 +235,7 @@ export function AccountPage({
       return
     }
 
-    const filePath = `${user.id}/avatar.webp`
+    const filePath = `${userId}/avatar.webp`
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -229,14 +264,14 @@ export function AccountPage({
       },
     })
 
-    const { error: profileError } = await supabase
+    const { error: profileError2 } = await supabase
       .from('profiles')
       .update({ avatar_url: nextAvatarUrl })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     setIsUploadingAvatar(false)
 
-    if (profileError) {
+    if (profileError2) {
       setAvatarMessage('Avatar subido. Falta sincronizar el perfil.')
       setAvatarUrl(nextAvatarUrl)
       return
@@ -262,10 +297,10 @@ export function AccountPage({
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-[20px] font-black leading-[1.08] tracking-tight sm:text-[28px]">
-                  Centro de verificacion y cuenta
+                  Centro de cuenta
                   </h1>
                   <p className="mt-1.5 max-w-2xl text-xs font-semibold leading-snug text-white/85 sm:text-base">
-                  Manten tu informacion actualizada y aumenta la confianza de tus contactos.
+                  Manten tu informacion actualizada para que tus contactos te encuentren facil.
                   </p>
                 </div>
               </div>
@@ -277,7 +312,7 @@ export function AccountPage({
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
-                      alt={`Avatar de ${fullName}`}
+                      alt={`Avatar de ${safeFullName}`}
                       className="h-24 w-24 rounded-full object-cover shadow-sm sm:h-52 sm:w-52"
                     />
                   ) : (
@@ -296,7 +331,7 @@ export function AccountPage({
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={isUploadingAvatar}
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-[#008f79] px-3 py-1 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:px-4 sm:py-1.5 sm:text-xs"
+                    className="absolute bottom-0 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#008f79] px-4 py-2 text-[11px] font-black text-white shadow-sm sm:bottom-2 sm:text-xs"
                   >
                     {isUploadingAvatar ? <Edit3 size={13} /> : <Camera size={13} />}
                     {isUploadingAvatar ? 'Subiendo...' : 'Editar'}
@@ -310,90 +345,24 @@ export function AccountPage({
               </section>
 
               <section className="grid gap-5 sm:gap-8">
-                {PHASE_TWO_ENABLED && (userRole === 'agent' || initialUserRole === 'agent') && onNavigateAgentDashboard && (
-                  <section className="rounded-xl border border-[#035f53]/20 bg-emerald-50/60 p-4 shadow-sm sm:p-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#035f53] text-white flex items-center justify-center font-bold shrink-0">
-                          <BarChart3 size={20} />
-                        </div>
-                        <div>
-                          <h2 className="text-base font-bold text-neutral-900">Panel de Agente</h2>
-                          <p className="text-xs text-neutral-600">Revisa métricas acumuladas, leads estimados y gestiona la visibilidad de tus propiedades.</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={onNavigateAgentDashboard}
-                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold px-5 h-9 shrink-0 shadow-xs"
-                      >
-                        Ir al Panel de Agente
-                      </Button>
-                    </div>
-                  </section>
-                )}
+                {AccountPhaseTwoSections ? (
+                  <Suspense fallback={null}>
+                    <AccountPhaseTwoSections
+                      userId={userId}
+                      userRole={userRole}
+                      onRoleChange={onRoleChange}
+                      onResolvedRole={handleResolvedRole}
+                      onNavigateAgentDashboard={onNavigateAgentDashboard}
+                    />
+                  </Suspense>
+                ) : null}
 
                 <VerificationCard
                   verifiedCount={verifiedCount}
-                  hasName={Boolean(fullName.trim())}
+                  hasName={Boolean(safeFullName.trim())}
                   hasEmail={Boolean(email)}
-                  hasVerifiedPhone={Boolean(phoneVerifiedAt)}
+                  hasPhone={Boolean(phone.trim())}
                 />
-
-                {PHASE_TWO_ENABLED && <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
-                        <ShieldCheck size={20} />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-bold text-neutral-900">Verificación de Identidad (KYC)</h2>
-                        <p className="text-xs text-neutral-500">Obtén la insignia oficial en tus publicaciones</p>
-                      </div>
-                    </div>
-                    <VerificationBadge status={kycStatus} />
-                  </div>
-
-                  {kycStatus === 'unverified' && (
-                    <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <p className="text-xs text-neutral-600">
-                        Sube tu documento de identidad y una foto tuya sosteniéndolo para verificar tu cuenta.
-                      </p>
-                      <Button
-                        onClick={() => setIsKycModalOpen(true)}
-                        className="bg-[#035f53] hover:bg-[#024a41] text-white rounded-full text-xs font-bold shrink-0"
-                      >
-                        Solicitar Verificación
-                      </Button>
-                    </div>
-                  )}
-
-                  {kycStatus === 'pending' && (
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
-                      <strong>Tus evidencias están en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.
-                    </div>
-                  )}
-
-                  {kycStatus === 'verified' && (
-                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-xs text-emerald-800">
-                      <strong>¡Cuenta Verificada!</strong> Tu perfil cuenta con el distintivo oficial de confianza.
-                    </div>
-                  )}
-
-                  {kycStatus === 'rejected' && (
-                    <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-xs text-red-800 space-y-2">
-                      <p>
-                        <strong>Solicitud Rechazada:</strong> {kycReason || 'Las evidencias presentadas no pudieron validarse.'}
-                      </p>
-                      <Button
-                        onClick={() => setIsKycModalOpen(true)}
-                        variant="outline"
-                        className="rounded-full text-xs font-bold border-red-200 text-red-700 bg-white"
-                      >
-                        Reenviar evidencias
-                      </Button>
-                    </div>
-                  )}
-                </section>}
 
                 <SearchAlertsCard
                   alerts={searchAlerts}
@@ -403,7 +372,7 @@ export function AccountPage({
 
                 <AccountSection title="Informacion de usuario">
                   <EditableNameRow
-                    value={fullName}
+                    value={safeFullName}
                     draftValue={draftName}
                     isEditing={isEditingName}
                     isSaving={isSavingName}
@@ -438,20 +407,31 @@ export function AccountPage({
                     status="verified"
                     icon={<Mail size={16} />}
                   />
-                  <AccountRow
-                    label="Numero de celular"
-                    value={phone || 'Ingresa tu numero de celular'}
-                    helper="Este numero se verificara por WhatsApp antes de marcarlo como validado."
-                    status={phoneVerifiedAt ? 'verified' : phone ? 'pending' : 'missing'}
-                    actionLabel="Verificar por WhatsApp"
-                    icon={<MessageCircle size={16} />}
+                  <EditablePhoneRow
+                    value={phone}
+                    draftValue={draftPhone}
+                    isEditing={isEditingPhone}
+                    isSaving={isSavingPhone}
+                    message={phoneMessage}
+                    onChange={setDraftPhone}
+                    onEdit={() => {
+                      setDraftPhone(phone)
+                      setPhoneMessage(null)
+                      setIsEditingPhone(true)
+                    }}
+                    onCancel={() => {
+                      setDraftPhone(phone)
+                      setPhoneMessage(null)
+                      setIsEditingPhone(false)
+                    }}
+                    onSave={handleSavePhone}
                   />
                 </AccountSection>
 
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
-                    className="rounded-full h-10 px-5 text-sm font-bold"
+                    className="h-11 rounded-full px-5 text-sm font-bold"
                     onClick={onBack}
                   >
                     Volver a mi cuenta
@@ -460,15 +440,6 @@ export function AccountPage({
               </section>
             </div>
 
-      {PHASE_TWO_ENABLED && <KycSubmissionModal
-        userId={user.id}
-        isOpen={isKycModalOpen}
-        onClose={() => setIsKycModalOpen(false)}
-        onSuccess={() => {
-          setKycStatus('pending')
-          setKycReason(null)
-        }}
-      />}
     </AccountLayout>
   )
 }
@@ -511,7 +482,7 @@ function SearchAlertsCard({
               Alertas de busqueda
             </h2>
             <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
-              Guarda filtros importantes y consultalos aqui. El envio automatico por email queda como tarea pendiente.
+              Guarda filtros importantes y consulta aquí las alertas activas. Los avisos por correo se habilitarán cuando el entorno DEV de entrega esté configurado.
             </p>
           </div>
         </div>
@@ -540,7 +511,7 @@ function SearchAlertsCard({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
+                  className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-red-600"
                   disabled={deletingId === alert.id}
                   onClick={() => handleDelete(alert.id)}
                 >
@@ -595,7 +566,7 @@ function EditableNameRow({
           <Input
             value={draftValue}
             onChange={(event) => onChange(event.target.value)}
-            className="max-w-md h-10"
+            className="h-11 max-w-md"
             autoFocus
           />
         ) : (
@@ -610,7 +581,7 @@ function EditableNameRow({
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Button
             variant="outline"
-            className="rounded-full h-9 px-4 text-sm font-black border-neutral-200"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black"
             type="button"
             onClick={onCancel}
             disabled={isSaving}
@@ -618,7 +589,7 @@ function EditableNameRow({
             Cancelar
           </Button>
           <Button
-            className="rounded-full h-9 px-4 text-sm font-black bg-[#008f79] hover:bg-[#007565] text-white"
+            className="h-11 rounded-full bg-[#008f79] px-4 text-sm font-black text-white hover:bg-[#007565]"
             type="button"
             onClick={onSave}
             disabled={isSaving}
@@ -629,7 +600,91 @@ function EditableNameRow({
       ) : (
         <Button
           variant="outline"
-          className="rounded-full h-9 px-4 text-sm font-black text-[#008f79] border-neutral-200"
+          className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
+          type="button"
+          onClick={onEdit}
+        >
+          Modificar
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function EditablePhoneRow({
+  value,
+  draftValue,
+  isEditing,
+  isSaving,
+  message,
+  onChange,
+  onEdit,
+  onCancel,
+  onSave,
+}: {
+  value: string
+  draftValue: string
+  isEditing: boolean
+  isSaving: boolean
+  message: string | null
+  onChange: (value: string) => void
+  onEdit: () => void
+  onCancel: () => void
+  onSave: () => void
+}) {
+  return (
+    <div className="grid gap-4 border-b border-neutral-100 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+      <div>
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <MessageCircle size={16} />
+          Numero de celular
+        </div>
+        {isEditing ? (
+          <Input
+            value={draftValue}
+            onChange={(event) => onChange(event.target.value)}
+            className="h-11 max-w-md"
+            placeholder="+53 5555 5555"
+            autoComplete="tel"
+            autoFocus
+          />
+        ) : (
+          <p className={`text-sm font-bold ${value ? 'text-neutral-800' : 'text-red-500'}`}>
+            {value || 'Ingresa tu numero de celular'}
+          </p>
+        )}
+        <p className="mt-1 text-sm text-neutral-500">
+          Este numero sera visible como dato de contacto cuando lo uses en tus publicaciones.
+        </p>
+        {message ? (
+          <p className="mt-2 text-sm font-semibold text-[#008f79]">{message}</p>
+        ) : null}
+      </div>
+
+      {isEditing ? (
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <Button
+            variant="outline"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black"
+            type="button"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="h-11 rounded-full bg-[#008f79] px-4 text-sm font-black text-white hover:bg-[#007565]"
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
           type="button"
           onClick={onEdit}
         >
@@ -644,12 +699,12 @@ function VerificationCard({
   verifiedCount,
   hasName,
   hasEmail,
-  hasVerifiedPhone,
+  hasPhone,
 }: {
   verifiedCount: number
   hasName: boolean
   hasEmail: boolean
-  hasVerifiedPhone: boolean
+  hasPhone: boolean
 }) {
   const totalItems = 3
   const percent = Math.round((verifiedCount / totalItems) * 100)
@@ -664,10 +719,10 @@ function VerificationCard({
           </span>
           <div>
             <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
-              Completa tu verificacion y aumenta tu rendimiento
+              Completa tu cuenta y aumenta tu rendimiento
             </h2>
             <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
-              Los usuarios con datos verificados reciben mas contactos y generan mayor confianza.
+              Mantener tus datos principales completos facilita que te contacten.
             </p>
           </div>
         </div>
@@ -675,7 +730,7 @@ function VerificationCard({
         <div>
           <div className="mb-2 flex items-center justify-between text-sm font-black">
             <span className="text-neutral-700">
-              {verifiedCount} de {totalItems} datos verificados
+              {verifiedCount} de {totalItems} datos completados
             </span>
             <span className="text-[#008f79]">{percent}%</span>
           </div>
@@ -690,13 +745,13 @@ function VerificationCard({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <VerificationItem ok={hasName} label="Nombre" />
           <VerificationItem ok={hasEmail} label="Email" />
-          <VerificationItem ok={hasVerifiedPhone} label="Celular por WhatsApp" />
+          <VerificationItem ok={hasPhone} label="Celular" />
         </div>
 
         <p className="text-sm font-bold text-[#008f79]">
           {missingCount === 0
-            ? 'Tu cuenta tiene los datos principales verificados.'
-            : `Te ${missingCount === 1 ? 'falta' : 'faltan'} ${missingCount} ${missingCount === 1 ? 'dato' : 'datos'} para obtener el badge de cuenta verificada.`}
+            ? 'Tu cuenta tiene los datos principales completos.'
+            : `Te ${missingCount === 1 ? 'falta' : 'faltan'} ${missingCount} ${missingCount === 1 ? 'dato' : 'datos'} por completar.`}
         </p>
       </div>
     </section>
@@ -768,7 +823,7 @@ function AccountRow({
         {actionLabel ? (
           <Button
             variant="outline"
-            className="rounded-full h-9 px-4 text-sm font-black border-neutral-200 text-[#008f79]"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
             type="button"
           >
             {actionLabel}

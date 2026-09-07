@@ -55,7 +55,7 @@ export function AgentDashboardPage({
         loading={dashboard.loading}
         activePropertiesCount={dashboard.activePropertiesCount}
         totalAccumulatedViews={dashboard.totalAccumulatedViews}
-        estimatedLeads={dashboard.estimatedLeads}
+        totalContactClicks={dashboard.totalContactClicks}
       />
       <AgentPropertyManager
         properties={dashboard.properties}

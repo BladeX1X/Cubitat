@@ -17,13 +17,17 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public static getDerivedStateFromError(error: Error): State {
+    const msg = error?.message || ''
     const isChunk =
-      error.name === 'ChunkLoadError' ||
-      error.message.includes('Failed to fetch dynamically imported module') ||
-      error.message.includes('loading chunk')
+      error?.name === 'ChunkLoadError' ||
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('loading chunk') ||
+      msg.includes('Importing a module script failed')
 
     if (isChunk) {
-      window.location.reload()
+      if (typeof window !== 'undefined') {
+        window.location.reload()
+      }
       return { hasError: true, isChunkError: true }
     }
     return { hasError: true, isChunkError: false }

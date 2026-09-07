@@ -5,6 +5,35 @@ export type AdminMfaStatus = {
   verifiedFactorId: string | null
   unverifiedFactorIds: string[]
 }
+
+export type MfaVerificationFailure = 'session_expired' | 'invalid_code' | 'unavailable'
+
+export class MfaVerificationError extends Error {
+  readonly reason: MfaVerificationFailure
+
+  constructor(reason: MfaVerificationFailure) {
+    super('MFA verification failed')
+    this.name = 'MfaVerificationError'
+    this.reason = reason
+  }
+}
+
+function classifyMfaVerificationFailure(error: unknown): MfaVerificationFailure {
+  const details = error as { code?: unknown; status?: unknown }
+  const code = typeof details?.code === 'string' ? details.code : ''
+  const status = typeof details?.status === 'number' ? details.status : null
+
+  if (code === 'session_not_found' || code === 'refresh_token_not_found') {
+    return 'session_expired'
+  }
+
+  if (code === 'mfa_verification_failed' || code === 'mfa_challenge_expired' || status === 422) {
+    return 'invalid_code'
+  }
+
+  return 'unavailable'
+}
+
 export async function getAdminMfaStatus(): Promise<AdminMfaStatus> {
   const [aalResult, factorsResult] = await Promise.all([
     supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
@@ -48,5 +77,5 @@ export async function startTotpEnrollment(unverifiedFactorIds: string[]) {
 
 export async function verifyTotp(factorId: string, code: string) {
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code })
-  if (error) throw new Error('MFA verification failed')
+  if (error) throw new MfaVerificationError(classifyMfaVerificationFailure(error))
 }

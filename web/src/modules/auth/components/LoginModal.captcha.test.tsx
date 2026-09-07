@@ -4,9 +4,11 @@ import { LoginModal } from './LoginModal'
 
 const {
   requestPasswordResetWithCaptchaMock,
+  signInWithPasswordMock,
   signUpWithCaptchaMock,
 } = vi.hoisted(() => ({
   requestPasswordResetWithCaptchaMock: vi.fn(),
+  signInWithPasswordMock: vi.fn(),
   signUpWithCaptchaMock: vi.fn(),
 }))
 
@@ -19,7 +21,7 @@ vi.mock('../../../shared/lib/supabaseClient', () => ({
   supabase: {
     auth: {
       signInWithOAuth: vi.fn(),
-      signInWithPassword: vi.fn(),
+      signInWithPassword: signInWithPasswordMock,
     },
   },
 }))
@@ -70,6 +72,37 @@ describe('LoginModal CAPTCHA', () => {
         email: 'qa@example.com',
       }))
     })
+  })
+
+  it('sends the widget token with password login', async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({ error: null })
+    render(<LoginModal />)
+
+    fireEvent.change(screen.getByPlaceholderText('tucorreo@ejemplo.com'), { target: { value: 'QA@Example.com' } })
+    fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'Secure1!' } })
+    fireEvent.click(screen.getByTestId('turnstile-login-password'))
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesion' }))
+
+    await waitFor(() => {
+      expect(signInWithPasswordMock).toHaveBeenCalledWith({
+        email: 'qa@example.com',
+        password: 'Secure1!',
+        options: {
+          captchaToken: 'token-login-password',
+        },
+      })
+    })
+  })
+
+  it('blocks password login until Turnstile is completed', async () => {
+    render(<LoginModal />)
+
+    fireEvent.change(screen.getByPlaceholderText('tucorreo@ejemplo.com'), { target: { value: 'QA@Example.com' } })
+    fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'Secure1!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesion' }))
+
+    expect(await screen.findByText('Por favor, completa la verificación de seguridad.')).toBeInTheDocument()
+    expect(signInWithPasswordMock).not.toHaveBeenCalled()
   })
 
   it('sends the widget token through the protected recovery adapter', async () => {

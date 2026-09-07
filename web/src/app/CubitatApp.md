@@ -44,6 +44,9 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 7. El boton `Ingresar` abre `LoginModal`.
 8. Cuando hay sesion activa, el Header muestra campanita de notificaciones y `UserMenu`.
 9. `UserMenu` permite navegar a `Mi cuenta`, `Favoritos`, `Ver mis contenidos` y ejecutar `Cerrar sesion`.
+10. Si Supabase invalida la sesión durante el desafío MFA administrativo,
+    `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
+    `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.
 
 ## Decisiones de Implementacion
 
@@ -57,6 +60,10 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - El login esta fuera del flujo de scroll y se renderiza como modal.
 - Las rutas privadas (`/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`) abren login y vuelven a portada si no hay usuario.
 - `Favoritos` reutiliza `saved_properties` y las tarjetas oficiales para no duplicar logica visual.
+- La recuperación de una sesión MFA expirada permanece centralizada:
+  `AdminPage` no cierra sesiones ni consulta Auth; únicamente propaga el
+  callback hasta el guard. El cierre limpia la caché offline y el borrador
+  legado antes de volver a abrir el login.
 
 ## Pendientes
 
@@ -111,7 +118,7 @@ Estado actual (2026-07-01):
 - `Mi cuenta`, `Favoritos` y `Ver mis contenidos` comparten `src/pages/account/AccountLayout.tsx`; solo debe cambiar el contenido derecho.
 - La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
-- La verificacion de cuenta usa 3 datos: nombre, email y celular verificado por WhatsApp (`profiles.phone_verified_at`).
+- La tarjeta de cuenta usa 3 datos completados: nombre, email y celular editable (`profiles.phone`). El celular ya no requiere verificacion por WhatsApp dentro del MVP; el proxy solo permite actualizar campos seguros del perfil.
 - El correo no se modifica desde `Mi cuenta`; la contrasena tampoco se gestiona en esa pantalla.
 - La navegacion usa `pageMode` y `window.history.pushState` (sin React Router).
 - Las rutas implementadas: `/`, `/resultados`, `/propiedad/:slug`, `/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`.
@@ -121,6 +128,11 @@ Estado actual (2026-07-01):
 - Las funciones `navigateToSection` y `scrollTo` estan comentadas; reactivar cuando se reimplementen Servicios/Productos.
 - Supabase esta conectado para auth, propiedades (CRUD), storage de imagenes y RLS.
 - Los estados `loading` y `error` de Supabase no bloquean `HomePage`; solo afectan vistas dependientes de datos remotos.
+- Con Fase 2 local habilitada, la carga de propiedades consulta en paralelo la
+  proyeccion de agentes verificados y anota `isVerifiedAgent`. Si esa proyeccion
+  falla, conserva el catalogo base sin otorgar insignias.
+- Las respuestas REST de Supabase no se almacenan en el service worker; los
+  cambios de sesion, rol y KYC deben resolverse siempre contra el backend.
 - Las operaciones de filtro (Venta/Renta/Permuta) son de seleccion exclusiva (no multi-select).
 
 Flujo de paginas:
@@ -170,3 +182,23 @@ Verificacion reciente (2026-07-01):
 - Se retiro el banner/franja de `Verificar cuenta` del header movil y del layout de cuenta.
 - El panel de cuenta ya no debe usar `navigateHome` para acciones internas de regreso. El boton de cuenta usa `navigateAccount`, de modo que vuelve al inicio del panel y no a la portada publica.
 - El menu movil autenticado incluye `Cerrar sesion`; al cerrar sesion vuelve a `/` sin abrir el modal de login.
+
+## Recuperación de sesión MFA administrativa — 2026-07-30
+
+- `handleExpiredAdminSession` reutiliza `handleSignOut`, vuelve a `/` y abre el
+  login después de limpiar la sesión, la caché de propiedades y el borrador
+  legado de publicación.
+- `CubitatApp.test.tsx` monta el proveedor real del modal y simula la expiración
+  desde `AdminPage`; comprueba el orden del cierre y la limpieza, la navegación
+  al inicio y la reapertura del diálogo de autenticación.
+- La prueba no usa un TOTP real, no consulta KYC y no realiza llamadas a
+  Supabase.
+
+## Aislamiento del bundle de Fase 2 — 2026-07-31
+
+- `AgentProfilePage` y `AgentDashboardPage` se cargan de forma lazy únicamente
+  cuando `import.meta.env.DEV` es verdadero. Un build productivo ya no genera
+  sus chunks, aunque DEV/local conserva ambas rutas.
+- La moderación KYC aplica la misma frontera dentro de `AdminPage`.
+- El build ejecuta `verify-phase2-production-bundle.mjs` y falla si detecta los
+  chunks exclusivos o el marcador `review_kyc_request`.

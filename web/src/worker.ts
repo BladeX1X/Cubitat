@@ -6,9 +6,21 @@ import {
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
-import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
 
 export { RateLimiter };
+
+export interface WorkerExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+interface RateLimiterStub {
+  fetch(input: string | URL | Request): Promise<Response>;
+}
+
+interface RateLimiterNamespace {
+  idFromName(name: string): unknown;
+  get(id: unknown): RateLimiterStub;
+}
 
 export interface Env extends PublicSubmissionEnv {
   ASSETS: {
@@ -22,13 +34,12 @@ export interface Env extends PublicSubmissionEnv {
   SUPABASE_PROJECT_ID?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
-  PHASE2_ENABLED?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
   TURNSTILE_VERIFY_URL?: string;
-  RATE_LIMITER: any;
+  RATE_LIMITER: RateLimiterNamespace;
 }
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -210,7 +221,7 @@ async function isRateLimited(env: Env, ip: string, limit: number, windowMs: numb
   return !data.allowed;
 }
 
-async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+export async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
   const id = env.RATE_LIMITER.idFromName('global');
   const stub = env.RATE_LIMITER.get(id);
   const url = `https://dummy/check?key=${encodeURIComponent(key)}&limit=${limit}&windowMs=${windowMs}`;
@@ -218,7 +229,7 @@ async function checkRateLimit(env: Env, key: string, limit: number, windowMs: nu
   return await res.json() as { allowed: boolean; remaining: number; resetAt: number };
 }
 
-function rateLimitResponse(resetAt: number): Response {
+export function rateLimitResponse(resetAt: number): Response {
   const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
   return withSecurityHeaders(new Response(JSON.stringify({
     error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
@@ -574,12 +585,14 @@ async function resendSignupConfirmation(email: string, env: Env): Promise<void> 
   });
 }
 
-export default {
-  scheduled(_controller: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): void {
-    if (env.PHASE2_ENABLED !== 'true') return
-    ctx.waitUntil(dispatchPendingAlertEmails(env))
-  },
-  async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
+export interface WorkerOptions {
+  additionalPublicRpcs?: readonly string[];
+  additionalAuthenticatedRpcs?: readonly string[];
+}
+
+export function createWorker(options: WorkerOptions = {}) {
+  return {
+    async fetch(request: Request, env: Env, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
     
@@ -941,13 +954,23 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
       const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
-      const allowedPublicRpcs = ['get_public_agent_profile', 'increment_property_view_count'];
-      const allowedAuthenticatedRpcs = ['get_admin_metrics', 'submit_kyc_request', 'review_kyc_request'];
+      const allowedPublicRpcs = [
+        'increment_property_view_count',
+        ...(options.additionalPublicRpcs ?? []),
+      ];
+      const allowedAuthenticatedRpcs = [
+        'get_admin_metrics',
+        ...(options.additionalAuthenticatedRpcs ?? []),
+      ];
 
       const restMatch = subPath.match(/^\/rest\/v1\/([^/?]+)/);
       const tableName = restMatch ? restMatch[1] : null;
       const rpcMatch = subPath.match(/^\/rest\/v1\/rpc\/([^/?]+)/);
       const rpcName = rpcMatch ? rpcMatch[1] : null;
+      const allowedAuthenticatedProfilePatch = method === 'PATCH'
+        && authenticated
+        && tableName === 'profiles';
+      const allowedProfilePatchFields = ['full_name', 'phone', 'avatar_url'];
       const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
         && authenticated
         && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
@@ -1002,7 +1025,26 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
       if (method === 'DELETE' || method === 'PATCH') {
         if (!isAllowedAuthenticatedMfaDelete
+          && !allowedAuthenticatedProfilePatch
           && (!tableName || !allowedWriteTables.includes(tableName) || !authenticated)) {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+      }
+
+      if (allowedAuthenticatedProfilePatch) {
+        let profilePatchBody: unknown;
+        try {
+          profilePatchBody = await request.clone().json();
+        } catch {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+
+        if (
+          !profilePatchBody
+          || Array.isArray(profilePatchBody)
+          || typeof profilePatchBody !== 'object'
+          || Object.keys(profilePatchBody).some((field) => !allowedProfilePatchFields.includes(field))
+        ) {
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
         }
       }
@@ -1361,5 +1403,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
     response = await rewriteCanonicalLink(response, url);
 
     return withSecurityHeaders(response, url);
-  }
-};
+    }
+  };
+}
+
+export default createWorker();

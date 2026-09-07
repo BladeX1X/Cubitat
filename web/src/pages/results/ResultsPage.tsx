@@ -12,6 +12,7 @@ import { SearchAlertModal } from '../../modules/search/components/SearchAlertMod
 import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 import './ResultsPage.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
@@ -195,9 +196,15 @@ export function ResultsPage({
   }, [])
 
   const sortedProperties = useMemo(() => {
-    if (sortBy === 'relevance') return properties
+    let list = properties
 
-    return [...properties].sort((a, b) => {
+    if (PHASE_TWO_ENABLED && filters.verifiedOnly) {
+      list = list.filter((property) => property.isVerifiedAgent === true)
+    }
+
+    if (sortBy === 'relevance') return list
+
+    return [...list].sort((a, b) => {
       if (sortBy === 'price-asc') {
         return (a.priceUsd ?? Number.MAX_SAFE_INTEGER) - (b.priceUsd ?? Number.MAX_SAFE_INTEGER)
       }
@@ -208,7 +215,7 @@ export function ResultsPage({
 
       return b.areaM2 - a.areaM2
     })
-  }, [properties, sortBy])
+  }, [properties, sortBy, filters.verifiedOnly])
 
   const activeSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? 'Ordenar'
   const listedProperties = useMemo(() => {

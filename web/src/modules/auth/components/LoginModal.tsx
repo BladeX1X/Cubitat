@@ -14,7 +14,12 @@ import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import { MODAL_LAYER_STYLE } from '../../../shared/ui/layers'
 import { supabase } from '../../../shared/lib/supabaseClient'
-import { clearAuthReturnPath, getAuthRedirectUrl, storeAuthReturnPath } from '../utils/authRedirects'
+import {
+  clearAuthReturnPath,
+  getAuthRedirectUrl,
+  resolveSupabaseOAuthUrl,
+  storeAuthReturnPath,
+} from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
@@ -48,6 +53,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
   useEffect(() => {
     setTurnstileToken(null)
   }, [isRegistering, isResettingPassword])
+
+  const turnstileAction = isResettingPassword
+    ? 'forgot-password'
+    : isRegistering
+      ? 'register-user'
+      : 'login-password'
 
   function resetTurnstileChallenge() {
     setTurnstileToken(null)
@@ -87,10 +98,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
     }
 
     if (data?.url) {
-      // Reemplazar la URL del proxy por la URL nativa de Supabase para evitar interceptaciones del Service Worker PWA
-      const nativeUrl = data.url.replace(
-        window.location.origin + '/api/supabase',
-        import.meta.env.VITE_SUPABASE_URL
+      const nativeUrl = resolveSupabaseOAuthUrl(
+        data.url,
+        import.meta.env.VITE_SUPABASE_URL,
+        window.location.origin,
       )
       window.location.assign(nativeUrl)
     } else {
@@ -174,11 +185,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
       }
     }
 
+    if (!turnstileToken) {
+      setErrorMsg('Por favor, completa la verificación de seguridad.')
+      return
+    }
+
     if (isRegistering) {
-      if (!turnstileToken) {
-        setErrorMsg('Por favor, completa la verificación de seguridad.')
-        return
-      }
       setLoading(true)
     } else {
       setLoading(true)
@@ -208,9 +220,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
         // Sign In
         const { error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
-          password
+          password,
+          options: {
+            captchaToken: turnstileToken,
+          },
         })
         if (error) throw error
+        setTurnstileToken(null)
         onClose?.()
       }
     } catch (err: any) {
@@ -220,7 +236,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         level: 'error',
         code: sanitizeErrorReason(err),
       })
-      if (isRegistering || isResettingPassword) resetTurnstileChallenge()
+      resetTurnstileChallenge()
       let msg = 'Ocurrió un error inesperado.'
       if (err?.message && err.message !== '{}') {
         msg = err.message
@@ -490,15 +506,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
               </div>
             )}
 
-            {(isRegistering || isResettingPassword) && (
-              <TurnstileWidget
-                key={turnstileKey}
-                action={isResettingPassword ? "forgot-password" : "register-user"}
-                onVerify={(token) => setTurnstileToken(token)}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-              />
-            )}
+            <TurnstileWidget
+              key={turnstileKey}
+              action={turnstileAction}
+              onVerify={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+            />
 
             <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
               {loading ? (

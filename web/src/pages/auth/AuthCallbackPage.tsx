@@ -12,6 +12,25 @@ type AuthCallbackPageProps = {
 
 type CallbackStatus = 'loading' | 'success' | 'error'
 
+function getEmailConfirmationErrorMessage(message?: string) {
+  if (!message) return 'No pudimos validar este enlace. Solicita uno nuevo.'
+
+  const normalizedMessage = message.toLowerCase()
+  if (
+    normalizedMessage.includes('pkce')
+    || normalizedMessage.includes('code verifier')
+    || normalizedMessage.includes('email link')
+    || normalizedMessage.includes('expired')
+    || normalizedMessage.includes('invalid')
+    || normalizedMessage.includes('otp')
+    || normalizedMessage.includes('token')
+  ) {
+    return 'No pudimos confirmar este enlace. Solicita uno nuevo o vuelve a iniciar el registro.'
+  }
+
+  return message
+}
+
 export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
   useSEO({
     title: 'Verificando Acceso',
@@ -27,7 +46,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
 
   useEffect(() => {
     async function handleCallback() {
-      const { accessToken, code, error, isOAuthCallback, refreshToken } = getAuthUrlParams()
+      const { accessToken, code, error, isOAuthCallback, refreshToken, tokenHash, type } = getAuthUrlParams()
 
       if (error) {
         setStatus('error')
@@ -39,7 +58,15 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
       try {
         let provider = 'email'
         let providers: string[] = []
-        if (code) {
+        if (tokenHash && type === 'signup') {
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'signup',
+          })
+          if (verifyError) throw verifyError
+          provider = data?.user?.app_metadata?.provider || 'email'
+          providers = data?.user?.app_metadata?.providers || []
+        } else if (code) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
           provider = data?.user?.app_metadata?.provider || 'email'
@@ -86,7 +113,7 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
       } catch (err: any) {
         cleanAuthUrl('/auth/callback')
         setStatus('error')
-        setMessage(err?.message || 'No pudimos validar este enlace. Solicita uno nuevo.')
+        setMessage(getEmailConfirmationErrorMessage(err?.message))
       }
     }
 

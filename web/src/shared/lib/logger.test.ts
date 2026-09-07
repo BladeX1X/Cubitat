@@ -74,4 +74,35 @@ describe('logger.ts - Safe Frontend Logging', () => {
     expect(output).not.toContain('user@test.com');
     expect(output).not.toContain('token=secret');
   });
+
+  it('replaces a free-form code with a closed safe classification', () => {
+    logSafeEvent({
+      module: 'auth',
+      action: 'login_failed',
+      level: 'error',
+      code: 'Invalid login for user@test.com token=secret',
+    });
+
+    const output = String(vi.mocked(console.error).mock.calls[0]?.[0]);
+    expect(output).toContain('(UNCLASSIFIED_ERROR)');
+    expect(output).not.toContain('user@test.com');
+    expect(output).not.toContain('token=secret');
+  });
+
+  it('replaces untyped structural fields before writing to console', () => {
+    logSafeEvent({
+      module: 'user@test.com',
+      action: 'https://private.example/token=secret',
+      level: 'private-level',
+      code: 'AUTH_FAILED',
+    } as unknown as Parameters<typeof logSafeEvent>[0]);
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    const output = String(vi.mocked(console.error).mock.calls[0]?.[0]);
+    expect(output).toContain('[CORE:invalid_action] ERROR (AUTH_FAILED)');
+    expect(output).not.toContain('user@test.com');
+    expect(output).not.toContain('private.example');
+    expect(output).not.toContain('private-level');
+    expect(output).not.toContain('token=secret');
+  });
 });

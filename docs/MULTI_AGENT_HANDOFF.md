@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-07-22
+Última actualización: 2026-09-06
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,88 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-09-06: por decisión de producto se retiró del MVP la
+> verificación obligatoria de celular por WhatsApp. En
+> `bugfix/auth-production-redirect`, `Mi cuenta` permite editar `profiles.phone`
+> como dato normal; el Worker permite `PATCH` autenticado a `profiles` solo para
+> campos seguros (`full_name`, `phone`, `avatar_url`) y conserva bloqueados
+> `role`, `verification_status` y `phone_verified_at`. Gate local completo:
+> `npm run lint`, `npm run test:run` (92 archivos/376 pruebas) y
+> `npm run build`. Desplegado a producción como Worker
+> `16d7ecdb-e3cf-4a24-a716-4aa39629e2cc`. Smoke productivo: home y rutas de
+> auth/cuenta responden 200, rutas privadas conservan `X-Robots-Tag: noindex`,
+> el bundle servido es `/assets/index-C-WWT6yY.js`, no aparece texto de
+> "Verificar por WhatsApp" en cuenta anónima, los errores PKCE/AAL2 siguen
+> ocultos, el `PATCH` anónimo a `profiles` responde 403, campos protegidos con
+> bearer falso responden 403, y `PATCH` de campos seguros con bearer falso pasa
+> el filtro del Worker y falla en Supabase con 401 por JWT inválido. Prueba real
+> autenticada completada el 2026-09-06 con el alias
+> `pochiprats18+cubitat-test-20260906a@gmail.com`: registro con Turnstile,
+> correo de confirmación por Gmail, callback `token_hash` en producción, login
+> por contraseña, edición de celular `+53 5555 0000`, persistencia tras recarga,
+> recuperación de contraseña y login posterior con la nueva clave. Google OAuth
+> abre `accounts.google.com` sin `localhost` y conserva `redirect_to` hacia
+> `https://cubitathome.com/auth/callback`.
+
+> Actualización 2026-08-03: la remediación de auditoría Fase 2 fue fusionada
+> mediante PR #85 en `dev` como `7d24355`. El PR cerró sin conflictos después
+> de lint, 87 archivos/348 pruebas y build/PWA con 473 URLs. La rama local y
+> remota `bugfix/phase2-audit-remediation` fue eliminada después de confirmar el
+> merge; `main` permanece en `42f5f9a` y producción no fue desplegada ni
+> consultada. El cambio local ajeno de `web/public/sitemap.xml` no formó parte
+> del PR y se conserva sin alteraciones.
+
+> Actualización 2026-08-02: remediación de auditoría Fase 2 en la rama
+> `bugfix/phase2-audit-remediation`, solo DEV/local. El panel de agente dejó de
+> estimar leads al 5 % y ahora suma clics reales de teléfono y WhatsApp; `admin`
+> ya no satisface el guard de agente verificado; `/mi-cuenta` limpia el estado
+> al cambiar de sesión y descarta respuestas tardías. El modal KYC y las tarjetas
+> del perfil público recibieron semántica y navegación por teclado. DEV-F2.7
+> revoca la RPC de contactos a `anon/authenticated`: el Worker limita por IP y
+> deriva una clave diaria HMAC sin aceptar identidad del navegador. Matriz SQL:
+> `phase2_local_security: ok` con `ROLLBACK`. Gate: lint limpio, 87 archivos y
+> 348 pruebas, build/PWA de 473 URLs, tipos Wrangler actualizados y dry-run DEV.
+> Chrome confirmó `buyer → agent → buyer`, F5 normal sin versión antigua ni
+> error rojo, panel oculto para buyer/admin, modal KYC con foco/Escape y consola
+> limpia. El endpoint local deduplicó dos clics idénticos en un único evento y
+> los datos QA fueron eliminados. El Worker remoto sigue sin secretos;
+> no confundir implementación con entrega remota operativa. Producción no fue
+> consultada ni modificada. Trust Score y Web Push continúan diferidos.
+
+> Actualización 2026-07-28: política KYC decidida e implementada solo en
+> DEV/local. Documento y selfie se eliminan al cumplir 24 horas desde la
+> aprobación o 1 hora desde el rechazo, mediante API de Storage y Cron
+> `service_role`; la fila mínima de auditoría permanece con rutas `NULL` y fecha
+> de purga. Reclamo atómico, reintentos y comprobación previa al cierre
+> verificados. Matriz SQL: `phase2_local_security: ok` con `ROLLBACK`. Gate:
+> lint, 83 archivos/327 pruebas y build. Producción y Worker remoto no
+> modificados. Trust Score y Web Push continúan diferidos.
+
+> Actualización 2026-07-27 (continuación paso a paso): `dev` fue subida en
+> `2523b33`. En Chrome, una cuenta QA KYC aprobada cambió buyer → agent sin
+> recarga forzada, accedió al panel, mostró insignia pública y reflejó
+> `1` llamada/`1` WhatsApp; repetir cada clave no duplicó eventos. La propiedad
+> y elevación KYC sintéticas fueron eliminadas y la cuenta terminó
+> `buyer/pending`, sin propiedades y sin acceso al panel. El dispatcher de
+> correo ahora admite proveedor, remitente y URL pública DEV y tolera caídas de
+> red sin rechazar el Cron. Gate: lint, 82 archivos/319 pruebas y build.
+> El Worker aislado `cubitat1-phase2-dev` ya fue desplegado y verificado con
+> respuesta HTTP 200 en `workers.dev`; no tiene rutas productivas ni secretos.
+> Entrega real de correo sigue bloqueada: la organización Supabase ya ocupa sus
+> dos proyectos gratuitos y el segundo contiene 8 recursos REST y 1 usuario,
+> por lo que no se reutilizó ni eliminó. Falta autorizar un tercer proyecto DEV
+> de pago y proporcionar una `RESEND_API_KEY` DEV. `env.dev.VITE_SUPABASE_URL`
+> continúa en `https://dev-supabase.invalid`, y el Cron omite la entrega de
+> forma segura. No usar credenciales ni Supabase de producción para cerrar esta
+> prueba.
+
+> Actualización 2026-07-27: auditoría integral de Fase 2 corregida en DEV/local.
+> Trust Score y Web Push quedan expresamente diferidos y fuera de la interfaz;
+> no se usan datos simulados. Verificación de agentes y métricas de contacto
+> provienen del backend. Lint, 82 archivos/317 pruebas, build y Chrome aprobados.
+
+> Actualización 2026-07-25: Submódulo 1.2 de Fase 2 completado en DEV (filtro por Agente Verificado y Trust Score ≥ 4.0 en barra de búsqueda y panel de filtros). 78 archivos y 298 pruebas unitarias aprobadas al 100%. Fusionado en `dev` y subido a GitHub.
 
 > Actualización 2026-07-22: decisión de producto confirmada por Rodolfo: toda la Fase 2 se prueba exclusivamente en DEV. La migración quedó fuera de la cadena productiva, la UI se desactiva en builds de producción y el Cron existe solo en `env.dev`. No desplegar Fase 2 ni aplicar su SQL en producción.
 
@@ -75,7 +157,9 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | L. Bitácora de moderación | Terminado | Codex principal | PR #26 fusionado y migración 42 sincronizada. Revalidación productiva 2026-07-19: anónimo rechazado; usuario normal y admin AAL1 con 0 filas; admin AAL2 con 4 eventos; `INSERT/UPDATE/DELETE` no autorizados rechazados, `service_role` sin `UPDATE/DELETE` y trigger inmutable habilitado. Transacción finalizada con `ROLLBACK`. |
 | P. MFA administrativo | Terminado | Codex principal | TOTP activo; guard modular, Worker, RPC y RLS exigen `aal2`. Migración 47 sincronizada; admin AAL1 denegado, admin AAL2 operativo y propietario normal aislado. Lint, 172 pruebas, build, panel y consola verificados. |
 | Q. Recuperación MFA administrativa | Terminado | Codex principal | Runbook de emergencia en `docs/ADMIN_MFA_RECOVERY.md`. Simulacro no destructivo completado el 2026-07-21: contratos de SDK y API Admin validados, 8/8 pruebas de regresión aprobadas y 0 factores modificados. |
-| R. Logs seguros del frontend | Terminado | Codex | Auditar `console.*` por módulos, sustituir errores/respuestas crudas por eventos seguros sin datos personales ni tokens, conservar mensajes útiles para el usuario, añadir regresiones, ejecutar lint/pruebas/build y verificar navegación y consola en producción sin mutar datos. |
+| R. Logs seguros del frontend | Terminado | Codex | Parche `8abf03a` integrado en `dev` y desplegado el 2026-08-08 como Worker `f4688058-d178-4243-bc4f-7f6ef28e8aca`. Logger cerrado en runtime, guard arquitectónico, 355 pruebas y build aprobados; inicio, resultados, detalle y login verificados en producción con consola limpia. |
+| S. Recuperación de sesión MFA expirada | Terminado | Codex | Implementación y regresiones completas en DEV/local: tras `session_not_found` se oculta el desafío obsoleto, se ofrece cerrar sesión e iniciar nuevamente y se mantiene el guard bloqueado ante fallos. La integración de `CubitatApp` confirma cierre, limpieza, inicio y login; QA visual autenticada diferida por decisión del usuario. |
+| T. Aislamiento físico del bundle Fase 2 | Terminado | Codex | El build productivo excluye los chunks de panel/perfil de agente y el módulo de moderación KYC; DEV/local conserva las capacidades y una verificación automática bloquea regresiones. |
 
 ## Protocolo para trabajar en paralelo
 
@@ -104,6 +188,466 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 9. Al cerrar el carril, añadir una entrada al registro de relevo de abajo.
 
 ## Registro de relevo
+
+### 2026-09-05 - Codex - Redirect productivo de Auth corregido y desplegado
+
+- Estado: **corregido, desplegado y verificado en producción** desde la rama
+  `bugfix/auth-production-redirect`; Worker
+  `d938fb7e-d9b4-46a0-9063-7444914225e2`. Actualización posterior del mismo
+  hotfix desplegada como Worker `d6e4c941-e7c3-468d-93f6-9769c1beff0b` para
+  cubrir CAPTCHA en login por contraseña.
+- Hallazgo reproducido en producción: el botón Google del modal enviaba a
+  `http://127.0.0.1:54321/auth/v1/authorize` y pasaba
+  `redirect_to=http://127.0.0.1:5173/auth/callback?flow=oauth`, por lo que el
+  navegador terminaba en `ERR_CONNECTION_REFUSED`.
+- Causa: `getAuthRedirectUrl` confiaba siempre en `VITE_PUBLIC_SITE_URL` cuando
+  existía y `LoginModal` reemplazaba el proxy `/api/supabase` por
+  `VITE_SUPABASE_URL` sin descartar valores locales. Si el build o entorno
+  publicaba accidentalmente valores de desarrollo, los flujos de Google OAuth,
+  registro por correo y recuperación heredaban ese origen incorrecto.
+- Corrección: `resolveAuthRedirectBaseUrl` descarta un `VITE_PUBLIC_SITE_URL`
+  local cuando `window.location.origin` es público, usa el origen visible y
+  conserva callbacks locales solo cuando la app corre en `localhost` o
+  `127.0.0.1`. `resolveSupabaseOAuthUrl` conserva el proxy productivo si
+  `VITE_SUPABASE_URL` apunta a Supabase local.
+- Evidencia local: pruebas focales de auth aprobadas, lint limpio, 91 archivos
+  y 364 pruebas aprobadas, build Vite/PWA correcto con verificadores de
+  aislamiento Fase 2 y sitemap de 473 URLs. El chunk compilado con
+  `VITE_PUBLIC_SITE_URL=http://127.0.0.1:5173` devuelve
+  `https://cubitathome.com/auth/callback?flow=oauth` al simular origen
+  productivo.
+- Evidencia productiva: un navegador aislado abrió el modal, pulsó Google y la
+  cadena navegó a `/api/supabase/auth/v1/authorize` con callback
+  `https://cubitathome.com/auth/callback?flow=oauth`, después a
+  `accounts.google.com`; no apareció `127.0.0.1` en la ruta final. No se inició
+  sesión, no se resolvió CAPTCHA y no se creó cuenta.
+- Incidencia móvil posterior: una captura de celular mostró que el login por
+  correo devolvía `captcha protection: request disallowed (no captcha_token
+  found)`. Causa: Supabase Attack Protection también exige `captchaToken` para
+  `signInWithPassword`, pero el modal solo renderizaba Turnstile en registro y
+  recuperación.
+- Corrección adicional: el login por contraseña ahora renderiza
+  `TurnstileWidget` con acción `login-password`, bloquea el submit hasta tener
+  token, envía `options.captchaToken` a `signInWithPassword` y renueva el widget
+  ante cualquier fallo.
+- Evidencia adicional: lint limpio, 91 archivos y 368 pruebas aprobadas, build
+  Vite/PWA correcto con verificadores de aislamiento Fase 2. En producción móvil
+  simulada se abrió el modal desde `Cuenta`, apareció el contenedor Turnstile
+  `login-password`, y al intentar enviar sin token se mostró el mensaje seguro
+  local sin hacer ninguna petición a `/auth/v1/token`.
+- Incidencia móvil posterior de confirmación: una captura al abrir el enlace de
+  confirmación mostró `PKCE code verifier not found in storage`, típico cuando
+  el correo se abre en un navegador/dispositivo distinto al que inició el
+  registro.
+- Corrección de confirmación: `confirmation.html` ahora genera
+  `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=signup`, y
+  `AuthCallbackPage` confirma esos enlaces con `supabase.auth.verifyOtp`.
+  El callback conserva compatibilidad con `code` PKCE para enlaces antiguos y
+  reemplaza errores técnicos de PKCE/OTP/token por un mensaje seguro en español.
+- Evidencia local de confirmación: pruebas focales de callback aprobadas,
+  suite completa con 91 archivos y 370 pruebas aprobadas, lint limpio y build
+  Vite/PWA correcto.
+- Estado productivo de confirmación: `supabase config push --project-ref
+  tohjzoncoosvjbjcakdl --yes` aplicó la plantilla remota y se corrigió
+  inmediatamente `auth.captcha.enabled = true` después de detectar que el
+  `config.toml` local anterior intentaba apagar CAPTCHA. También se restauró el
+  `client_id` público de Google en Supabase Auth porque el push inicial lo había
+  enviado como texto `env(...)`. Frontend desplegado como Worker
+  `b23a0b39-9e64-46d9-ba77-764f8bcf4a29`.
+- Evidencia productiva de confirmación: `/auth/callback?token_hash=invalid&type=signup`
+  muestra el mensaje seguro en español y no expone `PKCE code verifier` ni el
+  error inglés de Supabase. Google OAuth volvió a abrir `accounts.google.com`
+  con el client id correcto y sin `localhost` ni `invalid_client`.
+- Pendiente: probar un enlace real nuevo de confirmación generado después de la
+  actualización de plantilla. Los enlaces anteriores a este cambio pueden seguir
+  fallando porque ya fueron emitidos como PKCE. Se solicitó reenvío de
+  confirmación en producción para el correo indicado por el usuario y el
+  endpoint respondió `{"ok":true}`; falta que el usuario abra ese correo nuevo y
+  confirme el resultado visible.
+- Incidencia móvil posterior de recuperación: una captura al guardar nueva
+  contraseña mostró el error crudo `AAL2 session is required to update email or
+  password when MFA is enabled`. Causa: `ResetPasswordPage` preparaba la sesión
+  de recovery, pero no elevaba a `aal2` con TOTP antes de `updateUser` cuando la
+  cuenta tenía MFA verificado.
+- Corrección de recuperación en curso: `ResetPasswordPage` detecta el estado MFA
+  de la sesión temporal, pide código TOTP si hay un factor verificado pendiente
+  de `aal2`, ejecuta `challengeAndVerify` antes de cambiar la contraseña y mapea
+  el error técnico AAL2 a español.
+- Evidencia de recuperación MFA: prueba focal nueva aprobada, lint limpio, 92
+  archivos y 374 pruebas aprobadas, build Vite/PWA correcto con verificadores de
+  aislamiento Fase 2. Desplegado como Worker
+  `086bf206-9579-43cb-9130-070cd5b5141e`; producción carga
+  `/recuperar-contrasena`, muestra el mensaje seguro para enlace incompleto y no
+  expone el error crudo AAL2. Pendiente prueba real con enlace de recuperación y
+  código TOTP del usuario para confirmar el cambio de contraseña end-to-end.
+- Verificación integral solicitada por el usuario: se repitieron `npm run lint`,
+  `npm run test:run` y `npm run build` sin fallos. Matriz móvil productiva:
+  home `200`; login por contraseña muestra Turnstile `login-password`, bloquea
+  sin token, no llama `/auth/v1/token` y no expone el error crudo de CAPTCHA;
+  Google OAuth termina en `accounts.google.com` con client id correcto, callback
+  productivo y sin `localhost`/`invalid_client`; confirmación con
+  `token_hash` inválido muestra el mensaje seguro en español sin PKCE crudo;
+  recuperación sin enlace muestra mensaje seguro y no expone AAL2; reenvío de
+  confirmación responde `{"ok":true}`. Único pendiente no automatizable:
+  completar un CAPTCHA real y un TOTP real desde el dispositivo del usuario.
+
+### 2026-07-31 — Codex — Aislamiento físico del bundle Fase 2
+
+- Estado: **terminado y verificado en build local de producción; listo para
+  publicar en `dev`**.
+- Causa: las capacidades estaban correctamente bloqueadas por la bandera, pero
+  Vite aún generaba chunks para `AgentDashboardPage`, `AgentProfilePage` y
+  empaquetaba `review_kyc_request` dentro de `AdminPage`.
+- Corrección: las tres superficies usan imports lazy detrás de
+  `import.meta.env.DEV`; producción puede eliminarlas por tree shaking y
+  DEV/local conserva las rutas y KYC.
+- Regresión: `verify-phase2-production-bundle.mjs` falla si reaparecen los
+  chunks exclusivos o el marcador de la RPC KYC. La reproducción inicial falló
+  con los tres hallazgos y el build corregido pasó.
+- Evidencia: lint limpio, 84 archivos/333 pruebas y build aprobados. Módulos
+  transformados 329 → 312, precache PWA 45 → 42 entradas y 1077.61 → 1045.01
+  KiB; `AdminPage` bajó de 64.69 a 54.75 kB y el verificador confirmó la
+  ausencia de los tres módulos exclusivos.
+- QA navegador DEV/local: Supabase Auth local respondió HTTP 200; el perfil
+  sintético `/agente/f3000000-0000-0000-0000-000000000001` cargó “Agente QA
+  Local” y una propiedad; `/panel-agente` anónimo volvió a `/` y abrió el login.
+  Los tres módulos exclusivos respondieron HTTP 200 desde Vite DEV y la consola
+  quedó con 0 errores/advertencias. La pestaña KYC AAL2 no se abrió porque la QA
+  con TOTP permanece diferida por decisión del usuario.
+- Alcance: no se modificaron datos, Supabase, KYC, Worker ni producción.
+
+### 2026-07-30 — Codex — Recuperación accionable de sesión MFA expirada
+
+- Estado: **implementado y verificado automáticamente en DEV/local; fusionado
+  en `dev` mediante PR #78**. La QA visual autenticada fue diferida por
+  decisión del usuario al no tener disponible el dispositivo TOTP.
+- Flujo: ante `session_not_found`, `AdminMfaGate` descarta el factor, el código
+  introducido y cualquier QR de enrolamiento obsoleto; oculta el formulario y
+  ofrece “Cerrar sesión e iniciar nuevamente”.
+- Recuperación: `CubitatApp` reutiliza el cierre central de sesión, limpia el
+  estado local, navega al inicio y abre el login. Si el cierre falla, el guard
+  permanece bloqueado, permite reintentar y no expone el error crudo.
+- Regresión: 18 pruebas focales aprobadas, incluida la expiración durante el
+  enrolamiento y una integración de `CubitatApp` que confirma el orden
+  `signOut` → limpieza de caché → borrado del borrador, la navegación a `/` y
+  la reapertura del login. El ciclo obligatorio terminó con lint limpio,
+  84 archivos/333 pruebas y build TypeScript/Vite/PWA correcto con 45 entradas
+  de precache y 473 URLs. El sitemap generado se restauró porque no cambiaron
+  las rutas.
+- Navegador: el servidor local respondió HTTP 200. La sesión del navegador
+  integrado era anónima; la pestaña Chrome autenticada de `/moderar` existía,
+  pero dos intentos de control agotaron el tiempo de espera. No se introdujo
+  ningún TOTP, no se consultó KYC y no se tocó producción.
+- Pendiente no bloqueante: cuando el dispositivo TOTP esté disponible,
+  reproducir `session_not_found` en Chrome y comprobar visualmente que la
+  acción abre el login sin mostrar el desafío anterior.
+
+### 2026-07-30 — Codex — Errores MFA administrativos diferenciados
+
+- Estado: **corregido y verificado exclusivamente en DEV/local**.
+- Causa raíz observada en Supabase Auth: `AdminMfaGate` mostraba siempre
+  “código no válido” porque `mfaService.verifyTotp()` descartaba `error.code` y
+  lanzaba un error genérico, incluso cuando Auth respondía
+  `session_not_found` antes de validar el TOTP.
+- Corrección: el servicio conserva únicamente una categoría segura
+  (`session_expired`, `invalid_code` o `unavailable`) sin exponer mensajes,
+  tokens ni cuerpos crudos de Supabase. La interfaz muestra instrucciones
+  específicas para volver a iniciar sesión, usar el código actual o revisar la
+  conexión.
+- Regresión: `AdminMfaGate.test.tsx` cubre sesión inexistente, TOTP inválido y
+  fallo de servicio/red, además del acceso AAL2 válido y el enrolamiento.
+- Calidad: lint limpio, 83 archivos/330 pruebas aprobadas y build
+  TypeScript/Vite/PWA correcto con 45 entradas de precache y 473 URLs. El
+  sitemap generado se restauró al estado previo porque no hubo cambios de
+  rutas.
+- Alcance: no se introdujo el TOTP del usuario, no se revisó la solicitud KYC y
+  no se consultó ni modificó producción.
+
+### 2026-07-28 19:22 — Codex — Purga KYC verificada contra Storage local real
+
+- Prueba integral ejecutada desde `supabase_network_web` con el Worker real
+  compilado desde `dev`, dos usuarios sintéticos, dos solicitudes KYC y cuatro
+  objetos WebP temporales en el bucket privado `kyc_documents`.
+- Las fechas programadas resultaron correctas: 24 horas para `approved` y
+  1 hora para `rejected`. Antes del vencimiento, el Worker devolvió
+  `claimed: 0`, `purged: 0`, `failed: 0`.
+- Tras adelantar exclusivamente las fechas de los fixtures, el Worker devolvió
+  `claimed: 2`, `purged: 2`, `failed: 0`; Storage quedó sin los cuatro objetos
+  sintéticos y ambas filas conservaron auditoría con rutas `NULL`, fecha de
+  purga y un intento.
+- Limpieza confirmada: 0 usuarios sintéticos, 0 solicitudes sintéticas y
+  0 objetos sintéticos residuales. El estado previo local se preservó en
+  1 solicitud pendiente y 2 objetos ajenos a esta prueba; no existe ninguna
+  purga vencida.
+- Hallazgo de entorno: el port-forward de Windows hacia `127.0.0.1:54321`
+  reinició conexiones durante la prueba, aunque Kong estaba sano dentro de
+  Docker. La validación se ejecutó dentro de la red local sin reiniciar
+  contenedores ni modificar permisos. Producción y Worker remoto permanecieron
+  intactos.
+
+### 2026-07-28 12:15 — Codex — Retención KYC rechazada de 1 hora
+
+- Decisión de producto: evidencias aprobadas conservan la ventana de 24 horas;
+  evidencias rechazadas se conservan 1 hora. Después, ambas usan el mismo flujo
+  seguro de purga por API de Storage.
+- Migración incremental DEV-F2.6:
+  `web/supabase/dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql`.
+  No se reescribió DEV-F2.5 ya aplicada.
+- La RPC general `claim_kyc_evidence_for_purge(integer)` reemplaza el reclamo
+  exclusivo de aprobadas y selecciona estados `approved` o `rejected` únicamente
+  cuando su fecha de purga venció. Conserva `SKIP LOCKED`, lease de 30 minutos y
+  acceso exclusivo de `service_role`.
+- Evidencia local: rechazado reciente no reclamado; después de adelantar solo la
+  fecha QA a más de 1 hora, reclamado exactamente una vez. La ventana aprobada
+  de 24 horas no cambió. Matriz completa:
+  `phase2_local_security: ok` y `ROLLBACK`.
+- Gate final: lint limpio, 83 archivos/327 pruebas, build PWA con 473 URLs y
+  Wrangler DEV dry-run correcto. No se desplegó el Worker actualizado ni se
+  modificaron Supabase/Cloudflare productivos.
+- Producto: Trust Score no se implementa todavía. Web Push —notificaciones del
+  navegador aun con Cubitat cerrado— también queda diferido y fuera de la
+  interfaz.
+
+### 2026-07-28 10:00 — Codex — Retención KYC de 24 horas implementada en DEV/local
+
+- Decisión de producto: documento y selfie de una solicitud KYC aprobada se
+  eliminan al cumplir 24 horas. Con el Cron DEV actual, la ejecución ocurre en
+  el primer intervalo posterior, como máximo aproximadamente 15 minutos después.
+- Migración DEV-F2.5:
+  `web/supabase/dev-migrations/20260801005000_kyc_evidence_retention.sql`.
+  Añade fecha programada, reclamo/lease, contador de intentos y fecha de purga;
+  permite poner las dos rutas en `NULL` sin borrar la fila de auditoría.
+- Seguridad: las RPC de reclamo, finalización y liberación están revocadas para
+  `PUBLIC`, `anon` y `authenticated`, y concedidas exclusivamente a
+  `service_role`. `FOR UPDATE SKIP LOCKED` evita solapamientos y el lease se
+  recupera a los 30 minutos.
+- Storage: el Worker usa `DELETE /storage/v1/object/kyc_documents` con ambas
+  rutas. No elimina directamente desde `storage.objects`; Supabase local bloqueó
+  explícitamente ese intento durante TDD. La RPC de finalización también se
+  niega a poner rutas en `NULL` mientras cualquier objeto siga presente.
+- Fallos: si Storage rechaza el borrado, se conservan las rutas y se libera el
+  reclamo. Si falla la confirmación posterior, el lease expira y permite repetir
+  la operación idempotente. Los logs usan eventos cerrados sin IDs, rutas,
+  secretos ni cuerpos externos.
+- Evidencia: migración aplicada solo a `supabase_db_web`; matriz completa
+  `phase2_local_security: ok` y `ROLLBACK`; pruebas focales 57/57; gate final
+  lint limpio, 83 archivos/326 pruebas y build PWA correcto con 473 URLs.
+  `wrangler deploy --env dev --dry-run` empaquetó el Worker sin desplegarlo.
+- Alcance histórico resuelto por DEV-F2.6: las evidencias rechazadas ahora usan
+  una ventana de 1 hora. No se desplegó el Worker actualizado ni se tocó
+  Supabase/Cloudflare de producción.
+
+### 2026-07-27 19:15 — Codex — Worker de alertas DEV desplegado; Supabase DEV bloqueado por capacidad
+
+- Estado: **Worker DEV desplegado; entrega real de correo bloqueada sin tocar
+  producción**.
+- Cloudflare CLI autenticado y despliegue confirmado:
+  `cubitat1-phase2-dev`, versión
+  `a6c7056e-1776-40f9-a14b-9f83b4963fbb`, URL
+  `https://cubitat1-phase2-dev.pochiprats18.workers.dev`, HTTP 200 y contenido
+  Cubitat. El entorno usa `workers.dev`, `routes: []` y Cron cada 15 minutos.
+- El Worker no recibió secretos. Mantiene
+  `VITE_SUPABASE_URL=https://dev-supabase.invalid`; por el manejo defensivo del
+  dispatcher, el Cron sale sin reclamar ni enviar alertas cuando falta
+  configuración.
+- Supabase CLI confirmó dos proyectos activos en la organización. El proyecto
+  Cubitat enlazado es producción y no se modificó. El otro proyecto candidato
+  tiene 8 recursos REST, 1 usuario Auth y 0 buckets; al no estar vacío, no se
+  borró, reinició ni reutilizó.
+- Bloqueo observable para el siguiente paso: autorizar el costo de un tercer
+  proyecto Supabase DEV (o indicar explícitamente qué proyecto existente se
+  puede eliminar/reutilizar) y aportar una clave Resend separada para DEV.
+  Después: aplicar la cadena base y `dev-migrations`, configurar secretos
+  `SUPABASE_SERVICE_ROLE_KEY` y `RESEND_API_KEY`, crear fixtures sintéticas y
+  verificar una entrega real.
+- Producción intacta: no se desplegó `cubitat1`, no se cambiaron rutas/DNS, no
+  se aplicaron migraciones al Supabase Cubitat y no se copiaron secretos
+  productivos.
+
+### 2026-07-27 17:00 — Codex — Cierre de auditoria Fase 2 sin Trust Score
+
+- Estado: **corregido y verificado exclusivamente en DEV/local**.
+- Decisión de producto: Trust Score todavía no se implementa. Se retiraron su
+  filtro, badge y calculos de resultados, detalle y perfil. Web Push tambien
+  queda diferido y no aparece como capacidad disponible; las alertas conservan
+  persistencia y preparacion de correo DEV sin prometer entrega no configurada.
+- Verificacion canonica: la UI dejó de reconocer agentes por UUIDs sintéticos o
+  valores locales. `get_verified_agent_ids()` exige `role = 'agent'`, KYC
+  `verified` y propiedad publicada; la misma regla protege el perfil publico.
+- Panel: `/panel-agente` exige agente verificado incluso mediante acceso
+  directo. Sus contadores de telefono y WhatsApp salen de PostgreSQL; la RPC
+  deduplica un visitante por propiedad, canal y dia. No se suman contadores en
+  `localStorage` ni dos veces en la UI.
+- PWA/entornos: Vite usa Supabase local como fallback DEV y el service worker
+  ya no cachea Supabase REST. Esto evita respuestas de sesión/rol antiguas con
+  `F5`; solo las imagenes publicas de Storage mantienen cache runtime.
+- Base local: aplicada `DEV-F2.4`
+  (`20260801004000_verified_agents_and_contact_metrics.sql`). La matriz SQL
+  verificó aislamiento de eventos, deduplicación, proyección de agentes,
+  perfiles públicos y RLS, finalizando con
+  `phase2_local_security: ok` y `ROLLBACK`.
+- Evidencia Chrome con `QA Buyer Toggle`: buyer sin enlace lateral de panel;
+  acceso directo denegado; tarjeta `Anunciante Particular` activa después de
+  una recarga normal; selección respondió `Tipo de cuenta actualizado
+  correctamente.` sin mensaje rojo; tarjeta de agente deshabilitada hasta KYC;
+  resultados sin Trust Score, alerta sin Push y consola sin errores.
+- Calidad: lint limpio; 82 archivos/317 pruebas; build TypeScript/Vite/PWA
+  correcto, 45 entradas de precache, 473 URLs. El sitemap generado se restauró.
+- Producción, `main`, Supabase remoto y Cloudflare: **no consultados ni
+  modificados**.
+
+### 2026-07-27 15:10 — Codex — F5 cargaba una versión local antigua
+
+- Estado: **corregido y verificado en Chrome local**.
+- Causa confirmada: un service worker Workbox de un build anterior seguía
+  controlando `127.0.0.1:5173`. Vite respondía `/sw.js` con `text/html`, por lo
+  que Chrome no podía actualizar ni retirar el worker; `Ctrl+F5` sólo evitaba
+  temporalmente esa caché.
+- Corrección DEV: el servidor Vite responde `/sw.js` con JavaScript sin caché
+  que activa inmediatamente, elimina cachés del origen, desregistra el worker y
+  recarga las ventanas locales una sola vez. No borra sesión, cookies,
+  LocalStorage ni datos de usuario y no altera el PWA productivo.
+- Evidencia: endpoint `200`, `application/javascript`,
+  `Cache-Control: no-cache, no-store, must-revalidate` y script de autolimpieza.
+  Dos recargas normales consecutivas en Chrome mostraron la versión actual y
+  conservaron la cuenta `QA Buyer Toggle`; consola sin errores ni advertencias.
+- La prueba visual encontró un segundo CTA duplicado `Panel de Agente &
+  Métricas` fuera del menú. Se retiró: un comprador ya no ve ningún acceso al
+  panel y un agente conserva el único CTA superior protegido por rol.
+- Regresión y calidad: 3 archivos/14 pruebas focalizadas; lint limpio; 84
+  archivos/322 pruebas; build TypeScript/Vite/PWA correcto, 46 entradas de
+  precache y 473 URLs. Sitemap restaurado al hash previo.
+- Producción y datos reales: **no modificados**.
+
+### 2026-07-27 14:50 — Codex — Ocultar Panel de Agente a roles no agentes
+
+- Estado: **corregido y verificado en Chrome contra Supabase local**.
+- Causa raíz: `AccountLayout` recibía `userRole`, pero lo descartaba como
+  `_userRole`; el enlace dependía únicamente de Fase 2 y del callback de
+  navegación, por lo que también aparecía a compradores.
+- Corrección: `Panel de Agente` se renderiza únicamente cuando
+  `PHASE_TWO_ENABLED`, existe el callback y el rol canónico es exactamente
+  `agent`. `buyer`, `seller`, `admin` y rol ausente no reciben el acceso.
+- Evidencia Chrome: la cuenta sintética `QA Buyer Toggle` en `/mi-cuenta`
+  mostró sólo `Mi cuenta`, `Favoritos` y `Mis publicaciones`; el enlace de
+  agente no estuvo en el DOM y la consola terminó sin errores ni advertencias.
+- Regresión: `AccountLayout.test.tsx` cubre cuatro roles no agentes y confirma
+  que un agente sí ve el enlace. Puerta completa: lint limpio, 83 archivos/320
+  pruebas y build TypeScript/Vite/PWA correcto con 473 URLs; sitemap restaurado
+  al hash previo.
+- Producción y datos reales: **no modificados**.
+
+### 2026-07-27 14:20 — Codex — Auditoría Módulo 2 KYC y frontera DEV/producción
+
+- Estado: **código, pruebas y base local verificados; comprobación visual final
+  pendiente de que Chrome vuelva a compartir la pestaña abierta**.
+- Hallazgo Módulo 2: el roadmap afirmaba compresión WebP, pero el cliente subía
+  los JPG/PNG originales. `kycImageCompression.ts` convierte ahora las dos
+  evidencias localmente a WebP (calidad 0.82), limita el lado mayor a 1600 px y
+  aborta antes de Storage si cualquiera de las conversiones falla.
+- Seguridad de rol: la migración productiva 50 ya no deja una futura vía
+  `buyer → agent` sin KYC. Los cambios de rol de cliente quedan cerrados por
+  defecto; exclusivamente en DEV, `20260801003000` permite `buyer ↔ agent`
+  cuando el KYC está aprobado y degrada al agente si pierde la verificación.
+- Aislamiento: `PHASE_TWO_ENABLED` requiere simultáneamente build DEV y URL de
+  Supabase local (`localhost`/`127.0.0.1`). El proxy Vite dejó de usar un URL y
+  una clave productivos como fallback; si Supabase local no responde retorna
+  `502` sin reintentar contra ningún entorno remoto.
+- Matriz SQL real: `phase2_local_security.sql` usa la RPC vigente de tres
+  argumentos y dos objetos privados. Verificó propietario, tercero, admin AAL1,
+  admin AAL2, bloqueo de agente sin KYC, activación tras aprobación y degradación
+  al retirar KYC. Resultado `phase2_local_security: ok`; toda la fixture terminó
+  en `ROLLBACK`.
+- Calidad: lint limpio; 82 archivos/315 pruebas; build TypeScript/Vite/PWA y
+  sitemap de 473 URLs correctos. El sitemap generado se restauró al hash previo
+  `6ACCCCA81A43CF187063DB06C0496F7F5DAA47F87C93DCC03216828E988C30B2`.
+- Producción: **no consultada ni modificada**. Docker/Supabase y Vite se
+  levantaron únicamente en local.
+
+### 2026-07-27 09:55 — Codex — Selección de tipo de cuenta (/mi-cuenta) (RESUELTO EN LOCAL)
+
+- Estado: **resuelto y verificado en navegador contra Supabase local**.
+- Causa raíz confirmada: `AccountPage` usaba `profiles.upsert`, que generaba
+  `POST /rest/v1/profiles?on_conflict=id`. El rol SQL `authenticated` tiene
+  `UPDATE`, pero no `INSERT`; Kong registró HTTP `403` y PostgreSQL confirmó
+  `permission denied for table profiles` (`42501`).
+- Corrección cliente: el selector usa ahora `UPDATE` acotado por `id`, solicita
+  de vuelta `role` y solo confirma éxito cuando la fila retornada coincide. No
+  se añadió `INSERT` ni se amplió la RLS.
+- Auth metadata: la cuenta QA no contiene `user_metadata.role`; no se llama
+  `supabase.auth.updateUser` porque `profiles.role` sigue siendo la fuente de
+  verdad.
+- Migración: `20260727100000_allow_self_role_toggle.sql` quedó registrada en el
+  stack local, limitada a `buyer ↔ agent`, sin referencias a columnas KYC
+  exclusivas de DEV. La migración DEV KYC conserva la misma excepción segura
+  para no revertirla al reconstruir el entorno. La rama de autoservicio exige
+  además un `auth.uid()` no nulo; una prueba SQL local confirmó
+  `QA_NULL_UID_REJECTED`.
+- Evidencia Chrome: sin `Ctrl+F5`, `Agente / Inmobiliaria → Anunciante
+  Particular → Agente / Inmobiliaria` cambió inmediatamente la tarjeta activa,
+  mostró `Tipo de cuenta actualizado correctamente.`, sin errores ni
+  advertencias. Kong registró `PATCH ...&select=role` con HTTP `200`.
+- Seguridad/limpieza: la sesión disponible era la cuenta QA administrativa. Se
+  restauró su fila a `admin` después de la prueba y se confirmó
+  `on_profile_role_update` habilitado (`tgenabled = O`). El selector solo se
+  renderiza para `buyer` o `agent`, evitando una degradación administrativa,
+  el rol legado `seller` y un estado inicial todavía sin rol.
+- Regresión: `AccountPage.test.tsx` exige `update({ role })`, filtro por `id`,
+  retorno de `role`, ausencia de `upsert` y ausencia de escritura en Auth
+  metadata; también comprueba que un admin no vea el selector. Calidad
+  completa: lint limpio, 81 archivos/310 pruebas aprobadas y
+  build TypeScript/Vite/PWA correcto con 473 URLs; el sitemap se restauró al
+  hash previo `6ACCCCA81A43CF187063DB06C0496F7F5DAA47F87C93DCC03216828E988C30B2`.
+- La primera compilación detectó dos errores TypeScript ya presentes en `dev`:
+  faltaba desestructurar `onNavigateAgentDashboard` en `MyPropertiesPage` y el
+  callback de error del proxy Vite no estrechaba `ServerResponse | Socket`.
+  Ambos se corrigieron de forma mínima para completar la puerta obligatoria.
+- Producción: **no consultada ni modificada**.
+
+### 2026-07-27 10:45 — Codex — KYC obligatorio para activar agente (/mi-cuenta)
+
+- Estado: **implementado y verificado exclusivamente en DEV/local**.
+- Regla: un perfil solo puede pasar de `buyer` a `agent` cuando
+  `profiles.verification_status = 'verified'`. La vuelta `agent → buyer` sigue
+  disponible. Si una operación interna retira el KYC a un agente, el trigger lo
+  degrada a `buyer` en la misma transacción.
+- Frontend: la tarjeta Agente muestra `Requiere verificación de identidad
+  (KYC) aprobada`, consulta el perfil canónico antes de escribir y no envía el
+  cambio si el KYC no está aprobado.
+- Backend: nueva migración DEV
+  `20260801003000_require_verified_kyc_for_agent_role.sql`; el trigger bloquea
+  también intentos REST directos y conserva la protección de los campos KYC.
+- Evidencia: cuenta sintética `buyer/unverified`; Supabase rechazó el `PATCH`
+  directo con `P0001`. Con KYC QA temporal `verified`, Chrome permitió
+  `buyer → agent → buyer` con actualización inmediata. La cuenta quedó
+  restaurada a `buyer/unverified` y la consola terminó sin errores.
+- El origen `127.0.0.1` conservaba un módulo PWA anterior; la validación final
+  se realizó en la misma pestaña mediante `localhost:5173`, origen local limpio.
+- Alcance: el selector y sus consultas KYC solo se renderizan con Fase 2
+  habilitada. El build productivo no consulta columnas DEV ni expone este flujo
+  antes de promover formalmente su migración.
+- Calidad final: lint limpio, 81 archivos/310 pruebas y build TypeScript/Vite/PWA
+  correcto con 473 URLs.
+- Producción y `main`: **no consultados ni modificados**.
+
+### 2026-07-27 09:34 — Antigravity — Selección de tipo de cuenta (/mi-cuenta) (NO RESUELTO; HISTÓRICO)
+
+- Estado: **En curso / NO RESUELTO en el navegador del usuario**.
+- Contexto y Petición del usuario: Rodolfo solicitó poder cambiar en `/mi-cuenta` entre perfil **🏠 Anunciante Particular** y **🏢 Agente / Inmobiliaria**. El usuario reportó que la interfaz mostraba el error *"No se pudo actualizar el tipo de cuenta."* o que requería presionar `Ctrl + F5` constantemente para reflejar los cambios.
+- Trabajo Realizado en este turno:
+  1. **Protección contra nulos en `AccountPage.tsx`**: Se blindaron los accesos a `user.id`, `user.user_metadata` y llamadas a `.trim()` con `safeFullName` y `userId` para evitar errores de renderizado en frío.
+  2. **Importación faltante de Lucide**: Se agregó `UserRound` a la lista de importaciones de `lucide-react` en `AccountPage.tsx` (estaba causando un `ReferenceError: UserRound is not defined` no capturado).
+  3. **Mapeo de valores Enum Postgres**: Se corrigió el envío de `'user'` a `'buyer'` (el tipo `user_role` en PostgreSQL solo permite `'buyer'`, `'seller'`, `'agent'`, `'admin'`).
+  4. **Migración RLS y Trigger de Seguridad**: Se creó y aplicó localmente la migración `web/supabase/migrations/20260727100000_allow_self_role_toggle.sql`. La función trigger `check_profile_role_update()` bloqueaba cualquier modificación de `role` para no-administradores; la nueva migración permite a los usuarios alternar su propio rol entre `buyer` y `agent`, manteniendo el bloqueo 100% estricto contra la elevación a `admin`.
+  5. **Sincronización en tiempo real (`onRoleChange`)**: Se agregó la propiedad `onRoleChange` a `AccountPage` y se conectó con `setUserRole` en `CubitatApp.tsx`.
+  6. **Pruebas y Calidad**: Se creó la suite `AccountPage.test.tsx`. Todos los 81 archivos de prueba y 304 unit tests pasaron al 100% sin errores. Se realizó commit y push a la rama `dev` (`3a802ee` y `34e9413`).
+- Problema NO Resuelto / Tarea para el Siguiente Agente:
+  - En la máquina/navegador real del usuario, al presionar las tarjetas de rol sigue arrojando el mensaje rojo *"No se pudo actualizar el tipo de cuenta."* o requiere `Ctrl + F5` para actualizar.
+  - Se debe investigar si:
+    a) El `user` de Supabase Auth mantiene el rol en `user_metadata` además de la tabla `profiles`.
+    b) Hay una política RLS o trigger adicional en la BD local de Supabase bloqueando la consulta o el `upsert`.
+    c) La sesión de Auth o token de localStorage requiere refresco explícito via `supabase.auth.updateUser({ data: { role: dbRole } })`.
+    d) Usar el navegador headless / Playwright para inspeccionar exactamente la respuesta del network `POST /rest/v1/profiles` en la sesión del usuario.
 
 ### 2026-07-24 — Codex / Rodolfo — KYC local con documento y foto sosteniéndolo (Verificación completada)
 
@@ -1545,3 +2089,245 @@ sensibles en los logs migrados, pruebas nuevas aprobadas, gate completo, PR
 fusionado, versión productiva identificada, navegación/consola verificadas y
 documentación del repositorio y vault actualizada. Si queda un módulo sin
 auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
+
+## 2026-07-31 — Codex — Frontera física Fase 2 / producción (implementado en rama)
+
+- Rama: `bugfix/phase2-release-boundary-hardening`; no desplegada ni fusionada.
+- Frontend productivo: la UI de cuenta KYC/rol vive en
+  `AccountPhaseTwoSections.tsx` y solo se importa con `import.meta.env.DEV`.
+  Perfil público, panel, insignias, repositorio de agentes y métricas de clic
+  siguen disponibles en DEV, pero no se generan como chunks de producción.
+- Worker productivo: `src/worker.ts` ya no importa jobs de alertas/retención, no
+  expone `scheduled` y solo permite RPC de Fase 1. Fase 2 usa el entrypoint
+  separado `src/worker-phase2-dev.ts` y `wrangler.phase2-dev.jsonc`.
+- Guardas automáticas: el build inspecciona tanto los assets Vite como el bundle
+  real generado por `wrangler deploy --dry-run`, y falla ante RPC o jobs de
+  Fase 2. Las pruebas de aislamiento también verifican que la capacidad siga en
+  el entrypoint DEV.
+- Web Push: se retiró el prototipo sin consumidores; continúa expresamente
+  diferido y fuera del alcance actual, igual que Trust Score.
+- Verificación cerrada en local: lint limpio; 84 archivos/333 pruebas sin
+  avisos `act`; build Vite/PWA con 473 URLs; verificadores de bundles Vite y
+  Wrangler aprobados; dry-run del Worker DEV aprobado. Chrome confirmó el
+  perfil público del agente, KYC visible en la cuenta admin, selector y panel
+  ausentes para el rol admin, y consola con 0 errores/advertencias. No se
+  desplegó ni se consultó producción.
+- QA final 2026-08-01: con `QA Buyer Toggle` temporalmente en KYC verificado,
+  el navegador confirmó `buyer → agent → buyer` sin recarga, sin mensaje rojo
+  y con aparición/desaparición inmediata del panel. Un F5 normal conservó el
+  rol canónico; `user_metadata` permaneció sin copia del rol. La cuenta quedó
+  restaurada a `buyer/pending` y la consola terminó limpia.
+
+## 2026-08-01 — Codex — Resultados: coordenadas inválidas no derriban MapLibre
+
+- Rama: `bugfix/map-invalid-coordinates`; parte de `dev` después de fusionar el
+  PR #82. No desplegada ni fusionada al redactar este relevo.
+- Causa reproducida en local: la propiedad sintética publicada
+  `f3100000-0000-0000-0000-000000000001` almacenaba `coordinates` como
+  `{ "lat": 23.135, "lng": -82.383 }`. `CubitatApp` esperaba
+  `latitude/longitude`, propagaba `undefined` y `MapLibreAdapter` ejecutaba
+  `LngLatBounds.extend([NaN, NaN])`, activando el `ErrorBoundary` global.
+- Corrección: `normalizePropertyCoordinates` acepta el contrato canónico y el
+  formato legado, convierte cadenas numéricas y rechaza valores no finitos o
+  fuera de rango. La carga de Supabase lo usa para canonizar datos y el
+  adaptador vuelve a validarlos antes de construir bounds o GeoJSON, cubriendo
+  también caché local antigua.
+- Regresión: 9 pruebas nuevas cubren formatos canónico/legado, cadenas y datos
+  inválidos; el gate completo cerró con lint limpio, 86 archivos/342 pruebas y
+  build Vite/PWA correcto, incluidos los verificadores de aislamiento Fase 2 y
+  sitemap de 473 URLs. El sitemap generado por datos locales se restauró al
+  contenido previo.
+- QA en navegador: `/resultados?operacion=venta` mostró 7 propiedades, el mapa
+  desktop abrió con la fila legado, un F5 conservó la vista y la consola quedó
+  sin errores ni advertencias. No se consultó ni modificó producción.
+- Vault: la unidad `G:` no estaba disponible; falta replicar esta evidencia en
+  la checklist/dashboard cuando vuelva a montarse.
+
+## 2026-08-03 — Codex — Panel de Agente: reactivación y métricas reales (verificado en local)
+
+- Rama: `dev`; producción y `main` no fueron consultados ni modificados.
+- Causa reproducida en navegador: ocultar una propiedad cambiaba
+  `published → owner_hidden`, pero reactivarla enviaba un `PATCH` directo a
+  Supabase REST y recibía HTTP `403`. La política RLS permite ocultar, pero
+  excluye deliberadamente `published` en `WITH CHECK`; la restauración segura
+  ya estaba prevista mediante la RPC `restore_own_property`.
+- Corrección: `setOwnerPropertyVisibility` usa las RPC protegidas
+  `hide_own_property` y `restore_own_property`, conservando la validación de
+  sesión y de transiciones permitidas. La regresión cubre ambas direcciones y
+  el error de la RPC.
+- QA en navegador: búsqueda por título, filtros Todas/Activas/Pausadas,
+  ocultamiento y reactivación funcionaron en tiempo real. El panel mostró el
+  éxito de reactivación sin alerta roja y volvió a 1 activa/1 pausada.
+- Métricas: el endpoint DEV real contabilizó teléfono `1`, deduplicó el segundo
+  clic idéntico en `1` y registró WhatsApp `1`; el panel mostró 2 contactos y
+  los contadores `1/1`. Después se eliminaron únicamente los eventos y la
+  notificación de QA; la propiedad quedó `published`, con 24 vistas y contacto
+  `0/0`.
+- Gate: lint limpio, 87 archivos/348 pruebas y build/PWA correcto con los
+  verificadores de aislamiento de Fase 2 y sitemap de 473 URLs. El
+  `web/public/sitemap.xml` ajeno conservó exactamente su hash previo.
+
+## 2026-08-04 — Codex — Panel de Agente responsive y objetivos táctiles (verificado en local)
+
+- Rama: `dev`; producción, `main`, Supabase remoto y Workers remotos no fueron
+  consultados ni modificados.
+- El listado del Panel de Agente conserva una sola estructura semántica: debajo
+  de `lg` transforma las filas en tarjetas de dos columnas y en escritorio
+  vuelve a la tabla. Precio, estado, interacciones y acciones permanecen
+  visibles sin duplicar lógica ni requerir desplazamiento horizontal.
+- Los controles principales del panel, `/mi-cuenta`, perfil público, cabecera y
+  pie alcanzan un objetivo táctil mínimo de 44 px en móvil/tablet. Se añadieron
+  estados y jerarquía mobile-first sin cambiar las acciones existentes.
+- QA en navegador a 390×844 y 768×1024: `/panel-agente`, `/mi-cuenta` y
+  `/agente/f3000000-0000-0000-0000-000000000001` quedaron sin desbordamiento
+  de página, elementos recortados ni controles visibles menores de 44 px. La
+  tabla pasó de 993/1126 px de ancho a 310/655 px, respectivamente; consola
+  limpia y fixtures sin cambios.
+- Regresión nueva para el layout responsive y acciones. Gate: lint limpio,
+  88 archivos/349 pruebas y build/PWA correcto con verificadores de aislamiento
+  Fase 2 y sitemap de 473 URLs.
+
+## 2026-08-08 - Codex - Sitemap determinista (verificado en local)
+
+- Rama: `dev`; no hubo escrituras en Supabase, despliegues ni cambios de base
+  de datos.
+- Causa: `generate-sitemap.mjs` aplicaba la fecha del build a todas las URLs y
+  conservaba el orden recibido desde Supabase. El mismo inventario producia un
+  diff completo por fecha y reordenamiento.
+- Correccion: las rutas se ordenan por URL canonica; propiedades y landings
+  usan `properties.updated_at`; las rutas estaticas omiten `lastmod` cuando no
+  existe una fecha real. Las landings compartidas conservan la fecha mas nueva.
+- Regresion: el documento es identico con entradas invertidas, normaliza fechas
+  validas y no inventa `lastmod`. Dos ejecuciones directas y el build completo
+  conservaron el SHA-256
+  `DDCCA3FD67C3EFFC4A3B7E868E0A948011E35B71F7E66AA8A9A500DC24EE1939`.
+- Gate: lint limpio, 89 archivos/352 pruebas y build/PWA correcto; 473 URLs y
+  verificadores de aislamiento Fase 2 aprobados.
+
+## 2026-08-08 - Codex - Carril R: cierre técnico local de logs seguros
+
+- Estado: **implementado y verificado en local; permanece En curso** hasta la
+  comprobación productiva exigida por el criterio de cierre. No hubo despliegue,
+  escrituras en Supabase ni cambios de base de datos.
+- Auditoría vigente: 75 llamadas a `logSafeEvent` en 26 archivos del frontend.
+  Ningún caller actual envía IDs, URLs, mensajes libres, tokens ni datos
+  personales en `code`, `action` o `context`. La cifra histórica de 56 llamadas
+  `console.*` ya no describía el árbol actual.
+- Corrección: `ErrorBoundary` dejó de imprimir el objeto `Error` y `ErrorInfo`
+  crudos. `logger.ts` valida en runtime `module`, `action`, `level` y `code`, con
+  categorías seguras de respaldo; el error visible al usuario no cambió.
+- Regresiones: una prueba arquitectónica impide nuevas llamadas directas a
+  `console.*` fuera del logger y Workers excluidos; las pruebas del logger y del
+  boundary verifican que texto libre y errores crudos no lleguen a consola.
+- Gate local: `npm run lint` limpio, 90/90 archivos y 355/355 pruebas aprobadas,
+  y `npm run build` correcto con PWA, aislamiento Fase 2 y sitemap de 473 URLs.
+- QA local en navegador: `/resultados?operacion=venta` mostró 7 propiedades, el
+  detalle de “Apartamento luminoso en Vedado” abrió correctamente y
+  `/mi-cuenta` anónimo mostró el acceso público sin exponer contenido privado.
+  Las tres comprobaciones terminaron con 0 errores y 0 advertencias en consola.
+- QA productiva de solo lectura: Wrangler identificó como activa la versión
+  `c56a7e66-ef45-4570-b712-73d63fc996d5` (2026-07-25 16:42:34 UTC). Inicio,
+  `/resultados?operacion=venta` con 140 propiedades, un detalle y el acceso
+  anónimo a `/mi-cuenta` funcionaron con 0 errores y 0 advertencias; no se
+  enviaron formularios ni se mutaron datos.
+- El carril permanece **En curso**: esa versión productiva es anterior al
+  commit `8abf03a`. Se requiere autorización explícita para desplegar una
+  versión que contenga el hardening y repetir la misma verificación.
+
+## 2026-08-08 - Codex - Carril R desplegado y verificado en producción
+
+- Estado: **Terminado**. El commit de hardening `8abf03a`, documentado en
+  `2526a44`, se desplegó desde `dev` al Worker `cubitat1` como versión
+  `f4688058-d178-4243-bc4f-7f6ef28e8aca` (creada el 2026-08-09 01:24:59 UTC,
+  equivalente al 2026-08-08 en `America/Mexico_City`).
+- Predespliegue: árbol limpio y sincronizado; `npm run lint`, 90/90 archivos y
+  355/355 pruebas, `npm run build`, verificadores de aislamiento de Fase 2 y
+  sitemap de 473 URLs aprobados. `wrangler deploy --dry-run` correcto.
+- Evidencia de artefacto: producción sirvió `/assets/index-C6L7QW7P.js`, el
+  mismo entrypoint generado localmente desde `2526a44`.
+- QA productiva: inicio, `/resultados?operacion=venta` con 140 propiedades,
+  detalle “Apartamento luminoso en Vedado” y acceso anónimo a `/mi-cuenta`
+  funcionaron con 0 errores y 0 advertencias en consola.
+- Alcance: no se enviaron formularios, no se escribieron datos y no hubo
+  cambios en Supabase ni bases de datos. El build productivo continuó
+  excluyendo los módulos exclusivos de Fase 2.
+
+## 2026-08-08 - Codex - Propuesta de retención de auditoría
+
+- Estado: **documentada y pendiente de aprobación humana** en
+  `docs/AUDIT_LOG_RETENTION_POLICY.md`.
+- Propuesta: retención nativa para Cloudflare/Supabase Logs Explorer, 90 días
+  móviles para `auth.audit_log_entries` y 180 días para evidencia mínima y
+  sanitizada de incidentes confirmados.
+- Evidencia oficial revalidada: Workers Logs conserva 3 días en Free y 7 en
+  Paid; Supabase Logs Explorer conserva 1/7/28/90 días según Free/Pro/Team/
+  Enterprise. `auth.audit_log_entries` es almacenamiento Postgres separado.
+- Seguridad: `invocation_logs` continúa deshabilitado; no se abrió `wrangler
+  tail`, no se consultaron registros productivos y no se ejecutó SQL, Cron,
+  Log Drain, purga o cambio de plan.
+- Pendiente exacto: el propietario debe aprobar o ajustar las ventanas. Una
+  implementación futura requiere otro cambio y autorización destructiva
+  independiente para la primera ejecución.
+
+## 2026-08-09 - Codex - Política de retención aprobada
+
+- Estado: **aprobación humana completada**. El propietario aprobó 90 días
+  móviles para `auth.audit_log_entries` y 180 días desde el cierre para
+  evidencia mínima y sanitizada de incidentes confirmados.
+- Documentación: `docs/AUDIT_LOG_RETENTION_POLICY.md` registra fecha, alcance,
+  excepciones por investigación activa y criterios de implementación.
+- Acciones no ejecutadas: no hubo SQL, migración, Cron, Log Drain, cambio de
+  plan, consulta de filas productivas ni purga.
+- Pendiente exacto: diseñar y revisar la implementación con modo simulación.
+  Desplegarla no autoriza la primera eliminación; esa ejecución destructiva
+  requiere revisar previamente el conteo y recibir otra autorización explícita.
+
+## 2026-08-09 - Codex - Retención Auth implementada en DEV/local
+
+- Estado: **implementación local completada; primera purga no autorizada ni
+  ejecutada**.
+- Migración: `web/supabase/dev-migrations/20260809000000_audit_log_retention.sql`.
+  Crea preview agregado a 90 días, purga servidor en lotes de hasta 1000 con
+  dry-run por defecto y rangos de retención legal con RLS.
+- Seguridad: funciones y tabla reservadas a `service_role`; `anon` y
+  `authenticated` reciben permiso denegado. No existe Cron ni invocación
+  automática y la migración permanece fuera de la cadena productiva.
+- Evidencia: prueba contractual TDD y matriz SQL transaccional aprobadas. La
+  matriz insertó fixtures sintéticas dentro de `BEGIN`/`ROLLBACK`, verificó
+  exclusión de un rango retenido y conservó las tres filas en dry-run. Consulta
+  posterior: 0 fixtures persistentes, preview `eligible_count = 0` y
+  `deleted_count = 0`.
+- Gate: `supabase db lint --local` sin errores, lint limpio, 91/91 archivos y
+  359/359 pruebas, y build/PWA correcto con verificadores de aislamiento Fase 2
+  y sitemap de 473 URLs.
+- Git: PR #87 fusionado mediante squash en `dev` como `2a798d6`. La rama
+  `feature/audit-log-retention-dev` fue eliminada y `dev` quedó sincronizada
+  con `origin/dev`.
+- Pendiente exacto: cualquier promoción productiva requiere otra autorización;
+  la primera llamada con
+  `p_dry_run = false` requiere además conteo previo y autorización destructiva
+  independiente.
+
+## 2026-08-09 - Codex - Reconciliación de cierre Fase 2
+
+- Estado: **núcleo de Fase 2 cerrado y verificado en DEV/local**. El único
+  pendiente activo de este alcance es repetir la matriz completa contra un
+  proyecto Supabase DEV remoto nuevo e independiente.
+- Integración: PR #87 fusionado en `dev` como `2a798d6`; no se fusionó hacia
+  `main`, no se desplegó Fase 2 y no se ejecutó ninguna purga real.
+- Revalidación local: `supabase db lint --local` limpio; matriz
+  `audit_log_retention_local: ok` dentro de `BEGIN`/`ROLLBACK`; lint limpio;
+  91/91 archivos y 359/359 pruebas; build/PWA correcto con 473 URLs y ambos
+  verificadores de aislamiento Fase 2 aprobados.
+- Verificación productiva de solo lectura: con la sesión administrativa AAL1
+  existente, `/moderar` mostró exclusivamente el guard MFA y no renderizó KYC.
+  `/panel-agente` y `/agente/:id` cayeron a la portada sin renderizar módulos de
+  agente. La consola terminó con 0 errores y 0 advertencias; no se enviaron
+  formularios ni se modificaron datos.
+- Diferidos por decisión de producto y fuera del cierre actual: Trust Score,
+  Web Push, gestión de varios factores MFA, promoción de Fase 2 a producción y
+  primera purga real de auditoría.
+- Pendiente exacto para un trabajo posterior: crear o designar un proyecto
+  Supabase DEV remoto vacío, aplicar exclusivamente las migraciones DEV,
+  configurar secretos DEV no productivos y repetir KYC, rol agente, métricas,
+  Cron/retención y matrices RLS/AAL2. No reutilizar producción.

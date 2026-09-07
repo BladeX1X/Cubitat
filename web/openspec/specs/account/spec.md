@@ -31,6 +31,31 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - AND MUST mantener datos de usuario disponibles
 - AND MUST proteger cada destino si la sesion expira
 
+#### Scenario: Mostrar acceso al panel de agente
+- GIVEN un usuario autenticado está en el área privada
+- WHEN su rol canónico en `profiles` es `agent`
+- THEN la navegación MUST mostrar `Panel de Agente`
+- AND para cualquier otro rol MUST NOT mostrar ese acceso
+
+#### Scenario: Proteger la ruta directa del panel
+- GIVEN un usuario autenticado abre `/panel-agente`
+- WHEN su rol no es `agent` o su KYC no es `verified`
+- THEN el sistema MUST denegar el panel
+- AND MUST NOT cargar propiedades ni metricas privadas del agente
+
+### Requirement: Aislamiento físico de Fase 2
+El build productivo MUST excluir los módulos que solo existen en Fase 2 DEV.
+
+#### Scenario: Compilar para producción
+- GIVEN Fase 2 solo está habilitada en el servidor Vite DEV con Supabase local
+- WHEN se genera el build productivo
+- THEN MUST NOT incluir los chunks de panel o perfil público de agente
+- AND MUST NOT incluir el repositorio ni la interfaz de moderación KYC
+- AND el Worker productivo MUST NOT incluir RPC, Cron, retención ni correo de Fase 2
+- AND DEV MUST usar un entrypoint y una configuración Wrangler físicamente separados
+- AND el build MUST fallar si cualquiera de esos módulos vuelve a aparecer
+- AND DEV MUST conservar las mismas rutas y capacidades para pruebas locales
+
 ### Requirement: Informacion de usuario
 El sistema MUST permitir revisar y mantener datos basicos del perfil.
 
@@ -40,6 +65,46 @@ El sistema MUST permitir revisar y mantener datos basicos del perfil.
 - THEN el sistema MUST mostrar nombre completo y email de acceso
 - AND el email de acceso MUST mostrarse como identificador no editable desde esta pantalla
 - AND el sistema MUST indicar si cada dato esta verificado
+
+### Requirement: Tipo de cuenta
+El sistema MUST permitir que un perfil existente alterne entre anunciante particular y agente sin recargar la aplicacion.
+
+#### Scenario: Cambiar de anunciante particular a agente
+- GIVEN un usuario autenticado con perfil `buyer` y KYC `verified`
+- WHEN selecciona `Agente / Inmobiliaria`
+- THEN el sistema MUST actualizar solo el rol de su fila existente en `profiles` a `agent`
+- AND MUST reflejar el nuevo tipo de cuenta inmediatamente
+- AND MUST NOT requerir permiso `INSERT` sobre `profiles`
+- AND MUST NOT duplicar el rol en `user_metadata`
+
+#### Scenario: Bloquear agente sin KYC aprobado
+- GIVEN un usuario autenticado con perfil `buyer`
+- AND su KYC es `unverified`, `pending` o `rejected`
+- WHEN intenta seleccionar `Agente / Inmobiliaria`
+- THEN la interfaz MUST indicar que necesita una verificacion de identidad aprobada
+- AND MUST NOT enviar el cambio de rol
+- AND la base de datos MUST rechazar cualquier intento directo de asignar `agent`
+
+#### Scenario: Perder la verificacion como agente
+- GIVEN un perfil `agent` con KYC `verified`
+- WHEN una operacion interna de KYC cambia su estado a `pending` o `rejected`
+- THEN la base de datos MUST degradar el rol a `buyer` en la misma transaccion
+- AND MUST mantener la invariante de que todo perfil `agent` tenga KYC `verified`
+
+#### Scenario: Cambiar de agente a anunciante particular
+- GIVEN un usuario autenticado con perfil `agent`
+- WHEN selecciona `Anunciante Particular`
+- THEN el sistema MUST actualizar solo el rol de su fila existente en `profiles` a `buyer`
+- AND MUST reflejar el nuevo tipo de cuenta inmediatamente
+- AND MUST conservar el bloqueo contra asignar o degradar el rol `admin`
+
+#### Scenario: Proteger el rol administrativo
+- GIVEN un usuario autenticado con perfil `admin`
+- WHEN abre `/mi-cuenta`
+- THEN el sistema MUST NOT mostrar el selector de tipo de cuenta
+- AND MUST NOT permitir que la interfaz degrade el rol administrativo
+- AND el selector MUST mostrarse unicamente cuando el rol resuelto sea `buyer` o `agent`
+- AND el selector MUST estar disponible unicamente cuando Fase 2 este habilitada
 
 ### Requirement: Informacion de contacto
 El sistema MUST permitir configurar datos usados para contactos de anuncios.
@@ -73,6 +138,25 @@ El sistema MUST listar y permitir eliminar alertas de busqueda creadas desde res
 - THEN el sistema MUST borrar la alerta asociada al usuario
 - AND MUST actualizar la lista sin recargar toda la aplicacion
 
+### Requirement: Metricas de contacto del agente
+El sistema MUST derivar las metricas del panel desde datos canonicos del backend.
+
+#### Scenario: Registrar una accion real de contacto
+- GIVEN una propiedad publicada
+- WHEN un visitante abre la accion de telefono o WhatsApp
+- THEN el sistema MUST registrar el canal mediante un endpoint del Worker que invoque la RPC con `service_role`
+- AND MUST incrementar el agregado persistente de la propiedad
+- AND MUST deduplicar el mismo visitante, propiedad, canal y dia
+- AND el navegador MUST NOT elegir ni enviar el identificador de deduplicacion
+- AND MUST NOT simular el contador en `localStorage`
+
+#### Scenario: Consultar metricas del panel
+- GIVEN un agente con KYC aprobado abre su panel
+- WHEN carga sus propiedades
+- THEN el sistema MUST mostrar la suma real de clics persistidos de telefono y WhatsApp
+- AND MUST NOT estimar contactos a partir de las visualizaciones
+- AND un buyer, un agente sin KYC o un tercero MUST NOT obtener ese panel
+
 ### Requirement: Sesion expirada en area privada
 El sistema MUST manejar expiracion o cierre de sesion mientras el usuario navega areas privadas.
 
@@ -97,6 +181,9 @@ El sistema MUST exigir dos imágenes privadas para crear una solicitud KYC: un d
 #### Scenario: Almacenamiento de evidencias KYC
 - GIVEN el usuario adjuntó ambas imágenes válidas
 - WHEN envía la solicitud
+- THEN el cliente MUST convertir ambas evidencias localmente a WebP antes de subirlas
+- AND MUST limitar el lado más largo a 1600 píxeles conservando la proporción
+- AND si falla la conversión MUST NOT subir ningún objeto
 - THEN cada archivo MUST almacenarse en el bucket privado bajo la carpeta del propietario
 - AND la RPC MUST comprobar que las dos rutas son distintas y que ambos objetos existen
 - AND un usuario distinto o anónimo MUST NOT leer las evidencias

@@ -4,14 +4,14 @@ interface AgentDashboardSummaryProps {
   loading: boolean
   activePropertiesCount: number
   totalAccumulatedViews: number
-  estimatedLeads: number
+  totalContactClicks: number
 }
 
 export function AgentDashboardSummary({
   loading,
   activePropertiesCount,
   totalAccumulatedViews,
-  estimatedLeads,
+  totalContactClicks,
 }: AgentDashboardSummaryProps) {
   const metrics = [
     {
@@ -31,12 +31,12 @@ export function AgentDashboardSummary({
       testId: 'metric-total-views',
     },
     {
-      label: 'Leads Estimados',
-      value: loading ? '-' : estimatedLeads.toLocaleString('es-CU'),
-      detail: 'Contactos estimados (~5% conv. por vistas)',
+      label: 'Contactos registrados',
+      value: loading ? '-' : totalContactClicks.toLocaleString('es-CU'),
+      detail: 'Clics reales en teléfono y WhatsApp',
       icon: <TrendingUp size={20} />,
       iconClass: 'bg-amber-50 text-amber-700',
-      testId: 'metric-estimated-leads',
+      testId: 'metric-contact-clicks',
     },
   ]
 

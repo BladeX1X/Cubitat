@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
   Bath,
   BedDouble,
@@ -25,6 +25,13 @@ import {
   optimizePropertyCardImage,
   PROPERTY_IMAGE_FALLBACK,
 } from '../utils/images'
+import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
+
+const VerificationBadge = import.meta.env.DEV
+  ? lazy(() => import('../../kyc/components/VerificationBadge').then((module) => ({
+      default: module.VerificationBadge,
+    })))
+  : null
 
 type PropertyCardProps = {
   property: Property
@@ -181,13 +188,20 @@ export function PropertyCard({
 
       <div className="property-info">
         {/* Row 1: Badges */}
-        <div className="property-badges-row">
-          <span className="property-type-badge">
-            {property.propertyType === 'apartamento' ? 'DEPARTAMENTO' : property.propertyType === 'casa' ? 'CASA' : 'TERRENO'}
-          </span>
-          <span className="property-operation-badge">
-            {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
-          </span>
+        <div className="property-badges-row flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="property-type-badge">
+              {property.propertyType === 'apartamento' ? 'DEPARTAMENTO' : property.propertyType === 'casa' ? 'CASA' : 'TERRENO'}
+            </span>
+            <span className="property-operation-badge">
+              {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
+            </span>
+          </div>
+          {PHASE_TWO_ENABLED && VerificationBadge && property.isVerifiedAgent ? (
+            <Suspense fallback={null}>
+              <VerificationBadge status="verified" compact />
+            </Suspense>
+          ) : null}
         </div>
 
         {/* Row 2: Price */}

@@ -39,4 +39,5 @@ export type Property = {
   } | null
   view_count?: number
   user_id?: string
+  isVerifiedAgent?: boolean
 }

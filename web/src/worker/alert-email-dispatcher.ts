@@ -4,6 +4,9 @@ export interface AlertEmailEnv {
   VITE_SUPABASE_URL: string
   SUPABASE_SERVICE_ROLE_KEY?: string
   RESEND_API_KEY?: string
+  ALERT_EMAIL_PROVIDER_URL?: string
+  ALERT_EMAIL_FROM?: string
+  PUBLIC_SITE_URL?: string
 }
 
 interface PendingNotification {
@@ -78,41 +81,52 @@ export async function dispatchPendingAlertEmails(
     return summary
   }
 
-  const notificationsResponse = await fetchFn(
-    `${env.VITE_SUPABASE_URL}/rest/v1/rpc/claim_pending_alert_emails`,
-    {
-      method: 'POST',
-      headers: serviceHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
-      body: JSON.stringify({ p_limit: 50 }),
-    },
-  )
-  if (!notificationsResponse.ok) {
-    logWorkerEvent('error', 'alert_email_dispatch_failed', { source: 'service_role', status: notificationsResponse.status })
+  let notifications: PendingNotification[]
+  let emailByUser: Map<string, string | null>
+  try {
+    const notificationsResponse = await fetchFn(
+      `${env.VITE_SUPABASE_URL}/rest/v1/rpc/claim_pending_alert_emails`,
+      {
+        method: 'POST',
+        headers: serviceHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+        body: JSON.stringify({ p_limit: 50 }),
+      },
+    )
+    if (!notificationsResponse.ok) {
+      logWorkerEvent('error', 'alert_email_dispatch_failed', { source: 'service_role', status: notificationsResponse.status })
+      return summary
+    }
+
+    notifications = await notificationsResponse.json() as PendingNotification[]
+    summary.scanned = notifications.length
+    if (notifications.length === 0) return summary
+
+    const userIds = [...new Set(notifications.map(({ user_id }) => user_id))]
+    const profilesResponse = await fetchFn(
+      `${env.VITE_SUPABASE_URL}/rest/v1/profiles?select=id,email&id=in.(${userIds.map(encodeURIComponent).join(',')})`,
+      { headers: serviceHeaders(env.SUPABASE_SERVICE_ROLE_KEY) },
+    )
+    if (!profilesResponse.ok) {
+      logWorkerEvent('error', 'alert_email_dispatch_failed', { source: 'service_role', status: profilesResponse.status })
+      return summary
+    }
+    const profiles = await profilesResponse.json() as ProfileEmail[]
+    emailByUser = new Map(profiles.map(({ id, email }) => [id, email?.trim() || null]))
+  } catch {
+    logWorkerEvent('error', 'alert_email_dispatch_failed', { source: 'service_role', reason: 'network_unavailable' })
     return summary
   }
 
-  const notifications = await notificationsResponse.json() as PendingNotification[]
-  summary.scanned = notifications.length
-  if (notifications.length === 0) return summary
-
-  const userIds = [...new Set(notifications.map(({ user_id }) => user_id))]
-  const profilesResponse = await fetchFn(
-    `${env.VITE_SUPABASE_URL}/rest/v1/profiles?select=id,email&id=in.(${userIds.map(encodeURIComponent).join(',')})`,
-    { headers: serviceHeaders(env.SUPABASE_SERVICE_ROLE_KEY) },
-  )
-  if (!profilesResponse.ok) {
-    logWorkerEvent('error', 'alert_email_dispatch_failed', { source: 'service_role', status: profilesResponse.status })
-    return summary
-  }
-  const profiles = await profilesResponse.json() as ProfileEmail[]
-  const emailByUser = new Map(profiles.map(({ id, email }) => [id, email?.trim() || null]))
+  const providerUrl = env.ALERT_EMAIL_PROVIDER_URL || 'https://api.resend.com/emails'
+  const sender = env.ALERT_EMAIL_FROM || 'Cubitat <notificaciones@cubitathome.com>'
+  const publicSiteUrl = (env.PUBLIC_SITE_URL || 'https://cubitathome.com').replace(/\/+$/, '')
 
   for (const notification of notifications) {
     const recipient = emailByUser.get(notification.user_id)
     const attempts = notification.email_attempts ?? 1
     try {
       if (!recipient) throw new Error('recipient_unavailable')
-      const resendResponse = await fetchFn('https://api.resend.com/emails', {
+      const resendResponse = await fetchFn(providerUrl, {
         method: 'POST',
         headers: {
           ...JSON_HEADERS,
@@ -120,10 +134,10 @@ export async function dispatchPendingAlertEmails(
           'Idempotency-Key': `cubitat-alert/${notification.id}`,
         },
         body: JSON.stringify({
-          from: 'Cubitat <notificaciones@cubitathome.com>',
+          from: sender,
           to: [recipient],
           subject: notification.title,
-          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto"><h2>${escapeHtml(notification.title)}</h2><p>${escapeHtml(notification.message)}</p><p><a href="https://cubitathome.com/resultados">Ver propiedades</a></p></div>`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto"><h2>${escapeHtml(notification.title)}</h2><p>${escapeHtml(notification.message)}</p><p><a href="${publicSiteUrl}/resultados">Ver propiedades</a></p></div>`,
         }),
       })
       if (!resendResponse.ok) {

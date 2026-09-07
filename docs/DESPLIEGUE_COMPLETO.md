@@ -545,6 +545,12 @@ Durante el proceso de compilación (`npm run build`), el compilador ejecuta el s
 
 Para que la compilación no falle en entornos de integración continua (CI/CD) como GitHub Actions o el motor de build automático de Cloudflare Pages:
 
+La salida es determinista: las rutas se ordenan por URL canonica y `lastmod`
+proviene de `properties.updated_at`. Las rutas estaticas sin una fecha real
+conocida omiten ese elemento opcional. Por tanto, dos builds con el mismo
+inventario producen exactamente el mismo archivo y no generan diffs por la
+fecha u orden de ejecucion.
+
 1.  **Configurar Variables de Build**:
     *   En el dashboard de Cloudflare, ve a tu proyecto > **Settings > Builds > Build variables**.
     *   Registra las siguientes dos variables y sus valores productivos:
@@ -760,6 +766,16 @@ Validar despues de deploy:
 6. Probar aviso offline/online.
 7. Probar actualizacion con dos deploys consecutivos.
 
+En desarrollo local, Vite sirve un worker temporal de autolimpieza en `/sw.js`
+para retirar registros y caches Workbox antiguos del origen. Esto evita que
+`F5` cargue una version anterior mientras `Ctrl+F5` muestra la actual. El flujo
+solo aplica a `vite serve`; el build productivo conserva `autoUpdate`,
+`skipWaiting`, `clientsClaim` y sus cabeceras sin cache.
+
+El service worker productivo no debe cachear Supabase REST. Esas respuestas
+pueden variar por sesion, rol, RLS y cambios recientes. El cache runtime se
+reserva para imagenes publicas de Supabase Storage.
+
 ## 11. Validacion Antes De Subir
 
 Desde `web/`:
@@ -928,10 +944,25 @@ parámetros, tokens, cuerpos de terceros ni objetos `Error`. `wrangler tail` se
 debe ejecutar solo durante una investigación concreta y su salida no debe
 copiarse al repositorio o al vault.
 
+En el frontend, `src/shared/lib/logger.ts` es la única salida autorizada a
+`console.*`. `module`, `action`, `level` y `code` se validan en runtime contra
+formatos cerrados; los valores no válidos se sustituyen por categorías seguras.
+No registrar errores crudos, `ErrorInfo`, mensajes libres, IDs, URLs, tokens ni
+datos personales. La prueba de arquitectura
+`src/shared/lib/frontendLoggingArchitecture.test.mjs` bloquea nuevas llamadas
+directas a consola fuera del logger y de los Workers expresamente excluidos.
+
 Cloudflare aplica la retención de Workers Logs según el plan contratado. Los
 Auth Audit Logs de Supabase tienen retención y disponibilidad propias del plan;
 no purgar `auth.audit_log_entries` ni desactivar su escritura sin autorización
 destructiva explícita y una política de conservación aprobada.
+
+La política vigente está en `docs/AUDIT_LOG_RETENTION_POLICY.md`: 90 días
+móviles para `auth.audit_log_entries`, 180 días para evidencia sanitizada de un
+incidente confirmado y retención nativa del proveedor para logs externos. Fue
+aprobada por el propietario del producto el 2026-08-09. La implementación y la
+primera purga conservan autorizaciones independientes; no ejecutar SQL, Cron,
+Log Drain o eliminación basándose únicamente en la aprobación documental.
 
 Listar versiones:
 

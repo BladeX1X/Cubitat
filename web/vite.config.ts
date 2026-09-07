@@ -1,8 +1,36 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
+import { execFileSync } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
+import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import {
+  DEVELOPMENT_SERVICE_WORKER_CLEANUP_SCRIPT,
+  isDevelopmentServiceWorkerRequest,
+} from './src/shared/pwa/developmentServiceWorkerCleanup.js'
+import { handleContactMetric } from './src/worker/contact-metrics.js'
+
+let cachedLocalServiceRoleKey: string | undefined
+const localContactMetricsSalt = randomBytes(32).toString('hex')
+
+function readLocalSupabaseServiceRoleKey(): string {
+  if (cachedLocalServiceRoleKey !== undefined) return cachedLocalServiceRoleKey
+  try {
+    const supabaseCli = process.env.SUPABASE_CLI_PATH
+      || resolve(process.env.USERPROFILE || '', 'scoop/shims/supabase.exe')
+    const output = execFileSync(supabaseCli, ['status', '-o', 'env'], {
+      cwd: __dirname,
+      encoding: 'utf8',
+      windowsHide: true,
+    })
+    cachedLocalServiceRoleKey = output.match(/^SERVICE_ROLE_KEY="?([^"\r\n]+)"?$/m)?.[1] || ''
+  } catch {
+    cachedLocalServiceRoleKey = ''
+  }
+  return cachedLocalServiceRoleKey
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,14 +40,81 @@ export default defineConfig(({ mode }) => {
   const supabaseUrl =
     env.VITE_SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    'https://tohjzoncoosvjbjcakdl.supabase.co'
+    'http://127.0.0.1:54321'
 
   return {
     plugins: [
       react(),
       {
+        name: 'development-service-worker-cleanup',
+        apply: 'serve',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (!isDevelopmentServiceWorkerRequest(req.url)) {
+              next()
+              return
+            }
+
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+            res.setHeader('Service-Worker-Allowed', '/')
+            res.end(DEVELOPMENT_SERVICE_WORKER_CLEANUP_SCRIPT)
+          })
+        },
+      },
+      {
         name: 'local-api-metrics',
         configureServer(server) {
+          const contactRateLimits = new Map<string, { count: number; resetAt: number }>()
+          server.middlewares.use('/api/phase2/contact-click', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.end('Method Not Allowed')
+              return
+            }
+
+            const clientIp = req.socket.remoteAddress || '127.0.0.1'
+            const now = Date.now()
+            const currentLimit = contactRateLimits.get(clientIp)
+            const nextLimit = !currentLimit || currentLimit.resetAt <= now
+              ? { count: 1, resetAt: now + 60_000 }
+              : { count: currentLimit.count + 1, resetAt: currentLimit.resetAt }
+            contactRateLimits.set(clientIp, nextLimit)
+            if (nextLimit.count > 20) {
+              res.statusCode = 429
+              res.setHeader('Content-Type', 'application/json; charset=utf-8')
+              res.end(JSON.stringify({ error: 'Demasiados intentos.' }))
+              return
+            }
+
+            let body = ''
+            req.on('data', (chunk) => {
+              if (body.length <= 1_024) body += chunk.toString()
+            })
+            req.on('end', async () => {
+              const serviceRoleKey = readLocalSupabaseServiceRoleKey()
+              const request = new Request('http://127.0.0.1:5173/api/phase2/contact-click', {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'user-agent': req.headers['user-agent'] || 'local-vite',
+                  'x-forwarded-for': req.socket.remoteAddress || '127.0.0.1',
+                },
+                body,
+              })
+              const response = await handleContactMetric(request, {
+                VITE_SUPABASE_URL: supabaseUrl,
+                SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+                CONTACT_METRICS_SALT: serviceRoleKey ? localContactMetricsSalt : undefined,
+              })
+
+              res.statusCode = response.status
+              response.headers.forEach((value: string, name: string) => res.setHeader(name, value))
+              res.end(await response.text())
+            })
+          })
+
           server.middlewares.use('/api/metrics', async (req, res) => {
             let cloudflareData = { requests: null as number | null, error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID en .env' };
             let supabaseData = { storage_bytes: null as number | null, egress_bytes: null as number | null, db_bytes: null as number | null, error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID en .env' };
@@ -285,20 +380,6 @@ Tipo: ${body.property_type}`;
           globIgnores: ['**/vendor-maplibre-*.js', '**/vendor-maplibre-*.css'],
           runtimeCaching: [
             {
-              urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/rest\/v1\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-api-cache',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 semana
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
               urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/storage\/v1\/object\/public\/.*/i,
               handler: 'CacheFirst',
               options: {
@@ -334,6 +415,19 @@ Tipo: ${body.property_type}`;
                 proxyReq.setHeader('apikey', supabaseAnonKey);
               }
             });
+
+            proxy.on('error', async (_err: unknown, _req, res) => {
+              if (!('statusCode' in res)) {
+                res.end()
+                return
+              }
+
+              if (!res.headersSent) {
+                res.statusCode = 502
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ error: 'Supabase local no está disponible.' }))
+              }
+            })
           }
         }
       }

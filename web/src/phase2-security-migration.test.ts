@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import migrationSql from '../supabase/dev-migrations/20260801000000_phase2_kyc_and_agents.sql?raw'
 import localApiGrantsSql from '../supabase/dev-migrations/20260801001000_local_api_grants.sql?raw'
 import identitySelfieSql from '../supabase/dev-migrations/20260801002000_kyc_identity_selfie.sql?raw'
+import agentKycGateSql from '../supabase/dev-migrations/20260801003000_require_verified_kyc_for_agent_role.sql?raw'
+import verifiedAgentsAndMetricsSql from '../supabase/dev-migrations/20260801004000_verified_agents_and_contact_metrics.sql?raw'
+import kycEvidenceRetentionSql from '../supabase/dev-migrations/20260801005000_kyc_evidence_retention.sql?raw'
+import rejectedKycRetentionSql from '../supabase/dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql?raw'
+import productionRoleSql from '../supabase/migrations/20260727100000_allow_self_role_toggle.sql?raw'
 
 describe('Phase 2 security migration', () => {
   it('is isolated from the production migration chain', () => {
@@ -71,6 +76,73 @@ describe('Phase 2 local API grants', () => {
     )
     expect(localApiGrantsSql).toMatch(
       /GRANT SELECT, UPDATE ON TABLE public\.property_reports TO authenticated/i,
+    )
+  })
+})
+
+describe('Phase 2 agent role gate', () => {
+  it('requires approved KYC and keeps the rule outside the production chain', () => {
+    expect(agentKycGateSql).toContain('DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT')
+    expect(agentKycGateSql).toMatch(/NEW\.role = 'agent'[\s\S]*NEW\.verification_status IS DISTINCT FROM 'verified'/i)
+    expect(agentKycGateSql).toMatch(/NEW\.role := 'buyer'/i)
+  })
+
+  it('does not let a regular production user self-assign an agent role', () => {
+    expect(productionRoleSql).toMatch(/OLD\.role IS DISTINCT FROM NEW\.role[\s\S]*NOT public\.is_admin_aal2\(\)/i)
+    expect(productionRoleSql).not.toMatch(/auth\.uid\(\) = OLD\.id[\s\S]*NEW\.role IN/i)
+  })
+})
+
+describe('Phase 2 verified agents and contact metrics', () => {
+  it('publishes only verified agents and removes dismissed reports from the aggregate', () => {
+    expect(verifiedAgentsAndMetricsSql).toContain('DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT')
+    expect(verifiedAgentsAndMetricsSql).toMatch(/profiles\.role = 'agent'/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/profiles\.verification_status = 'verified'/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/reports\.status = 'resolved'/i)
+  })
+
+  it('deduplicates contact metrics per property, channel, visitor and day', () => {
+    expect(verifiedAgentsAndMetricsSql).toMatch(/PRIMARY KEY \(property_id, channel, viewer_key, clicked_on\)/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/ON CONFLICT DO NOTHING/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/increment_contact_clicks\(uuid, text, uuid\) TO anon, authenticated/i)
+    expect(verifiedAgentsAndMetricsSql).toMatch(/REVOKE ALL ON TABLE public\.property_contact_clicks/i)
+  })
+})
+
+describe('Phase 2 KYC evidence retention', () => {
+  it('keeps the retention migration isolated and schedules approved evidence for 24 hours', () => {
+    expect(kycEvidenceRetentionSql).toContain(
+      'DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT',
+    )
+    expect(kycEvidenceRetentionSql).toMatch(/NEW\.evidence_purge_after := now\(\) \+ interval '24 hours'/i)
+    expect(kycEvidenceRetentionSql).toMatch(/status = 'approved'[\s\S]*evidence_purge_after <= now\(\)/i)
+  })
+
+  it('reserves atomic claims and completion for service_role', () => {
+    expect(kycEvidenceRetentionSql).toMatch(/FOR UPDATE SKIP LOCKED/i)
+    expect(kycEvidenceRetentionSql).toMatch(
+      /claim_approved_kyc_evidence_for_purge\(integer\)[\s\S]*TO service_role/i,
+    )
+    expect(kycEvidenceRetentionSql).toMatch(
+      /complete_kyc_evidence_purge\(uuid\)[\s\S]*TO service_role/i,
+    )
+    expect(kycEvidenceRetentionSql).toMatch(
+      /Las evidencias KYC siguen presentes en Storage/i,
+    )
+  })
+
+  it('schedules rejected evidence for one hour through an incremental DEV migration', () => {
+    expect(rejectedKycRetentionSql).toContain(
+      'DEV ONLY - NEVER APPLY TO THE PRODUCTION SUPABASE PROJECT',
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /NEW\.status = 'rejected'[\s\S]*interval '1 hour'/i,
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /status IN \('approved', 'rejected'\)[\s\S]*evidence_purge_after <= now\(\)/i,
+    )
+    expect(rejectedKycRetentionSql).toMatch(
+      /claim_kyc_evidence_for_purge\(integer\)[\s\S]*TO service_role/i,
     )
   })
 })

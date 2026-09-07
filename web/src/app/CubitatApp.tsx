@@ -19,6 +19,12 @@ import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveS
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../shared/config/features'
+import { AccountPage } from '../pages/account/AccountPage'
+import { normalizePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
+
+const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
+  ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
+  : null
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -38,15 +44,17 @@ const PublishPage = lazy(() =>
 const MyPropertiesPage = lazy(() =>
   import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
 )
-const AccountPage = lazy(() =>
-  import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
-)
-const AgentProfilePage = lazy(() =>
-  import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
-)
-const AgentDashboardPage = lazy(() =>
-  import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
-)
+
+const AgentProfilePage = import.meta.env.DEV
+  ? lazy(() =>
+      import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
+    )
+  : null
+const AgentDashboardPage = import.meta.env.DEV
+  ? lazy(() =>
+      import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
+    )
+  : null
 const FavoritesPage = lazy(() =>
   import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -329,10 +337,15 @@ export function CubitatApp() {
           setLoading(true)
         }
         setError(null)
-        const { data, error } = await supabase
-          .from('properties')
-          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
-          .eq('status', 'published')
+        const [{ data, error }, verifiedAgentIds] = await Promise.all([
+          supabase
+            .from('properties')
+            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
+            .eq('status', 'published'),
+          PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
+            ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
+            : Promise.resolve(new Set<string>()),
+        ])
         
         if (error) throw error
 
@@ -359,8 +372,10 @@ export function CubitatApp() {
             coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
-            coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info)
+            coordinates: normalizePropertyCoordinates(item.coordinates) || { latitude: 23.1136, longitude: -82.3666 },
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            user_id: item.user_id || undefined,
+            isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
           }))
           setProperties(mapped)
           void saveCachedProperties(mapped) // Guardar copia para uso offline
@@ -398,11 +413,16 @@ export function CubitatApp() {
 
     async function fetchSingleProperty() {
       try {
-        const { data, error } = await supabase
-          .from('properties')
-          .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info')
-          .eq('id', selectedPropertyId)
-          .single()
+        const [{ data, error }, verifiedAgentIds] = await Promise.all([
+          supabase
+            .from('properties')
+            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
+            .eq('id', selectedPropertyId)
+            .single(),
+          PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
+            ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
+            : Promise.resolve(new Set<string>()),
+        ])
 
         if (error) throw error
         if (data) {
@@ -429,7 +449,9 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info)
+            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            user_id: item.user_id || undefined,
+            isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
           }
           setProperties((prev) => {
             if (prev.some((p) => p.id === mapped.id)) return prev
@@ -660,6 +682,11 @@ export function CubitatApp() {
     navigateHome()
   }
 
+  async function handleExpiredAdminSession() {
+    await handleSignOut()
+    window.setTimeout(openLogin, 0)
+  }
+
   function navigateEditProperty(propertyId: string) {
     window.history.pushState(null, '', `/editar/${propertyId}`)
     setEditPropertyId(propertyId)
@@ -860,7 +887,7 @@ export function CubitatApp() {
 
       <Suspense fallback={<PageLoadingState pageMode={pageMode} />}>
 
-        {error && pageMode !== 'home' && (
+        {error && (pageMode === 'results' || pageMode === 'detail') && (
           <div className="max-w-md mx-auto my-12 p-4 bg-red-50 border border-red-200 rounded-xl text-center space-y-2">
             <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
             <p className="text-[11px] text-red-500">{error}</p>
@@ -916,7 +943,7 @@ export function CubitatApp() {
           />
         )}
 
-        {PHASE_TWO_ENABLED && pageMode === 'agent-profile' && selectedAgentId && (
+        {PHASE_TWO_ENABLED && AgentProfilePage && pageMode === 'agent-profile' && selectedAgentId && (
           <AgentProfilePage
             agentId={selectedAgentId}
             onBack={() => {
@@ -970,6 +997,7 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onEditProperty={navigateEditProperty}
             onNewProperty={navigatePublish}
             onSelectProperty={handleSelectProperty}
@@ -980,6 +1008,7 @@ export function CubitatApp() {
           <AccountPage
             user={user}
             userRole={userRole}
+            onRoleChange={(newRole) => setUserRole(newRole)}
             onBack={navigateAccount}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
@@ -988,7 +1017,7 @@ export function CubitatApp() {
           />
         )}
 
-        {PHASE_TWO_ENABLED && pageMode === 'agent-dashboard' && user && (
+        {PHASE_TWO_ENABLED && AgentDashboardPage && pageMode === 'agent-dashboard' && user && (
           <AgentDashboardPage
             user={user}
             onNavigateAccount={navigateAccount}
@@ -1006,6 +1035,7 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onSelectProperty={handleSelectProperty}
             onGoResults={navigateResults}
           />
@@ -1032,7 +1062,11 @@ export function CubitatApp() {
         )}
 
         {pageMode === 'moderar' && (
-          <AdminPage userRole={userRole} onNavigateHome={navigateHome} />
+          <AdminPage
+            userRole={userRole}
+            onNavigateHome={navigateHome}
+            onSessionExpired={handleExpiredAdminSession}
+          />
         )}
 
         {pageMode === 'privacy' && (

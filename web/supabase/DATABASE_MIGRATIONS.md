@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-07-21.
+Última revisión documental: 2026-07-27.
 
 ## Aplicación segura
 
@@ -205,9 +205,24 @@ admin `aal2` con lectura de los 4 eventos existentes y sin `UPDATE` o `DELETE`;
 habilitado. Las 47 migraciones siguen sincronizadas y `db lint --linked` no
 reportó errores. No persistieron cambios ni se mostraron identificadores.
 
+### Selección de tipo de cuenta - 2026-07-27
+
+50. `20260727100000_allow_self_role_toggle.sql`: mantiene bloqueados los cambios
+    de rol iniciados por clientes y reserva cualquier transición para un
+    administrador AAL2. No concede `INSERT` sobre `profiles` y conserva la
+    protección de `phone_verified_at`. La activación autoservicio de agente
+    pertenece exclusivamente a Fase 2 DEV y se define después en DEV-F2.3 con
+    KYC aprobado obligatorio.
+
+Estado 2026-07-27: **corregida en la rama DEV y no aplicada al proyecto
+productivo**. Una revisión de seguridad detectó que la versión anterior habría
+permitido `buyer → agent` sin que la cadena productiva dispusiera todavía de
+las columnas KYC. La versión actual vuelve al cierre por defecto; el flujo
+local usa DEV-F2.3, que exige `verification_status = 'verified'`.
+
 ### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
 
-- **Estado 2026-07-22**: exclusiva de DEV. Está fuera de `supabase/migrations/` y no forma parte de la cadena productiva, que termina en 49.
+- **Estado 2026-07-27**: exclusiva de DEV. Está fuera de `supabase/migrations/` y no forma parte de la cadena productiva, que termina en 50.
 - **Prohibido**: no aplicar al proyecto Supabase de producción ni copiarla temporalmente a la carpeta de migraciones productivas.
 - Protege los campos de verificación contra autoelevación, exige administrador con AAL2 para revisar y almacena únicamente rutas privadas en `kyc_documents`.
 - `get_public_agent_profile(uuid)` expone solo el perfil profesional permitido y agregados de publicaciones activas, sin abrir la tabla `profiles` al público.
@@ -231,7 +246,143 @@ reportó errores. No persistieron cambios ni se mostraron identificadores.
 - Las rutas nuevas deben usar los prefijos del propietario `document-` y `selfie-`; la RPC comprueba que ambos objetos existen antes de crear la solicitud.
 - La RPC administrativa rechaza la aprobación si falta una ruta o cualquiera de los dos objetos, aunque el cliente intente saltarse la interfaz.
 - Las solicitudes pendientes del flujo anterior se conservan como historial rechazado para que el usuario presente nuevamente ambas evidencias.
+- El cliente convierte ambas imágenes a WebP antes de Storage, elimina metadatos
+  al redibujarlas en canvas y limita el lado más largo a 1600 px. Si falla esa
+  optimización, no inicia ninguna subida.
 - **Prohibido**: no aplicar esta migración, sus datos QA ni el bucket KYC al proyecto productivo sin la autorización posterior expresa de Rodolfo.
+
+### DEV-F2.3. `dev-migrations/20260801003000_require_verified_kyc_for_agent_role.sql`
+
+- Exige `profiles.verification_status = 'verified'` antes de cualquier
+  transición hacia `role = 'agent'`; la vuelta de `agent` a `buyer` permanece
+  permitida.
+- Si una operación interna de KYC cambia a `pending` o `rejected` un perfil que
+  era agente, el mismo trigger lo degrada a `buyer` dentro de la transacción.
+- Restaura en la función trigger la protección DEV de
+  `verification_status`/`verification_reason` y conserva la frontera AAL2.
+- Verificación local 2026-07-27: un `PATCH` autenticado de una cuenta
+  `buyer/unverified` fue rechazado con `P0001`; tras marcar únicamente la cuenta
+  QA como `verified`, Chrome permitió `buyer → agent → buyer`. La fixture quedó
+  restaurada a `buyer/unverified`. Una prueba adicional confirmó
+  `agent/verified → buyer/rejected` de forma atómica. Producción no fue
+  consultada ni modificada.
+- Matriz SQL transaccional 2026-07-27: comprobó las dos evidencias privadas,
+  aislamiento propietario/tercero/admin AAL1, moderación admin AAL2, bloqueo de
+  agente sin KYC, activación posterior a aprobación y degradación al retirar el
+  KYC. Terminó con `phase2_local_security: ok` y `ROLLBACK`.
+
+### DEV-F2.4. `dev-migrations/20260801004000_verified_agents_and_contact_metrics.sql`
+
+- Mantiene la migracion exclusivamente en DEV/local y fuera de la cadena
+  productiva.
+- `get_verified_agent_ids()` publica solo identificadores de perfiles con rol
+  `agent`, KYC `verified` y al menos una propiedad publicada. La interfaz usa
+  esta proyeccion para insignias y el filtro `Solo Verificados`.
+- `get_public_agent_profile(uuid)` devuelve perfiles unicamente cuando rol y KYC
+  cumplen la misma invariante; los reportes agregados cuentan solo casos
+  `resolved`.
+- `increment_contact_clicks(uuid, text, uuid)` registra telefono o WhatsApp,
+  deduplica por propiedad, canal, visitante y dia, y actualiza contadores
+  persistentes no negativos en `properties`.
+- Su concesion publica historica queda revocada por DEV-F2.7; el navegador ya
+  no puede elegir el identificador de visitante.
+- La tabla privada `property_contact_clicks` tiene RLS habilitada y no concede
+  lectura directa a `anon` ni `authenticated`.
+- Verificacion local 2026-07-27: matriz SQL completa terminada con
+  `phase2_local_security: ok` y `ROLLBACK`; la UI y repositorios quedaron
+  cubiertos por la puerta de 82 archivos y 317 pruebas.
+
+### DEV-F2.5. `dev-migrations/20260801005000_kyc_evidence_retention.sql`
+
+- **Estado 2026-07-28**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de la cadena
+  productiva.
+- Al aprobar una solicitud programa `evidence_purge_after` exactamente 24 horas
+  después. El Cron DEV puede ejecutarla en su siguiente intervalo de 15
+  minutos.
+- `claim_approved_kyc_evidence_for_purge(integer)` reclama trabajos con
+  `FOR UPDATE SKIP LOCKED`, recupera reclamos abandonados después de 30 minutos
+  y está reservada a `service_role`.
+- El Worker elimina documento y selfie mediante la API oficial de Storage. Solo
+  después llama `complete_kyc_evidence_purge(uuid)`, que comprueba que los
+  objetos ya no existan antes de poner ambas rutas en `NULL` y registrar
+  `evidence_purged_at`.
+- Un fallo de Storage conserva las rutas y libera el reclamo; un fallo posterior
+  se recupera por expiración sin registrar IDs, rutas, credenciales ni errores
+  externos.
+- Se conserva únicamente el registro mínimo: solicitud, usuario, tipo, estado y
+  fechas. La ventana para solicitudes rechazadas se añade después en DEV-F2.6.
+- Evidencia local: matriz SQL completa con aislamiento de roles, ventana de 24
+  horas, reclamo atómico y protección contra completar antes de Storage;
+  resultado `phase2_local_security: ok` y `ROLLBACK`. Gate: lint limpio,
+  83 archivos/326 pruebas y build TypeScript/Vite/PWA correcto con 473 URLs;
+  dry-run de Wrangler DEV correcto, sin despliegue remoto.
+- **Prohibido**: no aplicar esta migración ni desplegar el Cron actualizado en
+  producción sin autorización expresa posterior.
+
+### DEV-F2.6. `dev-migrations/20260801006000_rejected_kyc_evidence_retention.sql`
+
+- **Estado 2026-07-28**: aplicada y verificada únicamente en
+  `supabase_db_web`; incremental sobre DEV-F2.5 y fuera de la cadena productiva.
+- Mantiene 24 horas para solicitudes `approved` y programa una hora para
+  solicitudes `rejected`.
+- Reemplaza el reclamo exclusivo de aprobadas por
+  `claim_kyc_evidence_for_purge(integer)`, que procesa ambos estados con
+  `FOR UPDATE SKIP LOCKED`, lease de 30 minutos y acceso exclusivo de
+  `service_role`.
+- Reutiliza la eliminación por API de Storage, la comprobación de ausencia
+  física antes de poner rutas en `NULL` y los reintentos seguros de DEV-F2.5.
+- Evidencia: la matriz local confirmó que un rechazo reciente no se reclama y
+  que queda elegible al superar una hora, sin alterar la ventana aprobada.
+  Resultado `phase2_local_security: ok` y `ROLLBACK`. Gate: lint limpio,
+  83 archivos/327 pruebas, build PWA con 473 URLs y Wrangler DEV dry-run
+  correcto.
+- Trust Score y Web Push permanecen diferidos por decisión de producto.
+- **Prohibido**: no aplicar ni desplegar esta retención en producción sin
+  autorización expresa posterior.
+
+### DEV-F2.7. `dev-migrations/20260802001000_harden_contact_metrics.sql`
+
+- **Estado 2026-08-02**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de producción.
+- Revoca a `anon` y `authenticated` la ejecución directa de
+  `increment_contact_clicks(uuid, text, uuid)` y la concede solo a
+  `service_role`.
+- El Worker Fase 2 valida el payload, limita por IP y deriva mediante HMAC un
+  UUID seudónimo diario a partir de IP y agente de usuario. El navegador no
+  recibe el secreto ni controla la clave de deduplicación.
+- Evidencia local: pruebas unitarias del cliente y handler, y matriz SQL
+  `phase2_local_security: ok` con `ROLLBACK`.
+- Para habilitarlo en el Worker DEV remoto se requieren los secretos
+  `SUPABASE_SERVICE_ROLE_KEY` y `CONTACT_METRICS_SALT`; no usar credenciales de
+  producción para cerrar esta prueba.
+- **Prohibido**: no aplicar ni desplegar esta migración en producción sin
+  autorización expresa posterior.
+
+### DEV-OPS.1. `dev-migrations/20260809000000_audit_log_retention.sql`
+
+- **Estado 2026-08-09**: aplicada y verificada únicamente en
+  `supabase_db_web`; permanece fuera de `supabase/migrations/` y de producción.
+- Implementa `preview_auth_audit_retention()` con corte fijo de 90 días y salida
+  exclusivamente agregada: corte, conteo y rango temporal.
+- Prepara `purge_auth_audit_log_entries(integer, boolean)` para lotes de 1 a
+  1000; el modo simulación es obligatorio por defecto y la migración no invoca
+  la rama destructiva.
+- `auth_audit_retention_holds` excluye rangos temporales bajo incidente,
+  retención legal o revisión regulatoria; tiene RLS y solo `service_role` puede
+  gestionarla.
+- `anon` y `authenticated` no pueden consultar la tabla ni ejecutar preview o
+  purga. No se crea Cron ni otra invocación automática.
+- Evidencia local: matriz transaccional
+  `supabase/tests/audit_log_retention_local.sql` terminó con
+  `audit_log_retention_local: ok`; preview y dry-run devolvieron cero elegibles
+  y `deleted_count = 0`, y una consulta posterior confirmó cero fixtures QA.
+- Gate: `supabase db lint --local` sin errores, lint frontend limpio, 91/91
+  archivos y 359/359 pruebas, y build/PWA correcto con verificadores de
+  aislamiento y sitemap de 473 URLs.
+- **Prohibido**: no mover esta migración a la cadena productiva, ejecutar la
+  purga con `p_dry_run = false` ni crear un Cron sin autorización posterior
+  explícita y respaldo aprobado.
 
 ## Verificación después de aplicar
 

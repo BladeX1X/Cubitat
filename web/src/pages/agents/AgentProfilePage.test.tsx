@@ -38,6 +38,8 @@ describe('AgentProfilePage', () => {
       expect(screen.getByText('Habana Inmobiliaria')).toBeInTheDocument()
       expect(screen.getByText('Apartamento de lujo en Miramar')).toBeInTheDocument()
     })
+    expect(screen.getByRole('button', { name: 'Volver' })).toHaveClass('min-h-11')
+    expect(screen.getByRole('link', { name: 'Contactar por WhatsApp' })).toHaveClass('min-h-11')
   })
 
   it('renders not found state when agent does not exist', async () => {

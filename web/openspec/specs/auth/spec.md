@@ -73,6 +73,13 @@ El sistema MUST limitar intentos repetidos de autenticacion y recuperacion para 
 - AND un token ausente, invalido, reutilizado o expirado MUST impedir que Supabase Auth procese la solicitud
 - AND tras un fallo el widget MUST renovarse para impedir la reutilizacion del token consumido
 
+#### Scenario: CAPTCHA unido a login con contrasena
+- GIVEN un usuario no autenticado introduce correo y contrasena
+- WHEN intenta iniciar sesion mediante Supabase Auth
+- THEN MUST completar Turnstile antes de enviar credenciales
+- AND MUST incluir el token como `captchaToken` dentro de `signInWithPassword`
+- AND si falta el token MUST mostrar una solicitud de verificacion sin llamar a Supabase Auth
+
 #### Scenario: Demasiados intentos de login por IP
 - GIVEN una misma IP realiza multiples intentos de login por contrasena en una ventana corta
 - WHEN supera el limite configurado
@@ -123,6 +130,15 @@ El sistema MUST exigir TOTP verificado y una sesion `aal2` antes de abrir funcio
 - WHEN usa funciones propias de su cuenta
 - THEN el sistema MUST NOT exigir MFA administrativo
 
+#### Scenario: Sesión expirada durante el desafío administrativo
+- GIVEN un administrador intenta verificar TOTP y Supabase responde que la sesión ya no existe
+- WHEN la interfaz muestra el estado de sesión expirada
+- THEN MUST ocultar el formulario TOTP que ya no puede completar la verificación
+- AND MUST ofrecer la acción "Cerrar sesión e iniciar nuevamente"
+- AND al confirmar MUST limpiar la sesión y la caché local mediante el flujo central de cierre
+- AND MUST regresar al inicio y abrir el login sin mostrar datos administrativos
+- AND si la recuperación falla MUST conservar el panel bloqueado y mostrar un error seguro
+
 ### Requirement: Modal de autenticacion reutilizable
 El sistema MUST usar el mismo flujo de login para acciones protegidas en cualquier modulo.
 
@@ -155,16 +171,20 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - GIVEN un usuario recibe el correo de verificacion de Supabase
 - WHEN abre el enlace de confirmacion
 - THEN el sistema MUST aterrizar en `/auth/callback`
-- AND el sistema MUST intercambiar el codigo por una sesion cuando Supabase incluya `code`
+- AND el sistema MUST confirmar el correo con `token_hash` y `type=signup` cuando el enlace use el formato portable
+- AND el sistema MUST intercambiar el codigo por una sesion cuando Supabase incluya `code` por compatibilidad
 - AND el sistema MUST mostrar confirmacion visual antes de continuar al inicio
+- AND el sistema MUST mostrar un error seguro en espanol si Supabase devuelve un fallo tecnico de PKCE, OTP o token
 
 #### Scenario: Cambio de contrasena desde enlace de recuperacion
 - GIVEN un usuario abre el enlace de recuperacion enviado por Supabase
 - WHEN aterriza en `/recuperar-contrasena`
 - THEN el sistema MUST preparar la sesion temporal de recuperacion
 - AND el sistema MUST pedir nueva contrasena y confirmacion
+- AND si la cuenta tiene MFA activo y Supabase requiere `aal2`, el sistema MUST pedir el codigo TOTP antes de guardar
 - AND el sistema MUST validar la fortaleza de la contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial) y la coincidencia entre ambos campos
 - AND el sistema MUST guardar la nueva contrasena mediante Supabase Auth
+- AND el sistema MUST mostrar un mensaje seguro en espanol en vez del error tecnico `AAL2 session is required`
 
 #### Scenario: Contraseña conocida en filtraciones
 - GIVEN un usuario intenta registrarse o establecer una nueva contraseña
@@ -181,7 +201,7 @@ El sistema MUST permitir el registro e inicio de sesión rápido utilizando prov
 - GIVEN un usuario en el modal de inicio de sesión
 - WHEN hace clic en el botón "Continuar con Google"
 - THEN el sistema MUST redirigir al proveedor OAuth configurado en Supabase
-- AND tras la autenticación exitosa, el sistema MUST crear o sincronizar automáticamente el perfil del usuario en la tabla `profiles` con el rol `user` por defecto
+- AND tras la autenticación exitosa, el sistema MUST crear o sincronizar automáticamente el perfil del usuario en la tabla `profiles` con el rol `buyer` por defecto
 - AND el sistema MUST redirigir al usuario al `/auth/callback` para establecer la sesión y finalmente llevarlo a su panel.
 
 #### Scenario: Google solicita elegir la cuenta

@@ -16,6 +16,7 @@ import { useMobileFilterSheet } from '../hooks/useMobileFilterSheet'
 import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
 import { Input } from '../../../shared/ui/input'
+import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 
 export type FilterBarProps = {
   filters: SearchFilters
@@ -328,6 +329,21 @@ export function FilterBar({
         </PopoverContent>
       </Popover>
     )}
+
+      {PHASE_TWO_ENABLED && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => handleFilterUpdate({ verifiedOnly: !filters.verifiedOnly })}
+          className={`filter-control flex items-center gap-1.5 h-10 px-4 rounded-md border text-sm font-semibold transition-all ${
+            filters.verifiedOnly
+              ? 'border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+              : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+          }`}
+        >
+          <span>🛡️ Solo Verificados</span>
+        </Button>
+      )}
 
       {/* 5. Botón de Más Filtros ("Filtros") */}
       <Popover open={isMoreOpen} onOpenChange={setIsMoreOpen}>
