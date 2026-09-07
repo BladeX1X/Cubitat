@@ -119,6 +119,7 @@ Estado actual (2026-07-01):
 - La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
 - La tarjeta de cuenta usa 3 datos completados: nombre, email y celular editable (`profiles.phone`). El celular ya no requiere verificacion por WhatsApp dentro del MVP; el proxy solo permite actualizar campos seguros del perfil.
+- El celular del perfil acepta telefonos internacionales de 7 a 15 digitos, normaliza prefijos `+` o `00` sin imponer `+53` y alimenta el contacto prellenado de publicaciones.
 - El contacto de una publicacion acepta telefonos de cualquier pais, con 7 a 15 digitos y prefijo internacional opcional (`+` o `00`); no exige verificacion por SMS o WhatsApp.
 - El correo no se modifica desde `Mi cuenta`; la contrasena tampoco se gestiona en esa pantalla.
 - Publicacion captura operacion (`venta`, `alquiler`, `permuta`), tipo (`casa`, `apartamento`, `terreno`), amenidades como piscina/patio y el piso o nivel de apartamentos dentro de `features`.

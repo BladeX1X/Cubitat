@@ -121,7 +121,16 @@ El sistema MUST permitir configurar datos usados para contactos de anuncios.
 - WHEN abre publicar
 - THEN el sistema SHOULD prellenar datos de contacto permitidos
 - AND MUST permitir corregirlos para una publicacion especifica
-- AND MUST normalizar telefono cubano cuando aplique
+- AND MUST conservar el codigo de pais indicado
+
+#### Scenario: Guardar telefono internacional
+- GIVEN un usuario autenticado edita su numero de celular
+- WHEN escribe un telefono de cualquier pais
+- THEN el sistema MUST aceptar entre 7 y 15 digitos
+- AND MUST permitir prefijos `+` o `00`, espacios, guiones y parentesis
+- AND MUST normalizar el numero sin imponer el prefijo cubano `+53`
+- AND MUST rechazar letras, prefijos duplicados y longitudes fuera del rango
+- AND MUST NOT requerir verificacion por SMS o WhatsApp
 
 ### Requirement: Alertas de busqueda guardadas
 El sistema MUST listar y permitir eliminar alertas de busqueda creadas desde resultados.

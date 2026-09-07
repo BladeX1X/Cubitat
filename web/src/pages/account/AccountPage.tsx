@@ -20,6 +20,7 @@ import { AccountLayout } from './AccountLayout'
 import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
 import {
   AVATAR_IMAGE_RULES,
   validateImageDimensions,
@@ -73,6 +74,7 @@ export function AccountPage({
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [nameMessage, setNameMessage] = useState<string | null>(null)
   const [phoneMessage, setPhoneMessage] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const email = user?.email || 'Sin correo registrado'
@@ -107,6 +109,7 @@ export function AccountPage({
     setIsEditingPhone(false)
     setNameMessage(null)
     setPhoneMessage(null)
+    setPhoneError(null)
     setAvatarMessage(null)
 
     async function loadProfile() {
@@ -182,17 +185,20 @@ export function AccountPage({
 
   async function handleSavePhone() {
     const cleanPhone = (draftPhone || '').trim()
-    if (cleanPhone.length > 60) {
-      setPhoneMessage('El numero es demasiado largo.')
+    if (cleanPhone && !validatePhone(cleanPhone)) {
+      setPhoneError('Ingresa un telefono valido de 7 a 15 digitos.')
       return
     }
 
+    const normalizedPhone = normalizePhoneForStorage(cleanPhone)
+
     setIsSavingPhone(true)
     setPhoneMessage(null)
+    setPhoneError(null)
 
     const { error } = await supabase
       .from('profiles')
-      .update({ phone: cleanPhone || null })
+      .update({ phone: normalizedPhone || null })
       .eq('id', userId)
 
     setIsSavingPhone(false)
@@ -202,10 +208,10 @@ export function AccountPage({
       return
     }
 
-    setPhone(cleanPhone)
-    setDraftPhone(cleanPhone)
+    setPhone(normalizedPhone)
+    setDraftPhone(normalizedPhone)
     setIsEditingPhone(false)
-    setPhoneMessage(cleanPhone ? 'Numero de celular actualizado.' : 'Numero de celular eliminado.')
+    setPhoneMessage(normalizedPhone ? 'Numero de celular actualizado.' : 'Numero de celular eliminado.')
   }
 
   async function handleAvatarFile(file: File | undefined) {
@@ -413,15 +419,18 @@ export function AccountPage({
                     isEditing={isEditingPhone}
                     isSaving={isSavingPhone}
                     message={phoneMessage}
+                    error={phoneError}
                     onChange={setDraftPhone}
                     onEdit={() => {
                       setDraftPhone(phone)
                       setPhoneMessage(null)
+                      setPhoneError(null)
                       setIsEditingPhone(true)
                     }}
                     onCancel={() => {
                       setDraftPhone(phone)
                       setPhoneMessage(null)
+                      setPhoneError(null)
                       setIsEditingPhone(false)
                     }}
                     onSave={handleSavePhone}
@@ -617,6 +626,7 @@ function EditablePhoneRow({
   isEditing,
   isSaving,
   message,
+  error,
   onChange,
   onEdit,
   onCancel,
@@ -627,6 +637,7 @@ function EditablePhoneRow({
   isEditing: boolean
   isSaving: boolean
   message: string | null
+  error: string | null
   onChange: (value: string) => void
   onEdit: () => void
   onCancel: () => void
@@ -641,10 +652,12 @@ function EditablePhoneRow({
         </div>
         {isEditing ? (
           <Input
+            type="tel"
+            inputMode="tel"
             value={draftValue}
             onChange={(event) => onChange(event.target.value)}
             className="h-11 max-w-md"
-            placeholder="+53 5555 5555"
+            placeholder="Ej: +52 55 1234 5678"
             autoComplete="tel"
             autoFocus
           />
@@ -654,8 +667,9 @@ function EditablePhoneRow({
           </p>
         )}
         <p className="mt-1 text-sm text-neutral-500">
-          Este numero sera visible como dato de contacto cuando lo uses en tus publicaciones.
+          Acepta telefonos de cualquier pais. Este numero sera visible cuando lo uses en tus publicaciones.
         </p>
+        {error ? <p className="mt-2 text-sm font-semibold text-red-600">{error}</p> : null}
         {message ? (
           <p className="mt-2 text-sm font-semibold text-[#008f79]">{message}</p>
         ) : null}
