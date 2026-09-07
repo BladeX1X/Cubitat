@@ -38,6 +38,13 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 > `display: none`, y `Comprar`/`Rentar` quedaron completos. Producción sirvió
 > `/assets/index-Bu8fgoun.css`; el único error de consola fue el DNS externo del
 > beacon analítico de Cloudflare ya registrado.
+> Captura posterior del usuario en el mismo teléfono confirmó que las capas ya
+> no se superponen, pero el menú autenticado conservaba demasiado espacio entre
+> opciones y cortaba parcialmente `Rentar`. En `bugfix/mobile-menu-compact` se
+> redujeron panel, perfil, listas y botones al mínimo táctil de 44 px. QA visual
+> local con menú admin equivalente, viewport 390x760: panel de 702 px sin scroll
+> inicial y `Rentar` termina 97 px antes del borde. Gate completo: lint limpio,
+> 93 archivos/380 pruebas y build/PWA correcto.
 
 > Actualización 2026-09-07: rama `hotfix/publish-image-csp-realtime`.
 > Durante QA productivo del formulario de publicación se reprodujo

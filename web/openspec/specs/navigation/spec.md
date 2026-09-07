@@ -27,6 +27,7 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN el sistema MUST bloquear el desplazamiento del contenido de fondo
 - AND MUST ocultar la navegacion inferior y las acciones flotantes de la pagina
 - AND MUST mantener accesibles mediante scroll las opciones de explorar inmuebles
+- AND SHOULD mostrar completas las acciones de explorar en el viewport inicial de un telefono comun
 
 ### Requirement: Alias de cuenta
 El sistema MUST aceptar alias publicos razonables para cuenta.
