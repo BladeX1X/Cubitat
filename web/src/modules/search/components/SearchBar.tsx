@@ -9,6 +9,12 @@ import {
   SelectValue,
 } from '../../../shared/ui/select'
 import { cubanMunicipalities, cubanProvinces } from '../../../shared/data/cubaLocations'
+import {
+  PROPERTY_TYPE_VALUES,
+  operationLabels,
+  propertyTypeLabels,
+  type CanonicalOperation,
+} from '../../../shared/lib/propertyTaxonomy'
 import type { LocationSuggestion, SearchFilters } from '../types'
 
 type SearchBarProps = {
@@ -19,12 +25,7 @@ type SearchBarProps = {
   onSubmitSearch: () => void
 }
 
-const propertyTypeLabels: Record<SearchFilters['propertyType'], string> = {
-  all: 'Departamentos',
-  casa: 'Casas',
-  apartamento: 'Departamentos',
-  terreno: 'Terrenos',
-}
+const SEARCH_OPERATION_VALUES: CanonicalOperation[] = ['alquiler', 'venta', 'permuta']
 
 export function SearchBar({
   filters,
@@ -59,43 +60,26 @@ export function SearchBar({
   return (
     <form className="hero-search" onSubmit={handleSubmit}>
       <div className="operation-tabs" aria-label="Tipo de operación">
-        <Button
-          className={filters.operations.includes('alquiler') ? 'is-active' : ''}
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            const nextOps = filters.operations.includes('alquiler') ? [] : ['alquiler']
-            updateFilter('operations', nextOps as any)
-          }}
-        >
-          Rentar
-        </Button>
-        <Button
-          className={filters.operations.includes('venta') ? 'is-active' : ''}
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            const nextOps = filters.operations.includes('venta') ? [] : ['venta']
-            updateFilter('operations', nextOps as any)
-          }}
-        >
-          Comprar
-        </Button>
-        <Button
-          className={filters.operations.includes('permuta') ? 'is-active' : ''}
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            const nextOps = filters.operations.includes('permuta') ? [] : ['permuta']
-            updateFilter('operations', nextOps as any)
-          }}
-        >
-          Permuta
-        </Button>
+        {SEARCH_OPERATION_VALUES.map((operation) => (
+          <Button
+            key={operation}
+            className={filters.operations.includes(operation) ? 'is-active' : ''}
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              const nextOperations: SearchFilters['operations'] = filters.operations.includes(operation)
+                ? []
+                : [operation]
+              updateFilter('operations', nextOperations)
+            }}
+          >
+            {operationLabels[operation].search}
+          </Button>
+        ))}
       </div>
 
       <div className="search-fields">
-        <label className="property-type-field">
+        <div className="property-type-field">
           <span>Tipo</span>
           <Select
             value={filters.propertyType}
@@ -107,19 +91,21 @@ export function SearchBar({
               className="property-type-trigger"
             >
               <SelectValue placeholder="Tipo de inmueble">
-                {propertyTypeLabels[filters.propertyType]}
+                {filters.propertyType === 'all'
+                  ? 'Todos los inmuebles'
+                  : propertyTypeLabels[filters.propertyType].search}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="placeholder" disabled>
-                Seleccione tipo de propiedad
-              </SelectItem>
-              <SelectItem value="casa">Casas</SelectItem>
-              <SelectItem value="apartamento">Departamentos</SelectItem>
-              <SelectItem value="terreno">Terrenos</SelectItem>
+              <SelectItem value="all">Todos los inmuebles</SelectItem>
+              {PROPERTY_TYPE_VALUES.map((propertyType) => (
+                <SelectItem key={propertyType} value={propertyType}>
+                  {propertyTypeLabels[propertyType].search}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-        </label>
+        </div>
         <div className="location-select-group">
           <label className="location-select-field">
             <span>Provincia</span>

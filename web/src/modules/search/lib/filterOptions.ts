@@ -1,3 +1,8 @@
+import {
+  PROPERTY_TYPE_VALUES,
+  operationLabels,
+  propertyTypeLabels,
+} from '../../../shared/lib/propertyTaxonomy'
 import type { SearchFilters } from '../types'
 
 export const purchasePriceOptions = [
@@ -16,20 +21,18 @@ export const rentPriceOptions = [
 
 export const segmentOptions = ['all', 1, 2, 3, 4] as const
 export const parkingOptions = ['all', 1, 2, 3] as const
-export const propertyTypeOptions = ['casa', 'apartamento', 'terreno'] as const
+export const propertyTypeOptions = PROPERTY_TYPE_VALUES
 
 export function getOperationLabel(filters: SearchFilters) {
   if (filters.operations.length === 0) return 'Operación'
 
   return filters.operations
-    .map((op) => op === 'alquiler' ? 'Renta' : op === 'venta' ? 'Venta' : 'Permuta')
+    .map((operation) => operationLabels[operation].filter)
     .join(' + ')
 }
 
 export function getPropertyTypeLabel(filters: SearchFilters) {
-  if (filters.propertyType === 'casa') return 'Casas'
-  if (filters.propertyType === 'apartamento') return 'Departamentos'
-  if (filters.propertyType === 'terreno') return 'Terrenos'
+  if (filters.propertyType !== 'all') return propertyTypeLabels[filters.propertyType].search
   return 'Inmueble'
 }
 

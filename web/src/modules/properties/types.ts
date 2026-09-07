@@ -1,6 +1,11 @@
-export type OperationType = 'venta' | 'alquiler' | 'permuta'
+import type {
+  CanonicalOperation,
+  CanonicalPropertyType,
+} from '../../shared/lib/propertyTaxonomy'
 
-export type PropertyType = 'casa' | 'apartamento' | 'terreno'
+export type OperationType = CanonicalOperation
+
+export type PropertyType = CanonicalPropertyType
 
 export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'owner_hidden' | 'ai_approved' | 'ai_rejected'
 

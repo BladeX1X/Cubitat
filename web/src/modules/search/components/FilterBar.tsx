@@ -17,6 +17,7 @@ import { Button } from '../../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui/popover'
 import { Input } from '../../../shared/ui/input'
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
+import { propertyTypeLabels } from '../../../shared/lib/propertyTaxonomy'
 
 export type FilterBarProps = {
   filters: SearchFilters
@@ -246,7 +247,7 @@ export function FilterBar({
                 className="h-4 w-4 rounded border-neutral-300 text-[#035f53] focus:ring-[#035f53] focus:ring-offset-0 cursor-pointer"
               />
               <label htmlFor={`type-${type}`} className="cursor-pointer select-none flex-1 py-1 capitalize">
-                {type === 'apartamento' ? 'Departamento' : type}s
+                {propertyTypeLabels[type].search}
               </label>
             </div>
           ))}
@@ -592,7 +593,7 @@ export function FilterBar({
                     checked={filters.propertyType === type}
                     onChange={() => handlePropertyTypeSelect(type)}
                   />
-                  <span>{type === 'apartamento' ? 'Apartamento' : type === 'casa' ? 'Casa' : 'Terreno'}</span>
+                  <span>{propertyTypeLabels[type].search}</span>
                 </label>
               ))}
             </section>
