@@ -21,6 +21,17 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
+> Actualización 2026-09-07: rama `bugfix/mobile-menu-overlay`. Se corrigió la
+> superposición del menú móvil detectada en inicio y resultados: la navegación
+> inferior (`z-index: 130`) y las acciones flotantes de mapa/alerta
+> (`z-index: 120`) aparecían sobre el panel (`z-index: 115`). El menú ahora
+> bloquea el scroll del fondo, ocupa la capa superior bajo el encabezado, oculta
+> ambos controles mientras está abierto y reduce el espacio inferior reservado
+> para mantener visibles `Comprar` y `Rentar`. Evidencia local en viewport
+> 390x844: panel 390x786, barra inferior oculta y ambas opciones completas. Gate
+> completo: `npm run lint`, `npm run test:run` (93 archivos/380 pruebas) y
+> `npm run build`.
+
 > Actualización 2026-09-07: rama `hotfix/publish-image-csp-realtime`.
 > Durante QA productivo del formulario de publicación se reprodujo
 > `Hubo un error al publicar la propiedad: Failed to fetch` después de subir una

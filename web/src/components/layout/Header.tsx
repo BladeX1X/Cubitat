@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { Building2, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
@@ -34,6 +34,19 @@ export function Header({
   onSignOut,
 }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.classList.add('has-mobile-menu-open')
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.classList.remove('has-mobile-menu-open')
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isMobileMenuOpen])
 
   function handleNavigation(callback: () => void) {
     setIsMobileMenuOpen(false)
