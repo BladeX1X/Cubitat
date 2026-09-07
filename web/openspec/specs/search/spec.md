@@ -5,6 +5,17 @@ Permite buscar y filtrar propiedades inmuebles en Cuba de forma ágil y responsi
 
 ## Requirements
 
+### Requirement: Taxonomia compartida con publicacion
+El sistema MUST usar las mismas operaciones y tipos de inmueble al buscar y publicar.
+
+#### Scenario: Mostrar todas las opciones disponibles
+- GIVEN un usuario abre Buscar o Publicar
+- WHEN revisa operaciones y tipos de inmueble
+- THEN ambos flujos MUST usar `venta`, `alquiler` y `permuta`
+- AND ambos flujos MUST usar `casa`, `apartamento` y `terreno`
+- AND Buscar MUST mostrar `Todos los inmuebles` cuando no existe filtro de tipo
+- AND MUST permitir volver al estado sin filtro desde el selector de tipo
+
 ### Requirement: Búsqueda Orientada a Lugares con Autocompletado
 El sistema MUST buscar propiedades exclusivamente por ubicaciones geográficas y ofrecer sugerencias a medida que el usuario escribe.
 

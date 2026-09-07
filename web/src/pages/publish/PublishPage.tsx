@@ -13,6 +13,14 @@ import {
   savePublicationDraft,
 } from './draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import {
+  OPERATION_VALUES,
+  PROPERTY_TYPE_VALUES,
+  operationLabels,
+  propertyTypeLabels,
+  type CanonicalOperation,
+  type CanonicalPropertyType,
+} from '../../shared/lib/propertyTaxonomy'
 
 const AddressMap = lazy(() =>
   import('../../modules/maps/components/AddressMap').then((m) => ({ default: m.AddressMap }))
@@ -46,8 +54,8 @@ import {
 } from '../../shared/ui/select'
 
 export type PublishFormData = {
-  operation: 'venta' | 'alquiler' | 'permuta'
-  propertyType: 'casa' | 'apartamento' | 'terreno'
+  operation: CanonicalOperation
+  propertyType: CanonicalPropertyType
   description: string
   priceUsd: string
   
@@ -150,18 +158,6 @@ const initialFormState: PublishFormData = {
   
   contactName: '',
   contactPhone: '',
-}
-
-const operationLabels = {
-  venta: 'Venta',
-  alquiler: 'Renta / Alquiler',
-  permuta: 'Permuta',
-}
-
-const propertyTypeLabels = {
-  casa: 'Casa',
-  apartamento: 'Departamento',
-  terreno: 'Terreno',
 }
 
 const publishStepLabels = [
@@ -1310,9 +1306,6 @@ function StepGeneralInfo({
   onNext: () => void
   onBack: () => void
 }) {
-  const operations: PublishFormData['operation'][] = ['venta', 'alquiler', 'permuta']
-  const propertyTypes: PublishFormData['propertyType'][] = ['casa', 'apartamento', 'terreno']
-
   return (
     <div className="space-y-6">
       <div className="publish-form-card-header">
@@ -1324,7 +1317,7 @@ function StepGeneralInfo({
       <div className="space-y-3">
         <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-semibold block">¿Qué tipo de anuncio deseas publicar?</label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {operations.map((op) => {
+          {OPERATION_VALUES.map((op) => {
             const isActive = formData.operation === op
             return (
               <button
@@ -1337,7 +1330,7 @@ function StepGeneralInfo({
                     : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
                 }`}
               >
-                {operationLabels[op]}
+                {operationLabels[op].publish}
               </button>
             )
           })}
@@ -1348,7 +1341,7 @@ function StepGeneralInfo({
       <div className="space-y-3">
         <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-semibold block">¿Qué tipo de inmueble es?</label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {propertyTypes.map((type) => {
+          {PROPERTY_TYPE_VALUES.map((type) => {
             const isActive = formData.propertyType === type
             return (
               <button
@@ -1361,7 +1354,7 @@ function StepGeneralInfo({
                     : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
                 }`}
               >
-                {propertyTypeLabels[type]}
+                {propertyTypeLabels[type].publish}
               </button>
             )
           })}

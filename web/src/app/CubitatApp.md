@@ -137,6 +137,9 @@ Estado actual (2026-07-01):
 - Las respuestas REST de Supabase no se almacenan en el service worker; los
   cambios de sesion, rol y KYC deben resolverse siempre contra el backend.
 - Las operaciones de filtro (Venta/Renta/Permuta) son de seleccion exclusiva (no multi-select).
+- Buscar y Publicar comparten la taxonomia canonica de operaciones y tipos de inmueble en
+  `src/shared/lib/propertyTaxonomy.ts`. El selector del hero muestra `Todos los inmuebles`
+  cuando no hay filtro y permite volver explicitamente a ese estado desde el menu.
 
 Flujo de paginas:
 
