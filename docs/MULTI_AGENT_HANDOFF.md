@@ -30,7 +30,14 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 > para mantener visibles `Comprar` y `Rentar`. Evidencia local en viewport
 > 390x844: panel 390x786, barra inferior oculta y ambas opciones completas. Gate
 > completo: `npm run lint`, `npm run test:run` (93 archivos/380 pruebas) y
-> `npm run build`.
+> `npm run build`. PR #92 fusionado a `main` como `4beca04` y desplegado al
+> Worker `cubitat1` como versión `523e7ef5-b3bb-4bf8-8cb6-d658d0430e26`.
+> Verificación productiva en `/resultados?operacion=venta`, viewport 390x844:
+> el panel terminó en el borde inferior del viewport, el scroll del documento
+> quedó bloqueado, la barra móvil y `Mostrar mapa`/`Crear alerta` pasaron a
+> `display: none`, y `Comprar`/`Rentar` quedaron completos. Producción sirvió
+> `/assets/index-Bu8fgoun.css`; el único error de consola fue el DNS externo del
+> beacon analítico de Cloudflare ya registrado.
 
 > Actualización 2026-09-07: rama `hotfix/publish-image-csp-realtime`.
 > Durante QA productivo del formulario de publicación se reprodujo
