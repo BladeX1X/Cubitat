@@ -28,7 +28,15 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 > apartamentos en `features.floorLevel`. La carga de propiedades incluye
 > `features` y el detalle muestra piso/nivel o niveles cuando existen. Gate
 > local completo: `npm run lint`, `npm run test:run` (92 archivos/376 pruebas)
-> y `npm run build`. Pendiente: despliegue y smoke en producción.
+> y `npm run build`. PR #90 fusionado a `main` junto con PR #89 y desplegado a
+> producción como Worker `63cddd65-19cd-49be-b283-ad17d965ce4b`. Smoke
+> productivo: home sirve bundle `/assets/index-DQ8jW4Ib.js`; chunk
+> `/assets/PublishPage-tXL1Bfq5.js` contiene `Piscina`, `Patio`, `Piso / Nivel`,
+> `floorLevel`, `hasPool` y `hasPatio`; chunk
+> `/assets/DetailPage-B05yreZH.js` contiene visualización de `Piso / nivel`,
+> `Niveles`, `floorLevel` y `features`. Pendiente: creación/edición real de una
+> publicación QA porque el selector de ubicación fue inestable bajo
+> automatización de navegador.
 
 > Actualización 2026-09-06: por decisión de producto se retiró del MVP la
 > verificación obligatoria de celular por WhatsApp. En
