@@ -21,6 +21,13 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - AND MUST aplicar el flujo de ruta protegida cuando la opcion requiera sesion
 - AND MUST cerrar menus o paneles abiertos para evitar solapamientos
 
+#### Scenario: Menu movil abierto sobre cualquier pagina
+- GIVEN un usuario abre el menu movil desde inicio, resultados o detalle
+- WHEN el panel ocupa el viewport disponible
+- THEN el sistema MUST bloquear el desplazamiento del contenido de fondo
+- AND MUST ocultar la navegacion inferior y las acciones flotantes de la pagina
+- AND MUST mantener accesibles mediante scroll las opciones de explorar inmuebles
+
 ### Requirement: Alias de cuenta
 El sistema MUST aceptar alias publicos razonables para cuenta.
 

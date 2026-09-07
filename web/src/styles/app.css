@@ -3766,7 +3766,7 @@ h2 {
   .site-header {
     position: sticky;
     top: 0;
-    z-index: 120;
+    z-index: 140;
     min-height: 58px;
     display: flex;
     align-items: center;
@@ -3866,14 +3866,21 @@ h2 {
   .mobile-menu-panel {
     position: fixed;
     inset: 58px 0 0;
-    z-index: 115;
+    z-index: 135;
     display: flex;
     flex-direction: column;
     gap: 14px;
     overflow-y: auto;
-    padding: 18px 18px calc(92px + env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+    padding: 18px 18px calc(24px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, #f6fbf9 0%, #fff 44%);
     animation: mobile-menu-in 180ms ease-out;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.has-mobile-menu-open .mobile-bottom-nav,
+  body.has-mobile-menu-open .results-floating-actions {
+    display: none;
   }
 
   .mobile-menu-topline {
