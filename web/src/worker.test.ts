@@ -503,6 +503,54 @@ describe('Cloudflare Worker security contract', () => {
     expect(forwardedHeaders.has('X-Untrusted-Header')).toBe(false)
   })
 
+  it('passes Supabase realtime websocket upgrades through without rebuilding status 101 responses', async () => {
+    const switchingProtocolsResponse = {
+      status: 101,
+      statusText: 'Switching Protocols',
+      headers: new Headers(),
+      body: null,
+    } as unknown as Response
+    const fetchMock = vi.fn(async () => switchingProtocolsResponse)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/realtime/v1/websocket?apikey=dummy-key-safe-from-browsers&vsn=2.0.0', {
+        headers: {
+          Connection: 'Upgrade',
+          Upgrade: 'websocket',
+          'Sec-WebSocket-Key': 'test-key',
+          'Sec-WebSocket-Version': '13',
+        },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(101)
+    expect(response).toBe(switchingProtocolsResponse)
+  })
+
+  it('allows authenticated users to delete their Supabase storage objects through the proxy', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => (
+      new Response('{}', { status: 200 })
+    ))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/storage/v1/object/property_images/user-id/photo.webp', {
+        method: 'DELETE',
+        headers: {
+          Authorization: 'Bearer user-token',
+        },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://example.supabase.co/storage/v1/object/property_images/user-id/photo.webp')
+  })
+
   it('blocks password login by IP before forwarding it to Supabase', async () => {
     const limiterFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({
       allowed: false,

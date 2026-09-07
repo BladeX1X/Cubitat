@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-09-06
+Última actualización: 2026-09-07
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,23 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-09-07: rama `hotfix/publish-image-csp-realtime`.
+> Durante QA productivo del formulario de publicación se reprodujo
+> `Hubo un error al publicar la propiedad: Failed to fetch` después de subir una
+> imagen real y completar `Patio`, `Piscina` y `Piso / Nivel`. Causa en cliente:
+> `fetch(dataUrl)` quedaba bloqueado por la CSP productiva antes de subir a
+> Storage. Se reemplazó por conversión local `dataUrlToBlob`, se cubrió con
+> prueba de regresión y se desplegó a producción como Worker
+> `608e21de-fb3b-4a13-aa90-d781630c2a0b`. Cloudflare Tail también mostró 500
+> en Realtime por intentar reconstruir una respuesta WebSocket `101`; el Worker
+> ahora pasa esos responses sin envolverlos. QA transaccional autenticado con
+> `pochiprats18+cubitat-test-20260906a@gmail.com`: subida WebP a
+> `property_images`, inserción en `properties` con `amenities` `Patio`/`Piscina`
+> y `features.floorLevel = 3`, lectura de la fila `pending_review`, eliminación
+> de la fila y limpieza del objeto QA de Storage. Gate completo: `npm run lint`,
+> `npm run test:run` (92 archivos/379 pruebas), `npm run build` y
+> `npm run cf:deploy`.
 
 > Actualización 2026-09-06: rama `feature/publication-feedback-controls`.
 > El formulario de publicación ahora mantiene explícitos operación

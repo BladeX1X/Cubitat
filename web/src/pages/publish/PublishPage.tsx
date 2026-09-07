@@ -36,6 +36,7 @@ import {
   normalizeCubanPhoneForStorage,
   validatePhone,
 } from './phone'
+import { dataUrlToBlob } from './imageDataUrl'
 import {
   Select,
   SelectContent,
@@ -606,8 +607,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
 
         const fileName = `${user.id}/${Date.now()}-${i}.webp`
         
-        // Convert dataUrl back to blob for upload
-        const blob = await (await fetch(img.dataUrl)).blob()
+        const blob = dataUrlToBlob(img.dataUrl)
         
         const { error } = await supabase.storage
           .from('property_images')
