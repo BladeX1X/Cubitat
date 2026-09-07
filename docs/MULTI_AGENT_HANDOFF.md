@@ -1,6 +1,6 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-08-03
+Última actualización: 2026-09-06
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -20,6 +20,29 @@ operativo.
 Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
+
+> Actualización 2026-09-06: por decisión de producto se retiró del MVP la
+> verificación obligatoria de celular por WhatsApp. En
+> `bugfix/auth-production-redirect`, `Mi cuenta` permite editar `profiles.phone`
+> como dato normal; el Worker permite `PATCH` autenticado a `profiles` solo para
+> campos seguros (`full_name`, `phone`, `avatar_url`) y conserva bloqueados
+> `role`, `verification_status` y `phone_verified_at`. Gate local completo:
+> `npm run lint`, `npm run test:run` (92 archivos/376 pruebas) y
+> `npm run build`. Desplegado a producción como Worker
+> `16d7ecdb-e3cf-4a24-a716-4aa39629e2cc`. Smoke productivo: home y rutas de
+> auth/cuenta responden 200, rutas privadas conservan `X-Robots-Tag: noindex`,
+> el bundle servido es `/assets/index-C-WWT6yY.js`, no aparece texto de
+> "Verificar por WhatsApp" en cuenta anónima, los errores PKCE/AAL2 siguen
+> ocultos, el `PATCH` anónimo a `profiles` responde 403, campos protegidos con
+> bearer falso responden 403, y `PATCH` de campos seguros con bearer falso pasa
+> el filtro del Worker y falla en Supabase con 401 por JWT inválido. Prueba real
+> autenticada completada el 2026-09-06 con el alias
+> `pochiprats18+cubitat-test-20260906a@gmail.com`: registro con Turnstile,
+> correo de confirmación por Gmail, callback `token_hash` en producción, login
+> por contraseña, edición de celular `+53 5555 0000`, persistencia tras recarga,
+> recuperación de contraseña y login posterior con la nueva clave. Google OAuth
+> abre `accounts.google.com` sin `localhost` y conserva `redirect_to` hacia
+> `https://cubitathome.com/auth/callback`.
 
 > Actualización 2026-08-03: la remediación de auditoría Fase 2 fue fusionada
 > mediante PR #85 en `dev` como `7d24355`. El PR cerró sin conflictos después

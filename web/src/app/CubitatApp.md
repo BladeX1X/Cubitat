@@ -118,7 +118,7 @@ Estado actual (2026-07-01):
 - `Mi cuenta`, `Favoritos` y `Ver mis contenidos` comparten `src/pages/account/AccountLayout.tsx`; solo debe cambiar el contenido derecho.
 - La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
-- La verificacion de cuenta usa 3 datos: nombre, email y celular verificado por WhatsApp (`profiles.phone_verified_at`).
+- La tarjeta de cuenta usa 3 datos completados: nombre, email y celular editable (`profiles.phone`). El celular ya no requiere verificacion por WhatsApp dentro del MVP; el proxy solo permite actualizar campos seguros del perfil.
 - El correo no se modifica desde `Mi cuenta`; la contrasena tampoco se gestiona en esa pantalla.
 - La navegacion usa `pageMode` y `window.history.pushState` (sin React Router).
 - Las rutas implementadas: `/`, `/resultados`, `/propiedad/:slug`, `/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`.

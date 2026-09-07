@@ -748,6 +748,53 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('allows safe authenticated profile updates but blocks anonymous or protected profile writes', async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response('{}', { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const allowedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: '+52 55 1234 5678' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const blockedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: '+52 55 1234 5678' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const protectedFieldResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone_verified_at: new Date().toISOString(), role: 'admin' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(allowedResponse.status).toBe(200)
+    expect(blockedResponse.status).toBe(403)
+    expect(protectedFieldResponse.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/rest/v1/profiles?id=eq.user-1')
+  })
+
   it('marks non-canonical environments as non-indexable', async () => {
     const response = await worker.fetch(
       new Request('https://preview.cubitat.workers.dev/resultados'),

@@ -64,12 +64,15 @@ export function AccountPage({
   const [fullName, setFullName] = useState(initialName)
   const [draftName, setDraftName] = useState(initialName)
   const [phone, setPhone] = useState('')
-  const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(null)
+  const [draftPhone, setDraftPhone] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string>(initialAvatarUrl)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingName, setIsSavingName] = useState(false)
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [nameMessage, setNameMessage] = useState<string | null>(null)
+  const [phoneMessage, setPhoneMessage] = useState<string | null>(null)
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const email = user?.email || 'Sin correo registrado'
@@ -84,7 +87,7 @@ export function AccountPage({
   const verifiedItems = [
     Boolean(safeFullName.trim()),
     Boolean(email),
-    Boolean(phoneVerifiedAt),
+    Boolean(phone.trim()),
   ]
   const verifiedCount = verifiedItems.filter(Boolean).length
 
@@ -97,18 +100,20 @@ export function AccountPage({
     setFullName(initialName)
     setDraftName(initialName)
     setPhone('')
-    setPhoneVerifiedAt(null)
+    setDraftPhone('')
     setAvatarUrl(initialAvatarUrl)
     setUserRole(initialUserRole)
     setIsEditingName(false)
+    setIsEditingPhone(false)
     setNameMessage(null)
+    setPhoneMessage(null)
     setAvatarMessage(null)
 
     async function loadProfile() {
       if (!requestedUserId) return
       const { data } = await supabase
         .from('profiles')
-        .select('role, full_name, phone, avatar_url, phone_verified_at')
+        .select('role, full_name, phone, avatar_url')
         .eq('id', requestedUserId)
         .maybeSingle()
 
@@ -119,8 +124,8 @@ export function AccountPage({
       setFullName(resolvedName)
       setDraftName(resolvedName)
       setPhone(data.phone || '')
+      setDraftPhone(data.phone || '')
       setAvatarUrl(data.avatar_url || initialAvatarUrl)
-      setPhoneVerifiedAt(data.phone_verified_at || null)
     }
 
     void loadProfile()
@@ -173,6 +178,34 @@ export function AccountPage({
     setDraftName(cleanName)
     setIsEditingName(false)
     setNameMessage('Nombre actualizado.')
+  }
+
+  async function handleSavePhone() {
+    const cleanPhone = (draftPhone || '').trim()
+    if (cleanPhone.length > 60) {
+      setPhoneMessage('El numero es demasiado largo.')
+      return
+    }
+
+    setIsSavingPhone(true)
+    setPhoneMessage(null)
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ phone: cleanPhone || null })
+      .eq('id', userId)
+
+    setIsSavingPhone(false)
+
+    if (error) {
+      setPhoneMessage('No se pudo actualizar el numero de celular.')
+      return
+    }
+
+    setPhone(cleanPhone)
+    setDraftPhone(cleanPhone)
+    setIsEditingPhone(false)
+    setPhoneMessage(cleanPhone ? 'Numero de celular actualizado.' : 'Numero de celular eliminado.')
   }
 
   async function handleAvatarFile(file: File | undefined) {
@@ -264,10 +297,10 @@ export function AccountPage({
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-[20px] font-black leading-[1.08] tracking-tight sm:text-[28px]">
-                  Centro de verificacion y cuenta
+                  Centro de cuenta
                   </h1>
                   <p className="mt-1.5 max-w-2xl text-xs font-semibold leading-snug text-white/85 sm:text-base">
-                  Manten tu informacion actualizada y aumenta la confianza de tus contactos.
+                  Manten tu informacion actualizada para que tus contactos te encuentren facil.
                   </p>
                 </div>
               </div>
@@ -328,7 +361,7 @@ export function AccountPage({
                   verifiedCount={verifiedCount}
                   hasName={Boolean(safeFullName.trim())}
                   hasEmail={Boolean(email)}
-                  hasVerifiedPhone={Boolean(phoneVerifiedAt)}
+                  hasPhone={Boolean(phone.trim())}
                 />
 
                 <SearchAlertsCard
@@ -374,13 +407,24 @@ export function AccountPage({
                     status="verified"
                     icon={<Mail size={16} />}
                   />
-                  <AccountRow
-                    label="Numero de celular"
-                    value={phone || 'Ingresa tu numero de celular'}
-                    helper="Este numero se verificara por WhatsApp antes de marcarlo como validado."
-                    status={phoneVerifiedAt ? 'verified' : phone ? 'pending' : 'missing'}
-                    actionLabel="Verificar por WhatsApp"
-                    icon={<MessageCircle size={16} />}
+                  <EditablePhoneRow
+                    value={phone}
+                    draftValue={draftPhone}
+                    isEditing={isEditingPhone}
+                    isSaving={isSavingPhone}
+                    message={phoneMessage}
+                    onChange={setDraftPhone}
+                    onEdit={() => {
+                      setDraftPhone(phone)
+                      setPhoneMessage(null)
+                      setIsEditingPhone(true)
+                    }}
+                    onCancel={() => {
+                      setDraftPhone(phone)
+                      setPhoneMessage(null)
+                      setIsEditingPhone(false)
+                    }}
+                    onSave={handleSavePhone}
                   />
                 </AccountSection>
 
@@ -567,16 +611,100 @@ function EditableNameRow({
   )
 }
 
+function EditablePhoneRow({
+  value,
+  draftValue,
+  isEditing,
+  isSaving,
+  message,
+  onChange,
+  onEdit,
+  onCancel,
+  onSave,
+}: {
+  value: string
+  draftValue: string
+  isEditing: boolean
+  isSaving: boolean
+  message: string | null
+  onChange: (value: string) => void
+  onEdit: () => void
+  onCancel: () => void
+  onSave: () => void
+}) {
+  return (
+    <div className="grid gap-4 border-b border-neutral-100 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+      <div>
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <MessageCircle size={16} />
+          Numero de celular
+        </div>
+        {isEditing ? (
+          <Input
+            value={draftValue}
+            onChange={(event) => onChange(event.target.value)}
+            className="h-11 max-w-md"
+            placeholder="+53 5555 5555"
+            autoComplete="tel"
+            autoFocus
+          />
+        ) : (
+          <p className={`text-sm font-bold ${value ? 'text-neutral-800' : 'text-red-500'}`}>
+            {value || 'Ingresa tu numero de celular'}
+          </p>
+        )}
+        <p className="mt-1 text-sm text-neutral-500">
+          Este numero sera visible como dato de contacto cuando lo uses en tus publicaciones.
+        </p>
+        {message ? (
+          <p className="mt-2 text-sm font-semibold text-[#008f79]">{message}</p>
+        ) : null}
+      </div>
+
+      {isEditing ? (
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <Button
+            variant="outline"
+            className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black"
+            type="button"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="h-11 rounded-full bg-[#008f79] px-4 text-sm font-black text-white hover:bg-[#007565]"
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          className="h-11 rounded-full border-neutral-200 px-4 text-sm font-black text-[#008f79]"
+          type="button"
+          onClick={onEdit}
+        >
+          Modificar
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function VerificationCard({
   verifiedCount,
   hasName,
   hasEmail,
-  hasVerifiedPhone,
+  hasPhone,
 }: {
   verifiedCount: number
   hasName: boolean
   hasEmail: boolean
-  hasVerifiedPhone: boolean
+  hasPhone: boolean
 }) {
   const totalItems = 3
   const percent = Math.round((verifiedCount / totalItems) * 100)
@@ -591,10 +719,10 @@ function VerificationCard({
           </span>
           <div>
             <h2 className="text-base font-black leading-tight text-neutral-900 sm:text-lg">
-              Completa tu verificacion y aumenta tu rendimiento
+              Completa tu cuenta y aumenta tu rendimiento
             </h2>
             <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
-              Los usuarios con datos verificados reciben mas contactos y generan mayor confianza.
+              Mantener tus datos principales completos facilita que te contacten.
             </p>
           </div>
         </div>
@@ -602,7 +730,7 @@ function VerificationCard({
         <div>
           <div className="mb-2 flex items-center justify-between text-sm font-black">
             <span className="text-neutral-700">
-              {verifiedCount} de {totalItems} datos verificados
+              {verifiedCount} de {totalItems} datos completados
             </span>
             <span className="text-[#008f79]">{percent}%</span>
           </div>
@@ -617,13 +745,13 @@ function VerificationCard({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <VerificationItem ok={hasName} label="Nombre" />
           <VerificationItem ok={hasEmail} label="Email" />
-          <VerificationItem ok={hasVerifiedPhone} label="Celular por WhatsApp" />
+          <VerificationItem ok={hasPhone} label="Celular" />
         </div>
 
         <p className="text-sm font-bold text-[#008f79]">
           {missingCount === 0
-            ? 'Tu cuenta tiene los datos principales verificados.'
-            : `Te ${missingCount === 1 ? 'falta' : 'faltan'} ${missingCount} ${missingCount === 1 ? 'dato' : 'datos'} para obtener el badge de cuenta verificada.`}
+            ? 'Tu cuenta tiene los datos principales completos.'
+            : `Te ${missingCount === 1 ? 'falta' : 'faltan'} ${missingCount} ${missingCount === 1 ? 'dato' : 'datos'} por completar.`}
         </p>
       </div>
     </section>

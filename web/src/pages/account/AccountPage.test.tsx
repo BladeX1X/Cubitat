@@ -249,6 +249,76 @@ describe('AccountPage - Role Selector', () => {
     fromSpy.mockRestore()
   })
 
+  it('permite editar el numero de celular sin requerir verificacion por WhatsApp', async () => {
+    const updateEq = vi.fn().mockResolvedValue({ error: null })
+    const updateProfile = vi.fn().mockReturnValue({ eq: updateEq })
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: (columns: string) => ({
+            eq: () => columns === 'role, verification_status'
+              ? {
+                  maybeSingle: () => Promise.resolve({
+                    data: { role: 'buyer', verification_status: 'unverified' },
+                    error: null,
+                  }),
+                  single: () => Promise.resolve({
+                    data: { role: 'buyer', verification_status: 'unverified' },
+                    error: null,
+                  }),
+                }
+              : {
+                  maybeSingle: () => Promise.resolve({
+                    data: { role: 'buyer', full_name: 'Usuario Test', phone: '', avatar_url: '' },
+                    error: null,
+                  }),
+                },
+          }),
+          update: updateProfile,
+        } as any
+      }
+      if (table === 'search_alerts') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => Promise.resolve({ data: [], error: null })
+            })
+          })
+        } as any
+      }
+      return {} as any
+    })
+
+    render(
+      <AccountPage
+        user={mockUser}
+        userRole="buyer"
+        onBack={vi.fn()}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+      />
+    )
+
+    expect(await screen.findByText('Ingresa tu numero de celular')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /verificar por whatsapp/i })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modificar' }).at(-1)!)
+    fireEvent.change(screen.getByPlaceholderText('+53 5555 5555'), {
+      target: { value: '+52 55 1234 5678' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenCalledWith({ phone: '+52 55 1234 5678' })
+      expect(updateEq).toHaveBeenCalledWith('id', mockUser.id)
+      expect(screen.getByText('Numero de celular actualizado.')).toBeInTheDocument()
+    })
+    expect(screen.getByText('+52 55 1234 5678')).toBeInTheDocument()
+
+    fromSpy.mockRestore()
+  })
+
   it('descarta una respuesta tardia y limpia los datos al cambiar de sesion', async () => {
     let resolveFirstProfile: ((value: unknown) => void) | undefined
     const firstProfile = new Promise((resolve) => {
@@ -267,7 +337,7 @@ describe('AccountPage - Role Selector', () => {
           select: (columns: string) => ({
             eq: (_column: string, id: string) => ({
               maybeSingle: () => {
-                if (columns.includes('phone_verified_at')) {
+                if (columns.includes('avatar_url')) {
                   if (id === mockUser.id) return firstProfile
                   return Promise.resolve({
                     data: {
@@ -275,7 +345,6 @@ describe('AccountPage - Role Selector', () => {
                       full_name: 'Usuario Segundo',
                       phone: '+5355550002',
                       avatar_url: '',
-                      phone_verified_at: null,
                     },
                     error: null,
                   })
@@ -317,7 +386,6 @@ describe('AccountPage - Role Selector', () => {
         full_name: 'Usuario Anterior',
         phone: '+5355550001',
         avatar_url: 'https://example.test/anterior.webp',
-        phone_verified_at: '2026-08-01T00:00:00Z',
       },
       error: null,
     })

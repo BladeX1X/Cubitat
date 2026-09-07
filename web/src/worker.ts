@@ -967,6 +967,10 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const tableName = restMatch ? restMatch[1] : null;
       const rpcMatch = subPath.match(/^\/rest\/v1\/rpc\/([^/?]+)/);
       const rpcName = rpcMatch ? rpcMatch[1] : null;
+      const allowedAuthenticatedProfilePatch = method === 'PATCH'
+        && authenticated
+        && tableName === 'profiles';
+      const allowedProfilePatchFields = ['full_name', 'phone', 'avatar_url'];
       const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
         && authenticated
         && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
@@ -1021,7 +1025,26 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
       if (method === 'DELETE' || method === 'PATCH') {
         if (!isAllowedAuthenticatedMfaDelete
+          && !allowedAuthenticatedProfilePatch
           && (!tableName || !allowedWriteTables.includes(tableName) || !authenticated)) {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+      }
+
+      if (allowedAuthenticatedProfilePatch) {
+        let profilePatchBody: unknown;
+        try {
+          profilePatchBody = await request.clone().json();
+        } catch {
+          return jsonResponse({ error: 'Operación no permitida.' }, 403);
+        }
+
+        if (
+          !profilePatchBody
+          || Array.isArray(profilePatchBody)
+          || typeof profilePatchBody !== 'object'
+          || Object.keys(profilePatchBody).some((field) => !allowedProfilePatchFields.includes(field))
+        ) {
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
         }
       }
