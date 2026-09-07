@@ -304,17 +304,29 @@ describe('AccountPage - Role Selector', () => {
     expect(screen.queryByRole('button', { name: /verificar por whatsapp/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Modificar' }).at(-1)!)
-    fireEvent.change(screen.getByPlaceholderText('+53 5555 5555'), {
+    const phoneInput = screen.getByPlaceholderText('Ej: +52 55 1234 5678')
+    expect(phoneInput).toHaveAttribute('type', 'tel')
+    expect(phoneInput).toHaveAttribute('inputmode', 'tel')
+
+    fireEvent.change(phoneInput, {
+      target: { value: '123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('Ingresa un telefono valido de 7 a 15 digitos.')).toBeInTheDocument()
+    expect(updateProfile).not.toHaveBeenCalled()
+
+    fireEvent.change(phoneInput, {
       target: { value: '+52 55 1234 5678' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => {
-      expect(updateProfile).toHaveBeenCalledWith({ phone: '+52 55 1234 5678' })
+      expect(updateProfile).toHaveBeenCalledWith({ phone: '+525512345678' })
       expect(updateEq).toHaveBeenCalledWith('id', mockUser.id)
       expect(screen.getByText('Numero de celular actualizado.')).toBeInTheDocument()
     })
-    expect(screen.getByText('+52 55 1234 5678')).toBeInTheDocument()
+    expect(screen.getByText('+525512345678')).toBeInTheDocument()
 
     fromSpy.mockRestore()
   })
