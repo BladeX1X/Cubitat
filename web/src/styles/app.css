@@ -3869,10 +3869,10 @@ h2 {
     z-index: 135;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 18px 18px calc(24px + env(safe-area-inset-bottom));
+    padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, #f6fbf9 0%, #fff 44%);
     animation: mobile-menu-in 180ms ease-out;
     -webkit-overflow-scrolling: touch;
@@ -3904,10 +3904,10 @@ h2 {
 
   .mobile-menu-profile {
     display: grid;
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 44px 1fr;
     align-items: center;
-    gap: 14px;
-    padding: 15px;
+    gap: 12px;
+    padding: 10px 12px;
     border: 1px solid #dcebe7;
     border-radius: 22px;
     background: #fff;
@@ -3915,8 +3915,8 @@ h2 {
   }
 
   .mobile-menu-profile > span {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
     border-radius: 50%;
@@ -3950,7 +3950,7 @@ h2 {
   .mobile-menu-list button,
   .mobile-menu-accordion button {
     width: 100%;
-    min-height: 48px;
+    min-height: 44px;
     border: 0;
     color: #24332f;
     background: #fff;
@@ -3999,8 +3999,8 @@ h2 {
 
   .mobile-menu-list {
     display: grid;
-    gap: 8px;
-    padding: 8px;
+    gap: 2px;
+    padding: 4px;
     border: 1px solid #edf3f1;
     border-radius: 20px;
     background: #fff;
@@ -4011,7 +4011,7 @@ h2 {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 14px;
+    padding: 0 12px;
     border-radius: 14px;
   }
 
@@ -4027,7 +4027,7 @@ h2 {
 
   .mobile-menu-publish {
     width: 100%;
-    height: 52px;
+    height: 48px;
     margin: 2px 0 0;
     border-radius: 999px;
     color: #fff;
@@ -4038,7 +4038,7 @@ h2 {
   }
 
   .mobile-menu-section-title {
-    margin: 4px 2px -4px;
+    margin: 2px 2px -2px;
     color: #71817d;
     font-size: 12px;
     font-weight: 850;
@@ -4048,9 +4048,9 @@ h2 {
 
   .mobile-menu-accordion {
     display: grid;
-    gap: 8px;
+    gap: 2px;
     overflow: hidden;
-    padding: 8px;
+    padding: 4px;
     border: 1px solid #eef1f0;
     border-radius: 20px;
     background: #fff;
