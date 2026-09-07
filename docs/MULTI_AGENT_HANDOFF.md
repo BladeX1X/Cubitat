@@ -21,6 +21,15 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 
 ## Estado confirmado
 
+> Actualización 2026-09-06: rama `feature/publication-feedback-controls`.
+> El formulario de publicación ahora mantiene explícitos operación
+> (`venta`, `alquiler`, `permuta`) y tipo (`casa`, `apartamento`, `terreno`),
+> añade amenidades `Patio` y `Piscina`, y captura `Piso / Nivel` para
+> apartamentos en `features.floorLevel`. La carga de propiedades incluye
+> `features` y el detalle muestra piso/nivel o niveles cuando existen. Gate
+> local completo: `npm run lint`, `npm run test:run` (92 archivos/376 pruebas)
+> y `npm run build`. Pendiente: despliegue y smoke en producción.
+
 > Actualización 2026-09-06: por decisión de producto se retiró del MVP la
 > verificación obligatoria de celular por WhatsApp. En
 > `bugfix/auth-production-redirect`, `Mi cuenta` permite editar `profiles.phone`

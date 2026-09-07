@@ -68,6 +68,7 @@ export type PublishFormData = {
   halfBathrooms: number
   parking: number
   levels: number
+  floorLevel: number
   
   landSize: string
   unknownLand: boolean
@@ -90,6 +91,8 @@ export type PublishFormData = {
   isFurnished: boolean
   hasLandline: boolean
   hasTerrace: boolean
+  hasPatio: boolean
+  hasPool: boolean
   hasPortal: boolean
 
   // Contacto
@@ -118,6 +121,7 @@ const initialFormState: PublishFormData = {
   halfBathrooms: 0,
   parking: 0,
   levels: 1,
+  floorLevel: 0,
   
   landSize: '',
   unknownLand: false,
@@ -139,6 +143,8 @@ const initialFormState: PublishFormData = {
   isFurnished: false,
   hasLandline: false,
   hasTerrace: false,
+  hasPatio: false,
+  hasPool: false,
   hasPortal: false,
   
   contactName: '',
@@ -406,6 +412,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             halfBathrooms: features.halfBathrooms || 0,
             parking: data.parking || 0,
             levels: features.levels || 1,
+            floorLevel: features.floorLevel || 0,
             landSize: features.landSize || '',
             unknownLand: features.unknownLand || false,
             constructionSize: features.constructionSize || String(data.area_m2 || ''),
@@ -422,6 +429,8 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             isFurnished: features.isFurnished || false,
             hasLandline: features.hasLandline || false,
             hasTerrace: features.hasTerrace || false,
+            hasPatio: features.hasPatio || false,
+            hasPool: features.hasPool || false,
             hasPortal: features.hasPortal || false,
             contactName: contactInfo.name || '',
             contactPhone: formatCubanPhoneForDisplay(contactInfo.phone || ''),
@@ -627,6 +636,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       const features = {
         halfBathrooms: formData.halfBathrooms,
         levels: formData.levels,
+        floorLevel: formData.floorLevel,
         landSize: formData.landSize,
         unknownLand: formData.unknownLand,
         constructionSize: formData.constructionSize,
@@ -642,6 +652,8 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
         isFurnished: formData.isFurnished,
         hasLandline: formData.hasLandline,
         hasTerrace: formData.hasTerrace,
+        hasPatio: formData.hasPatio,
+        hasPool: formData.hasPool,
         hasPortal: formData.hasPortal,
       }
       
@@ -658,6 +670,8 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       if (formData.isFurnished) amenities.push('Amueblada')
       if (formData.hasLandline) amenities.push('Teléfono fijo')
       if (formData.hasTerrace) amenities.push('Terraza')
+      if (formData.hasPatio) amenities.push('Patio')
+      if (formData.hasPool) amenities.push('Piscina')
       if (formData.hasPortal) amenities.push('Portal')
 
       const propertyTypeName = formData.propertyType === 'apartamento' ? 'Departamento' : formData.propertyType === 'casa' ? 'Casa' : 'Terreno'
@@ -1404,6 +1418,9 @@ function StepSpecs({
           <FormCounter label="Baños" value={formData.bathrooms} min={1} onChange={(val) => onChange({ bathrooms: val })} />
           <FormCounter label="Medios Baños" value={formData.halfBathrooms} min={0} onChange={(val) => onChange({ halfBathrooms: val })} />
           <FormCounter label="Número de Niveles" value={formData.levels} min={1} onChange={(val) => onChange({ levels: val })} />
+          {formData.propertyType === 'apartamento' && (
+            <FormCounter label="Piso / Nivel" value={formData.floorLevel} min={0} onChange={(val) => onChange({ floorLevel: val })} />
+          )}
           <FormCounter label="Estacionamiento" value={formData.parking} min={0} onChange={(val) => onChange({ parking: val })} />
         </div>
       )}
@@ -1583,7 +1600,9 @@ function StepAmenities({
     { key: 'isFurnished', label: 'Totalmente amueblado', desc: 'Mobiliario y electrodomésticos incluidos' },
     { key: 'hasLandline', label: 'Teléfono fijo', desc: 'Línea de telefonía fija de Etecsa' },
     { key: 'hasTerrace', label: 'Terraza / Azotea libre', desc: 'Espacio al aire libre propio o libre' },
-    { key: 'hasPortal', label: 'Portal / Jardín', desc: 'Entrada techada exterior o espacio verde' },
+    { key: 'hasPatio', label: 'Patio', desc: 'Área exterior privada o de uso propio' },
+    { key: 'hasPool', label: 'Piscina', desc: 'Piscina propia o del inmueble' },
+    { key: 'hasPortal', label: 'Portal', desc: 'Entrada techada exterior' },
   ]
 
   return (

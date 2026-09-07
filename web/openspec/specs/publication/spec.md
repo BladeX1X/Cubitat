@@ -56,6 +56,13 @@ El sistema MUST capturar operacion, tipo de inmueble, dormitorios, banos, area, 
 - AND el sistema MUST prevenir valores invalidos o negativos
 - AND el sistema MUST mostrar contadores o ayudas cuando existan limites
 
+#### Scenario: Capturar atributos solicitados por compradores
+- GIVEN un usuario publica una vivienda
+- WHEN selecciona amenidades como piscina o patio y, para apartamentos, un piso o nivel
+- THEN el sistema MUST persistir esos atributos junto con la publicacion
+- AND la ficha publica SHOULD mostrar el piso o nivel cuando exista
+- AND las amenidades seleccionadas MUST quedar disponibles en el detalle de la propiedad
+
 ### Requirement: Imagenes optimizadas
 El sistema MUST aceptar imagenes de la propiedad y optimizarlas en el cliente antes de subirlas al almacenamiento de Supabase.
 

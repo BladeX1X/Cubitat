@@ -77,6 +77,12 @@ function titleCase(str: string): string {
   return str.toLowerCase().replace(/(?:^|\s)\S/g, (a) => a.toUpperCase())
 }
 
+function getNumericFeature(property: Property, key: string): number | null {
+  const value = property.features?.[key]
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
 export function DetailPage({
   property,
   onBack,
@@ -100,6 +106,8 @@ export function DetailPage({
   const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
 
   const isAdmin = userRole === 'admin'
+  const floorLevel = getNumericFeature(property, 'floorLevel')
+  const levels = getNumericFeature(property, 'levels')
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
@@ -632,6 +640,12 @@ export function DetailPage({
                 <Feature icon={<Bath size={20} className="text-[#035f53]" />} label="Baños" value={Math.floor(property.bathrooms)} />
                 <Feature icon={<Car size={20} className="text-[#035f53]" />} label="Estacionamientos" value={property.parking} />
                 <Feature icon={<Ruler size={20} className="text-[#035f53]" />} label="Área total" value={`${property.areaM2} m²`} />
+                {property.propertyType === 'apartamento' && floorLevel !== null && floorLevel > 0 && (
+                  <Feature icon={<Building2 size={20} className="text-[#035f53]" />} label="Piso / nivel" value={Math.floor(floorLevel)} />
+                )}
+                {property.propertyType !== 'apartamento' && levels !== null && levels > 1 && (
+                  <Feature icon={<Building2 size={20} className="text-[#035f53]" />} label="Niveles" value={Math.floor(levels)} />
+                )}
               </div>
             </div>
 

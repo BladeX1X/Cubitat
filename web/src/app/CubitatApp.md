@@ -120,6 +120,7 @@ Estado actual (2026-07-01):
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
 - La tarjeta de cuenta usa 3 datos completados: nombre, email y celular editable (`profiles.phone`). El celular ya no requiere verificacion por WhatsApp dentro del MVP; el proxy solo permite actualizar campos seguros del perfil.
 - El correo no se modifica desde `Mi cuenta`; la contrasena tampoco se gestiona en esa pantalla.
+- Publicacion captura operacion (`venta`, `alquiler`, `permuta`), tipo (`casa`, `apartamento`, `terreno`), amenidades como piscina/patio y el piso o nivel de apartamentos dentro de `features`.
 - La navegacion usa `pageMode` y `window.history.pushState` (sin React Router).
 - Las rutas implementadas: `/`, `/resultados`, `/propiedad/:slug`, `/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`.
 - El Header solo muestra: `Comprar`, `Rentar`, `Vender`, `Publicar gratis`, campanita de notificaciones y menu de usuario.
