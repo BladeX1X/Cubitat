@@ -1,24 +1,36 @@
 import { describe, expect, it } from 'vitest'
 import { dataUrlToBlob } from './imageDataUrl'
-import { formatCubanPhoneForDisplay, getCubanLocalPhone, normalizeCubanPhoneForStorage, validatePhone } from './phone'
+import { formatPhoneForDisplay, getPhoneDigits, normalizePhoneForStorage, validatePhone } from './phone'
 
-describe('Cuban phone validation for publication', () => {
-  it.each(['51234567', '+53 51234567', '0053 51234567'])('accepts valid Cuban mobile %s', (phone) => {
+describe('international phone validation for publication', () => {
+  it.each([
+    '+53 51234567',
+    '+52 55 1234 5678',
+    '+1 (555) 123-4567',
+    '0034 612 345 678',
+    '7123456',
+  ])('accepts a valid phone from any country: %s', (phone) => {
     expect(validatePhone(phone)).toBe(true)
   })
 
-  it.each(['', '123', '+1 555 123 4567', '61234567'])('rejects invalid contact number %s', (phone) => {
+  it.each(['', '123', '+12 abc 4567', '++52 5512345678', '+1234567890123456'])('rejects invalid contact number %s', (phone) => {
     expect(validatePhone(phone)).toBe(false)
   })
 
-  it('extracts the local number without duplicating country code', () => {
-    expect(getCubanLocalPhone('+53 51234567')).toBe('51234567')
-    expect(getCubanLocalPhone('0053-51234567')).toBe('51234567')
+  it('extracts digits without assuming a country', () => {
+    expect(getPhoneDigits('+53 51234567')).toBe('5351234567')
+    expect(getPhoneDigits('+52 (55) 1234-5678')).toBe('525512345678')
   })
 
-  it('normalizes valid input for storage and display', () => {
-    expect(normalizeCubanPhoneForStorage('5123 4567')).toBe('+5351234567')
-    expect(formatCubanPhoneForDisplay('+5351234567')).toBe('+53 51234567')
+  it('normalizes international prefixes without forcing +53', () => {
+    expect(normalizePhoneForStorage('+52 (55) 1234-5678')).toBe('+525512345678')
+    expect(normalizePhoneForStorage('0034 612 345 678')).toBe('+34612345678')
+    expect(normalizePhoneForStorage('7123 456')).toBe('7123456')
+  })
+
+  it('preserves a readable international display value', () => {
+    expect(formatPhoneForDisplay('  +52   (55) 1234-5678  ')).toBe('+52 (55) 1234-5678')
+    expect(formatPhoneForDisplay('0034 612 345 678')).toBe('+34 612 345 678')
   })
 })
 

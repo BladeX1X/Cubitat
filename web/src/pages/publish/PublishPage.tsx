@@ -32,8 +32,8 @@ import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import {
-  formatCubanPhoneForDisplay,
-  normalizeCubanPhoneForStorage,
+  formatPhoneForDisplay,
+  normalizePhoneForStorage,
   validatePhone,
 } from './phone'
 import { dataUrlToBlob } from './imageDataUrl'
@@ -335,7 +335,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       setFormData((prev) => ({
         ...prev,
         contactName: prev.contactName || profileName || fallbackName,
-        contactPhone: prev.contactPhone || formatCubanPhoneForDisplay(profilePhone),
+        contactPhone: prev.contactPhone || formatPhoneForDisplay(profilePhone),
       }))
     }
 
@@ -434,7 +434,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             hasPool: features.hasPool || false,
             hasPortal: features.hasPortal || false,
             contactName: contactInfo.name || '',
-            contactPhone: formatCubanPhoneForDisplay(contactInfo.phone || ''),
+            contactPhone: formatPhoneForDisplay(contactInfo.phone || ''),
           })
           // Load existing images as preview-only entries
           if (data.images && data.images.length > 0) {
@@ -659,7 +659,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       
       const contactInfo = {
         name: formData.contactName,
-        phone: normalizeCubanPhoneForStorage(formData.contactPhone)
+        phone: normalizePhoneForStorage(formData.contactPhone)
       }
       
       const amenities: string[] = []
@@ -1899,7 +1899,7 @@ function StepPrice({
   )
 }
 
-/* Paso 8: Contacto (Validación estricta de teléfono en Cuba) */
+/* Paso 8: Contacto */
 function StepContact({
   formData,
   onChange,
@@ -1941,22 +1941,22 @@ function StepContact({
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">WhatsApp / Teléfono Cuba *</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Teléfono / WhatsApp *</label>
           <Input
             required
             type="tel"
-            placeholder="Ej: +53 52345678 o +53 7123456"
+            placeholder="Ej: +52 55 1234 5678"
             value={formData.contactPhone}
             onChange={(e) => onChange({ contactPhone: e.target.value })}
-            onBlur={(e) => onChange({ contactPhone: formatCubanPhoneForDisplay(e.target.value) })}
+            onBlur={(e) => onChange({ contactPhone: formatPhoneForDisplay(e.target.value) })}
             className={`h-11 text-xs ${!isPhoneValid && formData.contactPhone ? 'border-red-500 focus-visible:ring-red-500/20' : 'border-neutral-200'}`}
           />
           <span className="text-[9px] text-neutral-500 font-semibold block mt-1">
-            Incluye el código de país. Ejemplo: +53 52345678.
+            Puede ser de cualquier país. Recomendamos incluir el código internacional.
           </span>
           {!isPhoneValid && formData.contactPhone && (
             <span className="text-[9px] text-red-500 font-bold block mt-1">
-              Teléfono inválido. Usa el formato +53 seguido del número móvil o fijo cubano.
+              Ingresa un teléfono válido de 7 a 15 dígitos.
             </span>
           )}
         </div>

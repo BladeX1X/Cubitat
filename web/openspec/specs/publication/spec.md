@@ -83,6 +83,14 @@ El sistema MUST capturar precios, tipo de moneda (USD, CUP, MLC) y contacto del 
 - THEN el sistema MUST validar que el precio sea positivo
 - AND el sistema MUST requerir al menos un canal de contacto válido (teléfono o WhatsApp)
 
+#### Scenario: Usar un teléfono de cualquier país
+- GIVEN un anunciante completa los datos de contacto
+- WHEN ingresa un número telefónico internacional de 7 a 15 dígitos
+- THEN el sistema MUST aceptar números de cualquier país
+- AND MUST permitir el prefijo internacional con `+` o `00`
+- AND MUST permitir separadores legibles como espacios, guiones y paréntesis
+- AND MUST NOT exigir verificación por SMS o WhatsApp
+
 #### Scenario: Selección de Permuta
 - GIVEN un anunciante que selecciona "Permuta" como tipo de operación
 - WHEN completa el formulario
