@@ -102,6 +102,10 @@ async function rewriteCanonicalLink(
 }
 
 function withSecurityHeaders(response: Response, url?: URL, forceNoIndex = false): Response {
+  if (response.status === 101) {
+    return response;
+  }
+
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
@@ -974,6 +978,9 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
         && authenticated
         && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
+      const isAllowedAuthenticatedStorageDelete = method === 'DELETE'
+        && authenticated
+        && subPath.startsWith('/storage/v1/object/');
       const isAllowedAuthenticatedRpc = method === 'POST'
         && authenticated
         && rpcName !== null
@@ -1025,6 +1032,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       // Bloquear métodos mutantes (PATCH, PUT, DELETE) a menos que sea una tabla permitida y usuario autenticado
       if (method === 'DELETE' || method === 'PATCH') {
         if (!isAllowedAuthenticatedMfaDelete
+          && !isAllowedAuthenticatedStorageDelete
           && !allowedAuthenticatedProfilePatch
           && (!tableName || !allowedWriteTables.includes(tableName) || !authenticated)) {
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
