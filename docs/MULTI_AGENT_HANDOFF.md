@@ -44,7 +44,13 @@ Para archivos dentro de `web/`, leer también `web/AGENTS.md`.
 > redujeron panel, perfil, listas y botones al mínimo táctil de 44 px. QA visual
 > local con menú admin equivalente, viewport 390x760: panel de 702 px sin scroll
 > inicial y `Rentar` termina 97 px antes del borde. Gate completo: lint limpio,
-> 93 archivos/380 pruebas y build/PWA correcto.
+> 93 archivos/380 pruebas y build/PWA correcto. PR #94 fusionado a `main` como
+> `22c3bed` y desplegado al Worker `cubitat1` como versión
+> `30e2afe4-849d-4728-8d12-aca2fbaeae96`. Producción sirve
+> `/assets/index-Bz2vdU9l.css`; prueba del menú autenticado completo con ese CSS
+> en 390x760: 0 px de scroll requerido y `Rentar` a 92 px del borde inferior.
+> La página real de resultados mantuvo ocultas la barra inferior y las acciones
+> flotantes mientras el menú estaba abierto.
 
 > Actualización 2026-09-07: rama `hotfix/publish-image-csp-realtime`.
 > Durante QA productivo del formulario de publicación se reprodujo
