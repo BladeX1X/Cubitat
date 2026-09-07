@@ -340,7 +340,7 @@ export function CubitatApp() {
         const [{ data, error }, verifiedAgentIds] = await Promise.all([
           supabase
             .from('properties')
-            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
+            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
             .eq('status', 'published'),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
             ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
@@ -371,6 +371,7 @@ export function CubitatApp() {
             coverTone: item.cover_tone || '#f3f4f6',
             coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
+            features: item.features || undefined,
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: normalizePropertyCoordinates(item.coordinates) || { latitude: 23.1136, longitude: -82.3666 },
             contact_info: getPropertyContactInfo(item.id, item.contact_info),
@@ -416,7 +417,7 @@ export function CubitatApp() {
         const [{ data, error }, verifiedAgentIds] = await Promise.all([
           supabase
             .from('properties')
-            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,user_id')
+            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
             .eq('id', selectedPropertyId)
             .single(),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
@@ -447,6 +448,7 @@ export function CubitatApp() {
             coverTone: item.cover_tone || '#f3f4f6',
             coverImage: getPropertyCoverImage(item.cover_image),
             images: normalizePropertyImages(item.images),
+            features: item.features || undefined,
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
             contact_info: getPropertyContactInfo(item.id, item.contact_info),

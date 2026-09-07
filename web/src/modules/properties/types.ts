@@ -4,6 +4,12 @@ export type PropertyType = 'casa' | 'apartamento' | 'terreno'
 
 export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'owner_hidden' | 'ai_approved' | 'ai_rejected'
 
+export type PropertyFeatures = {
+  floorLevel?: number
+  levels?: number
+  [key: string]: unknown
+}
+
 export type Property = {
   id: string
   title: string
@@ -24,6 +30,7 @@ export type Property = {
   coverTone: string
   coverImage: string
   images?: string[]
+  features?: PropertyFeatures
   mapPoint: {
     x: number
     y: number
