@@ -1,26 +1,28 @@
-export function getCubanLocalPhone(phone: string): string {
-  const clean = phone.replace(/[^0-9]/g, '')
-  if (clean.startsWith('0053')) return clean.slice(4)
-  if (clean.startsWith('53')) return clean.slice(2)
-  return clean
+const INTERNATIONAL_PHONE_PATTERN = /^\+?[0-9\s().-]+$/
+
+export function getPhoneDigits(phone: string): string {
+  return phone.replace(/\D/g, '')
 }
 
 export function validatePhone(phone: string): boolean {
-  const local = getCubanLocalPhone(phone)
-  if (!local) return false
+  const trimmed = phone.trim()
+  if (!trimmed || !INTERNATIONAL_PHONE_PATTERN.test(trimmed)) return false
 
-  return (local.length === 8 && local.startsWith('5'))
-    || (local.length >= 6
-      && local.length <= 8
-      && ['2', '3', '4', '7'].some((prefix) => local.startsWith(prefix)))
+  const digits = getPhoneDigits(trimmed)
+  return digits.length >= 7 && digits.length <= 15
 }
 
-export function normalizeCubanPhoneForStorage(phone: string): string {
-  const local = getCubanLocalPhone(phone)
-  return local ? `+53${local}` : ''
+export function normalizePhoneForStorage(phone: string): string {
+  const trimmed = phone.trim()
+  const digits = getPhoneDigits(trimmed)
+  if (!digits) return ''
+
+  if (trimmed.startsWith('+')) return `+${digits}`
+  if (trimmed.startsWith('00')) return `+${digits.slice(2)}`
+  return digits
 }
 
-export function formatCubanPhoneForDisplay(phone: string): string {
-  const local = getCubanLocalPhone(phone)
-  return local ? `+53 ${local}` : ''
+export function formatPhoneForDisplay(phone: string): string {
+  const trimmed = phone.trim().replace(/\s+/g, ' ')
+  return trimmed.startsWith('00') ? `+${trimmed.slice(2)}` : trimmed
 }
