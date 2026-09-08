@@ -45,6 +45,7 @@ import {
   validatePhone,
 } from './phone'
 import { dataUrlToBlob } from './imageDataUrl'
+import { buildAmenities, getAmenitySelections } from './amenities'
 import {
   Select,
   SelectContent,
@@ -272,6 +273,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
   const [formData, setFormData] = useState<PublishFormData>(initialFormState)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<{ dataUrl: string; size: number; name: string }[]>([])
+  const [existingAmenities, setExistingAmenities] = useState<string[]>([])
   const [isCompressing, setIsCompressing] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [editLoading, setEditLoading] = useState(isEditMode)
@@ -366,6 +368,10 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
         }
         if (data) {
           const features = data.features || {}
+          const amenities = Array.isArray(data.amenities)
+            ? data.amenities.filter((amenity: unknown): amenity is string => typeof amenity === 'string')
+            : []
+          const amenitySelections = getAmenitySelections(features, amenities)
           const contactInfo = data.contact_info || {}
           const coords = data.coordinates || {}
           const locationParts = (data.location || '').split(', ').map((s: string) => s.trim())
@@ -419,19 +425,11 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             ageYears: data.age_years || 0,
             isNewBuild: features.isNewBuild || false,
             unknownAge: features.unknownAge || false,
-            hasCistern: features.hasCistern || false,
-            hasStreetGas: features.hasStreetGas || false,
-            has220v: features.has220v || false,
-            hasAc: features.hasAc || false,
-            isFurnished: features.isFurnished || false,
-            hasLandline: features.hasLandline || false,
-            hasTerrace: features.hasTerrace || false,
-            hasPatio: features.hasPatio || false,
-            hasPool: features.hasPool || false,
-            hasPortal: features.hasPortal || false,
+            ...amenitySelections,
             contactName: contactInfo.name || '',
             contactPhone: formatPhoneForDisplay(contactInfo.phone || ''),
           })
+          setExistingAmenities(amenities)
           // Load existing images as preview-only entries
           if (data.images && data.images.length > 0) {
             setImages(data.images.map((url: string, i: number) => ({
@@ -658,17 +656,18 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
         phone: normalizePhoneForStorage(formData.contactPhone)
       }
       
-      const amenities: string[] = []
-      if (formData.hasCistern) amenities.push('Cisterna')
-      if (formData.hasStreetGas) amenities.push('Gas de la calle')
-      if (formData.has220v) amenities.push('Corriente 220V')
-      if (formData.hasAc) amenities.push('Climatizada')
-      if (formData.isFurnished) amenities.push('Amueblada')
-      if (formData.hasLandline) amenities.push('Teléfono fijo')
-      if (formData.hasTerrace) amenities.push('Terraza')
-      if (formData.hasPatio) amenities.push('Patio')
-      if (formData.hasPool) amenities.push('Piscina')
-      if (formData.hasPortal) amenities.push('Portal')
+      const amenities = buildAmenities(existingAmenities, {
+        hasCistern: formData.hasCistern,
+        hasStreetGas: formData.hasStreetGas,
+        has220v: formData.has220v,
+        hasAc: formData.hasAc,
+        isFurnished: formData.isFurnished,
+        hasLandline: formData.hasLandline,
+        hasTerrace: formData.hasTerrace,
+        hasPatio: formData.hasPatio,
+        hasPool: formData.hasPool,
+        hasPortal: formData.hasPortal,
+      })
 
       const propertyTypeName = formData.propertyType === 'apartamento' ? 'Departamento' : formData.propertyType === 'casa' ? 'Casa' : 'Terreno'
       const operationName = formData.operation === 'alquiler' ? 'en renta' : formData.operation === 'venta' ? 'en venta' : 'en permuta'

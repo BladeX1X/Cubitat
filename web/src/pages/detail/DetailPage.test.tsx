@@ -331,12 +331,30 @@ describe('DetailPage - Reportes y Visor', () => {
       expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
         propertyId: '00000000-0000-0000-0000-000000000099',
         contactName: 'Ana Pérez',
-        contactPhone: '+53 51234567',
+        contactPhone: '+5351234567',
       }))
     })
 
     expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
     expect(localStorage.getItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099')).toBeTruthy()
+  })
+
+  it('rechaza un teléfono inválido antes de enviar la consulta', async () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Ana Pérez' } })
+    fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: 'abc---123' } })
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+
+    expect(await screen.findByText(/escribe un teléfono válido/i)).toBeInTheDocument()
+    expect(mockSubmitPublicContact).not.toHaveBeenCalled()
   })
 
   it('no ofrece contacto ni reporte para una propiedad pendiente de revisión', () => {
@@ -381,7 +399,7 @@ describe('DetailPage - Reportes y Visor', () => {
       expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
         propertyId: '00000000-0000-0000-0000-000000000099',
         contactName: 'Rodolfo QA',
-        contactPhone: '+53 51111111',
+        contactPhone: '+5351111111',
       }))
     })
 
