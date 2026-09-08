@@ -47,6 +47,12 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - AND MUST registrar o enviar la consulta por el canal configurado
 - AND MUST mostrar confirmacion o error entendible
 
+#### Scenario: Vista previa de una propiedad pendiente
+- GIVEN un usuario autorizado visualiza una propiedad que no esta publicada
+- WHEN abre su pagina de detalle
+- THEN el sistema MUST indicar que el contacto estara disponible despues de la publicacion
+- AND MUST NOT mostrar el formulario, Turnstile ni acciones de contacto o reporte
+
 #### Scenario: Verificacion anti-bot estable
 - GIVEN el formulario publico de contacto muestra un desafio Turnstile
 - WHEN Turnstile entrega un token valido y el formulario actualiza su estado
