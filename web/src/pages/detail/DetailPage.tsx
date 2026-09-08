@@ -106,6 +106,7 @@ export function DetailPage({
   const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
 
   const isAdmin = userRole === 'admin'
+  const isPublished = property.status === 'published'
   const floorLevel = getNumericFeature(property, 'floorLevel')
   const levels = getNumericFeature(property, 'levels')
 
@@ -434,29 +435,31 @@ export function DetailPage({
               </strong>
               {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
             </div>
-            <div className="detail-desktop-cta-row">
-              <button type="button" className="detail-desktop-primary-cta" onClick={scrollToContact}>
-                Contactar
-              </button>
-              <button
-                type="button"
-                className="detail-desktop-secondary-cta"
-                onClick={() => {
-                  if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
-                    void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
-                  }
-                  const phone = property.contact_info?.phone
-                  if (phone) {
-                    window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
-                  } else {
-                    scrollToContact()
-                  }
-                }}
-              >
-                <MessageCircle size={17} />
-                Consultar
-              </button>
-            </div>
+            {isPublished && (
+              <div className="detail-desktop-cta-row">
+                <button type="button" className="detail-desktop-primary-cta" onClick={scrollToContact}>
+                  Contactar
+                </button>
+                <button
+                  type="button"
+                  className="detail-desktop-secondary-cta"
+                  onClick={() => {
+                    if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                      void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
+                    }
+                    const phone = property.contact_info?.phone
+                    if (phone) {
+                      window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
+                    } else {
+                      scrollToContact()
+                    }
+                  }}
+                >
+                  <MessageCircle size={17} />
+                  Consultar
+                </button>
+              </div>
+            )}
           </div>
           <div className="detail-desktop-media">
             <ImageGallery
@@ -681,7 +684,7 @@ export function DetailPage({
             )}
 
             {/* Banner: Reportar propiedad sospechosa */}
-            <div className="bg-[#fdfaf2] border border-[#f5ebdb] rounded-2xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {isPublished && <div className="bg-[#fdfaf2] border border-[#f5ebdb] rounded-2xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h3 className="text-sm font-bold text-neutral-800">
                   Reporta una propiedad sospechosa
@@ -698,7 +701,7 @@ export function DetailPage({
                 <AlertTriangle size={14} className="text-amber-600" />
                 Informar sobre un problema
               </button>
-            </div>
+            </div>}
 
             {/* Ubicación y Seguridad */}
             <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-100 flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -717,7 +720,18 @@ export function DetailPage({
 
           {/* Columna Derecha: Tarjeta de Contacto (Sticky) */}
           <div className="space-y-6">
-            <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} onSelectAgent={onSelectAgent} />
+            {isPublished ? (
+              <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} onSelectAgent={onSelectAgent} />
+            ) : (
+              <Card id="contactar-anunciante" className="border border-amber-200 rounded-xl shadow-sm p-6 bg-amber-50">
+                <CardContent className="p-0 space-y-2">
+                  <h2 className="text-base font-bold text-neutral-900">Contacto aún no disponible</h2>
+                  <p className="text-sm leading-relaxed text-neutral-700">
+                    El contacto estará disponible cuando el anuncio sea publicado.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
         </div>
@@ -730,7 +744,7 @@ export function DetailPage({
         <SimilarProperties currentProperty={property} />
       </div>
 
-      <div className="mobile-detail-cta" aria-label="Acciones de contacto">
+      {isPublished && <div className="mobile-detail-cta" aria-label="Acciones de contacto">
         {property.contact_info?.phone ? (
           <a
             className="mobile-detail-cta-icon"
@@ -772,9 +786,9 @@ export function DetailPage({
           <MessageCircle size={16} />
           Consultar
         </button>
-      </div>
+      </div>}
 
-      {isReportModalOpen && (
+      {isPublished && isReportModalOpen && (
         <div 
           className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 animate-fadeIn"
           onClick={(e) => { if (e.target === e.currentTarget) setIsReportModalOpen(false) }}

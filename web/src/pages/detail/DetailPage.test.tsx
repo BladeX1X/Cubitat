@@ -339,6 +339,24 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(localStorage.getItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099')).toBeTruthy()
   })
 
+  it('no ofrece contacto ni reporte para una propiedad pendiente de revisión', () => {
+    render(
+      <DetailPage
+        property={{ ...mockProperty, status: 'pending_review' }}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    expect(screen.getByText(/el contacto estará disponible cuando el anuncio sea publicado/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /reportar propiedad sospechosa/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^contactar$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^consultar$/i })).not.toBeInTheDocument()
+    expect(mockTurnstileMount.mock.calls.some(([action]) => action === 'contact-owner')).toBe(false)
+  })
+
   it('conserva los datos del formulario durante la verificación asíncrona', async () => {
     vi.stubEnv('MODE', 'production')
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
