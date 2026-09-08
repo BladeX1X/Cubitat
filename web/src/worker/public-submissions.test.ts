@@ -87,6 +87,60 @@ describe('public submissions protected by Turnstile', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('rejects an invalid contact phone before verifying Turnstile', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicContactSubmission(
+      new Request('https://cubitathome.com/api/public/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          turnstile_token: 'valid-token',
+          property_id: crypto.randomUUID(),
+          contact_name: 'Ana Perez',
+          contact_phone: 'abc---123',
+          message: 'Quiero mas informacion sobre esta propiedad.',
+        }),
+      }),
+      createEnv(),
+    )
+
+    expect(response.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('normalizes a valid international phone before calling the trusted RPC', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        success: true,
+        hostname: 'cubitathome.com',
+        action: 'contact-owner',
+        'error-codes': [],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicContactSubmission(
+      new Request('https://cubitathome.com/api/public/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          turnstile_token: 'valid-token',
+          property_id: crypto.randomUUID(),
+          contact_name: 'Ana Perez',
+          contact_phone: '0034 612 345 678',
+          message: 'Quiero mas informacion sobre esta propiedad.',
+        }),
+      }),
+      createEnv(),
+    )
+
+    expect(response.status).toBe(201)
+    const rpcBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))
+    expect(rpcBody.p_contact_phone).toBe('+34612345678')
+  })
+
   it('uses only the server-validated reporter id for authenticated reports', async () => {
     const propertyId = crypto.randomUUID()
     const fetchMock = vi.fn()

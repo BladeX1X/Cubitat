@@ -44,6 +44,8 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - GIVEN un usuario esta en el detalle de una propiedad
 - WHEN completa nombre, telefono o WhatsApp y mensaje
 - THEN el sistema MUST validar campos requeridos
+- AND el telefono MUST contener entre 7 y 15 digitos y solo separadores internacionales permitidos
+- AND el Worker MUST repetir la validacion antes de verificar Turnstile o escribir datos
 - AND MUST registrar o enviar la consulta por el canal configurado
 - AND MUST mostrar confirmacion o error entendible
 

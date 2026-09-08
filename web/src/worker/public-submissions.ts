@@ -1,3 +1,5 @@
+import { normalizePhoneForStorage, validatePhone } from '../shared/lib/phone'
+
 const DEFAULT_TURNSTILE_VERIFY_URL = 'https://turnstile-siteverify-cubitat.pochiprats18.workers.dev'
 const MAX_REQUEST_BYTES = 16 * 1024
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -146,11 +148,12 @@ export async function handlePublicContactSubmission(
   const propertyId = normalizedString(body.property_id)
   const contactName = normalizedString(body.contact_name)
   const contactPhone = normalizedString(body.contact_phone)
+  const normalizedContactPhone = normalizePhoneForStorage(contactPhone)
   const message = normalizedString(body.message)
 
   if (!UUID_PATTERN.test(propertyId)
     || !validLength(contactName, 2, 120)
-    || !validLength(contactPhone, 6, 40)
+    || !validatePhone(contactPhone)
     || !validLength(message, 5, 2000)) {
     return json({ error: 'Los datos del formulario no son validos.' }, 400)
   }
@@ -161,7 +164,7 @@ export async function handlePublicContactSubmission(
   const inserted = await callTrustedRpc(env, 'submit_public_contact_trusted', {
     p_property_id: propertyId,
     p_contact_name: contactName,
-    p_contact_phone: contactPhone,
+    p_contact_phone: normalizedContactPhone,
     p_message: message,
   })
 

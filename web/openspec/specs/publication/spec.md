@@ -160,6 +160,8 @@ El sistema MUST crear o actualizar el anuncio en Supabase y dejarlo en el estado
 - WHEN modifica datos y guarda
 - THEN el sistema MUST actualizar solo la propiedad autorizada
 - AND MUST conservar imagenes existentes que no fueron eliminadas
+- AND MUST conservar amenidades existentes que el formulario actual no pueda editar
+- AND MUST hidratar las casillas conocidas desde `amenities` cuando falte su valor en `features`
 - AND MUST mostrar confirmacion de actualizacion
 
 ### Requirement: Mis publicaciones del anunciante

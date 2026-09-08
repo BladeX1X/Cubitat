@@ -24,6 +24,7 @@ import { useEffect } from 'react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { Property } from '../../modules/properties/types'
@@ -112,9 +113,10 @@ export function DetailPage({
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
-      setTimeout(() => {
+      const timeout = window.setTimeout(() => {
         scrollToContact()
       }, 300)
+      return () => window.clearTimeout(timeout)
     }
   }, [property.id])
 
@@ -1224,6 +1226,12 @@ function ContactCard({
     setLoading(true)
     setError(null)
 
+    if (!validatePhone(phone)) {
+      setError('Escribe un teléfono válido de 7 a 15 dígitos.')
+      setLoading(false)
+      return
+    }
+
     // Verificar spam en local storage antes de enviar
     const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
     if (saved) {
@@ -1247,7 +1255,7 @@ function ContactCard({
         turnstileToken: contactTurnstileToken,
         propertyId: property.id,
         contactName: name,
-        contactPhone: phone,
+        contactPhone: normalizePhoneForStorage(phone),
         message,
       })
 
@@ -1346,8 +1354,14 @@ function ContactCard({
                 type="tel" 
                 disabled={loading}
                 placeholder="+53 50000000" 
+                inputMode="tel"
+                autoComplete="tel"
+                aria-describedby="contact-phone-help"
                 className="text-xs" 
               />
+              <p id="contact-phone-help" className="text-[11px] text-neutral-500">
+                Acepta números de cualquier país, con 7 a 15 dígitos.
+              </p>
             </div>
 
             <TurnstileWidget

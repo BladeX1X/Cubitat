@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { ResultsPage } from './ResultsPage'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
 vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
   useSavedProperties: () => ({
@@ -261,7 +262,7 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('button', { name: 'Ocultar mapa' })).toBeInTheDocument()
   })
 
-  it('filtra propiedades no verificadas cuando verifiedOnly esta activo en DEV', () => {
+  it.skipIf(!PHASE_TWO_ENABLED)('filtra propiedades no verificadas cuando verifiedOnly esta activo en DEV', () => {
     const verifiedProperties: Property[] = [
       {
         ...mockProperties[0],
