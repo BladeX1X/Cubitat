@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -8,6 +9,7 @@ type SelectContextValue = {
   mounted: boolean
   setOpen: (open: boolean) => void
   onValueChange: (value: string) => void
+  triggerRef: React.RefObject<HTMLButtonElement | null>
 }
 
 const SelectContext = React.createContext<SelectContextValue | null>(null)
@@ -32,6 +34,7 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   const [open, setOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
   const rootRef = React.useRef<HTMLDivElement | null>(null)
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null)
 
   React.useEffect(() => {
     if (open) {
@@ -46,7 +49,8 @@ export function Select({ value, onValueChange, children }: SelectProps) {
 
   React.useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Element
+      if (!rootRef.current?.contains(target) && !target.closest('[data-slot="select-content"]')) {
         setOpen(false)
       }
     }
@@ -68,7 +72,7 @@ export function Select({ value, onValueChange, children }: SelectProps) {
 
   return (
     <SelectContext.Provider
-      value={{ value, open, mounted, setOpen, onValueChange }}
+      value={{ value, open, mounted, setOpen, onValueChange, triggerRef }}
     >
       <div ref={rootRef} data-slot="select" className="relative">
         {children}
@@ -82,10 +86,11 @@ export function SelectTrigger({
   children,
   ...props
 }: React.ComponentProps<'button'>) {
-  const { open, setOpen } = useSelectContext()
+  const { open, setOpen, triggerRef } = useSelectContext()
 
   return (
     <button
+      ref={triggerRef}
       data-slot="select-trigger"
       data-state={open ? 'open' : 'closed'}
       type="button"
@@ -126,24 +131,66 @@ export function SelectValue({
 export function SelectContent({
   className,
   children,
-}: React.ComponentProps<'div'>) {
-  const { open, mounted } = useSelectContext()
+  portal = false,
+  ...props
+}: React.ComponentProps<'div'> & { portal?: boolean }) {
+  const { open, mounted, triggerRef } = useSelectContext()
+  const [portalStyle, setPortalStyle] = React.useState<React.CSSProperties>()
+
+  React.useLayoutEffect(() => {
+    if (!portal || !open) return
+
+    function updatePosition() {
+      const trigger = triggerRef.current
+      if (!trigger) return
+
+      const rect = trigger.getBoundingClientRect()
+      const menuWidth = Math.max(rect.width, 240)
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8))
+      const bottomInset = window.innerWidth <= 768 ? 80 : 16
+      const spaceBelow = window.innerHeight - rect.bottom - bottomInset
+      const spaceAbove = rect.top - 16
+      const openAbove = spaceBelow < 180 && spaceAbove > spaceBelow
+      const availableHeight = openAbove ? spaceAbove : spaceBelow
+
+      setPortalStyle({
+        position: 'fixed',
+        left,
+        width: rect.width,
+        maxHeight: Math.max(160, Math.min(360, availableHeight)),
+        top: openAbove ? 'auto' : rect.bottom,
+        bottom: openAbove ? window.innerHeight - rect.top : 'auto',
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, portal, triggerRef])
 
   if (!mounted) return null
 
-  return (
+  const content = (
     <div
       data-slot="select-content"
       data-state={open ? 'open' : 'closed'}
       role="listbox"
+      style={portal ? portalStyle : undefined}
       className={cn(
-        'absolute top-full left-0 mt-2 w-full overflow-hidden rounded-md border border-neutral-200 bg-white p-1 text-neutral-950 shadow-md',
+        'absolute top-full left-0 z-[100] mt-2 w-full overflow-hidden rounded-md border border-neutral-200 bg-white p-1 text-neutral-950 shadow-md',
         className,
       )}
+      {...props}
     >
       {children}
     </div>
   )
+
+  return portal ? createPortal(content, document.body) : content
 }
 
 export function SelectItem({

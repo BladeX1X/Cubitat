@@ -123,7 +123,7 @@ export function SearchBar({
                   {selectedProvince}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="location-select-content">
+              <SelectContent className="location-select-content" portal>
                 {cubanProvinces.map((province) => (
                   <SelectItem key={province} value={province}>
                     {province}
@@ -149,7 +149,7 @@ export function SearchBar({
                   {selectedMunicipality}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="location-select-content">
+              <SelectContent className="location-select-content" portal>
                 {municipalityOptions.map((municipality) => (
                   <SelectItem key={municipality} value={municipality}>
                     {municipality}
