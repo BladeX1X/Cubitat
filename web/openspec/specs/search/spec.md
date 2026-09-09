@@ -19,6 +19,13 @@ El sistema MUST usar las mismas operaciones y tipos de inmueble al buscar y publ
 ### Requirement: Búsqueda Orientada a Lugares con Autocompletado
 El sistema MUST buscar propiedades exclusivamente por ubicaciones geográficas y ofrecer sugerencias a medida que el usuario escribe.
 
+#### Scenario: Seleccionar una provincia
+- GIVEN un usuario abre el selector de provincias de la portada
+- WHEN revisa las opciones disponibles
+- THEN MUST mostrar las 15 provincias y el municipio especial Isla de la Juventud
+- AND MUST ordenarlas geograficamente de occidente a oriente
+- AND el menu MUST permitir desplazarse por todas las opciones sin quedar recortado por el hero o el viewport
+
 #### Scenario: Autocompletado de lugares al escribir
 - GIVEN un usuario enfocado en el campo de búsqueda de la barra de navegación o portada
 - WHEN escribe al menos 2 caracteres (ej: "Pl")

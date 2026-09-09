@@ -11,6 +11,47 @@ const filters: SearchFilters = {
 }
 
 describe('SearchBar', () => {
+  it('muestra todas las provincias en orden de occidente a oriente sin recortar el menú', () => {
+    const onChange = vi.fn()
+
+    render(
+      <SearchBar
+        filters={filters}
+        locationSuggestions={[]}
+        onChange={onChange}
+        onClear={vi.fn()}
+        onSubmitSearch={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona provincia' }))
+
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Pinar del Río',
+      'Artemisa',
+      'La Habana',
+      'Mayabeque',
+      'Matanzas',
+      'Cienfuegos',
+      'Villa Clara',
+      'Sancti Spíritus',
+      'Ciego de Ávila',
+      'Camagüey',
+      'Las Tunas',
+      'Holguín',
+      'Granma',
+      'Santiago de Cuba',
+      'Guantánamo',
+      'Isla de la Juventud',
+    ])
+
+    expect(screen.getByRole('listbox')).toHaveStyle({ position: 'fixed' })
+
+    fireEvent.click(screen.getByRole('option', { name: 'Isla de la Juventud' }))
+    expect(screen.getByRole('listbox', { hidden: true })).toHaveAttribute('data-state', 'closed')
+    expect(onChange).toHaveBeenCalledWith({ ...filters, query: 'Isla de la Juventud' })
+  })
+
   it('mantiene nombres accesibles que incluyen el texto visible', () => {
     render(
       <SearchBar
