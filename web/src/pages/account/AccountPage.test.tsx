@@ -74,6 +74,9 @@ describe('AccountPage - Role Selector', () => {
       />
     )
 
+    expect(await screen.findByText(/Guarda filtros importantes y consulta o elimina aquí tus alertas activas/i)).toBeInTheDocument()
+    expect(screen.queryByText(/entorno DEV/i)).not.toBeInTheDocument()
+
     const agentButton = await screen.findByRole(
       'button',
       { name: /Agente \/ Inmobiliaria/i },

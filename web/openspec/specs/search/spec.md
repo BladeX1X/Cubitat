@@ -92,6 +92,12 @@ El sistema MUST permitir guardar una busqueda filtrada como alerta para usuarios
 - WHEN pulsa `Crear alerta`
 - THEN el sistema MUST guardar los filtros asociados al usuario
 - AND MUST mostrar confirmacion sin perder la busqueda actual
+- AND la confirmacion MUST permitir cerrar o consultar la alerta en la cuenta
+- AND MUST NOT solicitar un correo mientras la entrega de alertas por correo no este habilitada
+- AND MUST NOT exponer nombres de entornos internos al usuario
+- AND la confirmacion MUST explicar solo capacidades disponibles para el usuario
+- AND MUST NOT solicitar un correo adicional mientras la entrega por correo no este habilitada
+- AND MUST NOT mostrar nombres de entornos o detalles internos de despliegue
 
 #### Scenario: Crear alerta anonima pendiente
 - GIVEN un usuario anonimo pulsa `Crear alerta`

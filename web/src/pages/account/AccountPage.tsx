@@ -491,7 +491,7 @@ function SearchAlertsCard({
               Alertas de busqueda
             </h2>
             <p className="mt-1 text-xs text-neutral-500 sm:text-sm">
-              Guarda filtros importantes y consulta aquí las alertas activas. Los avisos por correo se habilitarán cuando el entorno DEV de entrega esté configurado.
+              Guarda filtros importantes y consulta o elimina aquí tus alertas activas.
             </p>
           </div>
         </div>
