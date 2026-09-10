@@ -23,6 +23,7 @@ const callbacks = {
 
 describe('Header mobile menu', () => {
   afterEach(() => {
+    vi.restoreAllMocks()
     document.body.classList.remove('has-mobile-menu-open')
     document.body.style.overflow = ''
   })
@@ -54,5 +55,23 @@ describe('Header mobile menu', () => {
     expect(installRequest).toHaveBeenCalledOnce()
     expect(screen.queryByRole('complementary', { name: 'Menú móvil' })).not.toBeInTheDocument()
     window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, installRequest)
+  })
+
+  it('no ofrece instalar cuando Cubitat ya se ejecuta como PWA', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query === '(display-mode: standalone)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+
+    render(<Header user={null} {...callbacks} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+
+    expect(screen.queryByRole('button', { name: /instalar Cubitat/i })).not.toBeInTheDocument()
   })
 })

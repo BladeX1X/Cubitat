@@ -27,6 +27,9 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN el sistema MUST cerrar el menu y mostrar una accion o guia de instalacion
 - AND MUST usar el instalador nativo cuando `beforeinstallprompt` este disponible
 - AND MUST mostrar instrucciones manuales en iOS o cuando el navegador no exponga el instalador
+- AND en iOS MUST identificar la opcion como `Como instalar Cubitat`, explicar los pasos de Safari y no simular una instalacion automatica
+- AND MUST detectar iPadOS aunque Safari use un identificador de escritorio
+- AND MUST ocultar la opcion cuando Cubitat ya se ejecute en modo PWA
 - AND MUST permitir abrir esta guia aunque el aviso automatico se haya descartado antes
 - AND el aviso automatico MUST volver a ofrecerse 7 dias despues de seleccionar `Quizas luego`
 

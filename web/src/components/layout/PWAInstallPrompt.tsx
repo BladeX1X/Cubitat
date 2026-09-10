@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
+import { isIOSDevice, isStandalonePWA } from '../../shared/pwa/installEnvironment'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -66,16 +67,11 @@ export function PWAInstallPrompt() {
   }, [])
 
   useEffect(() => {
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.matchMedia('(display-mode: minimal-ui)').matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true ||
-      document.referrer.includes('android-app://')
+    const isStandalone = isStandalonePWA()
 
     if (isStandalone) return
 
-    const userAgent = window.navigator.userAgent.toLowerCase()
-    const ios = /iphone|ipad|ipod/.test(userAgent)
+    const ios = isIOSDevice()
     const delayAutomaticPrompt = shouldDelayAutomaticPrompt()
     setIsIOS(ios)
 
@@ -216,7 +212,7 @@ export function PWAInstallPrompt() {
             <strong>Instalar Cubitat</strong>
             {isIOS ? (
               <span className="pwa-ios-copy">
-                Pulsa compartir <Share size={12} /> y selecciona <b>Añadir a pantalla de inicio</b>.
+                En Safari, pulsa Compartir <Share size={12} />, selecciona <b>Añadir a pantalla de inicio</b> y confirma <b>Añadir</b>.
               </span>
             ) : (
               <span>
@@ -243,6 +239,18 @@ export function PWAInstallPrompt() {
                   onClick={handleInstallClick}
                 >
                   Instalar app
+                </Button>
+              </div>
+            )}
+            {isIOS && (
+              <div className="pwa-toast-actions">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="pwa-toast-primary"
+                  onClick={handleDismissInstall}
+                >
+                  Entendido
                 </Button>
               </div>
             )}
