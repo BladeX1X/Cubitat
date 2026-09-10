@@ -67,43 +67,17 @@ describe('SearchAlertModal', () => {
     expect(screen.getByText('Fallo de conexión')).toBeInTheDocument()
   })
 
-  it('captures optional email and calls onSaveAlert', () => {
-    const handleSaveAlert = vi.fn()
-    const handleEmailChange = vi.fn()
-
+  it('no muestra controles ni promesas de notificaciones por correo', () => {
     render(
       <SearchAlertModal
         isOpen={true}
         onClose={vi.fn()}
         filters={mockFilters}
-        onEmailChange={handleEmailChange}
-        onSaveAlert={handleSaveAlert}
       />
     )
 
-    const emailInput = screen.getByLabelText(/Correo electrónico para recibir alertas/i)
-    fireEvent.change(emailInput, { target: { value: 'user@example.com' } })
-
-    expect(handleEmailChange).toHaveBeenCalledWith('user@example.com')
-
-    const saveButton = screen.getByRole('button', { name: 'Guardar alerta' })
-    fireEvent.click(saveButton)
-
-    expect(handleSaveAlert).toHaveBeenCalledWith('user@example.com')
-  })
-
-  it('displays authenticated user state when isAuthenticated is true', () => {
-    render(
-      <SearchAlertModal
-        isOpen={true}
-        onClose={vi.fn()}
-        filters={mockFilters}
-        isAuthenticated={true}
-        userEmail="testuser@cubitat.com"
-      />
-    )
-
-    expect(screen.getByText(/Alerta asociada a tu usuario autenticado/i)).toBeInTheDocument()
-    expect(screen.getByText(/\(testuser@cubitat.com\)/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByText(/correo electrónico para recibir alertas/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/notificaciones se enviarán al correo/i)).not.toBeInTheDocument()
   })
 })

@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { X, BellRing } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Button } from '../../../shared/ui/button'
@@ -13,12 +12,6 @@ interface SearchAlertModalProps {
   filters: SearchFilters
   isError?: boolean
   errorMessage?: string | null
-  email?: string
-  onEmailChange?: (email: string) => void
-  onSaveAlert?: (email?: string) => Promise<void> | void
-  isAuthenticated?: boolean
-  userEmail?: string | null
-  isSaving?: boolean
 }
 
 export function SearchAlertModal({
@@ -28,23 +21,7 @@ export function SearchAlertModal({
   filters,
   isError = false,
   errorMessage,
-  email = '',
-  onEmailChange,
-  onSaveAlert,
-  isAuthenticated = false,
-  userEmail,
-  isSaving = false,
 }: SearchAlertModalProps) {
-  const [localEmail, setLocalEmail] = useState(email || userEmail || '')
-
-  useEffect(() => {
-    if (email) {
-      setLocalEmail(email)
-    } else if (userEmail) {
-      setLocalEmail(userEmail)
-    }
-  }, [email, userEmail])
-
   if (!isOpen) return null
 
   const operationLabel = getOperationLabel(filters)
@@ -120,7 +97,7 @@ export function SearchAlertModal({
                 ¡Alerta de búsqueda creada!
               </h2>
               <p className="text-xs text-neutral-500 max-w-[320px] leading-relaxed">
-                Te notificaremos de inmediato cada vez que se publique una nueva propiedad que coincida con tus filtros.
+                Guardamos estos filtros para que puedas consultar y administrar la alerta desde tu cuenta.
               </p>
             </div>
 
@@ -139,49 +116,6 @@ export function SearchAlertModal({
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
-
-            <div className="bg-neutral-50 rounded-2xl p-4 mb-6 text-left border border-neutral-100">
-              <label htmlFor="search-alert-email" className="block text-xs font-bold text-neutral-700 mb-1.5">
-                Correo electrónico para recibir alertas (opcional)
-              </label>
-              <input
-                id="search-alert-email"
-                type="email"
-                value={localEmail}
-                onChange={(e) => {
-                  const val = e.target.value
-                  setLocalEmail(val)
-                  onEmailChange?.(val)
-                }}
-                placeholder="tu@email.com"
-                className="w-full px-3 py-2 text-xs bg-white border border-neutral-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#035f53]/20 focus:border-[#035f53] transition-all"
-              />
-              {isAuthenticated ? (
-                <p className="text-[11px] font-semibold text-[#035f53] mt-2 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#035f53] inline-block" />
-                  Alerta asociada a tu usuario autenticado {userEmail ? `(${userEmail})` : ''}
-                </p>
-              ) : (
-                <p className="text-[11px] text-neutral-500 mt-2">
-                  Las notificaciones se enviarán al correo indicado cuando haya coincidencias.
-                </p>
-              )}
-            </div>
-
-            {onSaveAlert && (
-              <div className="mb-4">
-                <Button
-                  type="button"
-                  disabled={isSaving}
-                  className="w-full h-11 rounded-xl bg-[#035f53] hover:bg-[#024a41] text-white font-semibold text-xs transition-colors"
-                  onClick={async () => {
-                    await onSaveAlert(localEmail)
-                  }}
-                >
-                  {isSaving ? 'Guardando...' : 'Guardar alerta'}
-                </Button>
               </div>
             )}
 
