@@ -85,14 +85,17 @@ iOS:
    - Compartir.
    - Añadir a pantalla de inicio.
 
-Si el usuario cierra el prompt, se guarda:
+Si el usuario pulsa `Quizas luego`, se guarda la fecha del descarte en
+milisegundos:
 
 ```txt
-localStorage.cubitat_pwa_prompt_dismissed = true
+localStorage.cubitat_pwa_prompt_dismissed = <timestamp>
 ```
 
-Este valor oculta solamente la invitacion automatica. No elimina la opcion
-manual del menu.
+La invitacion automatica permanece oculta durante 7 dias y vuelve a ofrecerse
+despues de ese plazo. Los valores antiguos `true` se migran a una fecha al
+leerlos. La preferencia oculta solamente la invitacion automatica y no elimina
+la opcion manual del menu.
 
 ## Flujo de actualizacion
 

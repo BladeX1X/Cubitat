@@ -28,6 +28,7 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - AND MUST usar el instalador nativo cuando `beforeinstallprompt` este disponible
 - AND MUST mostrar instrucciones manuales en iOS o cuando el navegador no exponga el instalador
 - AND MUST permitir abrir esta guia aunque el aviso automatico se haya descartado antes
+- AND el aviso automatico MUST volver a ofrecerse 7 dias despues de seleccionar `Quizas luego`
 
 #### Scenario: Menu movil abierto sobre cualquier pagina
 - GIVEN un usuario abre el menu movil desde inicio, resultados o detalle

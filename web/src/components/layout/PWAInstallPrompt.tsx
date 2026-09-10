@@ -8,6 +8,26 @@ type BeforeInstallPromptEvent = Event & {
 }
 
 export const PWA_INSTALL_REQUEST_EVENT = 'cubitat:request-pwa-install'
+const PWA_PROMPT_DISMISSED_KEY = 'cubitat_pwa_prompt_dismissed'
+const PWA_REMINDER_DELAY_MS = 7 * 24 * 60 * 60 * 1000
+
+function shouldDelayAutomaticPrompt() {
+  const storedValue = localStorage.getItem(PWA_PROMPT_DISMISSED_KEY)
+  if (!storedValue) return false
+
+  if (storedValue === 'true') {
+    localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, String(Date.now()))
+    return true
+  }
+
+  const dismissedAt = Number(storedValue)
+  if (Number.isFinite(dismissedAt) && Date.now() - dismissedAt < PWA_REMINDER_DELAY_MS) {
+    return true
+  }
+
+  localStorage.removeItem(PWA_PROMPT_DISMISSED_KEY)
+  return false
+}
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -56,6 +76,7 @@ export function PWAInstallPrompt() {
 
     const userAgent = window.navigator.userAgent.toLowerCase()
     const ios = /iphone|ipad|ipod/.test(userAgent)
+    const delayAutomaticPrompt = shouldDelayAutomaticPrompt()
     setIsIOS(ios)
 
     function handleManualInstallRequest() {
@@ -66,11 +87,13 @@ export function PWAInstallPrompt() {
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault()
       setDeferredPrompt(event as BeforeInstallPromptEvent)
-      setShowInstallPrompt(true)
+      if (!delayAutomaticPrompt) {
+        setShowInstallPrompt(true)
+      }
     }
 
     function handleAppInstalled() {
-      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+      localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, String(Date.now()))
       setManualRequest(false)
       setShowInstallPrompt(false)
       setDeferredPrompt(null)
@@ -80,8 +103,7 @@ export function PWAInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
 
-    const isDismissed = localStorage.getItem('cubitat_pwa_prompt_dismissed') === 'true'
-    if (ios && !isDismissed) {
+    if (ios && !delayAutomaticPrompt) {
       const timer = window.setTimeout(() => {
         setShowInstallPrompt(true)
       }, 8000)
@@ -108,7 +130,7 @@ export function PWAInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice
 
     if (outcome === 'accepted') {
-      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+      localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, String(Date.now()))
       setDeferredPrompt(null)
       setShowInstallPrompt(false)
     }
@@ -116,7 +138,7 @@ export function PWAInstallPrompt() {
 
   function handleDismissInstall() {
     if (!manualRequest) {
-      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+      localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, String(Date.now()))
     }
     setManualRequest(false)
     setShowInstallPrompt(false)

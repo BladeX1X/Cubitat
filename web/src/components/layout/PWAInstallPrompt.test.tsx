@@ -9,6 +9,7 @@ describe('PWAInstallPrompt', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
@@ -35,5 +36,31 @@ describe('PWAInstallPrompt', () => {
     screen.getByRole('button', { name: 'Instalar app' }).click()
 
     expect(prompt).toHaveBeenCalledOnce()
+  })
+
+  it('vuelve a ofrecer la instalación siete días después de elegir Quizás luego', () => {
+    const now = Date.UTC(2026, 8, 9, 12)
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now)
+    const createInstallEvent = () => Object.assign(new Event('beforeinstallprompt'), {
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: 'dismissed' as const }),
+    })
+    const firstRender = render(<PWAInstallPrompt />)
+
+    act(() => window.dispatchEvent(createInstallEvent()))
+    screen.getByRole('button', { name: 'Quizás luego' }).click()
+    expect(localStorage.getItem('cubitat_pwa_prompt_dismissed')).toBe(String(now))
+    firstRender.unmount()
+
+    dateNow.mockReturnValue(now + 6 * 24 * 60 * 60 * 1000)
+    const earlyRender = render(<PWAInstallPrompt />)
+    act(() => window.dispatchEvent(createInstallEvent()))
+    expect(screen.queryByText('Instalar Cubitat')).not.toBeInTheDocument()
+    earlyRender.unmount()
+
+    dateNow.mockReturnValue(now + 7 * 24 * 60 * 60 * 1000 + 1)
+    render(<PWAInstallPrompt />)
+    act(() => window.dispatchEvent(createInstallEvent()))
+    expect(screen.getByText('Instalar Cubitat')).toBeInTheDocument()
   })
 })
