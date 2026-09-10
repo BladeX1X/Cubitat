@@ -2336,6 +2336,26 @@ h2 {
   background: var(--blue-soft);
 }
 
+.mobile-menu-install {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 12px;
+  border: 1px solid rgba(3, 95, 83, 0.24);
+  border-radius: 8px;
+  color: var(--green-dark);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.mobile-menu-install:hover {
+  background: var(--blue-soft);
+}
+
 @media (max-width: 1180px) {
   .site-header {
     grid-template-columns: auto 1fr;

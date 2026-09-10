@@ -10,7 +10,9 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 - Service worker generado por Workbox mediante `VitePWA`.
 - Registro automatico con `registerType: 'autoUpdate'`.
 - Prompt de instalacion para navegadores compatibles con `beforeinstallprompt`.
-- Instrucciones especificas para iOS/Safari, donde no existe `beforeinstallprompt`.
+- Opcion permanente `Instalar Cubitat` en el menu movil cuando se navega desde
+  la web.
+- Instrucciones especificas para iOS y navegadores sin `beforeinstallprompt`.
 - Aviso visible cuando el navegador queda offline.
 - Aviso breve cuando la conexion vuelve.
 - Aviso de actualizacion disponible con boton `Actualizar`.
@@ -67,7 +69,16 @@ Android/Chrome/Edge:
 3. Se muestra el aviso `Instalar Cubitat`.
 4. El boton `Instalar app` llama `prompt()`.
 
-iOS/Safari:
+Descubrimiento manual:
+
+1. El usuario abre el menu movil y pulsa `Instalar Cubitat`.
+2. Si el navegador ya entrego `beforeinstallprompt`, se ofrece `Instalar app`.
+3. Si no existe instalador nativo disponible, se explica como abrir el menu del
+   navegador y elegir `Instalar aplicacion` o `Anadir a pantalla de inicio`.
+4. Esta opcion manual sigue funcionando aunque el aviso automatico se haya
+   descartado anteriormente.
+
+iOS:
 
 1. No existe `beforeinstallprompt`.
 2. Se muestra un aviso con instrucciones:
@@ -79,6 +90,9 @@ Si el usuario cierra el prompt, se guarda:
 ```txt
 localStorage.cubitat_pwa_prompt_dismissed = true
 ```
+
+Este valor oculta solamente la invitacion automatica. No elimina la opcion
+manual del menu.
 
 ## Flujo de actualizacion
 

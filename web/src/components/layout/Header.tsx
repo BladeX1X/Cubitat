@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Building2, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
+import { Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
+import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
 
 interface HeaderProps {
   user: User | null
@@ -51,6 +52,11 @@ export function Header({
   function handleNavigation(callback: () => void) {
     setIsMobileMenuOpen(false)
     callback()
+  }
+
+  function requestPwaInstall() {
+    setIsMobileMenuOpen(false)
+    window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT))
   }
 
   return (
@@ -199,6 +205,9 @@ export function Header({
           <Button className="mobile-menu-publish" type="button" onClick={() => handleNavigation(navigatePublish)}>
             Publicar gratis
           </Button>
+          <button className="mobile-menu-install" type="button" onClick={requestPwaInstall}>
+            <Download size={18} />Instalar Cubitat
+          </button>
           <p className="mobile-menu-section-title">Explorar inmuebles</p>
           <nav className="mobile-menu-accordion" aria-label="Operaciones">
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>
