@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-07-27.
+Última revisión documental: 2026-09-09.
 
 ## Aplicación segura
 
@@ -219,6 +219,17 @@ productivo**. Una revisión de seguridad detectó que la versión anterior habr�
 permitido `buyer → agent` sin que la cadena productiva dispusiera todavía de
 las columnas KYC. La versión actual vuelve al cierre por defecto; el flujo
 local usa DEV-F2.3, que exige `verification_status = 'verified'`.
+
+### Destinos de notificaciones - 2026-09-09
+
+51. `20260909010000_add_notification_destinations.sql`: incorpora un
+    `action_path` interno y opcional a las notificaciones; las coincidencias de
+    busqueda y los contactos apuntan a la propiedad relacionada, mientras que
+    los cambios de estado apuntan a `Mis publicaciones`. La base restringe el
+    valor a rutas internas y conserva compatibles los avisos antiguos sin
+    destino.
+
+Estado 2026-09-09: **implementada y pendiente de aplicacion productiva**.
 
 ### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
 

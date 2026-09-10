@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useNotifications } from '../modules/auth/hooks/useNotifications'
+import type { Notification } from '../modules/auth/hooks/useNotifications'
+import { getNotificationDestination } from './notificationDestination'
 
 interface UserMenuProps {
   user: User
@@ -36,6 +38,19 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  function handleNotificationClick(notification: Notification) {
+    if (!notification.is_read) {
+      void markAsRead(notification.id)
+    }
+
+    const destination = getNotificationDestination(notification.action_path)
+    if (!destination) return
+
+    setIsNotificationsOpen(false)
+    window.history.pushState(null, '', destination)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
 
   return (
     <div className={`notification-menu relative z-[60] ${className}`} ref={notifRef}>
@@ -79,29 +94,31 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
             ) : (
               <ul className="divide-y divide-neutral-100">
                 {notifications.map((notif) => (
-                  <li
-                    key={notif.id}
-                    className={`p-4 transition-colors hover:bg-neutral-50 cursor-pointer ${notif.is_read ? 'opacity-70' : 'bg-[#035f53]/5'}`}
-                    onClick={() => !notif.is_read && markAsRead(notif.id)}
-                  >
-                    <div className="flex gap-3">
-                      <div className="shrink-0 mt-0.5">
-                        <div
-                          className={`w-2 h-2 rounded-full ${notif.is_read ? 'bg-neutral-300' : 'bg-[#035f53] animate-pulse'}`}
-                        />
+                  <li key={notif.id}>
+                    <button
+                      type="button"
+                      className={`w-full p-4 text-left transition-colors hover:bg-neutral-50 ${notif.is_read ? 'opacity-70' : 'bg-[#035f53]/5'}`}
+                      onClick={() => handleNotificationClick(notif)}
+                    >
+                      <div className="flex gap-3">
+                        <div className="shrink-0 mt-0.5">
+                          <div
+                            className={`w-2 h-2 rounded-full ${notif.is_read ? 'bg-neutral-300' : 'bg-[#035f53] animate-pulse'}`}
+                          />
+                        </div>
+                        <div>
+                          <p className={`text-sm ${notif.is_read ? 'text-neutral-600' : 'text-neutral-900 font-semibold'}`}>
+                            {notif.title}
+                          </p>
+                          <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
+                            {notif.message}
+                          </p>
+                          <p className="text-[10px] text-neutral-400 mt-2">
+                            {new Date(notif.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className={`text-sm ${notif.is_read ? 'text-neutral-600' : 'text-neutral-900 font-semibold'}`}>
-                          {notif.title}
-                        </p>
-                        <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
-                          {notif.message}
-                        </p>
-                        <p className="text-[10px] text-neutral-400 mt-2">
-                          {new Date(notif.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
+                    </button>
                   </li>
                 ))}
               </ul>
