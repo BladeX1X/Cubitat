@@ -81,9 +81,13 @@ Descubrimiento manual:
 iOS:
 
 1. No existe `beforeinstallprompt`.
-2. Se muestra un aviso con instrucciones:
-   - Compartir.
-   - Añadir a pantalla de inicio.
+2. El menu muestra `Como instalar Cubitat`, no una accion automatica.
+3. Se muestra una guia visible con los pasos reales de Safari:
+   - Pulsar Compartir.
+   - Seleccionar `Añadir a pantalla de inicio`.
+   - Confirmar `Añadir`.
+4. La deteccion incluye iPadOS cuando Safari solicita la version de escritorio.
+5. Si Cubitat ya se ejecuta como PWA, la opcion de instalacion se oculta.
 
 Si el usuario pulsa `Quizas luego`, se guarda la fecha del descarte en
 milisegundos:

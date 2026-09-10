@@ -4,6 +4,7 @@ import { Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, Us
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
+import { isIOSDevice, isStandalonePWA } from '../../shared/pwa/installEnvironment'
 
 interface HeaderProps {
   user: User | null
@@ -35,6 +36,8 @@ export function Header({
   onSignOut,
 }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const showInstallOption = !isStandalonePWA()
+  const installOptionLabel = isIOSDevice() ? 'Cómo instalar Cubitat' : 'Instalar Cubitat'
 
   useEffect(() => {
     if (!isMobileMenuOpen) return
@@ -205,9 +208,11 @@ export function Header({
           <Button className="mobile-menu-publish" type="button" onClick={() => handleNavigation(navigatePublish)}>
             Publicar gratis
           </Button>
-          <button className="mobile-menu-install" type="button" onClick={requestPwaInstall}>
-            <Download size={18} />Instalar Cubitat
-          </button>
+          {showInstallOption && (
+            <button className="mobile-menu-install" type="button" onClick={requestPwaInstall}>
+              <Download size={18} />{installOptionLabel}
+            </button>
+          )}
           <p className="mobile-menu-section-title">Explorar inmuebles</p>
           <nav className="mobile-menu-accordion" aria-label="Operaciones">
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>

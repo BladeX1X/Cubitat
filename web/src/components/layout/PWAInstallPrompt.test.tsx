@@ -24,6 +24,28 @@ describe('PWAInstallPrompt', () => {
     expect(screen.queryByRole('button', { name: 'Instalar app' })).not.toBeInTheDocument()
   })
 
+  it('muestra en iOS los pasos reales y una confirmación visible', () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
+    render(<PWAInstallPrompt />)
+
+    act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
+
+    expect(screen.getByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
+    expect(screen.getByText('Añadir a pantalla de inicio')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entendido' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Instalar app' })).not.toBeInTheDocument()
+  })
+
+  it('detecta un iPad que solicita la versión de escritorio', () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)')
+    vi.spyOn(window.navigator, 'maxTouchPoints', 'get').mockReturnValue(5)
+    render(<PWAInstallPrompt />)
+
+    act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
+
+    expect(screen.getByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
+  })
+
   it('usa el instalador nativo cuando el navegador lo ofrece', async () => {
     const prompt = vi.fn().mockResolvedValue(undefined)
     const event = Object.assign(new Event('beforeinstallprompt'), {
