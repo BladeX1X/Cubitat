@@ -7,9 +7,12 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+export const PWA_INSTALL_REQUEST_EVENT = 'cubitat:request-pwa-install'
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+  const [manualRequest, setManualRequest] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isOffline, setIsOffline] = useState(false)
   const [showOnlineNotice, setShowOnlineNotice] = useState(false)
@@ -51,12 +54,14 @@ export function PWAInstallPrompt() {
 
     if (isStandalone) return
 
-    const isDismissed = localStorage.getItem('cubitat_pwa_prompt_dismissed') === 'true'
-    if (isDismissed) return
-
     const userAgent = window.navigator.userAgent.toLowerCase()
-    const ios = /iphone|ipad|ipod/.test(userAgent) && !/chrome|crios|opios|firefox|fxios/.test(userAgent)
+    const ios = /iphone|ipad|ipod/.test(userAgent)
     setIsIOS(ios)
+
+    function handleManualInstallRequest() {
+      setManualRequest(true)
+      setShowInstallPrompt(true)
+    }
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault()
@@ -66,26 +71,31 @@ export function PWAInstallPrompt() {
 
     function handleAppInstalled() {
       localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+      setManualRequest(false)
       setShowInstallPrompt(false)
       setDeferredPrompt(null)
     }
 
+    window.addEventListener(PWA_INSTALL_REQUEST_EVENT, handleManualInstallRequest)
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
 
-    if (ios) {
+    const isDismissed = localStorage.getItem('cubitat_pwa_prompt_dismissed') === 'true'
+    if (ios && !isDismissed) {
       const timer = window.setTimeout(() => {
         setShowInstallPrompt(true)
       }, 8000)
 
       return () => {
         window.clearTimeout(timer)
+        window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, handleManualInstallRequest)
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
         window.removeEventListener('appinstalled', handleAppInstalled)
       }
     }
 
     return () => {
+      window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, handleManualInstallRequest)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
@@ -105,7 +115,10 @@ export function PWAInstallPrompt() {
   }
 
   function handleDismissInstall() {
-    localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+    if (!manualRequest) {
+      localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
+    }
+    setManualRequest(false)
     setShowInstallPrompt(false)
   }
 
@@ -184,9 +197,13 @@ export function PWAInstallPrompt() {
                 Pulsa compartir <Share size={12} /> y selecciona <b>Añadir a pantalla de inicio</b>.
               </span>
             ) : (
-              <span>Accede más rápido y conserva soporte básico sin conexión.</span>
+              <span>
+                {deferredPrompt
+                  ? 'Accede más rápido y conserva soporte básico sin conexión.'
+                  : 'Abre el menú de tu navegador y elige Instalar aplicación o Añadir a pantalla de inicio.'}
+              </span>
             )}
-            {!isIOS && (
+            {!isIOS && deferredPrompt && (
               <div className="pwa-toast-actions">
                 <Button
                   type="button"

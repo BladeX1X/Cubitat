@@ -21,6 +21,14 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - AND MUST aplicar el flujo de ruta protegida cuando la opcion requiera sesion
 - AND MUST cerrar menus o paneles abiertos para evitar solapamientos
 
+#### Scenario: Descubrir la instalacion de la PWA
+- GIVEN un usuario navega Cubitat desde el navegador del telefono
+- WHEN abre el menu movil y selecciona `Instalar Cubitat`
+- THEN el sistema MUST cerrar el menu y mostrar una accion o guia de instalacion
+- AND MUST usar el instalador nativo cuando `beforeinstallprompt` este disponible
+- AND MUST mostrar instrucciones manuales en iOS o cuando el navegador no exponga el instalador
+- AND MUST permitir abrir esta guia aunque el aviso automatico se haya descartado antes
+
 #### Scenario: Menu movil abierto sobre cualquier pagina
 - GIVEN un usuario abre el menu movil desde inicio, resultados o detalle
 - WHEN el panel ocupa el viewport disponible

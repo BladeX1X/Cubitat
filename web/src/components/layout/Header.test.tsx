@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Header } from './Header'
+import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
 
 vi.mock('../UserMenu', () => ({
   NotificationsMenu: () => null,
@@ -40,5 +41,18 @@ describe('Header mobile menu', () => {
     expect(screen.queryByRole('complementary', { name: 'Menú móvil' })).not.toBeInTheDocument()
     expect(document.body).not.toHaveClass('has-mobile-menu-open')
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('permite solicitar la instalación desde el menú móvil', () => {
+    const installRequest = vi.fn()
+    window.addEventListener(PWA_INSTALL_REQUEST_EVENT, installRequest)
+
+    render(<Header user={null} {...callbacks} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Instalar Cubitat' }))
+
+    expect(installRequest).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('complementary', { name: 'Menú móvil' })).not.toBeInTheDocument()
+    window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, installRequest)
   })
 })
