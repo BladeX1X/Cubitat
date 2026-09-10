@@ -229,7 +229,10 @@ local usa DEV-F2.3, que exige `verification_status = 'verified'`.
     valor a rutas internas y conserva compatibles los avisos antiguos sin
     destino.
 
-Estado 2026-09-09: **implementada y pendiente de aplicacion productiva**.
+Estado 2026-09-09: **aplicada en produccion** junto con el endurecimiento
+pendiente `20260727100000`. `migration list --linked` confirma ambas versiones
+sincronizadas, `db lint --linked` no reporta errores y el dry-run posterior
+indica que la base remota esta actualizada.
 
 ### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
 
