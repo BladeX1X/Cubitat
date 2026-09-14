@@ -1,6 +1,7 @@
 import type { Property } from '../../properties/types'
 
 type PropertyCoordinates = Property['coordinates']
+const PUBLIC_COORDINATE_GRID_DEGREES = 0.02
 
 function toFiniteNumber(value: unknown): number | null {
   if (typeof value === 'number') {
@@ -34,4 +35,18 @@ export function normalizePropertyCoordinates(value: unknown): PropertyCoordinate
   }
 
   return { latitude, longitude }
+}
+
+export function approximatePropertyCoordinates(value: unknown): PropertyCoordinates | null {
+  const coordinates = normalizePropertyCoordinates(value)
+  if (!coordinates) return null
+
+  const snapToPrivacyGrid = (coordinate: number) => Number((
+    Math.round(coordinate / PUBLIC_COORDINATE_GRID_DEGREES) * PUBLIC_COORDINATE_GRID_DEGREES
+  ).toFixed(2))
+
+  return {
+    latitude: snapToPrivacyGrid(coordinates.latitude),
+    longitude: snapToPrivacyGrid(coordinates.longitude),
+  }
 }

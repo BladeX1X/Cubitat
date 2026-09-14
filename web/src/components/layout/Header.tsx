@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
+import { ArrowLeftRight, Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
@@ -17,7 +17,7 @@ interface HeaderProps {
   navigatePublish: () => void
   navigateResults: () => void
   openLogin: () => void
-  handleOperationNavigation: (op: 'venta' | 'alquiler') => void
+  handleOperationNavigation: (op: 'venta' | 'alquiler' | 'permuta') => void
   onSignOut: () => void
 }
 
@@ -96,13 +96,13 @@ export function Header({
             Rentar
           </a>
           <a
-            href="/publicar"
+            href="/resultados"
             onClick={(event) => {
               event.preventDefault()
-              handleNavigation(navigatePublish)
+              handleNavigation(() => handleOperationNavigation('permuta'))
             }}
           >
-            Vender
+            Permutar
           </a>
         </nav>
         <button
@@ -199,7 +199,7 @@ export function Header({
               {userRole === 'admin' && (
                 <button type="button" onClick={() => handleNavigation(navigateModerar)}><ShieldCheck size={19} />Moderar</button>
               )}
-              <button type="button" onClick={() => handleNavigation(navigatePublish)}><Home size={19} />Vender</button>
+              <button type="button" onClick={() => handleNavigation(navigatePublish)}><Home size={19} />Publicar</button>
               <button className="mobile-menu-signout" type="button" onClick={() => handleNavigation(onSignOut)}>
                 <LogOut size={19} />Cerrar sesión
               </button>
@@ -217,6 +217,7 @@ export function Header({
           <nav className="mobile-menu-accordion" aria-label="Operaciones">
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('alquiler'))}><Building2 size={18} />Rentar</button>
+            <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('permuta'))}><ArrowLeftRight size={18} />Permutar</button>
           </nav>
         </aside>
       )}

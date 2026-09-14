@@ -6,44 +6,82 @@ describe('PWAInstallPrompt', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }))
+    Object.defineProperty(window.navigator, 'getInstalledRelatedApps', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue([]),
+    })
   })
 
   afterEach(() => {
+    delete (window.navigator as Navigator & { getInstalledRelatedApps?: unknown }).getInstalledRelatedApps
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('muestra instrucciones manuales aunque el aviso automático se haya descartado', () => {
+  it('muestra instrucciones manuales aunque el aviso automático se haya descartado', async () => {
     localStorage.setItem('cubitat_pwa_prompt_dismissed', 'true')
     render(<PWAInstallPrompt />)
 
     act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
 
-    expect(screen.getByText('Instalar Cubitat')).toBeInTheDocument()
-    expect(screen.getByText(/abre el menú de tu navegador/i)).toBeInTheDocument()
+    expect(await screen.findByText('Instalar Cubitat')).toBeInTheDocument()
+    expect(screen.getByText(/elige Instalar aplicación/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Instalar app' })).not.toBeInTheDocument()
   })
 
-  it('muestra en iOS los pasos reales y una confirmación visible', () => {
+  it('muestra en Android solo las instrucciones de Chrome', async () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36')
+    render(<PWAInstallPrompt />)
+
+    act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
+
+    expect(await screen.findByText(/En Chrome, abre el menú/i)).toBeInTheDocument()
+    expect(screen.getByText(/Instalar aplicación/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Añadir a pantalla de inicio/i)).not.toBeInTheDocument()
+  })
+
+  it('avisa cuando Cubitat ya está instalada en Android', async () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36')
+    Object.defineProperty(window.navigator, 'getInstalledRelatedApps', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue([
+        {
+          platform: 'webapp',
+          id: 'https://cubitathome.com/',
+          url: 'https://cubitathome.com/manifest.webmanifest',
+        },
+      ]),
+    })
+    render(<PWAInstallPrompt />)
+
+    act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
+
+    expect(await screen.findByText('Cubitat ya está instalada')).toBeInTheDocument()
+    expect(screen.getByText(/ábrela desde el icono de Cubitat/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entendido' })).toBeInTheDocument()
+    expect(screen.queryByText(/Añadir a pantalla de inicio/i)).not.toBeInTheDocument()
+  })
+
+  it('muestra en iOS los pasos reales y una confirmación visible', async () => {
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
     render(<PWAInstallPrompt />)
 
     act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
 
-    expect(screen.getByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
+    expect(await screen.findByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
     expect(screen.getByText('Añadir a pantalla de inicio')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Entendido' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Instalar app' })).not.toBeInTheDocument()
   })
 
-  it('detecta un iPad que solicita la versión de escritorio', () => {
+  it('detecta un iPad que solicita la versión de escritorio', async () => {
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)')
     vi.spyOn(window.navigator, 'maxTouchPoints', 'get').mockReturnValue(5)
     render(<PWAInstallPrompt />)
 
     act(() => window.dispatchEvent(new Event(PWA_INSTALL_REQUEST_EVENT)))
 
-    expect(screen.getByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
+    expect(await screen.findByText(/En Safari, pulsa Compartir/i)).toBeInTheDocument()
   })
 
   it('usa el instalador nativo cuando el navegador lo ofrece', async () => {

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
+import { CircleCheck, Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
-import { isIOSDevice, isStandalonePWA } from '../../shared/pwa/installEnvironment'
+import {
+  hasInstalledRelatedWebApp,
+  isAndroidDevice,
+  isIOSDevice,
+  isStandalonePWA,
+} from '../../shared/pwa/installEnvironment'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -34,6 +39,8 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   const [manualRequest, setManualRequest] = useState(false)
+  const [installedRelatedApp, setInstalledRelatedApp] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isOffline, setIsOffline] = useState(false)
   const [showOnlineNotice, setShowOnlineNotice] = useState(false)
@@ -72,16 +79,32 @@ export function PWAInstallPrompt() {
     if (isStandalone) return
 
     const ios = isIOSDevice()
+    const android = isAndroidDevice()
     const delayAutomaticPrompt = shouldDelayAutomaticPrompt()
+    let active = true
+    setIsAndroid(android)
     setIsIOS(ios)
 
-    function handleManualInstallRequest() {
+    void hasInstalledRelatedWebApp().then((installed) => {
+      if (!active) return
+      setInstalledRelatedApp(installed)
+      if (installed) {
+        setShowInstallPrompt(false)
+        setDeferredPrompt(null)
+      }
+    })
+
+    async function handleManualInstallRequest() {
+      const installed = await hasInstalledRelatedWebApp()
+      if (!active) return
+      setInstalledRelatedApp(installed)
       setManualRequest(true)
       setShowInstallPrompt(true)
     }
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault()
+      setInstalledRelatedApp(false)
       setDeferredPrompt(event as BeforeInstallPromptEvent)
       if (!delayAutomaticPrompt) {
         setShowInstallPrompt(true)
@@ -91,6 +114,7 @@ export function PWAInstallPrompt() {
     function handleAppInstalled() {
       localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, String(Date.now()))
       setManualRequest(false)
+      setInstalledRelatedApp(true)
       setShowInstallPrompt(false)
       setDeferredPrompt(null)
     }
@@ -105,6 +129,7 @@ export function PWAInstallPrompt() {
       }, 8000)
 
       return () => {
+        active = false
         window.clearTimeout(timer)
         window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, handleManualInstallRequest)
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -113,6 +138,7 @@ export function PWAInstallPrompt() {
     }
 
     return () => {
+      active = false
       window.removeEventListener(PWA_INSTALL_REQUEST_EVENT, handleManualInstallRequest)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
@@ -206,11 +232,13 @@ export function PWAInstallPrompt() {
       {showInstallPrompt && (
         <div className="pwa-toast pwa-toast--install" role="status">
           <div className="pwa-install-icon">
-            <Download size={20} />
+            {installedRelatedApp ? <CircleCheck size={20} /> : <Download size={20} />}
           </div>
           <div>
-            <strong>Instalar Cubitat</strong>
-            {isIOS ? (
+            <strong>{installedRelatedApp ? 'Cubitat ya está instalada' : 'Instalar Cubitat'}</strong>
+            {installedRelatedApp ? (
+              <span>Ábrela desde el icono de Cubitat en tu pantalla de inicio.</span>
+            ) : isIOS ? (
               <span className="pwa-ios-copy">
                 En Safari, pulsa Compartir <Share size={12} />, selecciona <b>Añadir a pantalla de inicio</b> y confirma <b>Añadir</b>.
               </span>
@@ -218,10 +246,12 @@ export function PWAInstallPrompt() {
               <span>
                 {deferredPrompt
                   ? 'Accede más rápido y conserva soporte básico sin conexión.'
-                  : 'Abre el menú de tu navegador y elige Instalar aplicación o Añadir a pantalla de inicio.'}
+                  : isAndroid
+                    ? 'En Chrome, abre el menú y elige Instalar aplicación.'
+                    : 'Abre el menú de tu navegador y elige Instalar aplicación.'}
               </span>
             )}
-            {!isIOS && deferredPrompt && (
+            {!installedRelatedApp && !isIOS && deferredPrompt && (
               <div className="pwa-toast-actions">
                 <Button
                   type="button"
@@ -242,7 +272,7 @@ export function PWAInstallPrompt() {
                 </Button>
               </div>
             )}
-            {isIOS && (
+            {(installedRelatedApp || isIOS) && (
               <div className="pwa-toast-actions">
                 <Button
                   type="button"

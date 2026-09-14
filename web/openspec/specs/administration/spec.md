@@ -39,6 +39,13 @@ El sistema MUST validar rol administrador y `aal2` en interfaz, Worker, RPC y RL
 - WHEN accede al panel o ejecuta una accion de moderacion permitida
 - THEN el sistema MUST autorizarla conforme a las politicas restantes
 
+#### Scenario: RPC heredada de moderacion retirada
+- GIVEN un cliente anonimo, autenticado o administrador con cualquier AAL
+- WHEN intenta ejecutar `set_property_ai_moderation(uuid, property_status, text)`
+- THEN el backend MUST denegar EXECUTE incluso mediante la API directa de Supabase
+- AND el Worker MUST conservar exclusivamente `set_property_ai_moderation_trusted` para automatizacion con `service_role`
+- AND la moderacion humana MUST conservar las politicas existentes de admin AAL2
+
 ### Requirement: Gestion de publicaciones
 El sistema MUST permitir revisar estado y calidad de anuncios.
 
@@ -230,6 +237,13 @@ El sistema MAY usar revision automatica para ayudar al admin sin reemplazar la d
 - THEN MUST usar un RPC exclusivo de `service_role`
 - AND MUST comprobar la respuesta remota antes de considerar la operación completada
 - AND MUST registrar el evento como automatización sin aceptar un actor enviado por el cliente
+
+#### Scenario: Admin espera una reevaluación
+- GIVEN un admin solicita Reevaluar con IA para una publicación
+- WHEN el Worker procesa la moderación en segundo plano
+- THEN la tarjeta MUST mostrar el resultado nuevo sin recargar la página completa
+- AND la interfaz MUST limitar la espera automática a la publicación reevaluada
+- AND MUST informar si el resultado no llega dentro del tiempo de espera
 
 ### Requirement: Arquitectura modular del panel
 El sistema MUST mantener cada capacidad administrativa aislada para que pueda evolucionar sin modificar las demás.

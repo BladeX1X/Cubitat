@@ -16,10 +16,16 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 
 #### Scenario: Navegacion desde menu movil
 - GIVEN un usuario usa el menu movil
-- WHEN selecciona Inicio, Favoritos, Vender, Cuenta, Mis publicaciones o Moderar
+- WHEN selecciona Inicio, Favoritos, Publicar, Cuenta, Mis publicaciones o Moderar
 - THEN el sistema MUST navegar a la pantalla correspondiente
 - AND MUST aplicar el flujo de ruta protegida cuando la opcion requiera sesion
 - AND MUST cerrar menus o paneles abiertos para evitar solapamientos
+
+#### Scenario: Operaciones desde el encabezado
+- GIVEN un usuario navega desde el encabezado en escritorio o abre las operaciones del menu movil
+- WHEN selecciona Comprar, Rentar o Permutar
+- THEN el sistema MUST abrir resultados con la operacion venta, alquiler o permuta correspondiente
+- AND la accion separada `Publicar gratis` MUST continuar disponible para crear anuncios
 
 #### Scenario: Descubrir la instalacion de la PWA
 - GIVEN un usuario navega Cubitat desde el navegador del telefono

@@ -71,6 +71,17 @@ export async function fetchModerationProperties(status: StatusFilter, page: numb
   }
 }
 
+export async function fetchModerationPropertyResult(id: string) {
+  const { data, error } = await supabase
+    .from('properties')
+    .select('status, moderation_message')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as Pick<ModerationProperty, 'status' | 'moderation_message'>
+}
+
 export async function updateModerationPropertyStatus(
   id: string,
   status: ModerationProperty['status'],

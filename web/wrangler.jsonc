@@ -15,7 +15,8 @@
   },
   "vars": {
     "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
-    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
+    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev",
+    "GROQ_MODEL": "qwen/qwen3.6-27b"
   },
   "durable_objects": {
     "bindings": [
@@ -38,5 +39,8 @@
       "head_sampling_rate": 1,
       "invocation_logs": false
     }
+  },
+  "triggers": {
+    "crons": ["* * * * *"]
   }
 }

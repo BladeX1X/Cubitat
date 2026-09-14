@@ -234,6 +234,63 @@ pendiente `20260727100000`. `migration list --linked` confirma ambas versiones
 sincronizadas, `db lint --linked` no reporta errores y el dry-run posterior
 indica que la base remota esta actualizada.
 
+### Web Push por dispositivo - 2026-09-11
+
+52. `20260911010000_add_web_push.sql`: crea suscripciones Push asociadas al
+    usuario con RLS, una cola de entrega por notificacion y dispositivo, el
+    trigger de encolado y un reclamo atomico `FOR UPDATE SKIP LOCKED` reservado a
+    `service_role`. Limita cada entrega a tres intentos y permite recuperar
+    trabajos cuyo lease de procesamiento haya vencido.
+
+Estado 2026-09-11: **aplicada en produccion**. El primer lint remoto detecto la
+calificacion invalida de expresiones especiales y se corrigio mediante las
+migraciones 53 y 54, sin reescribir historial aplicado. `migration list
+--linked` confirma sincronizacion y el lint final no reporta errores.
+
+53. `20260911020000_fix_push_claim_limit.sql`: corrige la calificacion invalida
+    de la expresion especial `COALESCE` detectada por `supabase db lint
+    --linked` despues de aplicar la migracion 52. Conserva el limite entre 1 y
+    100 y usa 50 cuando el argumento sea `NULL`.
+
+54. `20260911030000_fix_push_claim_bound.sql`: reemplaza tambien `LEAST` y
+    `GREATEST`, que PostgreSQL trata como expresiones especiales, por un `CASE`
+    explicito. Esta es la definicion final del limite de reclamo. Worker
+    productivo `1438af56-a0e1-473f-9779-2162e7a6a714`, secretos VAPID y Cron de
+    un minuto verificados; una ejecucion programada real termino en `ok`.
+
+55. `20260911040000_push_account_isolation.sql`: garantiza aislamiento estricto
+    de suscripciones Push entre cuentas en navegadores compartidos. Introduce la
+    tabla `push_endpoint_owners`, trigger `enforce_push_endpoint_owner` que
+    impide transferencias de endpoints entre usuarios, revoca `INSERT`, `UPDATE`,
+    `DELETE` directo de `authenticated` en `push_subscriptions`, purga entregas
+    huérfanas de usuarios cruzados y actualiza `claim_pending_push_deliveries` y
+    `authorize_push_delivery` para verificar `n.user_id = s.user_id`.
+
+56. `20260911050000_retire_legacy_moderation_rpc.sql`: retira definitivamente la
+    RPC obsoleta `set_property_ai_moderation`, revocando permisos de ejecución a
+    `PUBLIC`, `anon`, `authenticated` y `service_role`. Cierra el riesgo estático
+    de evasión de MFA (AAL2) por llamada directa a la API de Supabase. La
+    moderación humana se canaliza por RLS admin AAL2 y la automatizada por
+    `set_property_ai_moderation_trusted`.
+
+57. `20260911060000_private_property_addresses.sql`: separa y protege la dirección
+    física exacta de inmuebles. Almacena la dirección privada en
+    `property_private_addresses` accesible solo por el propietario y admin AAL2
+    bajo RLS, implementa `public_property_location` para censurar calles y
+    números en vistas públicas/anónimas, y sincroniza automáticamente las
+    actualizaciones vía trigger `sync_property_location_privacy`.
+
+58. `20260912010000_private_property_coordinates.sql`: conserva las coordenadas
+    exactas en `property_private_coordinates`, con lectura RLS exclusiva del
+    propietario, y reduce `properties.coordinates` a una cuadrícula pública de
+    `0.02` grados. La migración corrige registros existentes y un trigger aplica
+    la misma protección a inserciones y ediciones futuras.
+
+59. `20260912020000_fix_coordinate_function_volatility.sql`: corrige la
+    clasificación de volatilidad de las funciones de coordenadas a `STABLE`,
+    de acuerdo con las rutinas JSON del catálogo que utilizan, para mantener
+    limpio el lint remoto sin modificar su resultado.
+
 ### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
 
 - **Estado 2026-07-27**: exclusiva de DEV. Está fuera de `supabase/migrations/` y no forma parte de la cadena productiva, que termina en 50.

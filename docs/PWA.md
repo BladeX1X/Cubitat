@@ -7,7 +7,8 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 ## Capacidades actuales
 
 - Manifest generado por `vite-plugin-pwa` con nombre, colores, iconos y `display: standalone`.
-- Service worker generado por Workbox mediante `VitePWA`.
+- Service worker propio compilado por Workbox mediante `VitePWA` en modo
+  `injectManifest`.
 - Registro automatico con `registerType: 'autoUpdate'`.
 - Prompt de instalacion para navegadores compatibles con `beforeinstallprompt`.
 - Opcion permanente `Instalar Cubitat` en el menu movil cuando se navega desde
@@ -18,6 +19,8 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 - Aviso de actualizacion disponible con boton `Actualizar`.
 - Cache runtime unicamente para recursos publicos de Supabase Storage.
 - Exclusion de MapLibre del precache para evitar descargar el motor de mapas al instalar/actualizar la PWA.
+- Web Push por dispositivo para usuarios autenticados, con destino interno al
+  tocar la notificacion.
 
 ## Archivos principales
 
@@ -29,6 +32,13 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 - `web/src/components/layout/PWAInstallPrompt.tsx`
   - Registra el service worker con `virtual:pwa-register`.
   - Muestra prompts de instalacion, offline/online y update.
+- `web/src/sw.ts`
+  - Conserva el precache y cache de imagenes publicas.
+  - Muestra los mensajes Push y abre solamente rutas internas del sitio.
+- `web/src/modules/notifications/push/PushNotificationSettings.tsx`
+  - Permite activar o desactivar el navegador actual desde Mi cuenta.
+- `web/src/worker/push-notifications.ts`
+  - Registra suscripciones autenticadas y entrega la cola mediante Cron.
 - `web/src/styles/app.css`
   - Define `.pwa-toast-*` y posicionamiento desktop/mobile.
 - `web/src/vite-env.d.ts`
@@ -72,10 +82,14 @@ Android/Chrome/Edge:
 Descubrimiento manual:
 
 1. El usuario abre el menu movil y pulsa `Instalar Cubitat`.
-2. Si el navegador ya entrego `beforeinstallprompt`, se ofrece `Instalar app`.
-3. Si no existe instalador nativo disponible, se explica como abrir el menu del
-   navegador y elegir `Instalar aplicacion` o `Anadir a pantalla de inicio`.
-4. Esta opcion manual sigue funcionando aunque el aviso automatico se haya
+2. Chrome consulta `getInstalledRelatedApps()` para detectar una instalacion
+   web del mismo origen declarada en `related_applications` del manifest.
+3. Si Cubitat ya esta instalada, se indica que debe abrirse desde su icono en la
+   pantalla de inicio y no se vuelve a ofrecer la instalacion.
+4. Si el navegador ya entrego `beforeinstallprompt`, se ofrece `Instalar app`.
+5. Si Android no tiene instalador nativo disponible, se indica abrir el menu de
+   Chrome y elegir solamente `Instalar aplicacion`.
+6. Esta opcion manual sigue funcionando aunque el aviso automatico se haya
    descartado anteriormente.
 
 iOS:
@@ -118,6 +132,28 @@ updateServiceWorker(true)
 ```
 
 Esto activa el nuevo service worker y recarga la pagina para usar la version nueva.
+
+## Notificaciones Web Push
+
+El usuario las activa expresamente en `Mi cuenta`. El permiso del navegador se
+solicita solo al pulsar `Activar notificaciones`; nunca durante la carga de la
+pagina. Cada navegador instalado mantiene su propia suscripcion y puede
+desactivarse sin afectar otros dispositivos.
+
+En iOS/iPadOS, Cubitat indica primero que debe instalarse desde Safari mediante
+`Compartir > Anadir a pantalla de inicio`. La opcion Push se habilita cuando la
+aplicacion se ejecuta desde esa instalacion. Android y navegadores de escritorio
+compatibles pueden activarla directamente.
+
+La migracion `20260911010000_add_web_push.sql` crea las suscripciones y una cola
+por dispositivo. El Worker reclama lotes cada minuto, reintenta hasta tres veces
+y elimina endpoints que el proveedor marque como vencidos (`404` o `410`). Los
+secretos VAPID y `SUPABASE_SERVICE_ROLE_KEY` permanecen exclusivamente en el
+Worker.
+
+Al tocar una notificacion, el service worker acepta unicamente un `action_path`
+del mismo origen. Reutiliza una ventana abierta de Cubitat o abre la propiedad o
+seccion indicada.
 
 ### Aislamiento durante desarrollo local
 
@@ -164,16 +200,26 @@ El aviso offline no promete que todas las acciones funcionen. El texto indica qu
 - Probar offline en DevTools: Application > Service Workers > Offline.
 - No cachear respuestas REST de Supabase ni datos autenticados en el service
   worker.
+- Probar activacion, recepcion y clic en Chrome Android y en una PWA instalada
+  desde Safari en iOS antes de habilitar el lanzamiento.
 
 ## Estado validado
 
-Ultima validacion local:
+Ultima validacion local (2026-09-11):
 
 - `npm run build`: correcto.
-- `npm run test:run`: 82 archivos y 317 pruebas aprobadas (2026-07-27).
+- `npm run test:run`: 103 archivos y 425 pruebas aprobadas.
 - `/sw.js` DEV: `application/javascript`, `no-cache, no-store` y worker de
   autolimpieza verificado.
 - Dos recargas normales en Chrome conservaron la version actual y la sesion.
-- Precache de produccion: 45 entradas, aproximadamente 1076 KB.
+- Precache de produccion: 42 entradas, aproximadamente 1040 KB (2026-09-11).
 - Supabase REST queda fuera de `runtimeCaching`; solo se cachean imagenes
   publicas de Storage.
+- Web Push desplegado en produccion el 2026-09-11 como Worker
+  `96d3368b-8935-42ad-bd54-0f240acfccee`. Migraciones 52 a 54 sincronizadas,
+  `db lint --linked` sin errores, secretos VAPID presentes y Cron real con
+  resultado `ok`. Queda pendiente probar permiso, recepcion y clic en
+  dispositivos fisicos.
+- Deteccion de PWA ya instalada y texto especifico para Chrome Android cubiertos
+  por pruebas automatizadas; queda pendiente confirmar el resultado en un
+  dispositivo Android fisico despues del despliegue.

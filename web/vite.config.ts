@@ -341,6 +341,9 @@ Tipo: ${body.property_type}`;
         }
       },
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'favicon-32.png', 'favicon-48.png', 'apple-touch-icon.png'],
         manifest: {
@@ -353,6 +356,13 @@ Tipo: ${body.property_type}`;
           background_color: '#ffffff',
           display: 'standalone',
           start_url: '/',
+          related_applications: [
+            {
+              platform: 'webapp',
+              url: 'https://cubitathome.com/manifest.webmanifest',
+              id: 'https://cubitathome.com/',
+            },
+          ],
           icons: [
             {
               src: 'pwa-192x192.png',
@@ -372,28 +382,8 @@ Tipo: ${body.property_type}`;
             }
           ]
         },
-        workbox: {
-          skipWaiting: true,
-          clientsClaim: true,
-          cleanupOutdatedCaches: true,
-          navigateFallbackDenylist: [/\/api\//],
+        injectManifest: {
           globIgnores: ['**/vendor-maplibre-*.js', '**/vendor-maplibre-*.css'],
-          runtimeCaching: [
-            {
-              urlPattern: /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/storage\/v1\/object\/public\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'supabase-image-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 días
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            }
-          ]
         }
       })
     ],

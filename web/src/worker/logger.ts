@@ -7,6 +7,7 @@ const EVENTS = new Set([
   'metrics_provider_failed',
   'moderation_background_failed',
   'moderation_image_fetch_failed',
+  'moderation_provider_request_failed',
   'password_exposure_check_unavailable',
   'seo_rewrite_failed',
   'transactional_email_failed',
@@ -16,12 +17,15 @@ const EVENTS = new Set([
   'kyc_evidence_claim_failed',
   'kyc_evidence_retention_unavailable',
   'kyc_evidence_retention_partial_failure',
+  'push_dispatch_failed',
+  'push_dispatch_skipped',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
 const DIMENSIONS = new Set(['ip', 'email'] as const)
 const SOURCES = new Set([
   'google_analytics',
+  'groq',
   'management_api',
   'pwned_passwords',
   'resend',
@@ -36,6 +40,7 @@ export type WorkerLogEvent =
   | 'metrics_provider_failed'
   | 'moderation_background_failed'
   | 'moderation_image_fetch_failed'
+  | 'moderation_provider_request_failed'
   | 'password_exposure_check_unavailable'
   | 'seo_rewrite_failed'
   | 'transactional_email_failed'
@@ -45,11 +50,13 @@ export type WorkerLogEvent =
   | 'kyc_evidence_claim_failed'
   | 'kyc_evidence_retention_unavailable'
   | 'kyc_evidence_retention_partial_failure'
+  | 'push_dispatch_failed'
+  | 'push_dispatch_skipped'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'
   dimension?: 'ip' | 'email'
-  source?: 'google_analytics' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
+  source?: 'google_analytics' | 'groq' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
   status?: number
   reason?: 'missing_configuration' | 'network_unavailable'
 }

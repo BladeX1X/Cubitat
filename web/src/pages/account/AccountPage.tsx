@@ -18,6 +18,7 @@ import { Input } from '../../shared/ui/input'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { AccountLayout } from './AccountLayout'
 import { useSearchAlerts, type SearchAlert } from '../../modules/search/hooks/useSearchAlerts'
+import { PushNotificationSettings } from '../../modules/notifications/push/PushNotificationSettings'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
@@ -375,6 +376,8 @@ export function AccountPage({
                   loading={loadingSearchAlerts}
                   onDelete={deleteSearchAlert}
                 />
+
+                <PushNotificationSettings />
 
                 <AccountSection title="Informacion de usuario">
                   <EditableNameRow

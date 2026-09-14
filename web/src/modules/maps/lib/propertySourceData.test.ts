@@ -35,6 +35,6 @@ describe('createPropertySourceData', () => {
 
     expect(source.features).toHaveLength(1)
     expect(source.features[0]?.properties?.id).toBe('valid-property')
-    expect(source.features[0]?.geometry.coordinates).toEqual([-82.383, 23.135])
+    expect(source.features[0]?.geometry.coordinates).toEqual([-82.38, 23.14])
   })
 })

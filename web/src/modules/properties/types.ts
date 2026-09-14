@@ -12,6 +12,7 @@ export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'owner_
 export type PropertyFeatures = {
   floorLevel?: number
   levels?: number
+  exchangePreferences?: import('./exchangePreferences').ExchangePreferences
   [key: string]: unknown
 }
 
