@@ -4,8 +4,9 @@
 > auditoría fueron corregidos, cubiertos por pruebas y desplegados. Las
 > migraciones productivas 55 a 59 están sincronizadas y el Worker activo es
 > `14a5dd39-9f47-4077-bed4-ef916c2bd24b`. La puerta vigente pasa lint, 111
-> archivos/460 pruebas y build PWA. Aún faltan integrar el lote en `main`, los
-> QA físicos/autenticados indicados al final y la aprobación de contenido/legal.
+> archivos/460 pruebas y build PWA. El PR `#108` integró el lote en `main`
+> (`73a3c8d`). Aún faltan los QA físicos/autenticados indicados al final y la
+> aprobación de contenido/legal.
 > El texto inferior se conserva como fotografía histórica del 2026-09-11.
 
 Estado: revisión concluida con hallazgos; Fase 1 no cerrada. No se implementaron correcciones ni se desplegó. Base: HEAD `3c02193`, rama `feature/web-push-notifications`, incluyendo cambios locales preexistentes de Push/PWA.

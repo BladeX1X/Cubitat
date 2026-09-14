@@ -5,9 +5,9 @@
 > Estado vigente: los seis hallazgos de la auditoría Fase 1 del 2026-09-11
 > están corregidos, probados y desplegados. Las migraciones 55 a 59 están
 > sincronizadas y producción usa el Worker
-> `14a5dd39-9f47-4077-bed4-ef916c2bd24b`. El lote continúa en
-> `feature/web-push-notifications` y debe integrarse mediante PR; permanecen
-> pendientes los QA físicos/autenticados, contenido aprobado y revisión legal.
+> `14a5dd39-9f47-4077-bed4-ef916c2bd24b`. El PR `#108` integró el lote en
+> `main` como `73a3c8d`; permanecen pendientes los QA físicos/autenticados,
+> contenido aprobado y revisión legal.
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -2503,3 +2503,17 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   actualizan sin recargar la página completa.
 - La espera está acotada a 30 segundos y muestra un aviso recuperable si expira.
 - **Producción:** Worker 14a5dd39-9f47-4077-bed4-ef916c2bd24b.
+
+## Integración y revalidación de Fase 1 — 2026-09-14
+
+- **Git:** PR `#108` fusionado; `main` y `origin/main` quedaron en `73a3c8d`.
+- **Calidad:** lint limpio, 111 archivos/460 pruebas y build PWA correcto con
+  verificadores de aislamiento y sitemap de 444 URLs.
+- **Backend:** migraciones locales/remotas sincronizadas hasta la 59 y
+  `supabase db lint --linked --level warning` sin hallazgos.
+- **Privacidad pública:** 304 ubicaciones publicadas revisadas sin patrones de
+  calle o número; las tablas privadas de dirección y coordenadas no aparecen
+  para el rol anónimo (HTTP 404).
+- **Pendiente:** QA física Push Android/iOS y cambio de cuentas, fallo/reintento
+  real de fotos, restauración manual de borrador, moderación AAL2 sin recarga,
+  inventario aprobado y revisión jurídica.
