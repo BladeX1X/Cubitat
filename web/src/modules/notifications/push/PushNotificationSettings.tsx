@@ -6,16 +6,19 @@ import {
   enablePushNotifications,
   getCurrentPushSubscription,
   getPushAvailability,
+  preparePushNotifications,
+  type PreparedPushContext,
   type PushAvailability,
 } from './pushService'
 
-type Status = 'loading' | 'disabled' | 'enabled' | 'blocked' | PushAvailability | 'error'
+type Status = 'loading' | 'disabled' | 'enabled' | 'blocked' | PushAvailability | 'browser_error' | 'error'
 
 const defaultServices = {
   getAvailability: getPushAvailability,
   getPermission: () => typeof Notification === 'undefined' ? 'default' as const : Notification.permission,
+  prepare: preparePushNotifications,
   getSubscription: getCurrentPushSubscription,
-  enable: enablePushNotifications,
+  enable: (prepared: PreparedPushContext) => enablePushNotifications(undefined, prepared),
   disable: disablePushNotifications,
 }
 
@@ -28,6 +31,7 @@ export function PushNotificationSettings({
 }) {
   const [status, setStatus] = useState<Status>('loading')
   const [busy, setBusy] = useState(false)
+  const [prepared, setPrepared] = useState<PreparedPushContext | null>(null)
 
   useEffect(() => {
     let active = true
@@ -41,9 +45,12 @@ export function PushNotificationSettings({
       return () => { active = false }
     }
 
-    void services.getSubscription()
-      .then((subscription) => {
-        if (active) setStatus(subscription ? 'enabled' : 'disabled')
+    void Promise.all([services.prepare(), services.getSubscription()])
+      .then(([context, subscription]) => {
+        if (active) {
+          setPrepared(context)
+          setStatus(subscription ? 'enabled' : 'disabled')
+        }
       })
       .catch(() => {
         if (active) setStatus('error')
@@ -53,12 +60,15 @@ export function PushNotificationSettings({
   }, [services])
 
   async function handleEnable() {
+    if (!prepared) return
     setBusy(true)
     try {
-      const result = await services.enable()
+      const result = await services.enable(prepared)
       setStatus(result === 'enabled' ? 'enabled' : 'blocked')
-    } catch {
-      setStatus('error')
+    } catch (error) {
+      setStatus(error instanceof Error && error.message === 'push_browser_subscription_failed'
+        ? 'browser_error'
+        : 'error')
     } finally {
       setBusy(false)
     }
@@ -84,6 +94,8 @@ export function PushNotificationSettings({
         ? 'El permiso esta bloqueado. Activalo en los ajustes del navegador o del sistema.'
         : status === 'enabled'
           ? 'Las notificaciones estan activas en este dispositivo.'
+          : status === 'browser_error'
+            ? 'El navegador no pudo activar las notificaciones. Revisa que Chrome tenga permiso para enviarlas e intenta de nuevo.'
           : status === 'error'
             ? 'No se pudo actualizar esta preferencia. Intenta de nuevo.'
             : 'Recibe avisos de propiedades, contactos y actividad importante.'
@@ -104,7 +116,7 @@ export function PushNotificationSettings({
         </div>
       </div>
 
-      {status === 'disabled' || status === 'error' ? (
+      {status === 'disabled' || status === 'browser_error' || status === 'error' ? (
         <Button className="mt-4 h-11 w-full font-bold sm:w-auto" onClick={handleEnable} disabled={busy}>
           {busy ? <Loader2 className="mr-2 animate-spin" size={17} /> : <BellRing className="mr-2" size={17} />}
           Activar notificaciones

@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { PushNotificationSettings } from './PushNotificationSettings'
 
 function services(overrides: Partial<Parameters<typeof PushNotificationSettings>[0]['services']> = {}) {
+  const prepared = { registration: {}, applicationServerKey: new Uint8Array([1, 2, 3]) }
   return {
     getAvailability: vi.fn().mockReturnValue('available' as const),
     getPermission: vi.fn().mockReturnValue('default' as NotificationPermission),
+    prepare: vi.fn().mockResolvedValue(prepared),
     getSubscription: vi.fn().mockResolvedValue(null),
     enable: vi.fn().mockResolvedValue('enabled' as const),
     disable: vi.fn().mockResolvedValue(undefined),
@@ -29,7 +31,9 @@ describe('PushNotificationSettings', () => {
     expect(api.enable).not.toHaveBeenCalled()
     fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
 
-    await waitFor(() => expect(api.enable).toHaveBeenCalledOnce())
+    await waitFor(() => expect(api.enable).toHaveBeenCalledWith(expect.objectContaining({
+      applicationServerKey: new Uint8Array([1, 2, 3]),
+    })))
     expect(await screen.findByText(/activas en este dispositivo/i)).toBeInTheDocument()
   })
 
@@ -38,5 +42,17 @@ describe('PushNotificationSettings', () => {
     render(<PushNotificationSettings services={api} />)
 
     expect(await screen.findByText(/permiso esta bloqueado/i)).toBeInTheDocument()
+  })
+
+  it('explains a browser subscription failure without exposing a developer error', async () => {
+    const api = services({
+      enable: vi.fn().mockRejectedValue(new Error('push_browser_subscription_failed')),
+    })
+    render(<PushNotificationSettings services={api} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
+
+    expect(await screen.findByText(/navegador no pudo activar/i)).toBeInTheDocument()
+    expect(screen.queryByText(/push_browser_subscription_failed/i)).not.toBeInTheDocument()
   })
 })

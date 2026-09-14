@@ -20,6 +20,13 @@ interface ServiceWorkerContainerLike {
   ready: Promise<{ pushManager: PushManagerLike; getNotifications?: () => Promise<Array<{ close(): void }>> }>
 }
 
+type ServiceWorkerRegistrationLike = Awaited<ServiceWorkerContainerLike['ready']>
+
+export interface PreparedPushContext {
+  registration: ServiceWorkerRegistrationLike
+  applicationServerKey: BufferSource
+}
+
 interface NavigatorLike {
   userAgent: string
   platform: string
@@ -91,6 +98,28 @@ export function urlBase64ToUint8Array(value: string) {
   return Uint8Array.from(raw, (character) => character.charCodeAt(0))
 }
 
+export async function preparePushNotifications(
+  dependencies: PushServiceDependencies = defaultDependencies(),
+): Promise<PreparedPushContext> {
+  if (getPushAvailability(dependencies) !== 'available') {
+    throw new Error('push_unavailable')
+  }
+
+  const [keyResponse, registration] = await Promise.all([
+    dependencies.fetchFn('/api/push/vapid-public-key'),
+    dependencies.navigatorObject.serviceWorker?.ready,
+  ])
+  if (!keyResponse.ok) throw new Error('push_configuration_unavailable')
+  const { publicKey } = await keyResponse.json() as { publicKey?: string }
+  if (!publicKey) throw new Error('push_configuration_unavailable')
+  if (!registration) throw new Error('push_service_worker_unavailable')
+
+  return {
+    registration,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  }
+}
+
 async function accessToken(dependencies: PushServiceDependencies) {
   const token = await dependencies.getAccessToken()
   if (!token) throw new Error('push_session_missing')
@@ -128,11 +157,16 @@ export async function getCurrentPushSubscription(
   })
   if (!response.ok) throw new Error('push_subscription_status_failed')
   const result = await response.json() as { active?: boolean }
-  return result.active === true ? subscription : null
+  if (result.active === true) return subscription
+
+  await writePushBinding({ userId: null, endpoint: null })
+  if (!await subscription.unsubscribe()) throw new Error('push_unsubscribe_failed')
+  return null
 }
 
 export async function enablePushNotifications(
   dependencies: PushServiceDependencies = defaultDependencies(),
+  prepared?: PreparedPushContext,
 ): Promise<PushEnableResult> {
   if (getPushAvailability(dependencies) !== 'available') {
     throw new Error('push_unavailable')
@@ -142,32 +176,27 @@ export async function enablePushNotifications(
   if (!notificationApi) throw new Error('push_unavailable')
   if (notificationApi.permission === 'denied') return 'blocked'
 
+  const context = prepared ?? await preparePushNotifications(dependencies)
+
   const permission = notificationApi.permission === 'granted'
     ? 'granted'
     : await notificationApi.requestPermission()
   if (permission !== 'granted') return 'blocked'
 
-  const keyResponse = await dependencies.fetchFn('/api/push/vapid-public-key')
-  if (!keyResponse.ok) throw new Error('push_configuration_unavailable')
-  const { publicKey } = await keyResponse.json() as { publicKey?: string }
-  if (!publicKey) throw new Error('push_configuration_unavailable')
-
-  const registration = await dependencies.navigatorObject.serviceWorker?.ready
-  if (!registration) throw new Error('push_service_worker_unavailable')
-  const tokenBefore = await accessToken(dependencies)
-  const userId = await dependencies.getUserId?.() ?? null
-  let existing = await registration.pushManager.getSubscription()
-  if (existing && !await getCurrentPushSubscription(dependencies)) {
-    await writePushBinding({ userId, endpoint: null })
-    if (!await existing.unsubscribe()) throw new Error('push_unsubscribe_failed')
-    existing = null
-  }
-  const subscription = existing ?? await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
-  })
-
+  let subscription: PushSubscriptionLike
   try {
+    subscription = await context.registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: context.applicationServerKey,
+    })
+  } catch {
+    throw new Error('push_browser_subscription_failed')
+  }
+
+  let userId: string | null = null
+  try {
+    const tokenBefore = await accessToken(dependencies)
+    userId = await dependencies.getUserId?.() ?? null
     if (tokenBefore !== await accessToken(dependencies)) throw new Error('push_session_changed')
     await persistSubscription(subscription, dependencies)
     if (tokenBefore !== await accessToken(dependencies)) throw new Error('push_session_changed')

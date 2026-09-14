@@ -37,6 +37,7 @@ vi.mock('../modules/notifications/push/pushService', () => ({
   disablePushNotifications: mocks.disablePushNotifications,
   getPushAvailability: () => 'unsupported',
   getCurrentPushSubscription: vi.fn(),
+  preparePushNotifications: vi.fn(),
   enablePushNotifications: vi.fn(),
 }))
 
