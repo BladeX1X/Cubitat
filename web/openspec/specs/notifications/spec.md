@@ -53,6 +53,13 @@
 - **THEN** al conceder el permiso Cubitat solicita inmediatamente la suscripcion al navegador
 - **AND** solo despues envia la suscripcion autenticada al servidor
 
+### Escenario: recuperar la configuracion push
+
+- **GIVEN** la clave VAPID y el service worker se prepararon correctamente
+- **WHEN** falla la consulta de una suscripcion anterior
+- **THEN** Cubitat conserva la preparacion y permite activar desde el siguiente toque
+- **AND** si la preparacion misma falla, muestra una accion de reintento que nunca queda inerte
+
 ### Escenario: iPhone o iPad sin instalar
 
 - **GIVEN** una persona abre Cubitat en iOS o iPadOS fuera del modo standalone

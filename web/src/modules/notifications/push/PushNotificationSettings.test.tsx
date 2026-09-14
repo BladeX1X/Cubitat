@@ -55,4 +55,32 @@ describe('PushNotificationSettings', () => {
     expect(await screen.findByText(/navegador no pudo activar/i)).toBeInTheDocument()
     expect(screen.queryByText(/push_browser_subscription_failed/i)).not.toBeInTheDocument()
   })
+
+  it('keeps the prepared context when checking the previous subscription fails', async () => {
+    const api = services({
+      getSubscription: vi.fn().mockRejectedValue(new Error('push_subscription_status_failed')),
+    })
+    render(<PushNotificationSettings services={api} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
+
+    await waitFor(() => expect(api.enable).toHaveBeenCalledWith(expect.objectContaining({
+      applicationServerKey: new Uint8Array([1, 2, 3]),
+    })))
+  })
+
+  it('retries preparation explicitly instead of rendering an inert activation button', async () => {
+    const prepared = { registration: {}, applicationServerKey: new Uint8Array([4, 5, 6]) }
+    const prepare = vi.fn()
+      .mockRejectedValueOnce(new Error('push_configuration_unavailable'))
+      .mockResolvedValueOnce(prepared)
+    const api = services({ prepare })
+    render(<PushNotificationSettings services={api} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /reintentar configuración/i }))
+
+    expect(await screen.findByRole('button', { name: /activar notificaciones/i })).toBeInTheDocument()
+    expect(prepare).toHaveBeenCalledTimes(2)
+    expect(api.enable).not.toHaveBeenCalled()
+  })
 })
