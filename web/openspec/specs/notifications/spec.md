@@ -46,6 +46,13 @@
 - **THEN** Cubitat registra el service worker y una suscripcion push asociada a su cuenta
 - **AND** la configuracion indica que las notificaciones estan activas en ese dispositivo
 
+### Escenario: conservar el gesto de activacion en Android
+
+- **GIVEN** Chrome Android exige que la suscripcion push nazca del toque de la persona
+- **WHEN** la pantalla de cuenta prepara la clave VAPID y el service worker antes de mostrar la accion disponible
+- **THEN** al conceder el permiso Cubitat solicita inmediatamente la suscripcion al navegador
+- **AND** solo despues envia la suscripcion autenticada al servidor
+
 ### Escenario: iPhone o iPad sin instalar
 
 - **GIVEN** una persona abre Cubitat en iOS o iPadOS fuera del modo standalone

@@ -4,6 +4,7 @@ import {
   enablePushNotifications,
   getPushAvailability,
   getCurrentPushSubscription,
+  preparePushNotifications,
   urlBase64ToUint8Array,
 } from './pushService'
 
@@ -66,10 +67,11 @@ describe('pushService', () => {
   beforeEach(() => vi.restoreAllMocks())
 
   it('does not treat a different account subscription as enabled', async () => {
-    const { dependencies, fetchFn } = createDependencies({ existing: true })
+    const { dependencies, fetchFn, unsubscribe } = createDependencies({ existing: true })
     fetchFn.mockReset().mockResolvedValue(new Response(JSON.stringify({ active: false })))
     await expect(getCurrentPushSubscription(dependencies)).resolves.toBeNull()
     expect(fetchFn).toHaveBeenCalledWith('/api/push/subscription', expect.objectContaining({ method: 'POST' }))
+    expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
   it('unsubscribes locally even when the server deletion fails', async () => {
@@ -93,7 +95,9 @@ describe('pushService', () => {
   it('subscribes only after permission and persists the current device', async () => {
     const { dependencies, fetchFn, permissionApi, subscribe } = createDependencies()
 
-    await expect(enablePushNotifications(dependencies)).resolves.toBe('enabled')
+    const prepared = await preparePushNotifications(dependencies)
+
+    await expect(enablePushNotifications(dependencies, prepared)).resolves.toBe('enabled')
 
     expect(permissionApi.requestPermission).toHaveBeenCalledOnce()
     expect(subscribe).toHaveBeenCalledWith({
@@ -105,6 +109,10 @@ describe('pushService', () => {
       headers: expect.objectContaining({ Authorization: 'Bearer user-token' }),
       body: JSON.stringify(subscriptionJson),
     }))
+    expect(permissionApi.requestPermission.mock.invocationCallOrder[0])
+      .toBeLessThan(subscribe.mock.invocationCallOrder[0])
+    expect(subscribe.mock.invocationCallOrder[0])
+      .toBeLessThan(fetchFn.mock.invocationCallOrder[1])
   })
 
   it('does not ask again when notifications are blocked', async () => {
