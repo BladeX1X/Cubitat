@@ -5,6 +5,24 @@ Permite visualizar la información detallada de un inmueble, contactar al anunci
 
 ## Requirements
 
+### Requirement: Dirección privada separada de la zona pública
+- GIVEN una publicación nueva o antigua contiene calle y número en `location`
+- WHEN se guarda o se migra el registro
+- THEN la dirección íntegra MUST conservarse en una tabla privada con RLS de propietario
+- AND `properties.location` MUST contener solamente municipio y provincia reconocidos por el catálogo, o `Cuba` si no se reconoce ninguna zona
+- AND la respuesta REST pública, la ficha, las tarjetas y los metadatos MUST NOT exponer la dirección privada
+- AND editar MUST recuperar el texto privado íntegro, sin adivinar divisiones de calles o barrios ambiguos
+- AND guardar dirección y propiedad MUST ser una única transacción, incluso para clientes antiguos.
+
+### Requirement: Coordenadas públicas aproximadas
+- GIVEN una publicación contiene coordenadas seleccionadas por el anunciante
+- WHEN se guarda o migra el registro
+- THEN las coordenadas exactas MUST conservarse solamente en una tabla privada con RLS de propietario
+- AND `properties.coordinates` MUST contener una posición aproximada en una cuadrícula de al menos 0.02 grados
+- AND clientes públicos y cachés anteriores MUST aproximar las coordenadas antes de renderizar mapas
+- AND el mapa de detalle MUST mostrar una zona aproximada sin marcador de domicilio exacto
+- AND editar MUST recuperar las coordenadas privadas autorizadas para el propietario.
+
 ### Requirement: Detalle del Inmueble en Pantalla Completa
 El sistema MUST mostrar la ficha técnica extendida del inmueble ocupando todo el ancho de la pantalla cuando un usuario selecciona una propiedad del listado.
 
@@ -13,6 +31,13 @@ El sistema MUST mostrar la ficha técnica extendida del inmueble ocupando todo e
 - WHEN hace clic sobre una tarjeta de propiedad (excluyendo los botones de carrusel y favoritos)
 - THEN el sistema MUST ocultar el listado/catálogo de resultados
 - AND el sistema MUST renderizar la vista de detalle `<PropertyDetail />` a pantalla completa con toda la información técnica
+
+#### Scenario: Mostrar preferencias de una permuta
+- GIVEN una propiedad de permuta contiene `features.exchangePreferences`
+- WHEN un visitante abre su ficha
+- THEN el sistema MUST mostrar qué tipo de inmueble busca el anunciante
+- AND MUST mostrar zona, mínimos, notas y diferencia de dinero únicamente cuando correspondan
+- AND una preferencia ausente o malformada MUST NOT romper la ficha
 
 #### Scenario: Detalle desde preview de mapa
 - GIVEN un usuario selecciona una propiedad en el mapa movil
@@ -28,6 +53,22 @@ El sistema MUST permitir la creación de anuncios de propiedades guardando borra
 - WHEN introduce información o añade fotos
 - THEN el sistema MUST guardar automáticamente el estado del formulario en `localStorage` o `IndexedDB` en tiempo real
 - AND si el anunciante recarga la página o se desconecta, el sistema MUST restaurar el borrador al abrir el formulario
+
+#### Scenario: Recuperación íntegra y aislada
+- GIVEN un usuario con un borrador nuevo o una edición sin terminar
+- WHEN abre de nuevo el mismo formulario, sin requerir parámetros especiales en la URL
+- THEN MUST restaurar automáticamente campos, paso y fotos desde IndexedDB antes de habilitar la edición
+- AND MUST aislar cada borrador por usuario y propiedad editada y conservar compatibilidad con borradores locales anteriores
+- AND MUST impedir que una lectura tardía o un cambio de cuenta sobrescriba datos de otro formulario
+- AND MUST mostrar un error si el dispositivo no puede guardar los cambios
+
+#### Scenario: Fallo total o parcial de fotos
+- GIVEN fotos seleccionadas, incluidas imágenes existentes de una edición
+- WHEN falla cualquier subida a Storage
+- THEN MUST impedir guardar la propiedad y mostrar éxito
+- AND MUST conservar fotos y campos para reintento
+- AND MUST limpiar únicamente objetos nuevos confirmados de ese lote, nunca fotos originales
+- AND WHEN todas las fotos y la propiedad se guardan correctamente MUST eliminar el borrador correspondiente sin que el autoguardado lo recree
 
 #### Scenario: Publicacion protegida por propietario
 - GIVEN un usuario intenta editar una propiedad

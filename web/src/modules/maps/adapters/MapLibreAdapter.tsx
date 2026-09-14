@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
-import { normalizePropertyCoordinates } from '../lib/propertyCoordinates'
+import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
@@ -56,7 +56,7 @@ export function MapLibreAdapter({
   const bounds = useMemo(() => {
     const mapBounds = new maplibregl.LngLatBounds()
     properties.forEach((property) => {
-      const coordinates = normalizePropertyCoordinates(property.coordinates)
+      const coordinates = approximatePropertyCoordinates(property.coordinates)
       if (coordinates) {
         mapBounds.extend([coordinates.longitude, coordinates.latitude])
       }

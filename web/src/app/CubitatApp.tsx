@@ -20,7 +20,8 @@ import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
-import { normalizePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
+import { approximatePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
+import { disablePushNotifications, reconcilePushSession } from '../modules/notifications/push/pushService'
 
 const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
   ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
@@ -251,14 +252,26 @@ export function CubitatApp() {
 
   // Manage authentication state
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
+    let authChanged = false
+    function updateAuth(nextUser: User | null) {
+      void reconcilePushSession(nextUser?.id ?? null).catch((error) => {
+        logSafeEvent({
+          module: 'auth',
+          action: 'push_session_cleanup_failed',
+          level: 'warn',
+          code: sanitizeErrorReason(error),
+        })
+      })
+      setUser(nextUser)
       setIsAuthLoading(false)
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!authChanged) updateAuth(session?.user ?? null)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setIsAuthLoading(false)
+      authChanged = true
+      updateAuth(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
@@ -373,7 +386,7 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             features: item.features || undefined,
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
-            coordinates: normalizePropertyCoordinates(item.coordinates) || { latitude: 23.1136, longitude: -82.3666 },
+            coordinates: approximatePropertyCoordinates(item.coordinates) || { latitude: 23.12, longitude: -82.36 },
             contact_info: getPropertyContactInfo(item.id, item.contact_info),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
@@ -678,6 +691,17 @@ export function CubitatApp() {
   }
 
   async function handleSignOut() {
+    try {
+      await disablePushNotifications()
+    } catch (error) {
+      // The local display binding is already invalidated; offline cleanup must not block logout.
+      logSafeEvent({
+        module: 'auth',
+        action: 'push_session_cleanup_failed',
+        level: 'warn',
+        code: sanitizeErrorReason(error),
+      })
+    }
     await supabase.auth.signOut()
     await clearCachedProperties()
     removeLegacyPublicationDraft()
@@ -1095,7 +1119,7 @@ export function CubitatApp() {
         </button>
         <button className={pageMode === 'publish' ? 'is-active' : ''} type="button" onClick={() => navigatePublish()}>
           <Building2 size={17} />
-          <span>Vender</span>
+          <span>Publicar</span>
         </button>
         <button className={pageMode === 'account' ? 'is-active' : ''} type="button" onClick={navigateAccount}>
           <UserRound size={17} />

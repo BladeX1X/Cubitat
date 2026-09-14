@@ -1,6 +1,7 @@
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
 import { AdvertiserContextPanel } from '../advertiser-context/AdvertiserContextPanel'
+import { ExchangePreferencesSummary } from '../../properties/components/ExchangePreferencesSummary'
 
 export function PropertyDetails({ property }: { property: ModerationProperty }) {
   return (
@@ -15,6 +16,9 @@ export function PropertyDetails({ property }: { property: ModerationProperty }) 
         <h4 className="text-sm font-bold text-neutral-800 mb-2">Descripción</h4>
         <p className="text-sm text-neutral-600 whitespace-pre-wrap">{property.description || 'Sin descripción'}</p>
       </div>
+      {property.operation === 'permuta' && (
+        <ExchangePreferencesSummary features={property.features} compact />
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
         <div><strong>Dormitorios:</strong> {property.bedrooms}</div>
         <div><strong>Baños:</strong> {property.bathrooms}</div>

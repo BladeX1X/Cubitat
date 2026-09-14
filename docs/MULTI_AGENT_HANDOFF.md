@@ -1,6 +1,13 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-09-07
+Última actualización: 2026-09-14
+
+> Estado vigente: los seis hallazgos de la auditoría Fase 1 del 2026-09-11
+> están corregidos, probados y desplegados. Las migraciones 55 a 59 están
+> sincronizadas y producción usa el Worker
+> `14a5dd39-9f47-4077-bed4-ef916c2bd24b`. El lote continúa en
+> `feature/web-push-notifications` y debe integrarse mediante PR; permanecen
+> pendientes los QA físicos/autenticados, contenido aprobado y revisión legal.
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -2396,3 +2403,103 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   Supabase DEV remoto vacío, aplicar exclusivamente las migraciones DEV,
   configurar secretos DEV no productivos y repetir KYC, rol agente, métricas,
   Cron/retención y matrices RLS/AAL2. No reutilizar producción.
+
+## 2026-09-12 - Antigravity - Cierre técnico de vulnerabilidades Fase 1 (Auditoría 2026-09-11)
+
+- Estado: **Implementación local y validación del arnés completada**. Los 6 hallazgos
+  de `docs/AUDITORIA_FASE1_2026-09-11.md` han sido subsanados y cubiertos con pruebas:
+  1. P1 - Aislamiento Push: migración `20260911040000_push_account_isolation.sql`,
+     `pushBinding.ts`, `pushService.ts` y desconexión limpia en `CubitatApp.tsx`.
+  2. P1 - Cola Push: verificación estricta de titular `n.user_id = s.user_id` en
+     `claim_pending_push_deliveries` e inmutabilidad de endpoints en DB.
+  3. P1 - Retiro RPC antigua: migración `20260911050000_retire_legacy_moderation_rpc.sql`
+     revocando ejecución de `set_property_ai_moderation` a todos los roles.
+  4. P1 - Integridad de subida de fotos: `uploadPublicationImages.ts` garantiza
+     atomicidad (reversión en fallos parciales, sin guardado trunco de anuncios y
+     preservación del borrador).
+  5. P2 - Autoguardado integral: `usePublicationDraft.ts` y almacenamiento offline
+     con persistencia de fotos, paso y campos en tiempo real.
+  6. P2 - Privacidad de dirección: `propertyLocation.ts`, migración
+     `20260911060000_private_property_addresses.sql` y censura de dirección exacta
+     en `DetailPage.tsx`.
+- Verificación del arnés:
+  - `npm run lint`: 0 errores, 0 advertencias (303 archivos).
+  - `npm run test:run`: 107 archivos, 441 pruebas pasando sin errores.
+  - `npm run build`: compilación de TypeScript limpia, Vite bundle completado (PWA
+    43 entradas / 1045.79 KiB), verificadores de aislamiento Fase 2 aprobados y
+    sitemap de 473 URLs generado.
+- Migraciones: registradas 55, 56 y 57 en `web/supabase/DATABASE_MIGRATIONS.md`.
+- Pendiente exacto: aplicación supervisada de las migraciones 55, 56 y 57 en el
+  entorno remoto de Supabase y despliegue del Worker con la nueva PWA.
+## Despliegue de privacidad geográfica y acción Publicar — 2026-09-13
+
+- **Producción:** Worker `6ed8a4ce-5407-4c07-b12b-4e7d492db70a`.
+- **Supabase:** migraciones 55 a 59 sincronizadas. `supabase db lint --linked
+  --level warning` terminó sin errores ni advertencias.
+- **QA pública:** 301 publicaciones con coordenadas comprobadas; cero puntos
+  fuera de la cuadrícula pública de `0.02` grados. La tabla
+  `property_private_coordinates` rechaza al rol anónimo con HTTP 401.
+- **QA web:** portada, resultados y ficha real respondieron correctamente; la
+  navegación muestra `Publicar` y el mapa de detalle indica que la ubicación
+  es aproximada y no representa la dirección exacta.
+- **Pendiente de datos:** la publicación QA abierta para Cárdenas conserva un
+  punto heredado cercano a La Habana. No constituye exposición de ubicación
+  exacta, pero requiere auditar la coherencia zona/coordenadas del inventario.
+
+## Navegación directa a permutas — 2026-09-13
+
+- **Producción:** Worker `7a3c33e1-52b8-4344-bf20-a6121ac317ea`.
+- **Cambio:** el tercer enlace del encabezado es `Permutar`; `Publicar gratis`
+  continúa como acción independiente. El menú móvil incorpora la misma
+  operación bajo `Explorar inmuebles`.
+- **Calidad:** lint limpio, 108 archivos/451 pruebas y build PWA correcto.
+- **QA productiva:** `Permutar` abrió
+  `/resultados?operacion=permuta`, activó el filtro `Permuta` y cargó 68
+  propiedades.
+
+## Preferencias estructuradas de permuta — 2026-09-13
+
+- **Producción:** Worker `9d998877-add2-4876-be30-35641127c7c4`.
+- **Cambio:** el paso comercial de `Permuta` captura tipo buscado, provincia,
+  municipio, dormitorios y área mínimos, notas y diferencia monetaria. El valor
+  estimado de la propiedad ofrecida es opcional.
+- **Datos:** se persiste en `features.exchangePreferences`; no requiere
+  migración. Edición y borradores completos hidratan la misma estructura.
+- **Lectura:** ficha pública y moderación muestran `Busca a cambio` mediante un
+  parser defensivo que omite JSON antiguo o malformado sin romper la página.
+- **Calidad:** lint limpio, 109 archivos/457 pruebas y build/PWA correcto con
+  verificadores de aislamiento y sitemap de 444 URLs.
+- **Corrección posterior al QA:** los selectores del tipo buscado y de la
+  diferencia monetaria muestran el valor seleccionado (`Casa`, `Negociable`,
+  etc.) en lugar del placeholder o un texto vacío. La regresión quedó cubierta
+  en `PublishPage.integrity.test.tsx` antes del despliegue final.
+- **QA productiva:** se comprobó la carga del Worker nuevo y del formulario
+  autenticado en `/publicar?qa=permuta-20260913`. La sección del paso 7 quedó
+  cubierta por pruebas de componente; falta una publicación física completa en
+  móvil con fotos de prueba para cerrar QA manual de persistencia remota.
+
+## Recuperación de moderación IA Groq — 2026-09-13
+
+- **Producción:** Worker `6ac6d562-e8f4-454c-8b77-0143c4ed3064`.
+- **Causa:** Groq retiró `meta-llama/llama-4-scout-17b-16e-instruct` el
+  2026-07-17; las solicitudes devolvían HTTP 404 y quedaban en revisión manual.
+- **Cambio:** el modelo multimodal se configura con `GROQ_MODEL` y producción
+  usa `qwen/qwen3.6-27b`. Los errores del proveedor se registran de forma segura,
+  pero la nota visible solo indica que corresponde revisión manual.
+- **Compatibilidad Qwen:** la solicitud usa un único mensaje `user`,
+  `max_completion_tokens`, JSON Object Mode y `reasoning_effort: none`, siguiendo
+  el contrato vigente de visión de Groq.
+- **Calidad:** lint limpio, 109 archivos/458 pruebas y build/PWA correcto con
+  verificadores de aislamiento y sitemap de 444 URLs.
+- **Operación:** los anuncios que fallaron antes del despliegue conservan su
+  resultado anterior hasta ejecutar `Reevaluar con IA`; las publicaciones nuevas
+  ya usan el modelo configurado.
+
+## Actualización automática tras reevaluación IA — 2026-09-13
+
+- El panel de moderación consulta únicamente la publicación reevaluada mientras
+  el Worker procesa la tarea asíncrona.
+- Al cambiar el estado o el mensaje de moderación, la tarjeta y los contadores se
+  actualizan sin recargar la página completa.
+- La espera está acotada a 30 segundos y muestra un aviso recuperable si expira.
+- **Producción:** Worker 14a5dd39-9f47-4077-bed4-ef916c2bd24b.

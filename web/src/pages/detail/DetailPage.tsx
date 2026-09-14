@@ -21,11 +21,14 @@ import {
   Building2,
 } from 'lucide-react'
 import { useEffect } from 'react'
+import { publicPropertyLocation } from '../../shared/lib/propertyLocation'
+import { approximatePropertyCoordinates } from '../../modules/maps/lib/propertyCoordinates'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
+import { ExchangePreferencesSummary } from '../../modules/properties/components/ExchangePreferencesSummary'
 import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { Property } from '../../modules/properties/types'
 import {
@@ -198,7 +201,7 @@ export function DetailPage({
     type: 'article'
   })
 
-  const locationParts = property.location ? property.location.split(',').map(s => s.trim()) : []
+  const locationParts = publicPropertyLocation(property.location).split(',').map(s => s.trim())
   let province = ''
   let municipality = ''
   let neighborhood = ''
@@ -417,7 +420,7 @@ export function DetailPage({
             </h1>
             <p className="detail-desktop-location">
               <MapPin size={18} />
-              <span>{property.location}</span>
+              <span>{publicPropertyLocation(property.location)}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -523,7 +526,7 @@ export function DetailPage({
 
                 <p className="detail-location-line flex items-center gap-2 text-sm text-neutral-500">
                   <MapPin size={16} className="text-[#035f53] shrink-0" />
-                  <span>{property.location}</span>
+                  <span>{publicPropertyLocation(property.location)}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -653,6 +656,10 @@ export function DetailPage({
                 )}
               </div>
             </div>
+
+            {property.operation === 'permuta' && (
+              <ExchangePreferencesSummary features={property.features} />
+            )}
 
             {/* Descripción */}
             <Card className="border border-neutral-100 rounded-xl shadow-sm overflow-hidden">
@@ -1102,24 +1109,26 @@ function ImageGallery({
 function DetailLocationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const markerRef = useRef<maplibregl.Marker | null>(null)
+  const coordinates = approximatePropertyCoordinates({ latitude, longitude })
+  const approximateLatitude = coordinates?.latitude
+  const approximateLongitude = coordinates?.longitude
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
+    if (!containerRef.current || mapRef.current || approximateLatitude == null || approximateLongitude == null) return
 
     const abortController = new AbortController()
+    const center: [number, number] = [approximateLongitude, approximateLatitude]
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return
 
       const style = await getOpenFreeMapStyle(abortController.signal)
-      const center: [number, number] = [longitude, latitude]
 
       mapRef.current = new maplibregl.Map({
         container: containerRef.current,
         style,
         center,
-        zoom: 15,
+        zoom: 12,
         attributionControl: false,
       })
 
@@ -1132,16 +1141,30 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
         'bottom-right',
       )
 
-      const el = document.createElement('div')
-      el.className = 'custom-detail-map-marker'
-      el.innerHTML = `
-        <div class="pulse-ring"></div>
-        <div class="marker-pin"></div>
-      `
-
-      markerRef.current = new maplibregl.Marker({ element: el })
-        .setLngLat(center)
-        .addTo(mapRef.current)
+      mapRef.current.once('load', () => {
+        if (!mapRef.current) return
+        mapRef.current.addSource('approximate-property-location', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: center },
+            properties: {},
+          },
+        })
+        mapRef.current.addLayer({
+          id: 'approximate-property-location-area',
+          type: 'circle',
+          source: 'approximate-property-location',
+          paint: {
+            'circle-radius': 64,
+            'circle-color': '#059669',
+            'circle-opacity': 0.2,
+            'circle-stroke-color': '#047857',
+            'circle-stroke-width': 2,
+            'circle-stroke-opacity': 0.75,
+          },
+        })
+      })
     }
 
     initMap().catch((error) => {
@@ -1157,14 +1180,26 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
 
     return () => {
       abortController.abort()
-      markerRef.current?.remove()
-      markerRef.current = null
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [latitude, longitude])
+  }, [approximateLatitude, approximateLongitude])
 
-  return <div ref={containerRef} className="h-full w-full bg-neutral-100" aria-label="Mapa de ubicación de la propiedad" />
+  return (
+    <div className="relative h-full w-full bg-neutral-100">
+      <div
+        ref={containerRef}
+        className="h-full w-full"
+        aria-label="Mapa de ubicación aproximada de la propiedad"
+      />
+      <div className="absolute bottom-4 left-4 right-4 max-w-sm rounded-lg bg-white/95 p-3 text-left shadow-lg">
+        <strong className="block text-sm text-neutral-900">Ubicación aproximada</strong>
+        <span className="block text-xs leading-relaxed text-neutral-600">
+          El marcador no representa la dirección exacta de la propiedad.
+        </span>
+      </div>
+    </div>
+  )
 }
 
 /* Subcomponente: Tarjeta de Contacto */
@@ -1324,7 +1359,7 @@ function ContactCard({
                 name="contact-message"
                 required
                 disabled={loading}
-                defaultValue={`Hola, estoy interesado en "${property.title}" en ${property.location}. Quisiera recibir más detalles.`}
+                defaultValue={`Hola, estoy interesado en "${property.title}" en ${publicPropertyLocation(property.location)}. Quisiera recibir más detalles.`}
                 className="min-h-[100px] text-xs"
               />
             </div>

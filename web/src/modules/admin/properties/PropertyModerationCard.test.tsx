@@ -45,4 +45,35 @@ describe('PropertyModerationCard visibility actions', () => {
     expect(screen.getByText('Oculta por propietario')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /volver a publicar/i })).not.toBeInTheDocument()
   })
+
+  it('shows structured exchange preferences when reviewing a swap', () => {
+    const exchangeProperty = property('pending_review')
+    exchangeProperty.operation = 'permuta'
+    exchangeProperty.features = {
+      exchangePreferences: {
+        propertyType: 'casa',
+        province: 'Matanzas',
+        municipality: 'Cárdenas',
+        minBedrooms: 3,
+        cashAdjustment: { direction: 'receive', amountUsd: 5000 },
+      },
+    }
+
+    render(<PropertyModerationCard
+      property={exchangeProperty}
+      expanded
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByRole('heading', { name: /busca a cambio/i })).toBeInTheDocument()
+    expect(screen.getByText(/cárdenas, matanzas/i)).toBeInTheDocument()
+    expect(screen.getByText(/espera recibir hasta USD 5,000/i)).toBeInTheDocument()
+  })
 })

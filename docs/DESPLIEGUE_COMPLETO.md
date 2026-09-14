@@ -136,76 +136,17 @@ Las migraciones viven en:
 web/supabase/migrations/
 ```
 
-#### 3.3.1 Alternativa: Ejecución Manual vía SQL Editor (Consola de Supabase)
+#### 3.3.1 Contingencia de CLI
 
-Si experimentas problemas de compatibilidad o arquitectura con la CLI de Supabase (por ejemplo, errores de tipo `No matching Supabase CLI binary package found`), puedes aplicar los esquemas manualmente:
+Si la CLI no funciona, corregir primero el entorno o seguir una ventana de
+mantenimiento supervisada. La ejecucion manual debe usar exactamente los SQL
+versionados, en orden cronologico, y reconciliar el historial de migraciones.
+Consultar `web/supabase/DATABASE_MIGRATIONS.md` antes de actuar.
 
-1.  **Acceder al Editor SQL**:
-    *   En el Dashboard de Supabase, navega a la sección **SQL Editor**.
-    *   Haz clic en **New query** (Nueva consulta).
-2.  **Ejecutar los Esquemas**:
-    *   Copia y ejecuta las sentencias de los archivos `.sql` en el orden listado dentro de la carpeta `web/supabase/migrations/`.
-3.  **Habilitar Tabla de Contactos (Leads)**:
-    *   Para habilitar la persistencia de leads de interés desde el formulario de contacto, copia y ejecuta el siguiente bloque:
-    ```sql
-    -- Crear la tabla de contactos
-    CREATE TABLE contacts (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        property_id UUID REFERENCES properties(id) ON DELETE CASCADE NOT NULL,
-        contact_name TEXT NOT NULL,
-        contact_phone TEXT NOT NULL,
-        message TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-    );
-
-    -- Habilitar RLS
-    ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-
-    -- Política para inserciones públicas
-    CREATE POLICY "Allow public insert for contacts" ON contacts 
-        FOR INSERT WITH CHECK (true);
-
-    -- Política para lecturas restringidas al dueño del anuncio y admins
-    CREATE POLICY "Allow read for owners and admins" ON contacts 
-        FOR SELECT USING (
-            auth.uid() IN (
-                SELECT user_id FROM properties WHERE id = contacts.property_id
-            ) OR (
-                SELECT role FROM profiles WHERE id = auth.uid()
-            ) = 'admin'
-        );
-
-    -- Función del disparador para notificar al propietario sobre un nuevo contacto
-    CREATE OR REPLACE FUNCTION public.handle_new_contact()
-    RETURNS TRIGGER AS $$
-    DECLARE
-      v_owner_id UUID;
-      v_property_title TEXT;
-    BEGIN
-      SELECT user_id, title INTO v_owner_id, v_property_title
-      FROM public.properties
-      WHERE id = NEW.property_id;
-
-      IF v_owner_id IS NOT NULL THEN
-        INSERT INTO public.notifications (user_id, title, message)
-        VALUES (
-          v_owner_id,
-          'Interés en tu propiedad',
-          NEW.contact_name || ' te ha enviado un mensaje por "' || v_property_title || '". Tel: ' || NEW.contact_phone
-        );
-      END IF;
-
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-    -- Crear el trigger sobre la tabla contacts
-    CREATE OR REPLACE TRIGGER on_new_contact
-      AFTER INSERT ON public.contacts
-      FOR EACH ROW
-      EXECUTE FUNCTION public.handle_new_contact();
-    ```
-
+No crear politicas alternativas de insercion publica para `contacts` ni
+`property_reports`: el flujo vigente exige Turnstile en el Worker y RPC
+exclusivas de `service_role`. El antiguo bloque SQL de esta guia fue retirado
+porque contradecia esa frontera.
 
 ### 3.4 Auth URLs
 
@@ -477,7 +418,7 @@ web/src/worker.ts
 Modelo configurado:
 
 ```txt
-meta-llama/llama-4-scout-17b-16e-instruct
+qwen/qwen3.6-27b
 ```
 
 Si `GROQ_API_KEY` no existe, el Worker deja la propiedad en:
@@ -570,6 +511,10 @@ npx wrangler secret put CF_ACCOUNT_ID
 npx wrangler secret put SUPABASE_MANAGEMENT_TOKEN
 npx wrangler secret put SUPABASE_PROJECT_ID
 npx wrangler secret put GA_SERVICE_ACCOUNT_JSON
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put VAPID_SUBJECT
+npx wrangler secret put VAPID_PUBLIC_KEY
+npx wrangler secret put VAPID_PRIVATE_KEY
 ```
 
 Notas:
@@ -578,6 +523,12 @@ Notas:
 - `CF_API_TOKEN` y `CF_ACCOUNT_ID`: metricas Cloudflare en `/api/metrics`.
 - `SUPABASE_MANAGEMENT_TOKEN` y `SUPABASE_PROJECT_ID`: reservado para metricas/gestion Supabase.
 - `GA_SERVICE_ACCOUNT_JSON`: reservado para integrar metricas GA por servidor.
+- `SUPABASE_SERVICE_ROLE_KEY`: acceso exclusivo del Worker para registrar
+  suscripciones y despachar la cola Push; nunca debe exponerse al cliente.
+- `VAPID_SUBJECT`: contacto del operador, por ejemplo
+  `mailto:soporte@cubitathome.com`.
+- `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY`: par VAPID generado una sola vez. La
+  clave publica se entrega al navegador; la privada existe solo como secreto.
 
 ### 6.4 Deploy Manual
 
@@ -765,6 +716,8 @@ Validar despues de deploy:
 5. Probar iOS Safari: compartir > Agregar a pantalla de inicio.
 6. Probar aviso offline/online.
 7. Probar actualizacion con dos deploys consecutivos.
+8. En `Mi cuenta`, activar notificaciones y confirmar la recepcion y el clic en
+   Chrome Android y en una instalacion de Safari iOS/iPadOS.
 
 En desarrollo local, Vite sirve un worker temporal de autolimpieza en `/sw.js`
 para retirar registros y caches Workbox antiguos del origen. Esto evita que
@@ -775,6 +728,25 @@ solo aplica a `vite serve`; el build productivo conserva `autoUpdate`,
 El service worker productivo no debe cachear Supabase REST. Esas respuestas
 pueden variar por sesion, rol, RLS y cambios recientes. El cache runtime se
 reserva para imagenes publicas de Supabase Storage.
+
+### 10.1 Activacion de Web Push
+
+Antes del deploy que habilite Web Push:
+
+1. Generar un par VAPID fuera del repositorio; no guardar la clave privada en
+   Git, `.env` versionados ni documentacion.
+2. Aplicar `20260911010000_add_web_push.sql` mediante el flujo normal de
+   migraciones y comprobar `supabase migration list --linked` y
+   `supabase db lint --linked`.
+3. Configurar los cuatro secretos de Web Push indicados en 6.3.
+4. Confirmar que `wrangler.jsonc` contiene el Cron de un minuto y desplegar el
+   Worker junto con el build PWA.
+5. Crear una notificacion real para un usuario de prueba y verificar que aparece
+   una entrega `sent`; al tocarla debe abrir su `action_path`.
+
+Rollback operativo: retirar el Cron y desplegar de nuevo detiene nuevos envios
+sin borrar las notificaciones internas. La base se corrige siempre con una
+migracion posterior; no se eliminan tablas productivas manualmente.
 
 ## 11. Validacion Antes De Subir
 
@@ -807,20 +779,16 @@ Ejecutar:
 npm run test:e2e:real
 ```
 
-## 12. Publicar Cambios A Main
+## 12. Integracion Mediante Pull Request
 
-Desde la raiz del repo:
+Trabajar en una rama `feature/`, `bugfix/`, `hotfix/`, `docs/` o `release/`;
+nunca hacer commits o push directo a `main`. Conservar cambios ajenos y añadir
+solo los archivos revisados de la tarea, sin secretos ni artefactos generados.
 
-```powershell
-git status --short
-git diff --stat
-git add .
-git commit -m "docs: add deployment runbook"
-git pull --rebase origin main
-git push origin main
-```
-
-Cloudflare debe desplegar automaticamente si esta conectado a GitHub.
+Antes de abrir el PR, ejecutar lint, pruebas y build. Revisar el diff y las
+migraciones, publicar la rama y completar la revision del PR. La fusion y el
+despliegue deben seguir la autorizacion y el procedimiento operativo vigente.
+Una comprobacion local no equivale a una verificacion de produccion.
 
 ## 13. Validacion Post Deploy
 

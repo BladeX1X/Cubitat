@@ -95,14 +95,25 @@ El sistema MUST capturar precios, tipo de moneda (USD, CUP, MLC) y contacto del 
 - GIVEN un anunciante que selecciona "Permuta" como tipo de operación
 - WHEN completa el formulario
 - THEN el sistema MUST permitir omitir el precio monetario
-- AND el sistema MUST habilitar un campo obligatorio para describir detalladamente qué busca a cambio de su propiedad (ej. "Busco apartamento de 2 habitaciones en Vedado")
+- AND el sistema MUST requerir el tipo de inmueble que busca, incluyendo la opción de tipo indiferente
+- AND el sistema MUST permitir indicar provincia, municipio, dormitorios mínimos, área mínima y notas adicionales
+- AND el sistema MUST permitir declarar si no existe diferencia de dinero, si es negociable, si pagaría hasta un monto o si espera recibir hasta un monto
+- AND cuando la diferencia tenga un sentido definido, el monto positivo en USD MUST ser obligatorio
+- AND el sistema MUST persistir estos datos estructurados dentro de `features.exchangePreferences`
+
+#### Scenario: Recuperar preferencias de permuta
+- GIVEN una permuta guardada o un borrador local con preferencias estructuradas
+- WHEN el anunciante vuelve a abrirla para editar
+- THEN el formulario MUST hidratar todos los campos de lo que busca y la diferencia de dinero
+- AND los datos MUST conservarse en el autoguardado del borrador
+- AND datos antiguos o malformados MUST NOT impedir abrir el formulario o la ficha
 
 ### Requirement: Moderación asistida por IA (Groq)
 El sistema MUST procesar de forma asíncrona todo nuevo anuncio enviado a través de la API `/api/ai-moderate` usando IA para moderar texto e imágenes.
 
 #### Scenario: Anuncio aprobado por IA
 - GIVEN un usuario envía una publicación completa con texto e imágenes
-- WHEN el Cloudflare Worker llama a la API de Groq con el modelo Llama 4
+- WHEN el Cloudflare Worker llama a la API de Groq con el modelo multimodal configurado
 - THEN la IA MUST analizar si cumple las normas (sin contenido ofensivo, spam o imágenes inapropiadas)
 - AND si el análisis es positivo, la IA retornará el estado `ai_approved`
 - AND el sistema actualizará automáticamente el anuncio a `published` en base de datos haciéndolo público de inmediato
@@ -113,6 +124,8 @@ El sistema MUST procesar de forma asíncrona todo nuevo anuncio enviado a travé
 - THEN retornará el estado `ai_rejected` junto con el motivo del rechazo
 - AND el anuncio quedará oculto en estado `rejected` notificando al propietario
 - AND si hay problemas de conexión con Groq, la API key está ausente o la respuesta es ambigua, el sistema MUST dejar el anuncio en `pending_review` para revisión manual del administrador
+- AND los mensajes visibles MUST NOT exponer errores internos, identificadores de modelos ni detalles técnicos del proveedor
+- AND el modelo MUST poder cambiarse mediante configuración del Worker sin modificar la lógica de moderación
 
 ### Requirement: Guardado y recuperacion de borrador
 El sistema MUST proteger el progreso del usuario mediante borradores locales automáticos y manuales.

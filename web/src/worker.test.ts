@@ -36,8 +36,58 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
-  it('does not expose a scheduler from the production worker', () => {
-    expect('scheduled' in worker).toBe(false)
+  it('authenticates ownership checks without exposing endpoints in a query string', async () => {
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/push/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: 'https://push.example.test/subscription-1' }),
+      }),
+      { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'service-role-key' },
+      createContext(),
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('exposes the Web Push dispatcher scheduler from the production worker', () => {
+    expect('scheduled' in worker).toBe(true)
+  })
+
+  it('publishes only the public VAPID key', async () => {
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/push/vapid-public-key'),
+      { ...createEnv(), VAPID_PUBLIC_KEY: 'public-vapid-key', VAPID_PRIVATE_KEY: 'private-vapid-key' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    const body = await response.text()
+    expect(JSON.parse(body)).toEqual({ publicKey: 'public-vapid-key' })
+    expect(body).not.toContain('private-vapid-key')
+  })
+
+  it('routes authenticated subscription writes through the Worker', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'user-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/push/subscription', {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer user-token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: 'https://push.example.test/subscription-1',
+          expirationTime: null,
+          keys: { p256dh: 'public-key-material', auth: 'auth-secret' },
+        }),
+      }),
+      { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'service-role-key' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(204)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('reads realtime GA4 active users with service-account credentials', async () => {
@@ -268,8 +318,55 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    const groqRequest = JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))
+    expect(groqRequest).toMatchObject({
+      model: 'qwen/qwen3.6-27b',
+      messages: [{ role: 'user' }],
+      max_completion_tokens: 512,
+      reasoning_effort: 'none',
+      response_format: { type: 'json_object' },
+    })
+    expect(groqRequest.messages).toHaveLength(1)
+    expect(groqRequest).not.toHaveProperty('max_tokens')
     expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
       p_status: 'ai_approved',
+      p_provider: 'groq',
+    })
+  })
+
+  it('keeps provider errors private and leaves moderation pending for manual review', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { message: 'The configured model does not exist.' },
+      }), { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      {
+        ...createEnv(),
+        GROQ_API_KEY: 'groq-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
+      p_status: 'pending_review',
+      p_message: 'Servicio de IA no disponible. Pendiente de revisión manual.',
       p_provider: 'groq',
     })
   })

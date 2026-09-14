@@ -15,9 +15,9 @@ describe('production Worker Phase 2 isolation', () => {
     expect(productionWorkerSource).not.toContain('review_kyc_request')
   })
 
-  it('keeps Cron and PHASE2_ENABLED out of the production Wrangler config', () => {
+  it('keeps PHASE2_ENABLED out while allowing the production Web Push Cron', () => {
     expect(productionWranglerConfig).not.toContain('PHASE2_ENABLED')
-    expect(productionWranglerConfig).not.toContain('"crons"')
+    expect(productionWranglerConfig).toContain('"crons"')
     expect(productionWranglerConfig).not.toContain('cubitat1-phase2-dev')
   })
 

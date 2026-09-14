@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { getEditableProperty } from './editablePropertyRepository'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -7,11 +7,9 @@ import {
   validateImageDimensions,
   validateImageFile,
 } from '../../shared/lib/imageSecurity'
-import {
-  readPublicationDraft,
-  removePublicationDraft,
-  savePublicationDraft,
-} from './draftStorage'
+import { usePublicationDraft } from './usePublicationDraft'
+import { uploadPublicationImages } from './uploadPublicationImages'
+import { editablePropertyAddress, publicPropertyLocation } from '../../shared/lib/propertyLocation'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import {
   OPERATION_VALUES,
@@ -44,8 +42,14 @@ import {
   normalizePhoneForStorage,
   validatePhone,
 } from './phone'
-import { dataUrlToBlob } from './imageDataUrl'
 import { buildAmenities, getAmenitySelections } from './amenities'
+import {
+  buildExchangePreferences,
+  emptyExchangePreferencesForm,
+  exchangePreferencesToForm,
+  isExchangePreferencesFormValid,
+  type ExchangePreferencesForm,
+} from '../../modules/properties/exchangePreferences'
 import {
   Select,
   SelectContent,
@@ -59,6 +63,7 @@ export type PublishFormData = {
   propertyType: CanonicalPropertyType
   description: string
   priceUsd: string
+  exchangePreferences: ExchangePreferencesForm
   
   // Dirección Estructurada
   streetAddress: string
@@ -115,6 +120,7 @@ const initialFormState: PublishFormData = {
   propertyType: 'casa',
   description: '',
   priceUsd: '',
+  exchangePreferences: { ...emptyExchangePreferencesForm },
   
   streetAddress: '',
   noStreetNumber: false,
@@ -262,7 +268,11 @@ type PublishPageProps = {
   editPropertyId?: string // When set, the form loads and updates an existing property
 }
 
-export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
+export function PublishPage(props: PublishPageProps) {
+  return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null])} {...props} />
+}
+
+function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
   const isEditMode = Boolean(editPropertyId)
 
   useSEO({
@@ -280,29 +290,20 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
   const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null)
 
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
+  const active = useRef(true)
+  useEffect(() => {
+    active.current = true
+    return () => { active.current = false }
+  }, [])
+  const draftValue = useMemo(() => ({ formData: { ...formData }, images, step, existingAmenities }), [formData, images, step, existingAmenities])
+  const draft = usePublicationDraft(userId, editPropertyId, editLoading, draftValue, saved => {
+    setFormData(previous => ({ ...previous, ...saved.formData }))
+    setImages(saved.images)
+    setStep(Math.max(1, Math.min(publishStepLabels.length, saved.step)))
+    if (saved.existingAmenities.length) setExistingAmenities(saved.existingAmenities)
+  })
   const progressPercent = Math.round((step / publishStepLabels.length) * 100)
   const currentStepLabel = publishStepLabels[step - 1] ?? 'Publicación'
-
-  // 1. Detectar e instalar borrador automáticamente si viene de la URL
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('load_draft=true')) {
-      try {
-        const parsed = readPublicationDraft(userId)
-        if (parsed) {
-          if (parsed && typeof parsed === 'object') {
-            setFormData((prev) => ({ ...prev, ...parsed }))
-          }
-        }
-      } catch (err) {
-        logSafeEvent({
-          module: 'publish',
-          action: 'load_auto_draft',
-          level: 'error',
-          code: sanitizeErrorReason(err),
-        })
-      }
-    }
-  }, [userId])
 
   useEffect(() => {
     if (isEditMode) return
@@ -311,7 +312,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
 
     async function loadSellerContact() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user || user.id !== userId) return
 
       const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || ''
       let profileName = ''
@@ -342,7 +343,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
     return () => {
       cancelled = true
     }
-  }, [isEditMode])
+  }, [isEditMode, userId])
 
   // Load existing property data when editing
   useEffect(() => {
@@ -354,7 +355,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (cancelled) return
-        if (!user) {
+        if (!user || user.id !== userId) {
           onBack()
           return
         }
@@ -374,34 +375,14 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           const amenitySelections = getAmenitySelections(features, amenities)
           const contactInfo = data.contact_info || {}
           const coords = data.coordinates || {}
-          const locationParts = (data.location || '').split(', ').map((s: string) => s.trim())
-          
-          let streetAddress = ''
-          let neighborhood = ''
-          let municipality = ''
-          let province = ''
-          
-          if (locationParts.length >= 4) {
-            streetAddress = locationParts[0]
-            neighborhood = locationParts[1]
-            municipality = locationParts[2]
-            province = locationParts[3]
-          } else if (locationParts.length === 3) {
-            streetAddress = locationParts[0]
-            municipality = locationParts[1]
-            province = locationParts[2]
-          } else if (locationParts.length === 2) {
-            municipality = locationParts[0]
-            province = locationParts[1]
-          } else if (locationParts.length === 1) {
-            streetAddress = locationParts[0]
-          }
+          const { streetAddress, neighborhood, municipality, province } = editablePropertyAddress(data.location || '')
 
           setFormData({
             operation: data.operation || 'venta',
             propertyType: data.property_type || 'casa',
             description: data.description || '',
             priceUsd: data.price_usd ? String(data.price_usd) : '',
+            exchangePreferences: exchangePreferencesToForm(features),
             streetAddress,
             noStreetNumber: streetAddress === 'Calle s/n',
             province,
@@ -457,12 +438,12 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
     return () => {
       cancelled = true
     }
-  }, [editPropertyId, onBack])
+  }, [editPropertyId, onBack, userId])
 
   // Guardar borrador manualmente al pulsar el botón
-  function handleSaveDraftManual() {
+  async function handleSaveDraftManual() {
     try {
-      savePublicationDraft(userId, formData)
+      await draft.save()
       setShowSaveFeedback(true)
       setTimeout(() => setShowSaveFeedback(false), 2500)
     } catch (err) {
@@ -493,13 +474,13 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
     })
   }
 
-  function handleClearDraft() {
+  async function handleClearDraft() {
     if (window.confirm('¿Estás seguro de que quieres borrar el borrador y empezar de cero?')) {
       setFormData(initialFormState)
       setImages([])
       setStep(1)
       try {
-        removePublicationDraft(userId)
+        await draft.discard(false)
       } catch (err) {
         logSafeEvent({
           module: 'publish',
@@ -563,8 +544,10 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       alert(`No se pudieron procesar ${uploadFailures} imágenes debido a un formato no admitido o un archivo corrupto.`)
     }
 
-    setImages((prev) => [...prev, ...newCompressed])
-    setIsCompressing(false)
+    if (active.current) {
+      setImages((prev) => [...prev, ...newCompressed])
+      setIsCompressing(false)
+    }
   }
 
   function removeImage(idx: number) {
@@ -576,56 +559,31 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
     
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (!user || user.id !== userId) {
       alert('Debes iniciar sesión para publicar.')
       return
     }
+
+    if (isSubmitting || isCompressing || !draft.ready) return
 
     if (images.length === 0 && !isEditMode) {
       alert('Por favor, agrega al menos una foto de la propiedad.')
       return
     }
 
+    const exchangePreferences = formData.operation === 'permuta'
+      ? buildExchangePreferences(formData.exchangePreferences)
+      : null
+    if (formData.operation === 'permuta' && !isExchangePreferencesFormValid(formData.exchangePreferences)) {
+      alert('Completa qué inmueble buscas y la diferencia de dinero antes de publicar la permuta.')
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
-      // 1. Subir imágenes a Storage
-      const uploadedImages: string[] = []
-      
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i]
-        if (img.dataUrl.startsWith('http')) {
-          uploadedImages.push(img.dataUrl)
-          continue
-        }
+      const uploadedImages = await uploadPublicationImages(user.id, images, supabase.storage.from('property_images'))
 
-        const fileName = `${user.id}/${Date.now()}-${i}.webp`
-        
-        const blob = dataUrlToBlob(img.dataUrl)
-        
-        const { error } = await supabase.storage
-          .from('property_images')
-          .upload(fileName, blob, { contentType: 'image/webp' })
-          
-        if (error) {
-          logSafeEvent({
-            module: 'publish',
-            action: 'upload_image',
-            level: 'error',
-            code: sanitizeErrorReason(error),
-          })
-          continue
-        }
-        
-        const { data: publicUrlData } = supabase.storage
-          .from('property_images')
-          .getPublicUrl(fileName)
-          
-        if (publicUrlData) {
-          uploadedImages.push(publicUrlData.publicUrl)
-        }
-      }
-      
       // 2. Preparar campos extra
       const features = {
         halfBathrooms: formData.halfBathrooms,
@@ -649,6 +607,9 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
         hasPatio: formData.hasPatio,
         hasPool: formData.hasPool,
         hasPortal: formData.hasPortal,
+        ...(formData.operation === 'permuta'
+          ? { exchangePreferences }
+          : {}),
       }
       
       const contactInfo = {
@@ -733,7 +694,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
           body: JSON.stringify({
             property_id: savedPropertyId,
             title: generatedTitle,
-            location: formData.location || '',
+            location: publicPropertyLocation(formData.location),
             description: formData.description || '',
             price_usd: formData.priceUsd,
             property_type: formData.propertyType,
@@ -755,18 +716,20 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       }
       
       setSubmitted(true)
-      removePublicationDraft(userId)
+      await draft.discard().catch(error => {
+        logSafeEvent({ module: 'publish', action: 'remove_published_draft', level: 'warn', code: sanitizeErrorReason(error) })
+      })
       setTimeout(() => {
         onSubmitSuccess()
       }, 3000)
-    } catch (error: any) {
+    } catch (error: unknown) {
       logSafeEvent({
         module: 'publish',
         action: 'publish_property',
         level: 'error',
         code: sanitizeErrorReason(error),
       })
-      alert(`Hubo un error al publicar la propiedad: ${error.message || JSON.stringify(error)}`)
+      alert(`Hubo un error al publicar la propiedad: ${error instanceof Error ? error.message : 'Inténtalo de nuevo.'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -812,7 +775,7 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
             <Button
               type="button"
               variant="outline"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCompressing || !draft.ready}
               onClick={isEditMode ? () => handleSubmit() : handleSaveDraftManual}
               className="border-white text-white bg-transparent hover:bg-white/10 rounded-full h-9 px-4 text-xs font-bold transition-all duration-200"
             >
@@ -833,7 +796,8 @@ export function PublishPage({ userId, onBack, onSubmitSuccess, editPropertyId }:
       {/* 2. Main Overlapping Grid Wrapper */}
       <div className="publish-container max-w-7xl mx-auto px-4">
         <div className="publish-main-card">
-          {editLoading ? (
+          {draft.error && <p role="alert" className="p-4 text-sm text-red-700">{draft.error}</p>}
+          {editLoading || !draft.ready ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
               <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
               <p className="text-xs font-bold text-neutral-500">Cargando datos de la propiedad...</p>
@@ -992,6 +956,10 @@ function PublishSidebarSteps({
       substeps: [
         { stepVal: 7, label: 'Valor venta/renta', validate: () => {
           const val = parseFloat(formData.priceUsd)
+          if (formData.operation === 'permuta') {
+            const validOptionalPrice = !formData.priceUsd || (!isNaN(val) && val >= 1000 && val <= 5000000)
+            return validOptionalPrice && isExchangePreferencesFormValid(formData.exchangePreferences)
+          }
           if (isNaN(val)) return false
           const min = formData.operation === 'alquiler' ? 100 : 1000
           return val >= min && val <= 5000000
@@ -1824,25 +1792,44 @@ function StepPrice({
 }) {
   const priceVal = parseFloat(formData.priceUsd)
   const isRental = formData.operation === 'alquiler'
+  const isExchange = formData.operation === 'permuta'
   const minPrice = isRental ? 100 : 1000
   const maxPrice = 5000000
 
   // Validaciones
-  const hasError = isNaN(priceVal) || priceVal < minPrice || priceVal > maxPrice
-  const isNextDisabled = !formData.priceUsd || hasError
+  const hasError = Boolean(formData.priceUsd) && (isNaN(priceVal) || priceVal < minPrice || priceVal > maxPrice)
+  const exchangeError = isExchange && !isExchangePreferencesFormValid(formData.exchangePreferences)
+  const isNextDisabled = isExchange ? hasError || exchangeError : !formData.priceUsd || hasError
+  const selectedExchangeTypeLabel = formData.exchangePreferences.propertyType === 'indiferente'
+    ? 'Cualquier tipo'
+    : formData.exchangePreferences.propertyType
+      ? propertyTypeLabels[formData.exchangePreferences.propertyType].publish
+      : ''
+  const cashAdjustmentLabel = {
+    none: 'Sin diferencia',
+    pay: 'Puedo pagar hasta',
+    receive: 'Espero recibir hasta',
+    negotiable: 'Negociable',
+  }[formData.exchangePreferences.cashAdjustment]
+  const updateExchange = (updates: Partial<ExchangePreferencesForm>) => onChange({
+    exchangePreferences: { ...formData.exchangePreferences, ...updates },
+  })
 
   return (
     <div className="space-y-5">
       <div className="publish-form-card-header">
         <span className="publish-step-bubble active text-[10px]">3</span>
-        <span>Precio - Valor venta/renta</span>
+        <span>{isExchange ? 'Valor y preferencias de permuta' : 'Precio - Valor venta/renta'}</span>
       </div>
 
       <div className="space-y-2">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Precio en USD *</label>
+        <label htmlFor="price-usd" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+          {isExchange ? 'Valor estimado del inmueble en USD (opcional)' : 'Precio en USD *'}
+        </label>
         <div className="relative">
           <Input
-            required
+            id="price-usd"
+            required={!isExchange}
             type="number"
             placeholder={isRental ? "Ej: 250" : "Ej: 45000"}
             value={formData.priceUsd}
@@ -1856,7 +1843,7 @@ function StepPrice({
         {hasError && formData.priceUsd && (
           <div className="text-[10px] text-red-500 font-bold space-y-0.5">
             {priceVal < minPrice && (
-              <span>El precio mínimo permitido para {isRental ? 'rentas' : 'ventas'} es de ${minPrice} USD.</span>
+              <span>El valor mínimo permitido es de ${minPrice} USD.</span>
             )}
             {priceVal > maxPrice && (
               <span>El precio máximo permitido es de $5,000,000 USD (verifica que no haya ceros adicionales).</span>
@@ -1865,9 +1852,112 @@ function StepPrice({
         )}
 
         <div className="p-3 bg-neutral-50 border border-neutral-100 rounded-lg text-[10px] text-neutral-500 leading-relaxed">
-          <strong>Regla de Mercado:</strong> Las propiedades en Cuba se cotizan y comercializan mayoritariamente en dólares norteamericanos (USD) o euros. Introduce el valor correspondiente en USD.
+          <strong>{isExchange ? 'Valor de referencia:' : 'Regla de mercado:'}</strong>{' '}
+          {isExchange
+            ? 'Puedes indicar cuánto estimas que vale la propiedad que ofreces. El dinero adicional de la permuta se especifica por separado.'
+            : 'Las propiedades en Cuba se cotizan y comercializan mayoritariamente en dólares norteamericanos (USD) o euros. Introduce el valor correspondiente en USD.'}
         </div>
       </div>
+
+      {isExchange && (
+        <div className="border-t border-neutral-200 pt-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-neutral-800">Qué buscas a cambio</h3>
+            <p className="mt-1 text-[11px] leading-relaxed text-neutral-500">
+              Describe el inmueble deseado y si habría una diferencia de dinero.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Tipo de inmueble *</label>
+              <Select value={formData.exchangePreferences.propertyType} onValueChange={(value) => updateExchange({ propertyType: value as ExchangePreferencesForm['propertyType'] })}>
+                <SelectTrigger className="h-11 border-neutral-200 text-xs" aria-label="Tipo de inmueble que busca">
+                  <SelectValue placeholder="Selecciona un tipo">{selectedExchangeTypeLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="indiferente">Cualquier tipo</SelectItem>
+                  {PROPERTY_TYPE_VALUES.map((type) => <SelectItem key={type} value={type}>{propertyTypeLabels[type].publish}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Provincia deseada</label>
+              <Select value={formData.exchangePreferences.province} onValueChange={(province) => updateExchange({ province, municipality: '' })}>
+                <SelectTrigger className="h-11 border-neutral-200 text-xs" aria-label="Provincia que busca">
+                  <SelectValue placeholder="Cualquier provincia">{formData.exchangePreferences.province}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {cubanProvinces.map((province) => <SelectItem key={province} value={province}>{province}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Municipio deseado</label>
+              <Select
+                value={formData.exchangePreferences.municipality}
+                onValueChange={(municipality) => updateExchange({ municipality })}
+              >
+                <SelectTrigger disabled={!formData.exchangePreferences.province} className="h-11 border-neutral-200 text-xs" aria-label="Municipio que busca">
+                  <SelectValue placeholder="Cualquier municipio">{formData.exchangePreferences.municipality}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {(cubanMunicipalities[formData.exchangePreferences.province] || []).map((municipality) => (
+                    <SelectItem key={municipality} value={municipality}>{municipality}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label htmlFor="exchange-bedrooms" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Dormitorios mín.</label>
+                <Input id="exchange-bedrooms" type="number" min="0" max="20" value={formData.exchangePreferences.minBedrooms} onChange={(event) => updateExchange({ minBedrooms: Math.max(0, Number(event.target.value)) })} className="h-11 border-neutral-200 text-xs" />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="exchange-area" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Área mín. m²</label>
+                <Input id="exchange-area" type="number" min="1" value={formData.exchangePreferences.minAreaM2} onChange={(event) => updateExchange({ minAreaM2: event.target.value })} className="h-11 border-neutral-200 text-xs" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Diferencia de dinero</label>
+              <Select value={formData.exchangePreferences.cashAdjustment} onValueChange={(value) => updateExchange({ cashAdjustment: value as ExchangePreferencesForm['cashAdjustment'], cashAmountUsd: '' })}>
+                <SelectTrigger className="h-11 border-neutral-200 text-xs" aria-label="Diferencia de dinero">
+                  <SelectValue>{cashAdjustmentLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin diferencia</SelectItem>
+                  <SelectItem value="pay">Puedo pagar hasta</SelectItem>
+                  <SelectItem value="receive">Espero recibir hasta</SelectItem>
+                  <SelectItem value="negotiable">Negociable</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(formData.exchangePreferences.cashAdjustment === 'pay' || formData.exchangePreferences.cashAdjustment === 'receive') && (
+              <div className="space-y-1">
+                <label htmlFor="exchange-cash" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Monto máximo en USD *</label>
+                <Input id="exchange-cash" type="number" min="1" max="5000000" value={formData.exchangePreferences.cashAmountUsd} onChange={(event) => updateExchange({ cashAmountUsd: event.target.value })} className="h-11 border-neutral-200 text-xs" />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="exchange-notes" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Otros detalles</label>
+            <Textarea id="exchange-notes" maxLength={500} placeholder="Ej: cerca del mar, planta baja o con posibilidad de ampliar" value={formData.exchangePreferences.notes} onChange={(event) => updateExchange({ notes: event.target.value })} className="min-h-24 border-neutral-200 text-xs" />
+            <span className="block text-right text-[9px] text-neutral-400">{formData.exchangePreferences.notes.length}/500</span>
+          </div>
+
+          {exchangeError && (
+            <p className="text-[10px] font-bold text-red-500">
+              Selecciona qué tipo de inmueble buscas y completa el monto cuando corresponda.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-between pt-4 border-t border-neutral-100">
         <Button

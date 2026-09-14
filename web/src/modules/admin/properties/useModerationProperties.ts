@@ -11,6 +11,7 @@ import {
   restoreModerationProperty,
   updateModerationPropertyStatus,
 } from './propertiesRepository'
+import { waitForModerationResult } from './moderationPolling'
 
 const EMPTY_COUNTS: StatusCounts = {
   pending_review: 0,
@@ -175,7 +176,16 @@ export function useModerationProperties() {
           : item
       )))
       await requestAiReevaluation(property)
-      setNotice('La reevaluación por IA ha iniciado. Refresca la página en unos segundos.')
+      const result = await waitForModerationResult(property.id)
+
+      if (result) {
+        setProperties((current) => current.map((item) => (
+          item.id === property.id ? { ...item, ...result } : item
+        )))
+        setNotice('La reevaluación terminó y la tarjeta se actualizó.')
+      } else {
+        setNotice('La reevaluación está tardando más de lo esperado. Puedes intentarlo nuevamente.')
+      }
       await refreshCounts()
     } catch (reason) {
       logSafeEvent({

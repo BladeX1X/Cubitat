@@ -6,6 +6,11 @@ import {
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
+import {
+  dispatchPendingPushNotifications,
+  handlePushSubscriptionRequest,
+  type PushNotificationEnv,
+} from './worker/push-notifications';
 
 export { RateLimiter };
 
@@ -22,7 +27,7 @@ interface RateLimiterNamespace {
   get(id: unknown): RateLimiterStub;
 }
 
-export interface Env extends PublicSubmissionEnv {
+export interface Env extends PublicSubmissionEnv, PushNotificationEnv {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
@@ -38,6 +43,10 @@ export interface Env extends PublicSubmissionEnv {
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
+  GROQ_MODEL?: string;
+  VAPID_SUBJECT?: string;
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
   TURNSTILE_VERIFY_URL?: string;
   RATE_LIMITER: RateLimiterNamespace;
 }
@@ -624,6 +633,19 @@ export function createWorker(options: WorkerOptions = {}) {
 
     const path = url.pathname;
 
+    if (path === '/api/push/vapid-public-key') {
+      if (request.method !== 'GET') return jsonResponse({ error: 'Method not allowed' }, 405);
+      if (!env.VAPID_PUBLIC_KEY) return jsonResponse({ error: 'Unavailable' }, 503);
+      return withSecurityHeaders(jsonResponse({ publicKey: env.VAPID_PUBLIC_KEY }), url);
+    }
+
+    if (path === '/api/push/subscription') {
+      if (request.method !== 'PUT' && request.method !== 'DELETE' && request.method !== 'POST') {
+        return jsonResponse({ error: 'Method not allowed' }, 405);
+      }
+      return withSecurityHeaders(await handlePushSubscriptionRequest(request, env), url);
+    }
+
     if ((path === '/api/public/contact' || path === '/api/public/report') && request.method === 'POST') {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
       const isContact = path === '/api/public/contact';
@@ -732,7 +754,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           const userContent: any[] = [
             {
               type: 'text',
-              text: `Título: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} USD\nTipo: ${body.property_type}`
+              text: `${systemPrompt}\n\nAnuncio a moderar:\nTítulo: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} USD\nTipo: ${body.property_type}`
             }
           ];
 
@@ -780,6 +802,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
           try {
             const groqApiKey = (env.GROQ_API_KEY || '').trim().replace(/[\r\n]/g, '');
+            const groqModel = env.GROQ_MODEL?.trim() || 'qwen/qwen3.6-27b';
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -787,13 +810,13 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 'Authorization': `Bearer ${groqApiKey}`
               },
               body: JSON.stringify({
-                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                model: groqModel,
                 messages: [
-                  { role: 'system', content: systemPrompt },
                   { role: 'user', content: userContent }
                 ],
-                temperature: 0.1,
-                max_tokens: 512,
+                temperature: 0.7,
+                max_completion_tokens: 512,
+                reasoning_effort: 'none',
                 response_format: { type: 'json_object' }
               })
             });
@@ -805,7 +828,11 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
               if (groqRes.status === 429) {
                 finalReason = 'Servicio de IA temporalmente saturado. Pendiente de revisión manual.';
               } else {
-                finalReason = `Error de API de IA (${groqRes.status}): ${groqJson?.error?.message || 'Desconocido'}`;
+                logWorkerEvent('warn', 'moderation_provider_request_failed', {
+                  source: 'groq',
+                  status: groqRes.status,
+                });
+                finalReason = 'Servicio de IA no disponible. Pendiente de revisión manual.';
               }
             } else {
               const rawText = groqJson?.choices?.[0]?.message?.content || '';
@@ -1415,4 +1442,11 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
   };
 }
 
-export default createWorker();
+const productionWorker = createWorker();
+
+export default {
+  fetch: productionWorker.fetch,
+  scheduled(_controller: unknown, env: Env, ctx: WorkerExecutionContext) {
+    ctx.waitUntil(dispatchPendingPushNotifications(env));
+  },
+};

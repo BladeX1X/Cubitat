@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Header } from './Header'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
 
@@ -22,6 +22,10 @@ const callbacks = {
 }
 
 describe('Header mobile menu', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
     document.body.classList.remove('has-mobile-menu-open')
@@ -42,6 +46,27 @@ describe('Header mobile menu', () => {
     expect(screen.queryByRole('complementary', { name: 'Menú móvil' })).not.toBeInTheDocument()
     expect(document.body).not.toHaveClass('has-mobile-menu-open')
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('uses Permutar as the third discovery action', () => {
+    render(<Header user={null} {...callbacks} />)
+
+    const permutarLink = screen.getByRole('link', { name: 'Permutar' })
+    expect(permutarLink).toHaveAttribute('href', '/resultados')
+
+    fireEvent.click(permutarLink)
+
+    expect(callbacks.handleOperationNavigation).toHaveBeenCalledWith('permuta')
+    expect(screen.queryByRole('link', { name: 'Publicar' })).not.toBeInTheDocument()
+  })
+
+  it('offers Permutar in the mobile discovery menu', () => {
+    render(<Header user={null} {...callbacks} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Permutar' }))
+
+    expect(callbacks.handleOperationNavigation).toHaveBeenCalledWith('permuta')
   })
 
   it('permite solicitar la instalación desde el menú móvil', () => {

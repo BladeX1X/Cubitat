@@ -39,6 +39,14 @@ vi.mock('../../shared/hooks/useSEO', () => ({
   useSEO: vi.fn(),
 }))
 
+vi.mock('../../modules/maps/lib/openFreeMapStyle', () => ({
+  getOpenFreeMapStyle: vi.fn().mockResolvedValue({
+    version: 8,
+    sources: {},
+    layers: [],
+  }),
+}))
+
 vi.mock('../../shared/ui/TurnstileWidget', async () => {
   const { useEffect, useRef } = await import('react')
 
@@ -135,6 +143,15 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  it('does not expose a legacy street address in detail, contact text or SEO', () => {
+    const { container } = render(<DetailPage
+      property={{ ...mockProperty, location: 'Calle Sintética 999, apartamento 42, Playa, La Habana' }}
+      onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters}
+    />)
+    expect(container.innerHTML).not.toContain('Calle Sintética 999')
+    expect(JSON.stringify(vi.mocked(useSEO).mock.lastCall)).not.toContain('Calle Sintética 999')
+    expect(screen.getAllByText('Playa, La Habana').length).toBeGreaterThan(0)
+  })
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
@@ -165,6 +182,53 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getAllByText('Casa independiente en Playa')[0]).toBeInTheDocument()
     expect(screen.getAllByText('USD 68,000')[0]).toBeInTheDocument()
     expect(screen.getAllByText('Playa, La Habana')[0]).toBeInTheDocument()
+  })
+
+  it('muestra lo que busca el anunciante en una permuta', () => {
+    render(
+      <DetailPage
+        property={{
+          ...mockProperty,
+          operation: 'permuta',
+          features: {
+            exchangePreferences: {
+              propertyType: 'apartamento',
+              province: 'La Habana',
+              municipality: 'Playa',
+              minBedrooms: 2,
+              minAreaM2: 70,
+              notes: 'Preferiblemente cerca del mar.',
+              cashAdjustment: { direction: 'pay', amountUsd: 15000 },
+            },
+          },
+        }}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    expect(screen.getByRole('heading', { name: /busca a cambio/i })).toBeInTheDocument()
+    expect(screen.getByText('Departamento')).toBeInTheDocument()
+    expect(screen.getAllByText('Playa, La Habana').length).toBeGreaterThan(0)
+    expect(screen.getByText(/puede pagar hasta USD 15,000/i)).toBeInTheDocument()
+    expect(screen.getByText('Preferiblemente cerca del mar.')).toBeInTheDocument()
+  })
+
+  it('identifica el mapa como una ubicación aproximada', () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mapa' })[0])
+
+    expect(screen.getAllByText('Ubicación aproximada').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/el marcador no representa la dirección exacta/i).length).toBeGreaterThan(0)
   })
 
   it('debería registrar metadatos SEO dinámicos con Open Graph', () => {

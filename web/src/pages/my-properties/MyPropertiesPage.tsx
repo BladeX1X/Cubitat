@@ -12,7 +12,8 @@ import {
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
-import { readPublicationDraft, removePublicationDraft } from '../publish/draftStorage'
+import { readPublicationDraft } from '../publish/draftStorage'
+import { removeCompleteDraft } from '../publish/completeDraftStorage'
 import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/properties/propertyStatus'
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
@@ -353,7 +354,13 @@ export function MyPropertiesPage({
         '¿Estás seguro de que deseas eliminar este borrador local? Se perderán todos los datos guardados en tu navegador.',
       )
       if (!confirmed) return
-      removePublicationDraft(userId)
+      try {
+        await removeCompleteDraft(userId)
+      } catch (error) {
+        logSafeEvent({ module: 'publish', action: 'delete_local_draft', level: 'warn', code: sanitizeErrorReason(error) })
+        alert('No se pudo eliminar el borrador. Inténtalo de nuevo.')
+        return
+      }
       setProperties((prev) => prev.filter((p) => p.id !== 'local_draft_id'))
       return
     }

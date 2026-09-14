@@ -1,7 +1,7 @@
 import type { FeatureCollection, Point } from 'geojson'
 import { formatPrice } from '../../../shared/lib/formatPrice'
 import type { Property } from '../../properties/types'
-import { normalizePropertyCoordinates } from './propertyCoordinates'
+import { approximatePropertyCoordinates } from './propertyCoordinates'
 
 export function createPropertySourceData(
   properties: Property[],
@@ -10,7 +10,7 @@ export function createPropertySourceData(
   return {
     type: 'FeatureCollection',
     features: properties.flatMap((property) => {
-      const coordinates = normalizePropertyCoordinates(property.coordinates)
+      const coordinates = approximatePropertyCoordinates(property.coordinates)
       if (!coordinates) return []
 
       return [

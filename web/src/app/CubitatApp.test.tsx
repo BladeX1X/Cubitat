@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => {
   }
 
   return {
+    reconcilePushSession: vi.fn(),
+    disablePushNotifications: vi.fn(),
     signOut,
     clearCachedProperties,
     removeLegacyPublicationDraft,
@@ -29,6 +31,14 @@ const mocks = vi.hoisted(() => {
     user,
   }
 })
+
+vi.mock('../modules/notifications/push/pushService', () => ({
+  reconcilePushSession: mocks.reconcilePushSession,
+  disablePushNotifications: mocks.disablePushNotifications,
+  getPushAvailability: () => 'unsupported',
+  getCurrentPushSubscription: vi.fn(),
+  enablePushNotifications: vi.fn(),
+}))
 
 vi.mock('../shared/lib/supabaseClient', () => ({
   supabase: {
@@ -102,6 +112,8 @@ describe('CubitatApp', () => {
     window.localStorage.setItem('20260710-clear-stale-pwa-v2', 'done')
 
     mocks.signOut.mockResolvedValue({ error: null })
+    mocks.reconcilePushSession.mockResolvedValue(undefined)
+    mocks.disablePushNotifications.mockResolvedValue(undefined)
     mocks.clearCachedProperties.mockResolvedValue(undefined)
     mocks.getSession.mockResolvedValue({
       data: { session: { user: mocks.user } },
@@ -146,9 +158,11 @@ describe('CubitatApp', () => {
 
     await waitFor(() => {
       expect(mocks.signOut).toHaveBeenCalledOnce()
+      expect(mocks.disablePushNotifications).toHaveBeenCalledOnce()
       expect(mocks.clearCachedProperties).toHaveBeenCalledOnce()
       expect(mocks.removeLegacyPublicationDraft).toHaveBeenCalledOnce()
     })
+    expect(mocks.disablePushNotifications.mock.invocationCallOrder[0]).toBeLessThan(mocks.signOut.mock.invocationCallOrder[0])
     expect(mocks.signOut.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.clearCachedProperties.mock.invocationCallOrder[0],
     )
@@ -158,5 +172,23 @@ describe('CubitatApp', () => {
     expect(window.location.pathname).toBe('/')
     expect(await screen.findByText('Inicio Cubitat')).toBeInTheDocument()
     expect(await screen.findByRole('dialog', { name: /iniciar sesión/i })).toBeInTheDocument()
+  })
+
+  it('reconciles push for initial session and account changes', async () => {
+    render(<AuthModalProvider><CubitatApp /></AuthModalProvider>)
+    await waitFor(() => expect(mocks.reconcilePushSession).toHaveBeenCalledWith('admin-user'))
+    const callback = mocks.onAuthStateChange.mock.calls[0][0]
+    callback('SIGNED_IN', { user: { ...mocks.user, id: 'second-user' } })
+    await waitFor(() => expect(mocks.reconcilePushSession).toHaveBeenCalledWith('second-user'))
+    callback('SIGNED_OUT', null)
+    await waitFor(() => expect(mocks.reconcilePushSession).toHaveBeenCalledWith(null))
+  })
+
+  it('nombra Publicar a la acción principal de la navegación móvil', async () => {
+    window.history.replaceState(null, '', '/')
+    render(<AuthModalProvider><CubitatApp /></AuthModalProvider>)
+
+    expect(await screen.findByRole('button', { name: 'Publicar' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vender' })).not.toBeInTheDocument()
   })
 })
