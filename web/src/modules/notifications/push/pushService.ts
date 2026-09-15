@@ -65,6 +65,15 @@ function defaultDependencies(): PushServiceDependencies {
   }
 }
 
+function request(
+  dependencies: PushServiceDependencies,
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+) {
+  const { fetchFn } = dependencies
+  return fetchFn(input, init)
+}
+
 function isIOS(navigatorObject: NavigatorLike) {
   return /iPad|iPhone|iPod/.test(navigatorObject.userAgent)
     || (navigatorObject.platform === 'MacIntel' && navigatorObject.maxTouchPoints > 1)
@@ -106,7 +115,7 @@ export async function preparePushNotifications(
   }
 
   const [keyResponse, registration] = await Promise.all([
-    dependencies.fetchFn('/api/push/vapid-public-key'),
+    request(dependencies, '/api/push/vapid-public-key'),
     dependencies.navigatorObject.serviceWorker?.ready,
   ])
   if (!keyResponse.ok) throw new Error('push_configuration_unavailable')
@@ -131,7 +140,7 @@ async function persistSubscription(
   dependencies: PushServiceDependencies,
 ) {
   const token = await accessToken(dependencies)
-  const response = await dependencies.fetchFn('/api/push/subscription', {
+  const response = await request(dependencies, '/api/push/subscription', {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -150,7 +159,7 @@ export async function getCurrentPushSubscription(
   const subscription = await registration?.pushManager.getSubscription()
   if (!subscription) return null
   const token = await accessToken(dependencies)
-  const response = await dependencies.fetchFn('/api/push/subscription', {
+  const response = await request(dependencies, '/api/push/subscription', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ endpoint: subscription.endpoint }),
@@ -221,7 +230,7 @@ export async function disablePushNotifications(
   // Cancel locally before network I/O, including offline logout.
   if (!await subscription.unsubscribe()) throw new Error('push_unsubscribe_failed')
   const token = await accessToken(dependencies)
-  const response = await dependencies.fetchFn('/api/push/subscription', {
+  const response = await request(dependencies, '/api/push/subscription', {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,

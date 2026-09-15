@@ -115,6 +115,19 @@ describe('pushService', () => {
       .toBeLessThan(fetchFn.mock.invocationCallOrder[1])
   })
 
+  it('invokes the injected fetch function without binding it to the dependencies object', async () => {
+    const { dependencies } = createDependencies()
+    const fetchFn = vi.fn(function (this: unknown) {
+      if (this !== undefined) return Promise.reject(new TypeError('Illegal invocation'))
+      return Promise.resolve(new Response(JSON.stringify({ publicKey: 'AQID' }), { status: 200 }))
+    })
+    const unboundDependencies = { ...dependencies, fetchFn: fetchFn as typeof fetch }
+
+    await expect(preparePushNotifications(unboundDependencies)).resolves.toEqual(expect.objectContaining({
+      applicationServerKey: new Uint8Array([1, 2, 3]),
+    }))
+  })
+
   it('does not ask again when notifications are blocked', async () => {
     const { dependencies, permissionApi } = createDependencies({ permission: 'denied' })
     await expect(enablePushNotifications(dependencies)).resolves.toBe('blocked')
