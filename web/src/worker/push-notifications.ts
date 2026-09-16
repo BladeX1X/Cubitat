@@ -17,6 +17,7 @@ export interface PushNotificationEnv {
 
 interface ClaimedDelivery {
   delivery_id: string
+  notification_id: string
   subscription_id: string
   endpoint: string
   p256dh: string
@@ -226,6 +227,7 @@ export async function dispatchPendingPushNotifications(
           title: delivery.title.slice(0, 120),
           body: delivery.message.slice(0, 280),
           actionPath: delivery.action_path,
+          notificationId: delivery.notification_id,
           endpoint: delivery.endpoint,
           userId: delivery.user_id,
         }),

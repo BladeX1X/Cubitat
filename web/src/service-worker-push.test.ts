@@ -17,6 +17,12 @@ describe('service worker push contract', () => {
     expect(clickHandler).toContain('opened?.focus()')
   })
 
+  it('carries the notification id to the authenticated app for read acknowledgement', () => {
+    expect(serviceWorkerSource).toContain("const PUSH_NOTIFICATION_ID_PARAM = 'cubitat_notification'")
+    expect(serviceWorkerSource).toContain('actionPathWithNotification(payload.actionPath, payload.notificationId)')
+    expect(serviceWorkerSource).toContain('target.searchParams.set(PUSH_NOTIFICATION_ID_PARAM, notificationId)')
+  })
+
   it('accepts only same-origin absolute paths', () => {
     expect(serviceWorkerSource).toContain("startsWith('/')")
     expect(serviceWorkerSource).toContain("startsWith('//')")

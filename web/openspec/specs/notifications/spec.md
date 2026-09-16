@@ -102,5 +102,7 @@
 - **GIVEN** el service worker muestra una notificacion con un `action_path` interno valido
 - **WHEN** la persona toca la notificacion
 - **THEN** Cubitat enfoca una ventana existente o abre una nueva en ese destino
+- **AND** al restaurar la sesion autenticada marca ese aviso como leido y lo retira de la bandeja de pendientes
+- **AND** elimina de la URL el identificador interno usado para confirmar la lectura
 - **AND** una ventana oculta o un cambio posterior del vinculo local no deja el toque sin respuesta
 - **AND** rechaza rutas externas, relativas o malformadas

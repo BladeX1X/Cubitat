@@ -291,6 +291,16 @@ migraciones 53 y 54, sin reescribir historial aplicado. `migration list
     de acuerdo con las rutinas JSON del catálogo que utilizan, para mantener
     limpio el lint remoto sin modificar su resultado.
 
+60. `20260916010000_include_notification_id_in_push_claim.sql`: amplía el
+    reclamo privado de entregas Push para devolver `notification_id`. El Worker
+    lo incorpora al payload y la aplicación autenticada puede marcar el aviso
+    exacto como leído después de abrirlo desde el sistema, siempre bajo RLS y
+    sin incluir credenciales en el service worker.
+
+Estado 2026-09-16: **aplicada en producción**. `migration list --linked`
+confirma la versión local/remota `20260916010000`, el dry-run posterior indica
+que la base está actualizada y `db lint --linked` no reporta errores.
+
 ### DEV-F2. `dev-migrations/20260801000000_phase2_kyc_and_agents.sql`
 
 - **Estado 2026-07-27**: exclusiva de DEV. Está fuera de `supabase/migrations/` y no forma parte de la cadena productiva, que termina en 50.

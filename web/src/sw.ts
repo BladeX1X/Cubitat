@@ -33,7 +33,11 @@ interface CubitatPushPayload {
   title?: unknown
   body?: unknown
   actionPath?: unknown
+  notificationId?: unknown
 }
+
+const PUSH_NOTIFICATION_ID_PARAM = 'cubitat_notification'
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function safeActionPath(actionPath: unknown) {
   if (typeof actionPath !== 'string'
@@ -42,6 +46,14 @@ function safeActionPath(actionPath: unknown) {
 
   const target = new URL(actionPath, self.location.origin)
   if (target.origin !== self.location.origin) return '/'
+  return `${target.pathname}${target.search}${target.hash}`
+}
+
+function actionPathWithNotification(actionPath: unknown, notificationId: unknown) {
+  const target = new URL(safeActionPath(actionPath), self.location.origin)
+  if (typeof notificationId === 'string' && UUID_PATTERN.test(notificationId)) {
+    target.searchParams.set(PUSH_NOTIFICATION_ID_PARAM, notificationId)
+  }
   return `${target.pathname}${target.search}${target.hash}`
 }
 
@@ -55,7 +67,7 @@ self.addEventListener('push', (event: PushEvent) => {
 
   const title = typeof payload.title === 'string' ? payload.title.slice(0, 120) : 'Cubitat'
   const body = typeof payload.body === 'string' ? payload.body.slice(0, 280) : 'Tienes una notificacion nueva.'
-  const actionPath = safeActionPath(payload.actionPath)
+  const actionPath = actionPathWithNotification(payload.actionPath, payload.notificationId)
 
   event.waitUntil((async () => {
     if (!await mayShowPush(payload.endpoint, payload.userId)) return

@@ -47,6 +47,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 10. Si Supabase invalida la sesión durante el desafío MFA administrativo,
     `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
     `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.
+11. Al abrir un push, consume el identificador interno después de autenticar la sesión, marca la notificación como leída y limpia ese parámetro de la URL.
 
 ## Decisiones de Implementacion
 

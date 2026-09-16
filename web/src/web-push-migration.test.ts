@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import migrationSql from '../supabase/migrations/20260911010000_add_web_push.sql?raw'
 import claimLimitFixSql from '../supabase/migrations/20260911020000_fix_push_claim_limit.sql?raw'
 import claimBoundFixSql from '../supabase/migrations/20260911030000_fix_push_claim_bound.sql?raw'
+import pushReadReceiptSql from '../supabase/migrations/20260916010000_include_notification_id_in_push_claim.sql?raw'
 
 describe('web push migration contract', () => {
   it('isolates subscriptions by user and queues one delivery per device', () => {
@@ -24,5 +25,12 @@ describe('web push migration contract', () => {
     expect(migrationSql).toContain('claim_pending_push_deliveries')
     expect(migrationSql).toContain('REVOKE ALL ON FUNCTION public.claim_pending_push_deliveries(integer) FROM PUBLIC')
     expect(migrationSql).toContain('GRANT EXECUTE ON FUNCTION public.claim_pending_push_deliveries(integer) TO service_role')
+  })
+
+  it('returns the notification id needed to acknowledge a push click', () => {
+    expect(pushReadReceiptSql).toMatch(/RETURNS TABLE[\s\S]*notification_id uuid/i)
+    expect(pushReadReceiptSql).toContain('c.notification_id')
+    expect(pushReadReceiptSql).toContain('n.user_id = s.user_id')
+    expect(pushReadReceiptSql).toContain('TO service_role')
   })
 })
