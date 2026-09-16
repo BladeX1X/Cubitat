@@ -229,7 +229,7 @@ export async function dispatchPendingPushNotifications(
           endpoint: delivery.endpoint,
           userId: delivery.user_id,
         }),
-        options: { ttl: 86_400 },
+        options: { ttl: 86_400, urgency: 'high' },
       }
       const subscription: PushSubscription = {
         endpoint: delivery.endpoint,

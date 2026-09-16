@@ -76,16 +76,23 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   const targetUrl = new URL(actionPath, self.location.origin).href
 
   event.waitUntil((async () => {
-    const data = event.notification.data as CubitatPushPayload | undefined
-    if (!await mayShowPush(data?.endpoint, data?.userId)) return
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-    const existing = windows.find((client) => new URL(client.url).origin === self.location.origin) as WindowClient | undefined
+    const existing = windows.find((client) => client.url === targetUrl)
+      ?? windows.find((client) => (
+        new URL(client.url).origin === self.location.origin
+        && client.visibilityState === 'visible'
+      ))
     if (existing) {
-      await existing.navigate(targetUrl)
-      await existing.focus()
-      return
+      try {
+        const navigated = existing.url === targetUrl ? existing : await existing.navigate(targetUrl)
+        await (navigated ?? existing).focus()
+        return
+      } catch {
+        // A stale browser client must not prevent the installed PWA from opening.
+      }
     }
-    await self.clients.openWindow(targetUrl)
+    const opened = await self.clients.openWindow(targetUrl)
+    await opened?.focus()
   })())
 })
 

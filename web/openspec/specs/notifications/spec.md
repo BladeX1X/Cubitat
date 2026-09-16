@@ -93,6 +93,7 @@
 - **GIVEN** una notificacion interna nueva tiene entregas push pendientes
 - **WHEN** se ejecuta el despachador programado
 - **THEN** el Worker envia una entrega independiente a cada dispositivo suscrito
+- **AND** solicita prioridad alta para que Android pueda despertar el dispositivo en reposo
 - **AND** reintenta fallos temporales hasta tres veces
 - **AND** elimina las suscripciones que el proveedor declara expiradas
 
@@ -101,4 +102,5 @@
 - **GIVEN** el service worker muestra una notificacion con un `action_path` interno valido
 - **WHEN** la persona toca la notificacion
 - **THEN** Cubitat enfoca una ventana existente o abre una nueva en ese destino
+- **AND** una ventana oculta o un cambio posterior del vinculo local no deja el toque sin respuesta
 - **AND** rechaza rutas externas, relativas o malformadas

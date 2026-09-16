@@ -9,6 +9,14 @@ describe('service worker push contract', () => {
     expect(serviceWorkerSource).toContain('clients.openWindow')
   })
 
+  it('opens an already displayed notification without rechecking mutable account state', () => {
+    const clickHandler = serviceWorkerSource.slice(serviceWorkerSource.indexOf("addEventListener('notificationclick'"))
+
+    expect(clickHandler).not.toContain('mayShowPush')
+    expect(clickHandler).toContain("client.visibilityState === 'visible'")
+    expect(clickHandler).toContain('opened?.focus()')
+  })
+
   it('accepts only same-origin absolute paths', () => {
     expect(serviceWorkerSource).toContain("startsWith('/')")
     expect(serviceWorkerSource).toContain("startsWith('//')")

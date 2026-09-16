@@ -95,7 +95,10 @@ describe('push dispatcher', () => {
 
     expect(summary).toEqual({ scanned: 1, sent: 1, failed: 0, expired: 0 })
     expect(buildPayload).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.stringContaining('/propiedad/property-1') }),
+      expect.objectContaining({
+        data: expect.stringContaining('/propiedad/property-1'),
+        options: { ttl: 86_400, urgency: 'high' },
+      }),
       expect.objectContaining({ endpoint: 'https://push.example.test/subscription-1' }),
       expect.objectContaining({ subject: 'mailto:soporte@cubitathome.com' }),
     )
