@@ -60,6 +60,13 @@
 - **THEN** Cubitat conserva la preparacion y permite activar desde el siguiente toque
 - **AND** si la preparacion misma falla, muestra una accion de reintento que nunca queda inerte
 
+### Escenario: suscripcion sin vinculacion local valida
+
+- **GIVEN** el servidor reconoce la suscripcion del navegador, pero el service worker no tiene una vinculacion local para la cuenta y el endpoint actuales
+- **WHEN** la persona consulta la configuracion de notificaciones
+- **THEN** Cubitat no muestra las notificaciones como activas y ofrece activarlas de forma explicita
+- **AND** no muestra avisos push de otra cuenta ni cancela automaticamente la suscripcion del navegador
+
 ### Escenario: iPhone o iPad sin instalar
 
 - **GIVEN** una persona abre Cubitat en iOS o iPadOS fuera del modo standalone

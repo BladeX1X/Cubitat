@@ -166,7 +166,13 @@ export async function getCurrentPushSubscription(
   })
   if (!response.ok) throw new Error('push_subscription_status_failed')
   const result = await response.json() as { active?: boolean }
-  if (result.active === true) return subscription
+  if (result.active === true) {
+    const userId = await dependencies.getUserId?.() ?? null
+    const binding = await readPushBinding()
+    return userId && binding?.userId === userId && binding.endpoint === subscription.endpoint
+      ? subscription
+      : null
+  }
 
   await writePushBinding({ userId: null, endpoint: null })
   if (!await subscription.unsubscribe()) throw new Error('push_unsubscribe_failed')
@@ -206,6 +212,7 @@ export async function enablePushNotifications(
   try {
     const tokenBefore = await accessToken(dependencies)
     userId = await dependencies.getUserId?.() ?? null
+    if (!userId) throw new Error('push_session_missing')
     if (tokenBefore !== await accessToken(dependencies)) throw new Error('push_session_changed')
     await persistSubscription(subscription, dependencies)
     if (tokenBefore !== await accessToken(dependencies)) throw new Error('push_session_changed')
