@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
   return {
     reconcilePushSession: vi.fn(),
     disablePushNotifications: vi.fn(),
+    markPushNotificationAsRead: vi.fn(),
     signOut,
     clearCachedProperties,
     removeLegacyPublicationDraft,
@@ -39,6 +40,11 @@ vi.mock('../modules/notifications/push/pushService', () => ({
   getCurrentPushSubscription: vi.fn(),
   preparePushNotifications: vi.fn(),
   enablePushNotifications: vi.fn(),
+}))
+
+vi.mock('../modules/notifications/notificationRead', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../modules/notifications/notificationRead')>(),
+  markNotificationAsRead: mocks.markPushNotificationAsRead,
 }))
 
 vi.mock('../shared/lib/supabaseClient', () => ({
@@ -115,6 +121,7 @@ describe('CubitatApp', () => {
     mocks.signOut.mockResolvedValue({ error: null })
     mocks.reconcilePushSession.mockResolvedValue(undefined)
     mocks.disablePushNotifications.mockResolvedValue(undefined)
+    mocks.markPushNotificationAsRead.mockResolvedValue(undefined)
     mocks.clearCachedProperties.mockResolvedValue(undefined)
     mocks.getSession.mockResolvedValue({
       data: { session: { user: mocks.user } },
@@ -183,6 +190,22 @@ describe('CubitatApp', () => {
     await waitFor(() => expect(mocks.reconcilePushSession).toHaveBeenCalledWith('second-user'))
     callback('SIGNED_OUT', null)
     await waitFor(() => expect(mocks.reconcilePushSession).toHaveBeenCalledWith(null))
+  })
+
+  it('marks a push notification as read and removes its internal URL marker', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/moderar?cubitat_notification=8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f',
+    )
+
+    render(<AuthModalProvider><CubitatApp /></AuthModalProvider>)
+
+    await waitFor(() => expect(mocks.markPushNotificationAsRead).toHaveBeenCalledWith(
+      'admin-user',
+      '8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f',
+    ))
+    await waitFor(() => expect(window.location.search).toBe(''))
   })
 
   it('nombra Publicar a la acción principal de la navegación móvil', async () => {

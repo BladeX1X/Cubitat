@@ -76,6 +76,7 @@ describe('push dispatcher', () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([{
         delivery_id: 'delivery-1',
+        notification_id: '8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f',
         subscription_id: 'subscription-1',
         endpoint: 'https://push.example.test/subscription-1',
         p256dh: 'public-key',
@@ -102,6 +103,9 @@ describe('push dispatcher', () => {
       expect.objectContaining({ endpoint: 'https://push.example.test/subscription-1' }),
       expect.objectContaining({ subject: 'mailto:soporte@cubitathome.com' }),
     )
+    expect(JSON.parse(buildPayload.mock.calls[0][0].data)).toMatchObject({
+      notificationId: '8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f',
+    })
     expect(JSON.parse(String(fetchFn.mock.calls[3]?.[1]?.body))).toMatchObject({ status: 'sent' })
     expect(fetchFn.mock.calls[3][0]).toContain('status=eq.sending&attempts=eq.1')
   })

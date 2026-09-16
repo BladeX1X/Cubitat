@@ -22,6 +22,11 @@ import { PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
 import { approximatePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
 import { disablePushNotifications, reconcilePushSession } from '../modules/notifications/push/pushService'
+import {
+  clearPushNotificationId,
+  getPushNotificationId,
+  markNotificationAsRead,
+} from '../modules/notifications/notificationRead'
 
 const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
   ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
@@ -220,6 +225,23 @@ export function CubitatApp() {
   useEffect(() => {
      initAnalytics()
    }, [])
+
+  useEffect(() => {
+    if (!user) return
+    const notificationId = getPushNotificationId(window.location.search)
+    if (!notificationId) return
+
+    void markNotificationAsRead(user.id, notificationId)
+      .then(clearPushNotificationId)
+      .catch((error) => {
+        logSafeEvent({
+          module: 'alerts',
+          action: 'mark_push_notification_read',
+          level: 'warn',
+          code: sanitizeErrorReason(error),
+        })
+      })
+  }, [user])
 
   useEffect(() => {
     const cacheVersion = '20260710-clear-stale-pwa-v2'

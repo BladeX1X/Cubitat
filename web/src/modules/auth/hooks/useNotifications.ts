@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
+import { markNotificationAsRead, NOTIFICATION_READ_EVENT } from '../../notifications/notificationRead'
 
 export interface Notification {
   id: string
@@ -109,6 +110,17 @@ export function useNotifications() {
     }
   }, [sessionUid])
 
+  useEffect(() => {
+    function handleNotificationRead(event: Event) {
+      const notificationId = (event as CustomEvent<{ notificationId?: unknown }>).detail?.notificationId
+      if (typeof notificationId !== 'string') return
+      setNotifications(prev => prev.filter(notification => notification.id !== notificationId))
+    }
+
+    window.addEventListener(NOTIFICATION_READ_EVENT, handleNotificationRead)
+    return () => window.removeEventListener(NOTIFICATION_READ_EVENT, handleNotificationRead)
+  }, [])
+
   const unreadCount = notifications.length
 
   const markAsRead = async (notificationId: string) => {
@@ -118,13 +130,7 @@ export function useNotifications() {
     setNotifications(prev => prev.filter(n => n.id !== notificationId))
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId)
-        .eq('user_id', sessionUid)
-      
-      if (error) throw error
+      await markNotificationAsRead(sessionUid, notificationId)
     } catch (err) {
       logSafeEvent({
         module: 'auth',
