@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readPushBinding, writePushBinding } from './pushBinding'
 import {
   disablePushNotifications,
   enablePushNotifications,
@@ -7,6 +8,11 @@ import {
   preparePushNotifications,
   urlBase64ToUint8Array,
 } from './pushService'
+
+vi.mock('./pushBinding', () => ({
+  readPushBinding: vi.fn(),
+  writePushBinding: vi.fn(),
+}))
 
 const subscriptionJson = {
   endpoint: 'https://push.example.test/subscription-1',
@@ -53,6 +59,7 @@ function createDependencies(options: {
       pushManagerSupported: true,
       matchMediaFn: () => ({ matches: options.standalone ?? false }),
       getAccessToken: vi.fn().mockResolvedValue('user-token'),
+      getUserId: vi.fn().mockResolvedValue('test-user'),
     },
     fetchFn,
     getSubscription,
@@ -64,7 +71,37 @@ function createDependencies(options: {
 }
 
 describe('pushService', () => {
-  beforeEach(() => vi.restoreAllMocks())
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.mocked(readPushBinding).mockReset().mockResolvedValue(null)
+    vi.mocked(writePushBinding).mockReset().mockResolvedValue(undefined)
+  })
+
+  it('does not report push as enabled when the server endpoint has no local account binding', async () => {
+    const { dependencies, fetchFn, subscription, unsubscribe } = createDependencies({ existing: true })
+    fetchFn.mockReset().mockResolvedValue(new Response(JSON.stringify({ active: true })))
+
+    await expect(getCurrentPushSubscription(dependencies)).resolves.toBeNull()
+    expect(unsubscribe).not.toHaveBeenCalled()
+    expect(subscription.endpoint).toBe(subscriptionJson.endpoint)
+  })
+
+  it('reports push as enabled only when the local binding matches the authenticated account', async () => {
+    const { dependencies, fetchFn, subscription } = createDependencies({ existing: true })
+    fetchFn.mockReset().mockResolvedValue(new Response(JSON.stringify({ active: true })))
+    vi.mocked(readPushBinding).mockResolvedValue({ userId: 'test-user', endpoint: subscription.endpoint })
+
+    await expect(getCurrentPushSubscription(dependencies)).resolves.toBe(subscription)
+  })
+
+  it('offers explicit reactivation when the local binding belongs to another account', async () => {
+    const { dependencies, fetchFn, unsubscribe } = createDependencies({ existing: true })
+    fetchFn.mockReset().mockResolvedValue(new Response(JSON.stringify({ active: true })))
+    vi.mocked(readPushBinding).mockResolvedValue({ userId: 'other-user', endpoint: subscriptionJson.endpoint })
+
+    await expect(getCurrentPushSubscription(dependencies)).resolves.toBeNull()
+    expect(unsubscribe).not.toHaveBeenCalled()
+  })
 
   it('does not treat a different account subscription as enabled', async () => {
     const { dependencies, fetchFn, unsubscribe } = createDependencies({ existing: true })
@@ -113,6 +150,16 @@ describe('pushService', () => {
       .toBeLessThan(subscribe.mock.invocationCallOrder[0])
     expect(subscribe.mock.invocationCallOrder[0])
       .toBeLessThan(fetchFn.mock.invocationCallOrder[1])
+  })
+
+  it('does not persist or enable a push subscription without an authenticated user id', async () => {
+    const { dependencies, fetchFn, unsubscribe } = createDependencies()
+    dependencies.getUserId.mockResolvedValue(null)
+    const prepared = await preparePushNotifications(dependencies)
+
+    await expect(enablePushNotifications(dependencies, prepared)).rejects.toThrow('push_session_missing')
+    expect(fetchFn).not.toHaveBeenCalledWith('/api/push/subscription', expect.objectContaining({ method: 'PUT' }))
+    expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
   it('invokes the injected fetch function without binding it to the dependencies object', async () => {
