@@ -759,7 +759,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           ];
 
           if (body.images && Array.isArray(body.images)) {
-            const imagesToProcess = body.images.slice(0, 5); // Groq soporta hasta 5 imágenes
+            const imagesToProcess = body.images.slice(0, 3); // Límite del modelo multimodal configurado.
             
             for (const dataUrl of imagesToProcess) {
               if (typeof dataUrl === 'string') {
@@ -802,7 +802,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
           try {
             const groqApiKey = (env.GROQ_API_KEY || '').trim().replace(/[\r\n]/g, '');
-            const groqModel = env.GROQ_MODEL?.trim() || 'qwen/qwen3.6-27b';
+            const groqModel = env.GROQ_MODEL?.trim() || 'qwen/qwen3.8-27b';
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
