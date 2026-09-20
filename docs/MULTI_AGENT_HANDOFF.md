@@ -2495,6 +2495,17 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   resultado anterior hasta ejecutar `Reevaluar con IA`; las publicaciones nuevas
   ya usan el modelo configurado.
 
+## Migración de moderación IA a Qwen 3.8 — 2026-09-20
+
+- **Causa comprobada:** producción registró HTTP 404 al invocar
+  `qwen/qwen3.6-27b`, retirado por Groq el 2026-09-14.
+- **Cambio:** `GROQ_MODEL` y el valor por defecto del Worker pasan a
+  `qwen/qwen3.8-27b`, reemplazo multimodal oficial.
+- **Compatibilidad:** el Worker limita cada solicitud a tres imágenes, máximo
+  documentado para Qwen 3.8 27B.
+- **Pendiente operativo:** desplegar y ejecutar una reevaluación IA autorizada
+  para verificar el resultado real en producción.
+
 ## Actualización automática tras reevaluación IA — 2026-09-13
 
 - El panel de moderación consulta únicamente la publicación reevaluada mientras

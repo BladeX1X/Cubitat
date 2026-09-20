@@ -418,8 +418,12 @@ web/src/worker.ts
 Modelo configurado:
 
 ```txt
-qwen/qwen3.6-27b
+qwen/qwen3.8-27b
 ```
+
+El modelo anterior `qwen/qwen3.6-27b` fue retirado por Groq el 2026-09-14.
+El modelo actual admite texto, JSON Object Mode y hasta tres imágenes por
+solicitud.
 
 Si `GROQ_API_KEY` no existe, el Worker deja la propiedad en:
 

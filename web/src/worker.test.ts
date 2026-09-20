@@ -307,7 +307,15 @@ describe('Cloudflare Worker security contract', () => {
           Authorization: 'Bearer owner-token',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ property_id: propertyId }),
+        body: JSON.stringify({
+          property_id: propertyId,
+          images: [
+            'data:image/jpeg;base64,one',
+            'data:image/jpeg;base64,two',
+            'data:image/jpeg;base64,three',
+            'data:image/jpeg;base64,four',
+          ],
+        }),
       }),
       {
         ...createEnv(),
@@ -320,13 +328,18 @@ describe('Cloudflare Worker security contract', () => {
     await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
     const groqRequest = JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))
     expect(groqRequest).toMatchObject({
-      model: 'qwen/qwen3.6-27b',
+      model: 'qwen/qwen3.8-27b',
       messages: [{ role: 'user' }],
       max_completion_tokens: 512,
       reasoning_effort: 'none',
       response_format: { type: 'json_object' },
     })
     expect(groqRequest.messages).toHaveLength(1)
+    expect(groqRequest.messages[0].content).toHaveLength(4)
+    expect(groqRequest.messages[0].content.at(-1)).toEqual({
+      type: 'image_url',
+      image_url: { url: 'data:image/jpeg;base64,three' },
+    })
     expect(groqRequest).not.toHaveProperty('max_tokens')
     expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
       p_status: 'ai_approved',
