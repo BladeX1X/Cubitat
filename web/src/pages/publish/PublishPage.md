@@ -19,6 +19,13 @@ Formulario guiado de publicación y edición con ocho pasos, compresión WebP y 
 - La dirección de escritura se conserva para el trigger de privacidad; la moderación recibe solo zona pública. La edición usa `editablePropertyAddress` para recuperar los campos privados autorizados.
 - Las coordenadas exactas se envían al guardar y el trigger las separa de la cuadrícula pública. La edición autorizada recupera el punto exacto desde `property_private_coordinates`; los visitantes reciben solamente coordenadas aproximadas.
 
+## Recuperacion ante datos locales corruptos — 2026-09-24
+
+- `draftStorage` descarta entradas JSON corruptas de un usuario o del formato
+  legado sin bloquear la apertura del formulario ni afectar borradores de otras
+  cuentas. El caso queda cubierto por pruebas de regresion para ambos formatos.
+- Validado con lint, 114 archivos/480 pruebas y build; desplegado solo en DEV.
+
 ## Validación
 
 Pruebas de lote parcial/total y reintento, lifecycle de recuperación/autoguardado, desmontaje y supresión de resurrección del borrador. Integración del formulario prueba que no se escribe una propiedad cuando falla una foto y que el reintento conserva todas las imágenes.

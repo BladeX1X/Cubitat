@@ -24,6 +24,21 @@ describe('publication draft storage isolation', () => {
     expect(localStorage.getItem(getPublicationDraftKey('owner-a'))).not.toBeNull()
   })
 
+  it('discards a corrupted scoped draft without blocking the form', () => {
+    localStorage.setItem(getPublicationDraftKey('owner-a'), '{not-json')
+
+    expect(readPublicationDraft('owner-a')).toBeNull()
+    expect(localStorage.getItem(getPublicationDraftKey('owner-a'))).toBeNull()
+  })
+
+  it('discards a corrupted legacy draft without migrating it', () => {
+    localStorage.setItem('cubitat_publish_draft', '{not-json')
+
+    expect(readPublicationDraft('owner-a')).toBeNull()
+    expect(localStorage.getItem('cubitat_publish_draft')).toBeNull()
+    expect(localStorage.getItem(getPublicationDraftKey('owner-a'))).toBeNull()
+  })
+
   it('removes only the requested user draft', () => {
     savePublicationDraft('owner-a', { title: 'A' })
     savePublicationDraft('owner-b', { title: 'B' })

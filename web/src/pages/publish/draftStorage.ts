@@ -4,18 +4,29 @@ export function getPublicationDraftKey(userId: string): string {
   return `cubitat_publish_draft:${userId}`
 }
 
+function readJsonDraft(key: string): Record<string, unknown> | null {
+  const rawDraft = localStorage.getItem(key)
+  if (!rawDraft) return null
+
+  try {
+    return JSON.parse(rawDraft) as Record<string, unknown>
+  } catch {
+    localStorage.removeItem(key)
+    return null
+  }
+}
+
 export function readPublicationDraft(userId: string): Record<string, unknown> | null {
   const scopedKey = getPublicationDraftKey(userId)
-  const scopedDraft = localStorage.getItem(scopedKey)
-  if (scopedDraft) return JSON.parse(scopedDraft) as Record<string, unknown>
+  const scopedDraft = readJsonDraft(scopedKey)
+  if (scopedDraft) return scopedDraft
 
-  const legacyDraft = localStorage.getItem(LEGACY_DRAFT_KEY)
+  const legacyDraft = readJsonDraft(LEGACY_DRAFT_KEY)
   if (!legacyDraft) return null
 
-  const parsed = JSON.parse(legacyDraft) as Record<string, unknown>
-  localStorage.setItem(scopedKey, legacyDraft)
+  localStorage.setItem(scopedKey, JSON.stringify(legacyDraft))
   localStorage.removeItem(LEGACY_DRAFT_KEY)
-  return parsed
+  return legacyDraft
 }
 
 export function savePublicationDraft(userId: string, draft: object): void {
