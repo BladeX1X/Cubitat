@@ -18,6 +18,14 @@ Estado 2026-09-30: aplicada y verificada en el proyecto remoto vinculado; el
 historial remoto coincide y `db lint --linked --level warning` no reporta
 errores. No se crearon solicitudes ni documentos QA durante esta migración.
 
+51. `20260930110000_require_verified_kyc_for_agent_role.sql`: exige KYC
+    verificado antes de activar el rol `agent` y conserva la degradación segura
+    a `buyer` cuando una revisión KYC interna deja de estar aprobada.
+
+Estado 2026-09-30: aplicada y verificada en producción; el trigger existe y
+`db lint --linked --level warning` no reporta errores. La consulta previa no
+encontró agentes activos, por lo que no se alteraron perfiles existentes.
+
 ## Aplicación segura
 
 Desde `web/`, revisar primero y aplicar después:
