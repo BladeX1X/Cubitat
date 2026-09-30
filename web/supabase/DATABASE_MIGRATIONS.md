@@ -6,6 +6,18 @@ orden y propósito, pero no sustituye la lectura del SQL.
 
 Última revisión documental: 2026-09-09.
 
+## KYC base de producción — 2026-09-30
+
+50. `20260930100000_add_production_kyc.sql`: incorpora de forma idempotente la
+    tabla `kyc_requests`, el bucket privado `kyc_documents`, sus políticas RLS y
+    los RPC de envío y revisión KYC con control administrativo AAL2. Esta
+    migración es independiente de las migraciones DEV de Fase 2 y se aplica
+    únicamente tras validación del esquema productivo.
+
+Estado 2026-09-30: aplicada y verificada en el proyecto remoto vinculado; el
+historial remoto coincide y `db lint --linked --level warning` no reporta
+errores. No se crearon solicitudes ni documentos QA durante esta migración.
+
 ## Aplicación segura
 
 Desde `web/`, revisar primero y aplicar después:
