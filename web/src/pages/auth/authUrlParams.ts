@@ -39,7 +39,7 @@ export function isPasswordRecoveryFlow(
   sawPasswordRecoveryEvent: boolean,
   hasAuthCredentials: boolean,
 ) {
-  return type === 'recovery' || (sawPasswordRecoveryEvent && hasAuthCredentials)
+  return hasAuthCredentials && (type === 'recovery' || sawPasswordRecoveryEvent)
 }
 
 export function cleanAuthUrl(pathname = window.location.pathname) {

@@ -136,4 +136,29 @@ describe('KycSubmissionModal', () => {
       expect(kycRepo.submitKycRequest).not.toHaveBeenCalled()
     })
   })
+
+  it('removes both uploads when the request registration fails', async () => {
+    vi.mocked(kycRepo.uploadKycImage)
+      .mockResolvedValueOnce({ success: true, documentPath: 'u1/document-private.jpg' })
+      .mockResolvedValueOnce({ success: true, documentPath: 'u1/selfie-private.jpg' })
+    vi.mocked(kycRepo.submitKycRequest).mockResolvedValueOnce({
+      success: false,
+      error: 'No se pudo registrar la solicitud.',
+    })
+    vi.mocked(kycRepo.removeKycDocument).mockResolvedValue()
+
+    render(<KycSubmissionModal userId="u1" isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} />)
+
+    const documentFile = new File(['fake-document'], 'carnet.jpg', { type: 'image/jpeg' })
+    const selfieFile = new File(['fake-selfie'], 'selfie.jpg', { type: 'image/jpeg' })
+    fireEvent.change(screen.getByLabelText('Documento de identidad'), { target: { files: [documentFile] } })
+    fireEvent.change(screen.getByLabelText('Foto sosteniendo el documento'), { target: { files: [selfieFile] } })
+    fireEvent.click(screen.getByRole('button', { name: /Enviar Solicitud/i }))
+
+    await waitFor(() => {
+      expect(kycRepo.removeKycDocument).toHaveBeenCalledWith('u1/document-private.jpg')
+      expect(kycRepo.removeKycDocument).toHaveBeenCalledWith('u1/selfie-private.jpg')
+      expect(screen.getByText('No se pudo registrar la solicitud.')).toBeInTheDocument()
+    })
+  })
 })

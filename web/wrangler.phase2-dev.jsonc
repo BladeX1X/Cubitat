@@ -13,9 +13,17 @@
   },
   "vars": {
     "PHASE2_ENABLED": "true",
-    "VITE_SUPABASE_URL": "https://dev-supabase.invalid",
-    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev"
+    "VITE_SUPABASE_URL": "https://bknwerqbbysveehcdmzr.supabase.co",
+    "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev",
+    "PUBLIC_SITE_URL": "https://cubitat1-phase2-dev.pochiprats18.workers.dev",
+    "ALERT_EMAIL_FROM": "Cubitat DEV <onboarding@resend.dev>"
   },
+  "services": [
+    {
+      "binding": "TURNSTILE_VERIFY",
+      "service": "turnstile-siteverify-cubitat"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {
@@ -31,7 +39,7 @@
     }
   },
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["*/1 * * * *"]
   },
   "observability": {
     "enabled": true,

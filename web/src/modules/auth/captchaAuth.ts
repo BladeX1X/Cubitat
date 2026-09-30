@@ -1,4 +1,4 @@
-import { supabase } from '../../shared/lib/supabaseClient'
+import { supabase, supabaseRecovery } from '../../shared/lib/supabaseClient'
 
 type SignUpWithCaptchaInput = {
   email: string
@@ -40,7 +40,7 @@ export function requestPasswordResetWithCaptcha({
   captchaToken,
   redirectTo,
 }: PasswordResetWithCaptchaInput) {
-  return supabase.auth.resetPasswordForEmail(email, {
+  return supabaseRecovery.auth.resetPasswordForEmail(email, {
     captchaToken,
     redirectTo,
   })

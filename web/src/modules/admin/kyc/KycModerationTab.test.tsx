@@ -125,9 +125,36 @@ describe('KycModerationTab', () => {
     })
   })
 
+  it('keeps the request visible and shows a safe error when approval fails', async () => {
+    vi.mocked(reviewKycRequest).mockRejectedValueOnce(new Error('No se pudo procesar la solicitud KYC.'))
+
+    render(<KycModerationTab />)
+
+    const approveButton = (await screen.findAllByRole('button', { name: /aprobar/i }))[0]
+    fireEvent.click(approveButton)
+
+    await waitFor(() => {
+      expect(reviewKycRequest).toHaveBeenCalledWith('req-1', 'approved')
+      expect(screen.getByText('Carlos Ruiz')).toBeInTheDocument()
+      expect(screen.getByText('No se pudo procesar la solicitud KYC.')).toBeInTheDocument()
+    })
+  })
+
   it('disables approval when the selfie evidence is unavailable', async () => {
     vi.mocked(fetchPendingKycRequests).mockResolvedValueOnce([
       { ...mockRequests[0], selfie_path: null, selfie_signed_url: null },
+    ])
+
+    render(<KycModerationTab />)
+
+    const approveButton = await screen.findByRole('button', { name: /aprobar/i })
+    expect(approveButton).toBeDisabled()
+    expect(screen.getByText(/evidencia privada no está disponible/i)).toBeInTheDocument()
+  })
+
+  it('disables approval when the identity document evidence is unavailable', async () => {
+    vi.mocked(fetchPendingKycRequests).mockResolvedValueOnce([
+      { ...mockRequests[0], document_signed_url: null },
     ])
 
     render(<KycModerationTab />)

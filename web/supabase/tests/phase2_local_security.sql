@@ -1,6 +1,7 @@
 \set ON_ERROR_STOP on
 
 BEGIN;
+SELECT plan(1);
 
 CREATE OR REPLACE FUNCTION pg_temp.assert_true(condition boolean, message text)
 RETURNS void
@@ -477,6 +478,22 @@ SELECT pg_temp.assert_true(
 );
 RESET ROLE;
 
+-- Las entradas publicas pasan por el Worker y Turnstile; el cliente no puede
+-- insertar contactos o reportes directamente aunque el anuncio este publicado.
+SELECT set_config('request.jwt.claims', '{"role":"anon","aal":"aal1"}', true);
+SET LOCAL ROLE anon;
+SELECT pg_temp.assert_raises(
+  $$INSERT INTO public.contacts (property_id, contact_name, contact_phone, message)
+    VALUES ('f2100000-0000-0000-0000-000000000001', 'QA anonimo', '+5300000001', 'Intento directo bloqueado')$$,
+  'permission denied'
+);
+SELECT pg_temp.assert_raises(
+  $$INSERT INTO public.property_reports (property_id, reason, description)
+    VALUES ('f2100000-0000-0000-0000-000000000001', 'spam', 'Intento directo bloqueado')$$,
+  'permission denied'
+);
+RESET ROLE;
+
 -- El navegador no puede invocar la mutacion; solo service_role registra el
 -- identificador seudonimo derivado por el Worker. La tabla sigue privada.
 SELECT set_config('request.jwt.claims', '{"role":"anon","aal":"aal1"}', true);
@@ -542,15 +559,53 @@ SELECT pg_temp.assert_true(
   'search alert trigger must enqueue email delivery'
 );
 
+-- La bandeja solo permite marcar como leida una notificacion de la cuenta
+-- autenticada; otra cuenta no puede modificarla aunque conozca su UUID.
 SELECT set_config(
   'request.jwt.claims',
   '{"sub":"f2000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal1"}',
   true
 );
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.assert_raises(
-  $$SELECT public.claim_pending_alert_emails(1)$$,
-  'permission denied'
+UPDATE public.notifications
+SET is_read = true
+WHERE id = 'f2200000-0000-0000-0000-000000000001';
+SELECT pg_temp.assert_true(
+  (SELECT is_read FROM public.notifications
+   WHERE id = 'f2200000-0000-0000-0000-000000000001'),
+  'owner must be able to mark their notification as read'
+);
+RESET ROLE;
+
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000002","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+UPDATE public.notifications
+SET is_read = false
+WHERE id = 'f2200000-0000-0000-0000-000000000001';
+RESET ROLE;
+SELECT pg_temp.assert_true(
+  (SELECT is_read FROM public.notifications
+   WHERE id = 'f2200000-0000-0000-0000-000000000001'),
+  'other user must not update the owner notification'
+);
+
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true(
+  NOT has_function_privilege(
+    current_user,
+    'public.claim_pending_alert_emails(integer)',
+    'EXECUTE'
+  ),
+  'authenticated must not execute the email claim function'
 );
 RESET ROLE;
 
@@ -635,6 +690,6 @@ SELECT pg_temp.assert_true(
   'losing verified KYC must demote the agent to buyer'
 );
 
+SELECT pass('phase2_local_security: ok');
+SELECT * FROM finish();
 ROLLBACK;
-
-SELECT 'phase2_local_security: ok' AS result;

@@ -29,7 +29,9 @@ async function postProtectedForm(
   })
 
   if (!response.ok) {
-    throw new Error(`Protected form submission failed with status ${response.status}.`)
+    const payload = await response.json().catch(() => null) as { error?: unknown } | null
+    const serverError = typeof payload?.error === 'string' ? payload.error : ''
+    throw new Error(serverError || `Protected form submission failed with status ${response.status}.`)
   }
 }
 

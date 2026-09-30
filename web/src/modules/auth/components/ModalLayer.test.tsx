@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { LoginModal } from './LoginModal'
+import { getAuthErrorMessage } from '../authErrorMessages'
 import { SavePromptModal } from './SavePromptModal'
 import {
   MAP_FULLSCREEN_LAYER_Z_INDEX,
@@ -66,5 +67,28 @@ describe('capas de autenticacion', () => {
         }),
       )
     })
+  })
+
+  it('oculta el detalle técnico si Google no tiene secreto OAuth configurado', async () => {
+    signInWithOAuthMock.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Unsupported provider: missing OAuth secret' },
+    })
+    render(<LoginModal onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Google' }))
+
+    expect(await screen.findByText(/El inicio con Google no está disponible temporalmente/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Unsupported provider/i)).not.toBeInTheDocument()
+  })
+
+  it('oculta el detalle técnico cuando falta la configuración de CAPTCHA', () => {
+    const message = getAuthErrorMessage(
+      { message: 'Captcha verification failed: missing secret' },
+      'fallback',
+    )
+
+    expect(message).toMatch(/verificación de seguridad no está disponible/i)
+    expect(message).not.toMatch(/missing secret/i)
   })
 })

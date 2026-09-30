@@ -156,11 +156,13 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://cubitathome.com"
+site_url = "https://cubitat1-phase2-dev.pochiprats18.workers.dev"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
+  "https://cubitat1-phase2-dev.pochiprats18.workers.dev/auth/callback*",
+  "https://cubitat1-phase2-dev.pochiprats18.workers.dev/recuperar-contrasena",
   "https://cubitathome.com/auth/callback",
   "https://cubitathome.com/recuperar-contrasena",
   "http://127.0.0.1:5173/auth/callback",
@@ -235,8 +237,9 @@ secure_password_change = true
 max_frequency = "1m"
 # Number of characters used in the email OTP.
 otp_length = 6
-# Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+# Number of seconds before the email OTP/recovery link expires.
+# Keep recovery links short-lived as required by the Auth specification.
+otp_expiry = 900
 
 # Resend SMTP: dominio cubitathome.com verificado en Resend
 [auth.email.smtp]

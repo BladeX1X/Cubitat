@@ -31,7 +31,9 @@ test.describe('Cloudflare Turnstile Verification', () => {
     // 4. Abrir modal de autenticación y verificar widgets de Turnstile en Registro y Recuperación
     await page.click('button:has-text("Ingresar")')
     await page.waitForSelector('input[type="email"]')
-    
+    await expect(page.getByRole('button', { name: 'Google' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Facebook' })).toBeDisabled()
+
     // Ir a pestaña de registro
     const registerTabBtn = page.locator('button:has-text("Crear cuenta")')
     await registerTabBtn.click()

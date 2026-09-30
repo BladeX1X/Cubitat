@@ -152,6 +152,17 @@ describe('pushService', () => {
       .toBeLessThan(fetchFn.mock.invocationCallOrder[1])
   })
 
+  it('replaces a stale browser subscription before applying a new VAPID key', async () => {
+    const { dependencies, getSubscription, subscribe, unsubscribe } = createDependencies({ existing: true })
+    const prepared = await preparePushNotifications(dependencies)
+
+    await expect(enablePushNotifications(dependencies, prepared)).resolves.toBe('enabled')
+
+    expect(getSubscription).toHaveBeenCalledOnce()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(subscribe).toHaveBeenCalledOnce()
+  })
+
   it('does not persist or enable a push subscription without an authenticated user id', async () => {
     const { dependencies, fetchFn, unsubscribe } = createDependencies()
     dependencies.getUserId.mockResolvedValue(null)

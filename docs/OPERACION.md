@@ -125,22 +125,35 @@ Estados relevantes:
 
 ### Envio automatico de alertas de busqueda
 
-La primera fase ya guarda alertas en `public.search_alerts` con RLS por usuario y permite crearlas desde resultados. Falta automatizar el envio por email.
+El flujo esta implementado y aislado en el Worker de Fase 2 DEV. Las alertas se
+guardan en `public.search_alerts` con RLS por usuario; una propiedad publicada
+coincidente crea una notificacion pendiente y el Cron DEV reclama el lote con
+`claim_pending_alert_emails`.
 
-Implementacion recomendada:
+El dispatcher exige `PHASE2_ENABLED=true` antes de iniciar cualquier acceso
+externo. Cuando esta bandera no esta activa devuelve un resumen vacio sin
+consultar Supabase ni Resend. Con Fase 2 habilitada, requiere la clave de
+servicio de Supabase, `RESEND_API_KEY`, `PUBLIC_SITE_URL` y `ALERT_EMAIL_FROM`;
+si falta cualquiera, no reclama ni envia alertas. Cuando la configuracion esta
+completa, envia mediante Resend con clave de idempotencia, escapa el HTML,
+marca `sent` solo despues de una respuesta exitosa y reintenta hasta tres veces
+antes de marcar `failed`. Si falta configuracion server-side, no toca datos y
+degrada de forma segura; nunca usa el remitente productivo como fallback en
+DEV.
 
-1. Crear un Worker programado con Cloudflare Cron Triggers para revisar `search_alerts` activas.
-2. Consultar propiedades nuevas que coincidan con `filters` y que no hayan sido enviadas desde `last_sent_at`.
-3. Enviar el resumen con Resend usando el correo de la cuenta y una plantilla transaccional.
-4. Actualizar `last_sent_at` solo cuando Resend confirme el envio.
-5. Agregar enlace de baja o pausa de alerta, validado con token firmado.
-6. Registrar errores de envio y reintentos para no bloquear el lote completo por una alerta fallida.
+Estado operativo:
+
+- Verificado en codigo y pruebas unitarias del dispatcher.
+- Ejecutado por el Cron de `cubitat1-phase2-dev` junto con Push y retencion KYC.
+- La prueba real de entrega depende de `RESEND_API_KEY` y un destinatario DEV;
+  no se considera evidencia de produccion.
+- Produccion no ejecuta este dispatcher mientras Fase 2 permanezca aislada.
 
 Variables/servicios involucrados:
 
-- Supabase: tabla `search_alerts`, propiedades publicadas y usuarios.
+- Supabase: tabla `search_alerts`, propiedades publicadas, notificaciones y usuarios.
 - Cloudflare Workers: job programado y variables secretas.
-- Resend: envio transaccional.
+- Resend: envio transaccional server-side.
 - Google Analytics: evento opcional `search_alert_email_sent` sin datos personales.
 
 ## Seguridad

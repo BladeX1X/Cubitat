@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TurnstileWidget } from './TurnstileWidget'
@@ -10,6 +10,7 @@ type TurnstileOptions = {
 type TurnstileMock = {
   render: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
+  getResponse?: ReturnType<typeof vi.fn>
 }
 
 function Harness() {
@@ -30,7 +31,7 @@ function Harness() {
 
 describe('TurnstileWidget', () => {
   afterEach(() => {
-    delete (window as Window & { turnstile?: TurnstileMock }).turnstile
+    delete window.turnstile
   })
 
   it('no remonta el desafio cuando el callback actualiza el formulario', () => {
@@ -42,7 +43,7 @@ describe('TurnstileWidget', () => {
       }),
       remove: vi.fn(),
     }
-    ;(window as Window & { turnstile?: TurnstileMock }).turnstile = turnstile
+    window.turnstile = turnstile as unknown as NonNullable<Window['turnstile']>
 
     render(<Harness />)
     expect(turnstile.render).toHaveBeenCalledTimes(1)
@@ -52,5 +53,20 @@ describe('TurnstileWidget', () => {
     expect(screen.getByText('verified-token')).toBeInTheDocument()
     expect(turnstile.render).toHaveBeenCalledTimes(1)
     expect(turnstile.remove).not.toHaveBeenCalled()
+  })
+
+  it('recupera el token cuando el navegador no entrega el callback', async () => {
+    const turnstile: TurnstileMock = {
+      render: vi.fn(() => 'widget-1'),
+      remove: vi.fn(),
+      getResponse: vi.fn(() => 'fallback-token'),
+    }
+    window.turnstile = turnstile as unknown as NonNullable<Window['turnstile']>
+
+    render(<Harness />)
+
+    await waitFor(() => {
+      expect(screen.getByText('fallback-token')).toBeInTheDocument()
+    })
   })
 })

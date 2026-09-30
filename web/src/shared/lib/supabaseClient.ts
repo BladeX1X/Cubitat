@@ -3,7 +3,8 @@ import { logSafeEvent } from './logger'
 
 const isServer = typeof window === 'undefined'
 const supabaseUrl = isServer
-  ? (import.meta.env.VITE_SUPABASE_URL || 'https://tohjzoncoosvjbjcakdl.supabase.co')
+  // Never silently fall back to a real project when a deployment is misconfigured.
+  ? (import.meta.env.VITE_SUPABASE_URL || 'https://dev-supabase.invalid')
   : (window.location.origin + '/api/supabase')
 const supabaseAnonKey = isServer
   ? (import.meta.env.VITE_SUPABASE_ANON_KEY || '')
@@ -25,4 +26,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
     flowType: 'pkce'
   }
+})
+
+// Password-recovery links must work when the email is opened in another
+// browser or device. Keep the regular client on PKCE for OAuth, but use the
+// portable implicit flow for the recovery token exchange.
+export const supabaseRecovery = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storageKey: 'cubitat-auth-token',
+    persistSession: true,
+    detectSessionInUrl: false,
+    flowType: 'implicit',
+  },
 })

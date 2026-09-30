@@ -1,10 +1,13 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
+import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 import { PAGE_SIZE } from '../core/constants'
 import type { ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
 
 const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message'
 
 type ProfileSummary = { id: string; full_name: string | null; email: string | null }
+type DuplicateFlag = { property_id: string; duplicate_of: string }
+type DuplicateProperty = { id: string; title: string }
 
 export async function fetchStatusCounts(): Promise<StatusCounts> {
   const statuses: Array<Exclude<StatusFilter, 'all'>> = [
@@ -62,11 +65,41 @@ export async function fetchModerationProperties(status: StatusFilter, page: numb
       : profile.email || profile.full_name || `ID ${profile.id.slice(0, 8)}`,
   ]))
 
+  const duplicateMap = new Map<string, { id: string; title: string }>()
+  if (PHASE_TWO_ENABLED) {
+    const { data: duplicateFlags, error: duplicateError } = await supabase
+      .from('property_duplicate_flags')
+      .select('property_id, duplicate_of')
+      .in('property_id', properties.map((property) => property.id))
+      .is('resolved_at', null)
+    if (duplicateError) throw duplicateError
+
+    const flags = (duplicateFlags ?? []) as DuplicateFlag[]
+    const duplicateIds = [...new Set(flags.map((flag) => flag.duplicate_of))]
+    if (duplicateIds.length > 0) {
+      const { data: duplicateProperties, error: duplicatePropertyError } = await supabase
+        .from('properties')
+        .select('id, title')
+        .in('id', duplicateIds)
+      if (duplicatePropertyError) throw duplicatePropertyError
+
+      const titleMap = new Map(
+        ((duplicateProperties ?? []) as DuplicateProperty[]).map((property) => [property.id, property.title]),
+      )
+      flags.forEach((flag) => {
+        const title = titleMap.get(flag.duplicate_of)
+        if (title) duplicateMap.set(flag.property_id, { id: flag.duplicate_of, title })
+      })
+    }
+  }
+
   return {
     total: count ?? 0,
     properties: properties.map((property) => ({
       ...property,
       user_email: profileMap.get(property.user_id),
+      duplicate_of: duplicateMap.get(property.id)?.id,
+      duplicate_title: duplicateMap.get(property.id)?.title,
     })),
   }
 }

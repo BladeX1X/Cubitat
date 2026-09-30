@@ -44,10 +44,10 @@ export function NotificationsMenu({ className = '' }: { className?: string }) {
       void markAsRead(notification.id)
     }
 
+    setIsNotificationsOpen(false)
     const destination = getNotificationDestination(notification.action_path)
     if (!destination) return
 
-    setIsNotificationsOpen(false)
     window.history.pushState(null, '', destination)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }

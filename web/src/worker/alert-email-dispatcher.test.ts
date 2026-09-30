@@ -3,14 +3,47 @@ import { dispatchPendingAlertEmails } from './alert-email-dispatcher'
 
 const env = {
   VITE_SUPABASE_URL: 'https://project.supabase.co',
+  PHASE2_ENABLED: 'true',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-test',
   RESEND_API_KEY: 'resend-test',
+  PUBLIC_SITE_URL: 'https://cubitat1-phase2-dev.pochiprats18.workers.dev',
+  ALERT_EMAIL_FROM: 'Cubitat DEV <onboarding@resend.dev>',
 }
 
 describe('dispatchPendingAlertEmails', () => {
+  it('does not access the network when Phase 2 is disabled', async () => {
+    const fetchFn = vi.fn()
+    await expect(dispatchPendingAlertEmails({ ...env, PHASE2_ENABLED: 'false' }, fetchFn)).resolves.toEqual({
+      scanned: 0,
+      sent: 0,
+      failed: 0,
+    })
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
   it('does not access the network when server-only secrets are unavailable', async () => {
     const fetchFn = vi.fn()
     await expect(dispatchPendingAlertEmails({ VITE_SUPABASE_URL: env.VITE_SUPABASE_URL }, fetchFn)).resolves.toEqual({
+      scanned: 0,
+      sent: 0,
+      failed: 0,
+    })
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
+  it('does not claim notifications when the public site URL is unavailable', async () => {
+    const fetchFn = vi.fn()
+    await expect(dispatchPendingAlertEmails({ ...env, PUBLIC_SITE_URL: undefined }, fetchFn)).resolves.toEqual({
+      scanned: 0,
+      sent: 0,
+      failed: 0,
+    })
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
+  it('does not claim notifications when the sender is unavailable', async () => {
+    const fetchFn = vi.fn()
+    await expect(dispatchPendingAlertEmails({ ...env, ALERT_EMAIL_FROM: undefined }, fetchFn)).resolves.toEqual({
       scanned: 0,
       sent: 0,
       failed: 0,

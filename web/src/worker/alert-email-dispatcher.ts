@@ -2,6 +2,7 @@ import { logWorkerEvent } from './logger'
 
 export interface AlertEmailEnv {
   VITE_SUPABASE_URL: string
+  PHASE2_ENABLED?: string
   SUPABASE_SERVICE_ROLE_KEY?: string
   RESEND_API_KEY?: string
   ALERT_EMAIL_PROVIDER_URL?: string
@@ -76,7 +77,11 @@ export async function dispatchPendingAlertEmails(
   fetchFn: typeof fetch = fetch,
 ): Promise<AlertDispatchSummary> {
   const summary: AlertDispatchSummary = { scanned: 0, sent: 0, failed: 0 }
-  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.RESEND_API_KEY) {
+  if (env.PHASE2_ENABLED !== 'true') {
+    logWorkerEvent('warn', 'alert_email_dispatch_skipped', { reason: 'phase2_disabled' })
+    return summary
+  }
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.RESEND_API_KEY || !env.PUBLIC_SITE_URL || !env.ALERT_EMAIL_FROM) {
     logWorkerEvent('warn', 'alert_email_dispatch_skipped', { reason: 'missing_configuration' })
     return summary
   }
@@ -118,8 +123,8 @@ export async function dispatchPendingAlertEmails(
   }
 
   const providerUrl = env.ALERT_EMAIL_PROVIDER_URL || 'https://api.resend.com/emails'
-  const sender = env.ALERT_EMAIL_FROM || 'Cubitat <notificaciones@cubitathome.com>'
-  const publicSiteUrl = (env.PUBLIC_SITE_URL || 'https://cubitathome.com').replace(/\/+$/, '')
+  const sender = env.ALERT_EMAIL_FROM
+  const publicSiteUrl = env.PUBLIC_SITE_URL.replace(/\/+$/, '')
 
   for (const notification of notifications) {
     const recipient = emailByUser.get(notification.user_id)

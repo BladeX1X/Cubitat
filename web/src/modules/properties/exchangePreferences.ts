@@ -35,6 +35,7 @@ export const emptyExchangePreferencesForm: ExchangePreferencesForm = {
 
 const exchangePropertyTypes = new Set<string>(['indiferente', ...PROPERTY_TYPE_VALUES])
 const cashDirections = new Set<string>(['none', 'pay', 'receive', 'negotiable'])
+const USD_NUMBER_FORMATTER = new Intl.NumberFormat('en-US')
 
 function optionalPositiveNumber(value: unknown): number | undefined {
   if (value === '' || value === null || value === undefined) return undefined
@@ -114,7 +115,7 @@ export function getExchangePropertyTypeLabel(type: ExchangePropertyType): string
 
 export function formatExchangeCashAdjustment(preferences: ExchangePreferences): string {
   const amount = preferences.cashAdjustment.amountUsd
-  const formattedAmount = amount ? `USD ${new Intl.NumberFormat('en-US').format(amount)}` : ''
+  const formattedAmount = amount ? `USD ${USD_NUMBER_FORMATTER.format(amount)}` : ''
   switch (preferences.cashAdjustment.direction) {
     case 'pay': return amount ? `Puede pagar hasta ${formattedAmount}` : 'Puede aportar dinero adicional'
     case 'receive': return amount ? `Espera recibir hasta ${formattedAmount}` : 'Espera recibir dinero adicional'

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build && node scripts/verify-phase2-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/generate-sitemap.mjs",
+    "build": "tsc -b && vite build && node scripts/verify-phase2-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs && node scripts/generate-sitemap.mjs",
+    "build:phase2-dev": "tsc -b && node scripts/verify-phase2-dev-config.mjs && vite build --mode phase2-dev && node scripts/generate-sitemap.mjs --phase2-dev && node scripts/verify-phase2-dev-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest",
@@ -19,6 +20,7 @@
     "test:e2e:real": "playwright test e2e/real-publish.spec.ts",
     "verify:phase2-bundle": "node scripts/verify-phase2-production-bundle.mjs",
     "verify:phase2-worker-bundle": "node scripts/verify-phase2-worker-bundle.mjs",
+    "verify:private-secret-bundle": "node scripts/verify-private-secret-bundle.mjs",
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
     "deploy": "wrangler deploy",
     "cf:deploy": "npm run build && wrangler deploy"
@@ -34,7 +36,7 @@
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.21.0",
-    "maplibre-gl": "^5.24.0",
+    "maplibre-gl": "^6.11.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0"
@@ -52,14 +54,14 @@
     "autoprefixer": "^10.5.2",
     "happy-dom": "^20.10.6",
     "oxlint": "^1.69.0",
-    "postcss": "^8.5.15",
-    "sharp": "^0.35.2",
+    "postcss": "^8.5.28",
+    "sharp": "^0.35.5",
     "supabase": "^2.108.0",
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.0",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.9",
-    "wrangler": "^4.107.0"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.142.0"
   }
 }

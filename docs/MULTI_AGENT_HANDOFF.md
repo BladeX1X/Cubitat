@@ -1,6 +1,400 @@
 # Relevo y coordinación multiagente de Cubitat
 
-Última actualización: 2026-09-14
+## Guard de callback y remitente de autenticación DEV — 2026-09-28
+
+- Con `PHASE2_ENABLED=true`, el reenvío de confirmación exige el origen DEV y
+  el remitente DEV; no usa valores productivos como fallback.
+- Suite: 135 archivos y 589 pruebas; lint y builds productivo/DEV correctos.
+- DEV desplegado como `83dac546-0cda-4fe3-b87a-0dd9ce6f60a7`; producción sin
+  cambios.
+
+## Inventario operativo de secretos DEV — 2026-09-28
+
+- Wrangler confirmó los secretos de Resend, service role, VAPID y métricas en
+  DEV; `GROQ_API_KEY` está ausente.
+- El verificador Turnstile tiene `TURNSTILE_SECRET_KEY`.
+- Supabase CLI devolvió lista vacía para secretos gestionados del proyecto DEV;
+  no se modificaron secretos ni valores.
+
+## Parsers tipados de métricas y autenticación — 2026-09-28
+
+- Cloudflare Metrics y los cuerpos JSON de autenticación ya no usan `any` en
+  esas fronteras; las respuestas inesperadas se degradan de forma segura.
+- Suite: 135 archivos y 590 pruebas; lint y builds productivo/DEV correctos.
+- DEV desplegado como `91fe9f21-063a-482e-86ba-03e901aec5c0`; producción sin
+  cambios.
+
+## Manejo seguro de fallos de correo Auth DEV — 2026-09-28
+
+- Los fallos de red de Resend durante el reenvío de confirmación ahora se
+  convierten en una respuesta segura `503`; la ruta no propaga excepciones.
+- Suite: 135 archivos y 590 pruebas; lint y builds productivo/DEV correctos.
+- DEV desplegado como `04b59b38-b4f6-4bb6-9572-7ece5bfeec86`; producción sin
+  cambios.
+
+## Validación de esquema remoto DEV — 2026-09-28
+
+- `supabase db lint --linked --level warning`: `No schema errors found`.
+- `supabase db push --linked --dry-run`: `Remote database is up to date`.
+- No se aplicaron migraciones ni se crearon datos.
+
+## Inventario final de migraciones DEV — 2026-09-28
+
+- `supabase migration list --linked` mostró coincidencia completa entre las
+  migraciones locales y remotas, incluida la última `20260916010000`.
+- No hay deriva de migraciones ni migraciones pendientes; esta comprobación fue
+  de solo lectura y no modificó la base de datos.
+- La comprobación se repitió con `SUPABASE_HOME` temporal porque el perfil
+  predeterminado no puede escribir su archivo local de telemetría. El lint
+  remoto devolvió `No schema errors found`; el dump completo requiere Docker
+  local y queda pendiente.
+
+## Reconciliación del inventario del README — 2026-09-28
+
+- `web/README.md` ya refleja como implementados el sistema de notificaciones y
+  la extracción de `Header`/`SiteFooter`.
+- Se mantienen pendientes, con su criterio de cierre, la entrega real de correo,
+  el contenido aprobado, la revisión legal, React Router y las imágenes propias
+  de provincias.
+
+## Regresión del flujo estructurado de permutas — 2026-09-28
+
+- Se añadieron pruebas directas para construir, validar, tolerar datos antiguos
+  o malformados e hidratar las preferencias de permuta del formulario.
+- Gates: lint correcto, `135` archivos y `591` pruebas correctas, build
+  productivo y `build:phase2-dev` correctos; sitemap DEV con 446 URLs y bundle
+  DEV verificado.
+- El cambio solo amplía cobertura; no requiere despliegue ni modifica datos.
+
+La cobertura se amplió también a las etiquetas y al resumen de diferencia
+monetaria; el resultado final de la suite es `135` archivos y `592` pruebas.
+
+## Auditoría de escenarios de Administración y Publicación — 2026-09-28
+
+- Las especificaciones actuales tienen suites dedicadas para acceso AAL2,
+  publicaciones, reportes, usuarios, KYC, retención, bitácora, métricas,
+  moderación IA, agentes, borradores, permutas y estados de publicación.
+- La implementación queda cubierta por las pruebas actuales; no se marcaron
+  como evidencia de producción los escenarios que dependen de `GROQ_API_KEY`,
+  proveedores OAuth/correo/Turnstile o dispositivos físicos.
+
+## Auditoría de fronteras del Worker — 2026-09-28
+
+- Las rutas de contactos/reportes públicos, Turnstile, rate limits, moderación
+  IA, métricas AAL2, Push, correo y retención KYC tienen regresiones directas
+  para respuestas válidas, rechazo, indisponibilidad o fallos de proveedor.
+- No se encontró una frontera crítica del Worker sin prueba directa. Las
+  validaciones restantes requieren secretos reales, entrega externa o
+  dispositivos físicos y permanecen separadas del código probado.
+
+## Endurecimiento de errores Auth y favoritos — 2026-09-28
+
+- Los `catch` de login, registro, recuperación y reenvío de confirmación ahora
+  manejan `unknown`; los mensajes pasan por el traductor seguro de Auth.
+- El manejo de duplicados de favoritos valida el código de error sin casts
+  inseguros. No se modificaron rutas, contratos ni datos.
+- Gates: lint correcto, `135` archivos y `592` pruebas correctas, build
+  productivo y `build:phase2-dev` correctos; sitemap DEV con 446 URLs y bundle
+  DEV verificado.
+- Cambio aislado de calidad; no requiere despliegue ni modifica producción.
+
+Revalidación posterior: el cambio se desplegó únicamente en DEV como
+`0d11e5e1-cc70-4088-ad6a-856f9d3d4d41`; `/`, `/mi-cuenta`, `/moderar`, el
+manifest y `sw.js` respondieron HTTP 200. Producción respondió HTTP 200 en una
+lectura independiente y no fue modificada.
+
+## Guard completo del dispatcher de alertas DEV — 2026-09-28
+
+- El dispatcher exige `ALERT_EMAIL_FROM` además de las demás variables DEV;
+  sin remitente no reclama ni envía alertas, evitando fallback a producción.
+- Suite: 135 archivos y 587 pruebas; lint y builds productivo/DEV correctos.
+- DEV desplegado como `4617a3d5-5d5e-4cfb-9fd3-b252f326f272`; producción sin
+  cambios.
+
+## Cobertura final de correo por entorno — 2026-09-28
+
+- Callback DEV y remitente DEV de cuentas confirmadas cubiertos por regresiones.
+- Suite actual: 135 archivos y 586 pruebas. El runtime continúa en DEV como
+  `17c1519e-ab2e-41a8-8ce3-49c680c1bf96`; producción sin cambios.
+
+## Reenvío de confirmación aislado por entorno — 2026-09-28
+
+- El callback de confirmación y el remitente de correo respetan
+  `PUBLIC_SITE_URL` y `ALERT_EMAIL_FROM`; la regresión quedó cubierta.
+- Suite: 135 archivos y 585 pruebas. DEV vigente:
+  `17c1519e-ab2e-41a8-8ce3-49c680c1bf96`. Producción permanece sin cambios.
+
+## Remitente de correo DEV aislado — 2026-09-28
+
+- `wrangler.phase2-dev.jsonc` fija `ALERT_EMAIL_FROM` a `Cubitat DEV
+  <onboarding@resend.dev>` y el verificador bloquea la ausencia de ese valor.
+- DEV desplegado como `f7704d95-8ef0-4600-8dd6-31cf7712cbe0`; producción sin
+  cambios.
+
+## Revalidación final del dispatcher DEV — 2026-09-28
+
+- Suite: 135 archivos y 584 pruebas; lint y builds productivo/DEV correctos.
+- DEV vigente: `2786d548-e33b-4c2e-a328-f5748ae5def7`.
+- El dispatcher exige `PHASE2_ENABLED=true` y `PUBLIC_SITE_URL`; sin cualquiera
+  de ellas no accede a red ni reclama notificaciones.
+
+Última actualización: 2026-09-28
+
+## Parser seguro de confirmación de correo — 2026-09-28
+
+- Las respuestas de Supabase para confirmación se validan como `unknown`, sin
+  `any` en esa frontera. Suite: 135 archivos y 586 pruebas.
+- DEV desplegado como `6b8e21d9-a84d-4565-b4e1-9e0fccfeda76`; producción sin
+  cambios.
+
+## Estado vigente al cierre de esta sesión — 2026-09-28
+
+- Gates: lint correcto, 136 archivos y 600 pruebas correctas, build productivo
+  aislado y build `phase2-dev` correctos; sitemap real de 446 URLs.
+- Auditoría de dependencias: el espejo npm local no implementa el endpoint de
+  auditoría (`404 NOT_IMPLEMENTED`), pero el registro oficial terminó con
+  `found 0 vulnerabilities`; no se modificaron dependencias.
+- Moderación de imágenes almacenadas: regresión añadida para descargar una
+  imagen pública de Supabase, convertirla a base64 y enviarla a Groq. La suite
+  queda en 135/582 y DEV queda pendiente de prueba remota por falta del secreto
+  de Groq.
+- El Worker DEV fija `PUBLIC_SITE_URL` al origen DEV y el verificador bloquea
+  builds sin esa variable o con el dominio productivo. Versión desplegada:
+  `6329a5cc-cd09-4557-a10a-1d0217cd84ec`; producción permanece sin cambios.
+- La documentación de operación quedó corregida: el envío de alertas por correo
+  está implementado en DEV con reclamación idempotente, reintentos y Cron junto
+  a Push/KYC. El secreto `RESEND_API_KEY` está configurado en DEV; solo falta
+  una entrega real controlada con un destinatario DEV. Producción no ejecuta
+  este dispatcher.
+- DEV vigente: `cubitat1-phase2-dev`, versión
+  `97259d81-46cd-42e9-a2d0-4784390d458b`. Producción permanece sin cambios.
+- El dispatcher de alertas exige `PHASE2_ENABLED=true`; con Fase 2 desactivada
+  devuelve un resumen vacío sin acceder a red. La regresión quedó cubierta en
+  la suite y el guard se desplegó solo en DEV.
+- Auth DEV quedó sincronizado y verificado con `site_url` del Worker DEV,
+  callbacks DEV y producción, y `otp_expiry = 900` (enlaces de recuperación de
+  15 minutos). La primera diferencia detectada durante el `config push` fue
+  corregida antes de continuar; la segunda ejecución confirmó que Auth remoto
+  está actualizado.
+- El build `phase2-dev` valida automáticamente que Auth no apunte a producción
+  y que sitemap/robots usen el origen DEV. El despliegue remoto respondió 200
+  para ambos artefactos y no incluyó referencias a `https://cubitathome.com`.
+- La regla anti-duplicado de publicaciones quedó aplicada únicamente en
+  Supabase DEV mediante `dev-migrations/20260928010000_property_duplicate_rules.sql`.
+  La prueba transaccional creó el flag y el aviso de revisión esperado y
+  terminó con `ROLLBACK`; producción no recibió la migración.
+- El panel de moderación DEV muestra el título de la publicación relacionada
+  cuando existe ese flag. Gates vigentes: 135 archivos/581 pruebas, lint y
+  builds correctos. DEV actualizado a `7febd479-a185-4958-9fc9-7ef21f69bcab`;
+  `/` y `/moderar` respondieron HTTP 200.
+- El ciclo de duplicados quedó cerrado en DEV con
+  `20260928020000_resolve_duplicate_flags_on_review.sql`: las decisiones finales
+  resuelven la señal y el regreso a revisión la reactiva. La prueba remota pasó
+  con `ROLLBACK`; el panel ya filtra señales resueltas.
+- Verificación documental: una solicitud rechazada ahora permite enviar una
+  nueva evidencia, porque la unicidad solo aplica mientras exista una solicitud
+  `pending`. La regresión queda cubierta y el chunk DEV fue comprobado por HTTP.
+- Push ahora continúa la activación después de recuperar una preparación fallida
+  de VAPID/Service Worker en el mismo intento; la regresión está cubierta por
+  6 pruebas del componente. El bundle DEV y `/`, `/mi-cuenta`, `/sw.js`
+  respondieron correctamente por HTTP.
+- Último endurecimiento: recuperación exige credenciales reales del enlace;
+  `type=recovery` aislado no habilita el cambio de contraseña.
+- Nuevo endurecimiento: el cliente SSR de Supabase no cae a la URL del proyecto
+  productivo si falta configuración; usa un dominio inválido seguro. Gates:
+  lint, 134 archivos/570 pruebas y builds productivo/DEV correctos. DEV vigente
+  tras el despliegue: `c1198d5c-2b55-43fd-a33c-1cc1853eb4c8`; producción sin cambios.
+- La reevaluación IA restaura el estado previo si falla antes de ser aceptada;
+  el caso quedó cubierto en el hook administrativo y desplegado en DEV.
+- La frontera de `/api/ai-moderate` quedó tipada sin `any` para el payload y la
+  respuesta de Groq; los estados externos se validan contra una lista cerrada y
+  una respuesta inválida conserva `pending_review`. Gates: lint, 134 archivos/
+  570 pruebas y builds productivo/DEV correctos. Se promovió únicamente al
+  Worker DEV como `c1198d5c-2b55-43fd-a33c-1cc1853eb4c8`; producción sigue sin
+  cambios.
+- El routing del clic Push rechaza rutas con barras invertidas antes de
+  normalizarlas, evitando que una URL manipulada salte a un dominio externo.
+  Regresión cubierta; lint, 134 archivos/570 pruebas y builds productivo/DEV
+  correctos. Se desplegó solo en DEV como `68f8e3c4-3632-4f1a-ac8e-d263d366e548`;
+  producción permanece sin cambios.
+- Las tarjetas de métricas ya distinguen valores ausentes de cero real; la
+  regresión quedó cubierta y el cambio está desplegado solo en DEV.
+- El verificador del bundle DEV bloquea referencias al proyecto productivo en
+  HTML/assets. Supabase DEV fue revalidado en modo lectura: migraciones locales
+  y remotas alineadas y `db lint` sin errores de esquema.
+- Pendientes externos: secretos opcionales de proveedores y QA físico real de
+  Push en Android/iOS.
+- El manejo de errores de autenticación quedó modularizado: OAuth y CAPTCHA
+  muestran mensajes seguros, y el reenvío de confirmación devuelve error
+  controlado cuando el proveedor de correo no está configurado o falla. Suite
+  completa: 134 archivos/578 pruebas; DEV vigente:
+  `b4314b14-2ff9-43b8-a070-6983806c04eb`.
+- El modal conserva el mensaje seguro del endpoint de reenvío y usa un fallback
+  genérico si la respuesta no es JSON.
+- Auditoría de dependencias: el espejo npm local no implementa auditorías
+  (`404 NOT_IMPLEMENTED`), pero `npm audit --audit-level=high` contra el
+  registro oficial terminó con `found 0 vulnerabilities`; no se cambiaron
+  paquetes.
+- El endpoint de reenvío de confirmación valida el cuerpo como `unknown` antes
+  de leer `email`; Worker 46/46 y suite 134/578 pasaron, con DEV actualizado a
+  `acaf392b-46c5-4447-9f1d-d97c9a8a5226`.
+- El aviso de actualización PWA volvió a conectarse con `registerSW`; la suite
+  completa quedó en 134 archivos/576 pruebas y el despliegue DEV vigente es la
+  versión `0d1170a4-5eb9-481c-a65d-1216f7c709a0`.
+- Revalidación remota del 2026-09-28: `supabase migration list --linked`
+  permanece alineado y `supabase db lint --linked --level warning` terminó sin
+  errores; no se hicieron escrituras remotas.
+- La recuperación de contraseña oculta errores técnicos de PKCE/tokens y guía al
+  usuario a solicitar un enlace nuevo; regresión cubierta y desplegada solo en
+  DEV como `562121b5-d335-4627-9f6c-e9bdb6b1a8bf`.
+- Inventario DEV de secretos consultado sin valores: Push, Resend, salt de
+  métricas de contacto, service role y anon están presentes; Groq y métricas
+  externas opcionales siguen ausentes y degradan de forma segura.
+- Métricas administrativas: límite de 30 solicitudes por administrador AAL2 por
+  minuto, con 429 y `Retry-After`; regresión cubierta y desplegada solo en DEV.
+  La versión vigente se registra en el bloque de despliegue posterior.
+- Auditoría de dependencias 2026-09-28: `npm audit --audit-level=high`
+  terminó con `0 vulnerabilities` tras actualizar MapLibre `6.11.2`, PostCSS
+  `8.5.28`, sharp `0.35.5`, Vitest `4.1.11` y Wrangler `4.142.0`. La
+  importación se adaptó a MapLibre 6 y todas las gates volvieron a pasar.
+- La auditoría pública posterior al último despliegue pasó 6/6 en Chromium;
+  `/`, `/mi-cuenta`, `/moderar`, `/manifest.webmanifest` y `/sw.js`
+  respondieron HTTP 200. Producción permanece sin cambios.
+- El rate limiter normaliza parámetros inválidos y limpia entradas expiradas en
+  paralelo; `CubitatApp` protege actualizaciones posteriores a la caché.
+- La matriz SQL/RLS sigue pendiente por Docker; el esquema remoto sí pasó lint
+  y dry-run sin divergencias. También siguen pendientes proveedores externos,
+  cuentas QA autenticadas y QA físico Push/PWA.
+
+## 2026-09-28 - Diagnóstico inicial del mapa DEV con MapLibre 6
+
+- El mapa base y los controles OpenFreeMap cargan en una pestaña limpia de
+  DEV, pero la fuente GeoJSON de propiedades no muestra marcadores.
+- Se probó temporalmente sin clustering y el resultado fue el mismo; se
+  restauró el clustering original. MapLibre 5 sí evita este síntoma en una
+  prueba, pero `npm audit --audit-level=high` reporta una vulnerabilidad
+  crítica en esa rama, por lo que no se dejó esa dependencia.
+- El bloqueo quedó resuelto posteriormente con la inicialización tolerante y el
+  fallback aislado de marcadores DOM documentados en `FASE2_ESTADO.md`.
+  Producción no se tocó.
+
+## 2026-09-28 - Verificación documental DEV estabilizada
+
+- La migración `20260810000000_property_verification_and_trust_score.sql`
+  está aplicada únicamente en Supabase DEV; tabla, bucket privado, RLS y RPC
+  fueron verificados sin fixtures.
+- La UI de propietario y la pestaña administrativa `Documentos` están aisladas
+  de producción. El Trust Score se normaliza correctamente desde la respuesta
+  array de Supabase y degrada sin bloquear la revisión si falla.
+- `supabase db lint --linked --level warning` terminó sin errores de esquema.
+- Gates actuales: lint, 118 archivos/499 pruebas y builds productivo/DEV
+  correctos. Worker DEV `42afda30-2b43-4ab5-b5f3-9d50581c9557`; producción sin
+  cambios.
+- `/api/ai-moderate` tiene ahora un límite por usuario de 5 solicitudes cada
+  10 minutos y responde 429 con `Retry-After`; la regresión pasa y el cambio se
+  desplegó solo en DEV como `f40ef974-36dc-45d4-9146-ce4aa1db98c2`.
+- El manifest PWA DEV remoto fue comprobado con `display: standalone`,
+  `scope/start_url` en `/` y `related_applications` del mismo origen; queda
+  pendiente la confirmación física de instalación previa en Android/iOS.
+- Pendientes operativos: E2E persistente con cuentas/documentos reales, QA
+  física Push Android/iOS, decisión sobre exposición pública del indicador y
+  validación legal manual fuera del alcance técnico.
+
+## 2026-09-28 - UI KYC DEV desplegada y verificada
+
+- Estado: **desplegado y visible únicamente en DEV**.
+- Se ejecutó `npm run build:phase2-dev`; TypeScript, Vite, PWA y el verificador
+  del bundle DEV terminaron correctamente. El sitemap generó 446 URLs.
+- Worker `cubitat1-phase2-dev` desplegado como versión
+  `edb4a494-3e44-4f26-8847-fdd945340a21`.
+- Verificación remota autenticada en una pestaña limpia de
+  `/mi-cuenta?fresh=edb4a494`: aparecen `Verificación de Identidad (KYC)` y
+  `Solicitar Verificación`. Producción no fue modificada.
+- Hallazgo de QA: una pestaña anterior conservaba el bundle
+  `index-D0HWr-zQ.js` mediante el service worker y ocultaba KYC; una pestaña
+  limpia cargó `index-DcnWXhAe.js` y confirmó el resultado. Para validar un
+  despliegue DEV después de actualizar, abrir una pestaña nueva o limpiar el
+  service worker/caché del origen.
+- Estado del formulario: el estado vacío, la validación de ambas imágenes, la
+  compresión, la compensación de subidas parciales y la limpieza cuando falla
+  el registro final están cubiertos por pruebas. Sigue pendiente la ejecución
+  con una fixture DEV persistente para validar moderación AAL2 y almacenamiento
+  privado extremo a extremo.
+- Comprobación remota adicional en DEV: `public.kyc_requests` y
+  `profiles.verification_status` existen; el bucket `kyc_documents` existe y
+  permanece privado; `storage.objects` mantiene RLS activo; y las funciones
+  `submit_kyc_request` y `review_kyc_request` tienen ejecución para los roles
+  esperados. No se ejecutaron escrituras desde el SQL Editor.
+- Calidad posterior al despliegue: `npm run lint` limpio, `npm run test:run`
+  con 114 archivos y 483 pruebas aprobadas, y `npm run build` correcto con los
+  verificadores de aislamiento de producción y Worker completados. El intento
+  de abrir `/moderar` queda pendiente de AAL2 porque esta sesión no dispone del
+  TOTP; no se intentó elevarla ni se crearon fixtures.
+- QA automatizado adicional de Push y borradores: 7 archivos y 41 pruebas
+  aprobadas. La prueba física Android/iOS, el envío de fotos reales y la
+  moderación KYC AAL2 siguen siendo pendientes operativos, no fallos del build.
+- Refuerzo de regresión KYC: se añadió una prueba que confirma la eliminación
+  de documento y selfie si falla el registro final de la solicitud. Tras el
+  cambio, lint quedó limpio, la suite completa pasó con 114 archivos y 484
+  pruebas, y el build volvió a completar sus verificadores.
+- Moderación KYC: se añadió cobertura para conservar la solicitud visible y
+  mostrar un aviso seguro cuando falla una aprobación. La suite completa pasó
+  después con 114 archivos y 485 pruebas; no hubo cambios de datos remotos.
+- Evidencia incompleta: se cubrieron por separado las ausencias de documento y
+  selfie; la aprobación permanece deshabilitada si falta cualquiera de las dos.
+  Tras corregir el tipo de la fixture, lint, 114 archivos/486 pruebas y build
+  quedaron correctos.
+- Módulo de agentes revisado en DEV/local: repositorios, perfil público,
+  dashboard, filtros y gestión de visibilidad pasaron 5 archivos y 20 pruebas
+  focalizadas. No se detectaron regresiones ni se tocaron datos remotos.
+- Push revisado en local: servicio de suscripción, preferencias, lectura,
+  Service Worker y dispatcher pasaron 5 archivos y 33 pruebas focalizadas.
+  También se confirmó la limpieza de caché PWA obsoleta; no se tocaron datos
+  remotos ni se hizo despliegue por tratarse de una verificación sin cambios.
+- Autenticación revisada en local: recuperación de contraseña, parámetros de
+  callback, CAPTCHA, política de contraseñas, comprobación de contraseñas
+  comprometidas y callback OAuth pasaron 7 archivos y 43 pruebas focalizadas.
+- Se añadió cobertura unitaria del diálogo de rechazo KYC (motivo obligatorio,
+  acciones y estado de procesamiento); el ciclo completo queda en 115 archivos
+  y 489 pruebas, con lint, build y aislamiento de producción correctos.
+- Smoke visual remoto DEV, solo lectura: la pestaña limpia autenticada carga
+  `/mi-cuenta` y muestra Push activo (`Las notificaciones están activas en este
+  dispositivo`); no se ejecutaron acciones persistentes.
+- Corrección legal desplegada solo en DEV: la portada sustituye la afirmación
+  no demostrada por `El portal inmobiliario para Cuba`. Build `phase2-dev`,
+  verificador KYC y sitemap completados; Worker `cubitat1-phase2-dev` en la
+  versión `c703a87c-7f5d-447d-8280-f1365fc92fb2`. Verificación HTTP directa del
+  asset: `200`, copy nuevo presente y copy antiguo ausente. Una pestaña que aún
+  muestra el texto anterior conserva caché del Service Worker; debe actualizarse
+  o abrirse limpia para la QA visual. Producción no fue modificada.
+- Reconciliación con la propuesta comercial: el Trust Score permanece diferido
+  por decisión de producto y la auditoría del código no encontró una tabla,
+  migración ni flujo para verificación documental de propiedad. KYC de identidad,
+  moderación IA/manual, reportes y controles antiabuso existentes sí tienen
+  implementación y pruebas. La verificación documental de propiedad queda como
+  pendiente de definición funcional/legal, no como requisito falsamente cerrado.
+- Regresión de copy legal en `HomePage.test.tsx`: exige el texto verificable de
+  portada y evita que reaparezca el claim no sustentado. El ciclo completo se
+  mantuvo en 115 archivos y 489 pruebas, con lint, build y aislamiento correctos.
+- Matriz auditable de entregables y pendientes creada en
+  `docs/FASE2_ESTADO.md`; separa implementación verificada, QA físico, definición
+  funcional/legal y decisiones diferidas sin inventar alcance.
+- Corrección PWA: `PWAInstallPrompt` vuelve a comprobar
+  `getInstalledRelatedApps()` antes de mostrar el aviso recibido por
+  `beforeinstallprompt`, evitando ofrecer instalación si la app ya estaba
+  instalada. La regresión cubre esa carrera; ciclo completo: lint, 115 archivos
+  y 490 pruebas, build, aislamiento y sitemap de 446 URLs.
+- Desplegada únicamente en `cubitat1-phase2-dev`, versión
+  `66416dfb-946a-430a-9748-66d541890512`. El asset DEV respondió HTTP `200` y
+  contiene la comprobación `getInstalledRelatedApps`; no se modificó producción.
+- Verificación remota de assets de esa versión: `AccountPhaseTwoSections` y el
+  bundle principal respondieron `200`; el primero contiene `submit_kyc_request`,
+  el segundo contiene `getInstalledRelatedApps` y `sw.js` respondió `200`.
+- Corrección adicional del manifest PWA: el build `phase2-dev` usa ahora
+  `related_applications` del origen DEV y el build productivo conserva el origen
+  productivo. Worker DEV redeplegado como versión
+  `cd5cfcff-ee75-43f6-baeb-bc5f3fb28b30`; ambos manifests remotos respondieron
+  `200` y apuntaron a su propio dominio.
 
 > Estado vigente: los seis hallazgos de la auditoría Fase 1 del 2026-09-11
 > están corregidos, probados y desplegados. Las migraciones 55 a 59 están
@@ -8,6 +402,42 @@
 > `14a5dd39-9f47-4077-bed4-ef916c2bd24b`. El PR `#108` integró el lote en
 > `main` como `73a3c8d`; permanecen pendientes los QA físicos/autenticados,
 > contenido aprobado y revisión legal.
+
+## 2026-09-24 - Corrección del planificador Push en DEV
+
+- Estado: **corregido y desplegado únicamente en DEV**.
+- `web/src/worker-phase2-dev.ts` ahora incluye
+  `dispatchPendingPushNotifications` junto a las tareas de correo y retención
+  KYC. La regresión quedó cubierta por `worker-phase2-dev.test.ts`.
+- `wrangler.phase2-dev.jsonc` ejecuta el cron cada minuto para permitir la
+  validación de entrega sin esperar 15 minutos.
+- Gate local: `npm run lint`, 114 archivos/478 pruebas y `npm run build`.
+- Worker DEV: `cubitat1-phase2-dev`, versión
+  `37a6b5b5-4c39-4027-9983-99d2212e2a96`.
+- Producción no fue modificada. Sigue pendiente la prueba física de recepción
+  y apertura en Android/iOS con una PWA instalada y permiso concedido.
+
+## 2026-09-24 - Recuperación segura de borradores locales
+
+- `web/src/pages/publish/draftStorage.ts` ahora elimina entradas JSON corruptas
+  de forma aislada, tanto para la clave del usuario como para el formato legado,
+  y permite que el formulario continúe sin afectar otras cuentas.
+- Regresión cubierta en `draftStorage.test.ts`. Gate: lint, 114 archivos/480
+  pruebas y build correctos.
+- Desplegado únicamente en `cubitat1-phase2-dev`, versión
+  `7db8d49b-9297-4026-889d-70120f797a1f`. Producción no fue modificada.
+
+## 2026-09-24 - Primera integración controlada de Fase 2 en producción
+
+- Módulo integrado: tolerancia a borradores locales corruptos. No requiere
+  migraciones, secretos ni cambios del Worker de Fase 2.
+- Commit aislado de producción: `0c9469a`, basado en `origin/main`.
+- Validación del worktree limpio: lint, 112 archivos/476 pruebas (1 omitida) y
+  build con sitemap productivo correcto.
+- Worker productivo `cubitat1` desplegado con versión
+  `27c58e01-acb7-4720-9f30-e541d998539d`.
+- Rollback: revertir `0c9469a` y volver a desplegar la configuración productiva
+  anterior. No se tocaron migraciones ni datos.
 
 Este documento permite que varios agentes continúen el trabajo sin repetir
 auditorías ni modificar las mismas áreas a la vez. El repositorio es la fuente
@@ -220,7 +650,7 @@ archivos. Al terminar, debe registrar evidencia y dejar el carril `Terminado` o
 | C. Rendimiento y responsive | Terminado | Codex principal | Home y ruta SEO de resultados verificadas. Matanzas pasó de CLS 0.25/0.348 en informes previos a CLS 0; en móvil Slow 4G/CPU x4 obtuvo LCP 1.675 s. Lighthouse móvil: accesibilidad 100, SEO 100 y navegación agéntica 100; el único fallo de buenas prácticas es el DNS externo del beacon de Cloudflare. |
 | D. RLS por rol | Terminado | Codex principal | Matriz real completa: propietario lista y edita únicamente su borrador QA; otro usuario ve cero publicaciones y la URL ajena vuelve a `/mis-propiedades`; admin accede a contenido no público, reportes y controles de moderación; guards y consola correctos. |
 | E. Métricas admin | Terminado | Codex principal | Verificado en producción: Cloudflare 23,260 solicitudes del día; Supabase BD 12.9 MB, Storage 0.6 MB, 313 anuncios, 25 usuarios y 3 reportes; GA4 devuelve usuarios activos mediante Service Account con rol Lector. Endpoint admin autenticado, errores parciales y reintento desplegados. El egreso unificado permanece identificado como dato exclusivo del dashboard de Supabase porque su Management API no expone bytes mediante `analytics_usage_read`. |
-| F. Moderación Groq | Terminado | Codex principal | Publicación QA temporal reevaluada manualmente: pasó por pendiente y Groq la rechazó con motivo coherente por precio irrazonable y contenido temporal. Se eliminó únicamente ese registro; inventario final 312, rechazadas 9, pendientes 0 y consola limpia. |
+| F. Moderación Groq | Implementado; verificación DEV pendiente | Codex principal | El flujo de reevaluación y la ruta multimodal están cubiertos por pruebas, incluida la descarga de imágenes almacenadas. Falta configurar `GROQ_API_KEY` en DEV y ejecutar una prueba remota con proveedor real; no se declara cerrado por evidencia histórica de otro entorno. |
 | G. Contenido real | Bloqueado | — | Requiere inventario, fotos, títulos, precios y zonas aportados o aprobados por el usuario. |
 | H. Legal | Bloqueado | — | Requiere revisión jurídica externa de Privacidad y Términos. |
 | I. Operación humana | Terminado | Rodolfo | Responsable de moderación definido: Rodolfo. SLA operativo: revisar publicaciones en un máximo de 24 horas. |
@@ -2495,6 +2925,19 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
   resultado anterior hasta ejecutar `Reevaluar con IA`; las publicaciones nuevas
   ya usan el modelo configurado.
 
+## Aislamiento DEV/producción tras el copy legal — 2026-09-28
+
+- **DEV:** el asset servido respondió `200`, contiene `El portal inmobiliario
+  para Cuba` y no contiene la afirmación anterior.
+- **Producción:** la portada respondió `200` y no contiene el nuevo claim; no se
+  desplegó ni modificó producción en este trabajo.
+- **Conclusión:** el cambio de copy quedó aislado al Worker DEV; la diferencia
+  entre pestaña limpia y cacheada del Service Worker no altera la evidencia HTTP.
+
+- **Revalidación local posterior:** `npm run lint` limpio; `npm run test:run`
+  aprobó 115 archivos y 489 pruebas; `npm run build` aprobó los verificadores
+  de aislamiento de producción y Worker y generó 446 URLs del sitemap.
+
 ## Migración de moderación IA a Qwen 3.8 — 2026-09-20
 
 - **Causa comprobada:** producción registró HTTP 404 al invocar
@@ -2528,3 +2971,823 @@ auditar, registrar su ruta exacta y dejar R `En curso`, no `Terminado`.
 - **Pendiente:** QA física Push Android/iOS y cambio de cuentas, fallo/reintento
   real de fotos, restauración manual de borrador, moderación AAL2 sin recarga,
   inventario aprobado y revisión jurídica.
+
+## Habilitación reversible de UI KYC en Worker DEV — 2026-09-26
+
+- **Causa:** el Worker remoto `cubitat1-phase2-dev` servía un build Vite donde
+  `import.meta.env.DEV` era falso; por eso la UI KYC no aparecía aunque el
+  módulo y el esquema DEV existieran.
+- **Cambio:** `AccountPage` usa la bandera de build explícita del modo
+  `phase2-dev`. `npm run build:phase2-dev` habilita KYC y verifica sus marcadores.
+- **Aislamiento:** `npm run build` sigue usando el verificador de producción y
+  mantiene fuera KYC; no se modifica `wrangler.jsonc` ni el Supabase productivo.
+- **Siguiente evidencia:** desplegar únicamente con
+  `wrangler deploy --config wrangler.phase2-dev.jsonc` y comprobar KYC en
+  `/mi-cuenta` con una cuenta DEV antes de subir documentación de prueba.
+
+## Corrección de detección PWA específica de Cubitat — 2026-09-28
+
+- `hasInstalledRelatedWebApp` ya no considera instalada cualquier PWA del
+  dispositivo; exige que el `id` o `url` pertenezca a Cubitat en producción o
+  DEV. Se añadió una regresión para una PWA ajena.
+- Gate: lint limpio, 115 archivos/491 pruebas y builds de producción/DEV
+  correctos. Se desplegó únicamente DEV como versión
+  `50e55bb3-74be-4fae-8754-f5319336ef54`.
+- `manifest.webmanifest` remoto respondió `200` y su `related_applications`
+  apunta al origen DEV. Producción permaneció sin cambios.
+
+## Verificación documental de propiedad en DEV — 2026-09-27
+
+- Se añadió el módulo reversible de solicitud del propietario y la pestaña
+  administrativa separada para revisar documentos privados.
+- La migración DEV `20260810000000_property_verification_and_trust_score.sql`
+  fue aplicada al proyecto Supabase DEV y verificada sin crear fixtures.
+- El lint remoto DEV detectó una referencia ambigua en el RPC de Trust Score;
+  se corrigió calificando los factores y la segunda ejecución terminó sin
+  errores de esquema.
+- Las políticas de Storage del bucket documental también validan que la
+  segunda carpeta sea la propiedad real del usuario; no basta con el `user_id`.
+- Gates: lint correcto, 118 archivos/499 pruebas, build productivo aislado y
+  build `phase2-dev` correcto con el chunk `PropertyVerificationModerationTab`.
+- Worker DEV desplegado como versión `42afda30-2b43-4ab5-b5f3-9d50581c9557` en
+  `https://cubitat1-phase2-dev.pochiprats18.workers.dev`.
+- La pestaña muestra el indicador interno y sus cuatro factores cuando están
+  disponibles, sin bloquear la revisión si el RPC falla.
+- Producción no modificada. Pendiente QA E2E persistente con una cuenta DEV y
+  documento de prueba controlado.
+
+### Cobertura adicional de verificación documental — 2026-09-27
+
+- El repositorio administrativo conserva la revisión si falla la firma del
+  documento privado o el RPC del indicador interno.
+- Las regresiones cubren respuestas de Trust Score como objeto y fallos de
+  Storage; la prueba focalizada pasó 5/5.
+- La pestaña administrativa quedó cubierta directamente para renderizar el
+  indicador interno, conservar el rechazo y bloquear solo la aprobación cuando
+  falta el documento firmado.
+- El hook de moderación documental cubre aprobar, conservar la solicitud ante
+  error remoto y exigir motivo antes de rechazar.
+- El diálogo de rechazo cubre motivo obligatorio, cancelación, confirmación y
+  bloqueo durante procesamiento.
+- Suite completa posterior: 122 archivos/514 pruebas, lint y build normal
+  correctos; el aislamiento productivo y el sitemap real de 446 URLs pasaron.
+- El bloque solo amplía pruebas; no cambió esquema, runtime ni producción.
+
+## Notificaciones: cierre del comportamiento de lectura — 2026-09-27
+
+- Se añadió `web/src/modules/auth/hooks/useNotifications.test.tsx` para cubrir
+  carga de no leídas, desaparición optimista al marcar una notificación y
+  restauración cuando falla la persistencia.
+- Gates: lint correcto, 119 archivos/502 pruebas correctas, build productivo y
+  build `phase2-dev` correctos; el sitemap DEV generó 446 URLs.
+- Se añadió una prueba del despachador que confirma que un `503` temporal del
+  proveedor devuelve la entrega a `pending` para el siguiente intento; la
+  suite completa queda en 119 archivos/503 pruebas.
+- Worker DEV desplegado como versión
+  `d87af246-bb75-4b62-ac45-7f095ab56b40`; la URL raíz respondió HTTP 200.
+- La cuenta autenticada DEV abierta en Chrome muestra el estado activo de
+  notificaciones y la acción de desactivación; la entrega física en segundo
+  plano y el toque desde un dispositivo cerrado siguen pendientes.
+- La bandeja cierra el menú al marcar avisos sin destino válido, además de
+  navegar y marcar como leídos los avisos con destino interno. La regresión
+  queda cubierta por `UserMenu.test.tsx`; el ciclo completo posterior pasó con
+  119 archivos y 504 pruebas.
+- La corrección quedó desplegada únicamente en `cubitat1-phase2-dev` como
+  versión `a00f6d86-e8a8-4cab-bfe5-0dbde30daadf`. Las rutas `/`, `/mi-cuenta`,
+  `manifest.webmanifest` y `sw.js` respondieron HTTP 200; el manifest conserva
+  `related_applications` apuntando al origen DEV.
+- Producción no modificada. El comportamiento permanece aislado en el módulo
+  de notificaciones y no altera la lógica de publicación o moderación.
+
+## Revalidación remota Supabase DEV — 2026-09-27
+
+- `supabase migration list --linked` confirmó coincidencia entre migraciones
+  locales y remotas registradas.
+- `supabase db lint --linked --level warning` respondió `No schema errors found`.
+- No hubo escrituras de datos ni cambios en el proyecto productivo.
+
+### Reintento de lint remoto — 2026-09-27
+
+- Las migraciones locales y remotas continuaron alineadas.
+- El primer `db lint` falló antes del análisis por `LegacyDbConnectError`; el
+  reintento terminó con `No schema errors found`.
+- No hubo escrituras, cambios de roles ni acciones sobre producción.
+
+## Gates CI — 2026-09-27
+
+- Se añadió `.github/workflows/phase2-quality.yml` con lint, pruebas, build
+  productivo aislado y build DEV en pushes, PRs y ejecución manual.
+- El modo `SITEMAP_MODE=static` se limita a CI para que estos gates no dependan
+  de secretos ni escriban en Supabase; el flujo local/DEV continúa usando el
+  inventario publicado real.
+- Revalidación local: lint correcto, 119 archivos/503 pruebas y ambos builds
+  correctos con el modo estático.
+- Revalidación adicional del build normal: aislamiento productivo correcto y
+  sitemap real regenerado con 446 URLs. No usar `SITEMAP_MODE=static` para
+  generar el sitemap de un despliegue real.
+
+## Superficie HTTP DEV — 2026-09-27
+
+- Las rutas `/`, `/mi-cuenta` y `/moderar` respondieron HTTP 200.
+- El manifest y el service worker DEV respondieron HTTP 200; el manifest usa
+  el origen DEV en `related_applications`.
+
+## Checklist QA física Push — 2026-09-27
+
+- Se creó `docs/FASE2_PUSH_QA_FISICA.md` con pasos reproducibles para Android
+  Chrome y iOS Safari/PWA, criterios de navegación, lectura, aislamiento y
+  evidencia requerida.
+- El documento no contiene secretos ni requiere usar service role desde el
+  navegador. El resultado físico sigue pendiente hasta ejecutar la matriz en
+  dispositivos reales.
+
+## Panel de agentes: cobertura del hook — 2026-09-27
+
+- Se añadió `web/src/modules/agents/hooks/useAgentDashboard.test.tsx`.
+- La prueba cubre carga de agente verificado, métricas derivadas, actualización
+  local tras ocultar una publicación, conservación del estado ante error remoto
+  y error seguro durante la carga.
+- Suite completa: 123 archivos y 518 pruebas; lint correcto.
+- Build productivo correcto con verificadores de aislamiento y sitemap real de
+  446 URLs.
+- No hubo cambios de esquema, runtime, datos remotos ni producción. El QA
+  físico autenticado del panel de agente continúa pendiente.
+
+## Errores administrativos sin filtración de detalles — 2026-09-27
+
+- `web/src/modules/admin/core/errors.ts` ya no expone mensajes crudos de
+  backend; los paneles administrativos usan únicamente sus fallbacks seguros.
+- Se añadieron regresiones para errores de tipo `Error` y objetos desconocidos.
+- Revalidación: 125 archivos y 523 pruebas, lint y build correctos; los
+  verificadores de aislamiento productivo y el sitemap real de 446 URLs pasaron.
+- No hubo cambios de esquema, runtime remoto, datos ni producción.
+
+## Flujo KYC: cobertura del hook — 2026-09-27
+
+- Se añadió `web/src/modules/kyc/hooks/useKycSubmission.test.tsx`.
+- La cobertura comprueba validación de archivos, compensación del documento si
+  falla la subida de selfie y callbacks de finalización tras una solicitud
+  exitosa.
+- Suite completa: 126 archivos y 527 pruebas; lint y build correctos, con
+  aislamiento productivo y sitemap real de 446 URLs.
+- No hubo cambios remotos ni despliegue; el E2E persistente con una cuenta DEV
+  sigue pendiente.
+
+## Alertas de búsqueda: cobertura del hook — 2026-09-27
+
+- Se añadió `web/src/modules/search/hooks/useSearchAlerts.test.tsx`.
+- La cobertura comprueba carga, error seguro, creación autenticada, rechazo sin
+  sesión y eliminación local.
+- Suite completa: 127 archivos y 532 pruebas; lint y build correctos, con
+  aislamiento productivo y sitemap real de 446 URLs.
+- No hubo escrituras remotas ni despliegue. La entrega física de Push/correo
+  continúa pendiente de dispositivos y proveedores reales.
+
+## Robustez de alertas de búsqueda — 2026-09-27
+
+- `useSearchAlerts` limpia siempre `loading`/`creating` si Supabase lanza una
+  excepción y limpia el estado cuando no existe usuario autenticado.
+- Se añadieron regresiones para excepciones de carga y creación.
+- Revalidación: 127 archivos y 534 pruebas, lint y build correctos; aislamiento
+  productivo y sitemap real de 446 URLs verificados.
+
+## Despliegue DEV de alertas robustas — 2026-09-27
+
+- Build `phase2-dev` y dry-run de Wrangler correctos.
+- Se desplegó únicamente `cubitat1-phase2-dev` como versión
+  `9d6d3097-fe9c-49d2-b8cf-961e33f8e244`.
+- `/`, `/mi-cuenta`, `/manifest.webmanifest` y `/sw.js` devolvieron HTTP 200;
+  el manifest conserva `start_url=/` y el origen DEV relacionado.
+- Producción no fue modificada.
+
+## Contacto público: cobertura aislada — 2026-09-27
+
+- Se añadió `web/src/worker/public-submissions.test.ts` con seis casos para
+  payload inválido, Turnstile inválido/no disponible, normalización telefónica,
+  fallo del RPC y reporte público.
+- La suite completa quedó en 127 archivos y 535 pruebas; lint y build correctos,
+  con aislamiento productivo y sitemap real de 446 URLs.
+- No hubo cambios de runtime ni nuevo despliegue; producción sigue intacta.
+
+## MFA: cobertura del servicio — 2026-09-27
+
+- `web/src/modules/auth/mfa/mfaService.test.ts` cubre ocho escenarios del
+  servicio MFA: AAL/factores, fail-closed, limpieza de enrollment pendiente,
+  clasificación de errores y bloqueo seguro ante fallos.
+- Revalidación completa posterior: 132 archivos y 562 pruebas, lint y build correctos;
+  aislamiento del bundle productivo y sitemap real de 446 URLs verificados.
+- Sin escrituras remotas ni despliegue adicional. Pendiente: E2E persistente
+  de MFA con una cuenta DEV y validación física de dispositivo.
+## Revalidación remota DEV — 2026-09-27
+
+- `/`, `/mi-cuenta`, `/manifest.webmanifest` y `/sw.js` respondieron HTTP 200
+  desde `cubitat1-phase2-dev`.
+- El manifest conserva `start_url=/` y `related_applications` con el origen
+  DEV, sin cambios sobre producción.
+## Revalidación de disponibilidad de producción — 2026-09-27
+
+- El sitio productivo, su manifest y su Service Worker respondieron HTTP 200.
+- La comprobación fue de solo lectura y no altera el aislamiento de Phase 2.
+## Routing de clics Push y despliegue DEV — 2026-09-27
+
+- El routing seguro de notificaciones quedó aislado en `web/src/swRouting.ts`
+  con cobertura de rutas internas, externas y UUIDs.
+- Revalidación posterior: 133 archivos y 564 pruebas, lint y build correctos.
+- Despliegue solo a `cubitat1-phase2-dev`, versión
+  `ffba90f5-4ded-4f1d-9845-72ea02258d2e`; los endpoints públicos DEV y el
+  Service Worker remoto respondieron correctamente.
+- Pendiente: prueba física de recepción y clic en Android/iOS con PWA instalada.
+## Eliminación de fallback Supabase incrustado — 2026-09-27
+
+- El Worker dejó de incluir la URL y la clave `anon` antiguas como fallback;
+  exige las variables Supabase del entorno.
+- Validación: 133 archivos y 564 pruebas, lint y build correctos.
+- DEV desplegado como `bf52157f-62d8-49d2-86d5-c0bf07cb142f`; respondió 200 y
+  no expuso la referencia al proyecto antiguo. Producción quedó intacta.
+
+## Inventario operativo de secretos DEV — 2026-09-27
+
+- Consulta no destructiva de Wrangler, únicamente nombres: Push (`VAPID_*`),
+  Resend, `CONTACT_METRICS_SALT`, `SUPABASE_SERVICE_ROLE_KEY` y
+  `VITE_SUPABASE_ANON_KEY` están configurados.
+- Falta `GROQ_API_KEY`; por diseño el Worker deja la publicación en
+  `pending_review` para revisión manual, por lo que la moderación IA sigue
+  pendiente de configuración real.
+- Faltan también las credenciales de Cloudflare, Supabase Management y Google
+  Analytics usadas por métricas externas. Esas ausencias son aisladas y el
+  panel las reporta sin bloquear publicaciones, contactos, auth ni Push.
+- No se escribieron ni rotaron secretos. Antes de cerrar estos submódulos se
+  debe configurar sus valores desde el gestor de secretos y repetir la prueba
+  autenticada de DEV.
+
+## Regresión de fallback Groq — 2026-09-28
+
+- Se cubrió explícitamente el caso sin `GROQ_API_KEY`: no se llama a Groq y la
+  RPC persiste `pending_review` con proveedor nulo para revisión manual.
+- Revalidación: lint correcto, 133 archivos y 565 pruebas, build productivo
+  correcto, aislamiento de Fase 2 y sitemap real de 446 URLs.
+- Cambio solo de pruebas; no hubo despliegue ni cambios remotos.
+
+## Endurecimiento de recuperación de contraseña — 2026-09-28
+
+- El flujo exige ahora credenciales reales del enlace además de la marca
+  `type=recovery` o del evento de recuperación; `type=recovery` aislado ya no
+  habilita una sesión de cambio de contraseña.
+- La regresión está cubierta en `web/src/pages/auth/authUrlParams.test.ts`.
+- Revalidación: lint correcto, 133 archivos y 565 pruebas, build productivo
+  aislado correcto y sitemap real de 446 URLs. Sin despliegue ni cambios
+  remotos.
+
+## Despliegue DEV del endurecimiento de recuperación — 2026-09-28
+
+- Build `phase2-dev` y dry-run de Wrangler correctos.
+- Se desplegó solo `cubitat1-phase2-dev`, versión
+  `e74048af-9c74-4f8e-926b-f195cc902c36`.
+- `/`, `/recuperar-contrasena` y `/sw.js` respondieron HTTP 200; producción no
+  fue modificada.
+
+## Regresión de componente en recuperación — 2026-09-28
+
+- `ResetPasswordPage` queda cubierto cuando existe una sesión pero falta toda
+  credencial del enlace: muestra error, deshabilita guardar y no llama a
+  `updateUser`.
+- Revalidación final: lint correcto, 133 archivos y 566 pruebas, build
+  productivo aislado correcto y sitemap real de 446 URLs.
+- Solo se amplió cobertura; no hubo un segundo despliegue.
+
+## Verificación de bundle de recuperación DEV/producción — 2026-09-28
+
+- Los chunks DEV de `ResetPasswordPage` y `authUrlParams` respondieron HTTP 200
+  y contienen la protección nueva.
+- Los chunks equivalentes de producción respondieron HTTP 200 sin ese marcador,
+  confirmando el aislamiento de Fase 2.
+
+## Separación de guía de secretos DEV — 2026-09-28
+
+- `docs/ROTACION_SECRETOS.md` separa ahora el proyecto Supabase DEV y el Worker
+  DEV de las instrucciones productivas históricas.
+- Las operaciones de Fase 2 quedan documentadas con
+  `wrangler.phase2-dev.jsonc`; no se escribieron ni expusieron valores.
+
+## Métricas administrativas sin credenciales — 2026-09-28
+
+- Se añadió una regresión del endpoint `/api/metrics` para comprobar que un
+  administrador AAL2 recibe estados parciales explícitos cuando faltan las
+  credenciales de Cloudflare, Supabase Management y Google Analytics.
+- Revalidación: lint correcto, 133 archivos y 565 pruebas correctas, build
+  productivo aislado correcto y sitemap real de 446 URLs.
+- No hubo despliegue ni cambios remotos; el panel mantiene esas métricas como
+  pendientes sin bloquear publicación, contactos ni Push.
+
+## Auditoría de especificación administrativa — 2026-09-28
+
+- `web/openspec/specs/administration/spec.md` fue contrastada con módulos y
+  pruebas actuales. Acceso AAL2, publicaciones, reportes, usuarios,
+  KYC/retención, bitácora, métricas, moderación IA, arquitectura modular y
+  contexto del anunciante tienen cobertura dedicada.
+- No se encontró un requisito administrativo local huérfano. El cierre de la
+  Fase 2 aún depende de secretos opcionales de proveedores y QA físico real.
+## Corrección de mapa MapLibre en DEV — 2026-09-28
+
+- MapLibre 6.11.2 ya carga el mapa base en DEV, pero el estilo remoto podía
+  dejar sin pintar la fuente GeoJSON. Se añadieron señales alternativas de
+  inicialización y un timeout de seguridad de 2 segundos.
+- El fallback de marcadores DOM se activa solo si no hay features renderizadas,
+  usa la fuente actual y se limpia al desmontar el mapa; no sustituye el
+  clustering normal cuando el canvas funciona.
+- Verificación visual remota: 7 marcadores de propiedades en
+  `/resultados?operacion=venta`; bundle final sin atributos de diagnóstico.
+- Gates completos: lint, 134 archivos/573 pruebas, build productivo aislado y
+  build DEV correctos. Worker DEV desplegado como
+  `1b6c96d9-bb6f-45d9-bdae-211c4595ced1`.
+- Producción permanece sin despliegue. Pendientes de Fase 2 no relacionados
+  con este módulo continúan abiertos.
+
+## Actualización PWA y despliegue DEV — 2026-09-28
+
+- `PWAInstallPrompt` vuelve a registrar el Service Worker mediante
+  `vite-plugin-pwa`; `onNeedRefresh` muestra el aviso y `Actualizar` aplica la
+  nueva versión con recarga.
+- Regresión focalizada: 10/10; suite completa: 134 archivos y 576 pruebas.
+- Lint, build productivo aislado y build DEV correctos; sitemap DEV con 446
+  URLs.
+- Worker DEV desplegado como `0d1170a4-5eb9-481c-a65d-1216f7c709a0`; raíz,
+  cuenta, manifest y Service Worker respondieron HTTP 200.
+- Pendientes externos: probar actualización entre dos versiones y recepción/
+  clic Push en dispositivos físicos. Producción permanece intacta.
+
+## Frontera de proveedores IA — 2026-09-28
+
+- El Worker remoto usa `GROQ_API_KEY`/`qwen/qwen3.8-27b`; el inventario DEV no
+  contiene ese secreto y el fallback comprobado conserva `pending_review`.
+- La ruta local de Vite usa `GEMINI_API_KEY` de forma independiente; no debe
+  usarse como evidencia de que la moderación IA del Worker está activa.
+- Pendiente operativo: configurar `GROQ_API_KEY` en DEV y ejecutar una prueba
+  autenticada controlada. No se expusieron ni modificaron valores.
+- `wrangler check startup --config wrangler.phase2-dev.jsonc` completó el perfil
+  local con una ventana de 30,6 ms; el arranque no es el bloqueo actual.
+
+## Revalidación de esquema DEV — 2026-09-28
+
+- `supabase db lint --linked --level warning`: `No schema errors found`.
+- `supabase db push --linked --dry-run`: `Remote database is up to date`; no
+  hubo escrituras ni migraciones aplicadas.
+- El CLI advirtió que faltan en el entorno local `SUPABASE_AUTH_CAPTCHA_SECRET`,
+  `RESEND_API_KEY` y `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`; quedan como
+  configuración operativa pendiente para DEV.
+- `supabase migration list --linked` quedó sin salida después de iniciar el rol
+  de login y se canceló; no se usa como evidencia, a diferencia del dry-run.
+
+## Error seguro de OAuth Google — 2026-09-28
+
+- El modal traduce los errores de proveedor OAuth ausente a un mensaje seguro y
+  ofrece correo/contraseña como alternativa; no expone `Unsupported provider`.
+- Regresión focalizada 5/5; suite completa 134/577, lint y builds correctos.
+- DEV desplegado como `1580c8c4-9826-443a-9dd6-5ddd772d4ea9`; rutas públicas,
+  manifest y `sw.js` respondieron 200 y el asset remoto verificó el texto nuevo.
+- Producción intacta. El secreto OAuth real sigue pendiente de configuración.
+
+## Mensajes seguros de CAPTCHA y correo — 2026-09-28
+
+- `LoginModal` centraliza la traducción de errores de Supabase para OAuth,
+  CAPTCHA/Turnstile, credenciales, confirmación y límites de correo; los
+  detalles técnicos de proveedor ya no se muestran al usuario.
+- `/api/auth/resend-confirmation` ahora devuelve indisponibilidad controlada
+  si falta `RESEND_API_KEY`, la configuración pública de Supabase o falla el
+  proveedor de correo, en lugar de afirmar éxito sin envío.
+- Regresión focalizada 6/6; suite completa 134/578; lint, build productivo
+  aislado y build Phase 2 DEV correctos.
+- El helper quedó en módulo separado para conservar Fast Refresh limpio.
+- DEV desplegado como `d4e3347a-a61e-4032-b420-256382a1e496`; raíz, cuenta,
+  manifest y `sw.js` respondieron 200. El asset remoto conserva el mensaje
+  seguro y omite `missing OAuth secret`.
+- Producción permanece intacta. Pendiente operativo: configurar y probar los
+  secretos reales de Turnstile, correo y OAuth en DEV, sin copiar valores al
+  repositorio ni a la documentación.
+
+## Cierre incremental de calidad y despliegue DEV — 2026-09-28
+
+- Se eliminaron límites `any` en el manejo de errores de `LoginModal` y
+  `useSavedProperties`; las lecturas de mensajes y códigos ahora validan
+  `unknown` sin cambiar los contratos de autenticación o favoritos.
+- Se añadió `web/src/modules/properties/exchangePreferences.test.ts` para
+  cubrir construcción, validación, hidratación y compatibilidad con datos
+  antiguos de preferencias estructuradas de permuta.
+- Evidencia actual: 135 archivos y 592 pruebas, lint, build productivo y
+  `build:phase2-dev` correctos.
+- DEV desplegado como `0d11e5e1-cc70-4088-ad6a-856f9d3d4d41`; `/`,
+  `/mi-cuenta`, `/moderar`, `manifest.webmanifest` y `sw.js` respondieron 200.
+  Producción continúa intacta.
+
+## Revalidación posterior del árbol actual — 2026-09-28
+
+- Los gates se repitieron sin cambios de código posteriores al despliegue:
+  lint correcto, 135 archivos/592 pruebas correctas, build productivo aislado y
+  build Phase 2 DEV correctos.
+- El build DEV volvió a producir el sitemap del origen DEV con 446 URLs y
+  confirmó el módulo KYC en el bundle.
+- Las rutas remotas `/`, `/mi-cuenta`, `/moderar`, `/manifest.webmanifest` y
+  `/sw.js` respondieron HTTP 200 mediante comprobación de solo lectura.
+
+## Revalidación remota del esquema DEV — 2026-09-28
+
+- `supabase migration list` confirmó que las migraciones locales y remotas
+  coinciden hasta `20260916010000`; no hay deriva ni pendientes.
+- `supabase db lint --linked --level warning` devolvió `No schema errors found`
+  para `extensions` y `public`.
+- No se aplicaron migraciones ni se modificó producción.
+
+## Limpieza de pruebas PWA — 2026-09-28
+
+- `PWAInstallPrompt.test.tsx` usa `act` para las acciones asíncronas de
+  instalación y "Quizás luego"; la prueba focalizada pasa 10/10 sin los
+  avisos React observados anteriormente.
+- Suite completa: 135/592; lint y builds productivo/DEV correctos.
+- El cambio es exclusivo de pruebas, por lo que no requirió desplegar una
+  nueva versión del Worker.
+
+## Cancelación segura del compartir — 2026-09-28
+
+- `DetailPage` endurece el `catch` de `navigator.share()` con `unknown` y
+  reconoce `AbortError` sin depender de propiedades no tipadas.
+- Prueba focalizada: 15/15; suite completa: 135/592; lint y builds
+  productivo/DEV correctos.
+- DEV desplegado como `02d589ac-1c10-4369-9b0d-ba461260ab42`; las rutas base,
+  cuenta, moderación, manifest y service worker respondieron 200. Producción
+  continúa intacta.
+
+## Callback OAuth con errores tipados — 2026-09-28
+
+- `AuthCallbackPage` usa `unknown` en el límite de errores y mantiene los
+  mensajes seguros para enlaces PKCE, expirados o inválidos.
+- Prueba focalizada: 5/5; suite completa: 135/592; lint y builds
+  productivo/DEV correctos.
+- DEV desplegado como `bbaed447-5590-49c6-9f0e-ac4a21ba7af1`; `/auth/callback`
+  y las rutas principales respondieron 200. Producción continúa intacta.
+
+## Rate limiter con almacenamiento tipado — 2026-09-28
+
+- El Durable Object `RateLimiter` valida la forma de los registros recuperados
+  y abre una ventana nueva ante datos corruptos, evitando confiar en estados
+  inválidos.
+- Se añadió regresión para el caso `NaN`; suite completa: 135/593, lint y
+  builds productivo/DEV correctos.
+- DEV desplegado como `e534c947-45fe-4126-82b2-d9d1efd931f2`; las rutas
+  principales, callback, manifest y service worker respondieron 200. Producción
+  continúa intacta.
+
+## API Turnstile tipada — 2026-09-28
+
+- `TurnstileWidget` define el contrato local de `window.turnstile` y elimina
+  los accesos `window as any`; se conservan los callbacks y la limpieza del
+  widget.
+- Prueba focalizada: 2/2; suite validada con 135/593, lint y builds
+  productivo/DEV correctos.
+- El cambio solo afecta tipado y no requirió desplegar otra versión; DEV sigue
+  en `e534c947-45fe-4126-82b2-d9d1efd931f2`. Producción continúa intacta.
+
+## CubitatApp con límites de datos seguros — 2026-09-28
+
+- La lectura de `profiles.role` valida la forma del dato antes de actualizar
+  el estado; la carga SWR de propiedades usa `unknown` en el límite de errores.
+- Prueba focalizada: 4/4; suite completa: 135/593; lint y builds
+  productivo/DEV correctos.
+- DEV desplegado como `364df13f-f3c9-45c8-ada8-0bd345b802cf`; rutas base,
+  callback, cuenta, moderación, manifest y service worker respondieron 200.
+  Producción continúa intacta.
+## Endurecimiento de tipos y despliegue DEV — 2026-09-28
+
+- `CubitatApp` filtra las operaciones de la URL contra `OPERATION_VALUES` y el
+  formulario de publicación restringe las claves de amenidades al modelo,
+  eliminando dos accesos `any` del flujo de usuario.
+- `npm run lint`, `npm run build` y `npm run build:phase2-dev` pasaron; el
+  verificador DEV confirmó KYC y sitemap con 446 URLs.
+- Se desplegó solo `cubitat1-phase2-dev`, versión
+  `e393db88-cda4-4986-94c6-c2e36e4af6d8`; las rutas base, callback, cuenta,
+  moderación, manifest y Service Worker respondieron HTTP 200.
+- Producción permanece intacta. Los avisos conocidos del runner (`happy-dom`,
+  `act(...)` y proveedores simulados) siguen como deuda no bloqueante.
+
+## Tipado del retorno al listado y despliegue DEV — 2026-09-28
+
+- `DetailPage` usa `OperationType[]` al reconstruir el filtro desde el
+  breadcrumb de operación; se eliminó un cast `any` en ese flujo.
+- Lint, las 15 pruebas focalizadas de detalle y los builds productivo/DEV
+  pasaron. El verificador DEV confirmó KYC y sitemap con 446 URLs.
+- DEV quedó en `dfd07087-881f-43b5-a5ab-f2a0c50c5b75`; las rutas principales,
+  manifest y Service Worker respondieron HTTP 200. Producción no fue tocada.
+
+## Validación segura de SEO dinámico y despliegue DEV — 2026-09-28
+
+- El Worker valida como `unknown` la respuesta de Supabase usada para
+  metadatos de una propiedad; los valores inválidos ya no atraviesan el
+  renderizador SEO.
+- Lint, 51 pruebas focalizadas del Worker y los builds productivo/DEV pasaron.
+- DEV quedó en `783d47fc-e2f2-4e28-a478-aedea68f0ba1`; una propiedad DEV real
+  respondió `200` y produjo `title`/`og:title` dinámicos. Producción continúa
+  intacta.
+
+## Regresión de respuesta SEO malformada — 2026-09-28
+
+- `worker.test.ts` cubre filas JSON que no son objetos en la consulta SEO; el
+  Worker responde de forma segura sin leer datos inválidos.
+- Pruebas focalizadas del Worker: 52/52. Solo se amplió cobertura; no hubo
+  nuevo despliegue ni cambios en producción.
+
+## Frontera DEV para verificación documental — 2026-09-28
+
+- Se corrigió la importación estática de `PropertyVerificationPanel` en
+  `MyPropertiesPage`; ahora solo se carga en DEV o con `VITE_PHASE2_UI_ENABLED`.
+- El verificador productivo cubre también `property_verification_requests` y
+  `get_property_trust_score`, además de los chunks exclusivos de Fase 2.
+- Suite completa: 135 archivos y 594 pruebas; lint y ambos builds correctos.
+- DEV desplegado como `c451aa01-9194-4bf1-9bbb-b5336f6117c9`; rutas principales
+  verificadas con HTTP 200. Producción no fue tocada.
+
+## Revalidación de esquema DEV — 2026-09-28
+
+- Migraciones locales y remotas alineadas hasta `20260916010000`.
+- `supabase db lint --linked --level warning`: `No schema errors found`.
+- Sin escrituras nuevas de esquema y sin cambios en producción.
+
+## Secretos pendientes de proveedor — 2026-09-28
+
+- El inventario nominal de secretos DEV contiene Resend, Supabase service role
+  y VAPID, pero no `GROQ_API_KEY`.
+- No se copiaron valores sensibles. La prueba remota de moderación IA queda
+  pendiente y el fallback actual es revisión manual.
+
+## Resultado E2E local — 2026-09-28
+
+- El flujo de publicación local pasó.
+- Los escenarios dependientes de backend quedaron bloqueados por la ausencia
+  de Supabase local en `127.0.0.1:54321`; no deben confundirse con regresiones
+  de frontend. La prueba externa de red reportó `EACCES`.
+- `docker ps` confirmó que `docker_engine` no está disponible; reanudar este
+  carril cuando Docker/Supabase local pueda iniciarse.
+
+## E2E remoto configurable — 2026-09-28
+
+- `playwright.config.ts` acepta `CUBITAT_E2E_BASE_URL`; sin la variable usa el
+  servidor Vite local, y con ella no inicia `webServer` local.
+- `search.spec.ts` ya verifica el flujo vigente de ubicación estructurada y la
+  ruta SEO canónica; DEV remoto pasó 1/1 en modo solo lectura.
+- No hubo despliegue adicional: fueron cambios de pruebas y configuración.
+
+## E2E remoto de seguridad — 2026-09-28
+
+- Turnstile/contacto/reporte/autenticación: 1/1 pasada contra DEV.
+- Proxy, anon key, moderación y métricas: 4/4 pasadas contra DEV.
+- `security.spec.ts` permite configurar tanto la base URL como el proyecto
+  Supabase del escenario; no se hacen escrituras.
+- Lint, 135/594 y ambos builds permanecen correctos; producción intacta.
+
+## E2E remoto de publicación — 2026-09-28
+
+- `publish.spec.ts`: **1/1** contra DEV remoto, con sesión simulada y borrador
+  local; no hubo escritura persistente de una propiedad.
+- No sustituye las pruebas reales de cuenta, correo, Push o dispositivos.
+
+## Corrección del borrador y auditoría React — 2026-09-28
+
+- Se corrigió `web/src/pages/publish/usePublicationDraft.ts` para actualizar
+  refs en efectos comprometidos y evitar mutaciones durante render.
+- Prueba focalizada 3/3; suite completa 135/594; lint y builds productivo/DEV
+  correctos.
+- React Doctor quedó en 179 incidencias, sin el hallazgo de mutación de refs.
+  Los avisos de escritura de autorización y RLS siguen en revisión contextual;
+  no cambiar migraciones sin confirmar el estado activo en DEV.
+- No hubo despliegue: producción continúa intacta.
+- El cambio se desplegó después únicamente en `cubitat1-phase2-dev` como
+  `779aad98-9f56-4900-b690-9ca21ec303f1`; las rutas base, cuenta, publicación,
+  manifest y Service Worker respondieron HTTP 200. Producción continúa intacta.
+- El E2E remoto del asistente de publicación pasó 1/1 después del despliegue;
+  solo verificó sesión simulada y borrador local.
+- La revalidación agrupada de búsqueda, seguridad, Turnstile y publicación
+  pasó 7/7 contra DEV sin escrituras persistentes.
+- La auditoría de navegación pública pasó 1/1 contra DEV; el segmento
+  autenticado sigue condicionado a credenciales E2E explícitas.
+
+## Accesibilidad del aviso administrativo — 2026-09-28
+
+- Se añadieron referencias accesibles al título y mensaje de
+  `AdminNoticeDialog`, con prueba focalizada 1/1.
+- Suite completa 136/596; DEV desplegado como
+  `a57e1d1c-1c1f-47b0-9423-1b4eedf7640f`; producción intacta.
+- La revalidación del CLI Supabase quedó pendiente por `EPERM` al actualizar
+  su telemetría local; no se modificaron Docker, el enlace ni el esquema.
+- Auditoría posterior: React Doctor quedó en 177 incidencias; desapareció el
+  aviso de nombre accesible de `AdminNoticeDialog`.
+
+## Robustez del envío KYC — 2026-09-28
+
+- `useKycSubmission` libera `loading` en `finally`, conserva el mensaje de
+  compresión y limpia archivos remotos si una etapa posterior falla.
+- Focalizadas 13/13; suite 136/597; lint, build productivo y build DEV
+  correctos.
+- DEV desplegado como `2ef50ca4-e1b5-4562-9623-26a17a8344c5`; rutas base,
+  cuenta, moderación, manifest y Service Worker respondieron HTTP 200.
+- React Doctor posterior quedó en 176 incidencias y ya no marca el estado de
+  carga KYC fuera de `finally`.
+- Producción continúa intacta.
+
+## Accesibilidad del buscador de moderación — 2026-09-28
+
+- Se añadió una etiqueta asociada al buscador de `PropertiesTab`.
+- React Doctor posterior quedó en 175 incidencias.
+- DEV desplegado como `bb95caed-a36f-46f5-9819-df6dc96ae6ce`; rutas base,
+  moderación, manifest y Service Worker respondieron HTTP 200.
+- Producción continúa intacta.
+
+## Auditoría pública DEV posterior — 2026-09-28
+
+- Auditoría completa pública: 1/1 contra DEV en Chromium.
+- No requiere credenciales ni crea datos; el segmento autenticado permanece
+  condicionado a variables E2E explícitas.
+
+## Robustez del endpoint de métricas — 2026-09-28
+
+- Se añadió comprobación de estado HTTP para la respuesta GraphQL de Cloudflare
+  y una regresión de upstream 503.
+- Suite completa 135/595; DEV desplegado como
+  `01798924-988a-43df-8a19-167ee8df626e`; E2E de seguridad 4/4.
+- React Doctor quedó en 178 incidencias; se cerró el aviso de respuesta HTTP
+  sin comprobar. El aviso de `createObjectURL` de KYC está cubierto por el
+  cleanup existente y no se modifica sin reproducción.
+- Producción continúa intacta.
+
+## Continuación autónoma - 2026-09-28
+
+- Se amplió la matriz SQL de seguridad para contactos, reportes y notificaciones
+  sin cambiar migraciones ni introducir datos persistentes.
+- Gates ejecutados después del cambio: lint, 136/597 pruebas, build productivo
+  y build DEV correctos.
+- Pendiente de verificación: `supabase test db --linked` requiere Docker para
+  descargar `pg_prove`; el daemon `dockerDesktopLinuxEngine` no está disponible.
+- Siguiente carril: reintentar la matriz cuando Docker esté disponible y luego
+  continuar con proveedores externos y QA físico Push/PWA; producción sigue
+  fuera de alcance.
+
+## Accesibilidad de formularios - 2026-09-28
+
+- Se corrigieron etiquetas asociadas del avatar de cuenta y del formulario de
+  reportes.
+- Gates completos: lint, 136/597 pruebas, build productivo y build DEV.
+- DEV desplegado como `22c90271-477f-486f-bcb8-f09be083957f`; producción intacta.
+
+## Continuación autónoma: PWA y proveedores DEV - 2026-09-28
+
+- Pruebas focalizadas de `PWAInstallPrompt` y `pushService`: 24/24 correctas.
+- Las rutas `/`, `/mi-cuenta`, `/moderar`, `/manifest.webmanifest` y `/sw.js`
+  respondieron HTTP 200 en DEV.
+- `wrangler secret list` confirmó los nombres de secretos presentes sin leer
+  valores: Resend, Supabase service role, VAPID y sal de métricas.
+- `GROQ_API_KEY` no está configurada; la moderación IA permanece correctamente
+  en `pending_review` para revisión manual.
+- Las pruebas físicas de Push/PWA en Android e iOS y las métricas externas
+  siguen pendientes. Producción continúa intacta.
+
+## Arranque del Worker DEV - 2026-09-28
+
+- `wrangler check startup --config wrangler.phase2-dev.jsonc` completó el
+  análisis con una ventana local de `23.6 ms`; no se detectó un problema de
+  inicialización.
+- El perfil temporal generado por Wrangler fue eliminado y no se conserva en
+  el repositorio.
+
+## Revalidación de gates - 2026-09-28
+
+- Lint correcto; suite completa `136/597`; build productivo aislado correcto;
+  build `phase2-dev` correcto con KYC y 446 URLs DEV.
+- Las advertencias de Turnstile y Supabase local aparecieron durante el
+  entorno de pruebas, pero no cambiaron el resultado ni tocaron bases remotas.
+- Producción permanece intacta.
+
+## Revalidación de Supabase DEV - 2026-09-28
+
+- `supabase db lint --linked --level warning` terminó con `No schema errors
+  found` en `extensions` y `public`.
+- `supabase db push --linked --dry-run` confirmó `Remote database is up to
+  date`; no se aplicaron migraciones ni escrituras.
+- Persisten únicamente advertencias de variables externas ausentes para
+  CAPTCHA, Resend y OAuth Google.
+
+## Auditoría E2E pública DEV - 2026-09-28
+
+- `comprehensive-audit.spec.ts` pasó `1/1` en Chromium contra DEV.
+- Fue una comprobación de navegación pública, sin credenciales ni escrituras
+  persistentes.
+
+## Auditoría de dependencias - 2026-09-28
+
+- `npm audit --audit-level=high` contra el registro oficial terminó con
+  `found 0 vulnerabilities`.
+- No se modificaron dependencias.
+
+## Gate de dependencias en CI - 2026-09-28
+
+- El workflow `phase2-quality.yml` incorpora `npm audit --audit-level=high`
+  contra el registro oficial después de `npm ci`.
+- Revalidación posterior: lint, 136/597 pruebas y builds productivo/DEV
+  correctos. Producción permanece intacta.
+
+## E2E público y seguridad DEV - 2026-09-28
+
+- La suite seleccionada de navegación pública, búsqueda, Turnstile y seguridad
+  se repitió con conectividad autorizada después de un primer bloqueo de red del
+  entorno local.
+- Resultado: **7/7 correctos** en Chromium contra
+  `cubitat1-phase2-dev.pochiprats18.workers.dev`.
+- Los escenarios autenticados o con escritura real no se consideran cerrados:
+  necesitan cuentas QA autorizadas, proveedor externo disponible y limpieza
+  comprobable.
+
+## Estado vigente posterior a revalidación - 2026-09-28
+
+Este bloque sustituye los conteos anteriores de este handoff para el estado
+actual; se conserva el historial previo para trazabilidad.
+
+- Gates completos: `npm run lint`, `npm run test:run` (**136 archivos / 600
+  pruebas**), `npm run build` y `npm run build:phase2-dev` correctos.
+- E2E público seleccionado: **6/6 correctos en DEV** y **6/6 correctos en
+  producción**. No se ejecutaron credenciales QA ni mutaciones persistentes.
+- DEV desplegado en la versión `97259d81-46cd-42e9-a2d0-4784390d458b`, con
+  100% del tráfico activo. Producción no fue modificada.
+- Supabase DEV alineado hasta `20260916010000`; `db lint` sin errores y
+  `db push --linked --dry-run` indicó `Remote database is up to date`.
+- Verificaciones focalizadas correctas: Push/service worker 4 archivos / 27
+  pruebas; propiedad, verificación y antifraude 9 / 30; autenticación 7 / 36;
+  admin/KYC/agentes 15 / 58; público/PWA 22 / 106.
+- Auditoría de dependencias: `npm audit --audit-level=high` sin
+  vulnerabilidades.
+- Pendientes externos: `GROQ_API_KEY`; secretos de OAuth Google, CAPTCHA y
+  Resend en Auth; credenciales QA y autorización para pruebas con escritura;
+  Docker para ejecutar la matriz RLS; prueba física de Push en Android/iOS; y
+  decisión funcional del Trust Score.
+- La complejidad estructural alta de `worker.ts`, `CubitatApp` y
+  `moderateBackground` queda registrada como deuda técnica separada, sin
+  refactor amplio en este ciclo.
+
+## Revalidación remota posterior - 2026-09-28
+
+- Supabase DEV: `db lint` sin errores y `db push --linked --dry-run` indicó
+  `Remote database is up to date`; no se aplicaron migraciones.
+- Worker DEV: versión `97259d81-46cd-42e9-a2d0-4784390d458b` al 100% del
+  tráfico.
+- Continúan ausentes los secretos externos de CAPTCHA, Resend Auth y OAuth
+  Google; no se leyeron ni modificaron valores.
+
+## Arranque DEV revalidado - 2026-09-28
+
+- `wrangler check startup` terminó correctamente para el Worker DEV.
+- Bundle analizado: 87.69 KiB (20.71 KiB gzip); startup local medido: 20.6 ms.
+- El perfil temporal generado por Wrangler fue eliminado tras la prueba.
+
+## Auditoría de secretos en artefactos - 2026-09-28
+
+- `web/dist` no contiene identificadores ni valores de prueba de secretos
+  privados (`SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `VAPID_PRIVATE_KEY` o
+  `RESEND_API_KEY`).
+- Las referencias encontradas se limitan al código del Worker, pruebas y
+  scripts operativos; no se leyeron ni modificaron valores secretos.
+
+## Guard automatizado de secretos en build - 2026-09-28
+
+- `scripts/verify-private-secret-bundle.mjs` quedó conectado a `build` y
+  `build:phase2-dev`.
+- El guard revisa el artefacto completo y bloquea marcadores de secretos
+  privados o valores de prueba.
+- Los builds productivo y DEV pasaron el guard.
+
+## Modularización de moderación IA - 2026-09-28
+
+- La lógica de moderación se separó en `web/src/worker/ai-moderation.ts` y el
+  Worker conserva la orquestación del endpoint.
+- El carril crítico pasó 53/53 pruebas; la suite completa quedó en 136/136
+  archivos y 600/600 pruebas.
+- No se desplegó producción; la rama mantiene el cambio reversible.
+
+## ADR de fronteras modulares - 2026-09-28
+
+- Se añadió `docs/ADR-002-Fase2-fronteras-modulares.md` con las reglas de
+  separación entre router, módulos de dominio, secretos y bundles DEV/producción.
+- El ADR conserva los bloqueos externos como criterios explícitos de no
+  promoción, no como fallos del código local.
+
+## Verificador de Auth DEV endurecido - 2026-09-28
+
+- El guard de configuración exige referencias por entorno para Turnstile,
+  Resend SMTP y Google OAuth, sin leer valores secretos.
+- Lint, 600 pruebas y los builds productivo/DEV pasaron después del cambio.
+
+## Trust Score auditado - 2026-09-28
+
+- El Trust Score no se muestra ni se consulta desde la UI pública; permanece
+  limitado al esquema DEV mientras falta la decisión de producto.
+
+## Aislamiento del workflow CI - 2026-09-28
+
+- El workflow de calidad solo instala, audita, prueba y construye los bundles
+  productivo y DEV.
+- No ejecuta `wrangler deploy` ni `supabase db push`; producción no puede ser
+  promovida por ese workflow.

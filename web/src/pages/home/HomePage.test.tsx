@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { HomePage } from './HomePage'
 import type { SearchFilters } from '../../modules/search/types'
@@ -34,5 +34,8 @@ describe('HomePage', () => {
       expect(image.src).toContain('w=420')
       expect(image.src).toContain('q=45')
     })
+
+    expect(screen.getByRole('heading', { name: 'El portal inmobiliario para Cuba' })).toBeInTheDocument()
+    expect(screen.queryByText('El portal inmobiliario más grande de Cuba')).not.toBeInTheDocument()
   })
 })

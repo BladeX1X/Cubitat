@@ -132,6 +132,29 @@ describe('push dispatcher', () => {
     expect(fetchFn.mock.calls[3]?.[1]?.method).toBe('DELETE')
   })
 
+  it('returns a temporary provider failure to pending for a retry', async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{
+        delivery_id: 'delivery-retry', subscription_id: 'subscription-1',
+        endpoint: 'https://push.example.test/retry', p256dh: 'key', auth: 'auth',
+        title: 'Aviso', message: 'Mensaje', action_path: '/mi-cuenta', attempts: 1,
+        user_id: 'user-1',
+      }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('true'))
+      .mockResolvedValueOnce(new Response('temporary failure', { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    const summary = await dispatchPendingPushNotifications(
+      baseEnv,
+      fetchFn,
+      vi.fn().mockResolvedValue({ method: 'POST' }),
+    )
+
+    expect(summary).toEqual({ scanned: 1, sent: 0, failed: 1, expired: 0 })
+    expect(fetchFn.mock.calls[3][0]).toContain('/notification_push_deliveries?id=eq.delivery-retry')
+    expect(JSON.parse(String(fetchFn.mock.calls[3][1]?.body))).toMatchObject({ status: 'pending' })
+  })
+
   it('drops a claim invalidated during encryption without contacting the provider', async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([{

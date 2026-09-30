@@ -8,6 +8,7 @@ import {
 import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
 import { handleContactMetric } from './worker/contact-metrics';
 import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
+import { dispatchPendingPushNotifications } from './worker/push-notifications';
 
 export { RateLimiter } from './rate-limiter';
 
@@ -28,6 +29,17 @@ const worker = createWorker({
     'review_kyc_request',
   ],
 });
+
+export function runPhase2ScheduledTasks(
+  env: PhaseTwoDevEnv,
+  ctx: WorkerExecutionContext,
+): void {
+  ctx.waitUntil(Promise.all([
+    dispatchPendingAlertEmails(env),
+    dispatchPendingPushNotifications(env),
+    purgeApprovedKycEvidence(env),
+  ]));
+}
 
 export default {
   async fetch(request: Request, env: PhaseTwoDevEnv, ctx: WorkerExecutionContext): Promise<Response> {
@@ -58,9 +70,6 @@ export default {
     env: PhaseTwoDevEnv,
     ctx: WorkerExecutionContext,
   ): void {
-    ctx.waitUntil(Promise.all([
-      dispatchPendingAlertEmails(env),
-      purgeApprovedKycEvidence(env),
-    ]));
+    runPhase2ScheduledTasks(env, ctx);
   },
 };

@@ -6,21 +6,25 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     await page.goto('/')
     await expect(page).toHaveTitle(/Cubitat/i)
 
-    // 2. Realizar búsqueda por texto "Vedado"
-    const searchInput = page.locator('input[placeholder="¿Dónde quieres buscar?"]')
-    await expect(searchInput).toBeVisible()
-    await searchInput.fill('Vedado')
+    // 2. Seleccionar una ubicación mediante los controles estructurados
+    const provinceSelect = page.getByRole('button', { name: 'Selecciona provincia' })
+    await provinceSelect.click()
+    await page.getByRole('option', { name: 'La Habana' }).click()
+
+    const municipalitySelect = page.getByRole('button', { name: 'Selecciona municipio' })
+    await municipalitySelect.click()
+    await page.getByRole('option', { name: 'Plaza de la Revolución' }).click()
 
     // 3. Hacer clic en "Rentar" en la barra de pestañas superior de la búsqueda
     const rentButton = page.locator('button:has-text("Rentar")')
     await rentButton.click()
 
     // 4. Enviar la búsqueda
-    const submitBtn = page.locator('button[aria-label="Buscar"]')
+    const submitBtn = page.locator('button[aria-label="Buscar inmuebles"]')
     await submitBtn.click()
 
     // 5. Verificar navegación a resultados
-    await expect(page).toHaveURL(/\/resultados/i)
+    await expect(page).toHaveURL(/\/(resultados|renta\/)/i)
 
     // 6. Validar que la barra de filtros (FilterBar) esté visible
     const filterBar = page.locator('div[aria-label="Filtros activos"]')

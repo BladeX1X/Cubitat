@@ -1,6 +1,7 @@
 -- Isolated local database only. Leaves no test records.
 \set ON_ERROR_STOP on
 BEGIN;
+SELECT plan(1);
 CREATE FUNCTION pg_temp.assert_true(ok boolean, message text) RETURNS void
 LANGUAGE plpgsql AS $$ BEGIN
   IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%', message; END IF;
@@ -46,5 +47,6 @@ SELECT pg_temp.assert_true((SELECT coordinates = '{"latitude":23.1136,"longitude
   'Public echo erased private coordinates');
 RESET ROLE;
 
-SELECT 'private_property_coordinates: ok' AS result;
+SELECT pass('private_property_coordinates: ok');
+SELECT * FROM finish();
 ROLLBACK;

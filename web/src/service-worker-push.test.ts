@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import serviceWorkerSource from './sw.ts?raw'
+import { actionPathWithNotification, safeActionPath } from './swRouting'
+
+const origin = 'https://cubitat.example'
 
 describe('service worker push contract', () => {
   it('shows every received push and handles notification clicks', () => {
@@ -18,14 +21,16 @@ describe('service worker push contract', () => {
   })
 
   it('carries the notification id to the authenticated app for read acknowledgement', () => {
-    expect(serviceWorkerSource).toContain("const PUSH_NOTIFICATION_ID_PARAM = 'cubitat_notification'")
-    expect(serviceWorkerSource).toContain('actionPathWithNotification(payload.actionPath, payload.notificationId)')
-    expect(serviceWorkerSource).toContain('target.searchParams.set(PUSH_NOTIFICATION_ID_PARAM, notificationId)')
+    expect(actionPathWithNotification(
+      '/propiedad/property-1',
+      '123e4567-e89b-12d3-a456-426614174000',
+      origin,
+    )).toContain('cubitat_notification=123e4567-e89b-12d3-a456-426614174000')
   })
 
   it('accepts only same-origin absolute paths', () => {
-    expect(serviceWorkerSource).toContain("startsWith('/')")
-    expect(serviceWorkerSource).toContain("startsWith('//')")
-    expect(serviceWorkerSource).toContain('target.origin !== self.location.origin')
+    expect(safeActionPath('/propiedad/property-1', origin)).toBe('/propiedad/property-1')
+    expect(safeActionPath('//attacker.example', origin)).toBe('/')
+    expect(safeActionPath('https://attacker.example', origin)).toBe('/')
   })
 })

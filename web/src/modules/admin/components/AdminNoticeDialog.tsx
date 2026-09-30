@@ -10,9 +10,15 @@ export function AdminNoticeDialog({ message, onClose }: { message: string | null
         className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div role="alertdialog" aria-modal="true" className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
-        <h3 className="text-lg font-bold text-neutral-900 mb-2">Aviso del Sistema</h3>
-        <p className="text-sm text-neutral-600 mb-6">{message}</p>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="admin-notice-title"
+        aria-describedby="admin-notice-message"
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center"
+      >
+        <h3 id="admin-notice-title" className="text-lg font-bold text-neutral-900 mb-2">Aviso del Sistema</h3>
+        <p id="admin-notice-message" className="text-sm text-neutral-600 mb-6">{message}</p>
         <Button className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold" onClick={onClose}>
           Aceptar
         </Button>

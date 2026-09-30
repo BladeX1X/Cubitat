@@ -1,6 +1,7 @@
 \set ON_ERROR_STOP on
 
 BEGIN;
+SELECT plan(1);
 
 CREATE OR REPLACE FUNCTION pg_temp.assert_true(condition boolean, message text)
 RETURNS void
@@ -159,6 +160,6 @@ SELECT pg_temp.assert_true(
 );
 SELECT pg_temp.assert_no_purge_job();
 
+SELECT pass('audit_log_retention_local: ok');
+SELECT * FROM finish();
 ROLLBACK;
-
-SELECT 'audit_log_retention_local: ok' AS result;

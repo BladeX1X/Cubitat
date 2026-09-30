@@ -223,3 +223,24 @@ Ultima validacion local (2026-09-11):
 - Deteccion de PWA ya instalada y texto especifico para Chrome Android cubiertos
   por pruebas automatizadas; queda pendiente confirmar el resultado en un
   dispositivo Android fisico despues del despliegue.
+- 2026-09-28: `PWAInstallPrompt` vuelve a consultar `getInstalledRelatedApps()`
+  cuando llega `beforeinstallprompt`, evitando una carrera que podia mostrar el
+  aviso de instalacion a una PWA ya instalada. Regresion incluida en
+  `PWAInstallPrompt.test.tsx`.
+- 2026-09-28: correccion desplegada solo en DEV como Worker
+  `cubitat1-phase2-dev`, version `66416dfb-946a-430a-9748-66d541890512`; el
+  asset remoto respondio `200` y contiene la comprobacion nueva.
+- La verificacion de assets de esa version confirmo el bundle principal y
+  `sw.js` con HTTP `200`; el asset de cuenta DEV conserva el flujo KYC.
+- 2026-09-28: `related_applications` se genera por modo: DEV apunta a
+  `cubitat1-phase2-dev.pochiprats18.workers.dev` y producción a
+  `cubitathome.com`. Ambos manifests remotos respondieron `200`; DEV quedó en
+  la versión `cd5cfcff-ee75-43f6-baeb-bc5f3fb28b30`.
+- 2026-09-28: la detección de instalación filtra por `id`/`url` de Cubitat
+  para no confundir otra PWA instalada en el mismo dispositivo. DEV quedó
+  actualizado en la versión `50e55bb3-74be-4fae-8754-f5319336ef54`.
+- 2026-09-24: el Worker aislado `cubitat1-phase2-dev` incorpora el despachador
+  Push en su handler de Cron, que antes solo ejecutaba correo y retencion KYC.
+  DEV quedo con Cron cada minuto y se desplego la version
+  `37a6b5b5-4c39-4027-9983-99d2212e2a96`. Gate local: 114 archivos y 478
+  pruebas, lint y build correctos. Produccion no fue modificada.

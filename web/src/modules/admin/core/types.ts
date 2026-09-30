@@ -1,4 +1,4 @@
-export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit' | 'kyc'
+export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit' | 'kyc' | 'property-verification'
 
 export type StatusFilter =
   | 'pending_review'
@@ -35,6 +35,8 @@ export type ModerationProperty = {
   status: Exclude<StatusFilter, 'all'>
   moderation_message: string | null
   user_email?: string
+  duplicate_of?: string
+  duplicate_title?: string
 }
 
 export type PropertyReport = {

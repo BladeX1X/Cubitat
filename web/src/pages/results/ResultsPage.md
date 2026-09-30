@@ -52,9 +52,9 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 
 ## Trabajo Pendiente
 
-1. Definir si el detalle se abre como pagina independiente (`/propiedades/:id`) o como estado de seleccion dentro del listado.
+1. Mantener el detalle como pagina independiente mediante `/propiedad/:slug`; la navegacion y el retorno conservan el contexto del listado.
 2. Conectar filtros avanzados reales cuando existan datos completos de provincia, municipio, tipo, precio y operacion.
-3. Definir si el mapa vuelve como modo alterno lista/mapa o como pagina separada.
+3. Mantener el mapa como modo alterno lista/mapa, con adapter desacoplado y fallback visual de marcadores en DEV.
 4. Agregar estados vacios mas especificos cuando no haya resultados para una busqueda.
 5. Preparar filtros persistentes en URL cuando se estabilice el modelo de busqueda.
 

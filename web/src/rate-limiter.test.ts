@@ -82,4 +82,30 @@ describe('RateLimiter durable object', () => {
     expect(storage.records.has('active')).toBe(true)
     expect(storage.delete).toHaveBeenCalledWith('expired')
   })
+
+  it('starts a fresh window when stored data is malformed', async () => {
+    const storage = createStorage()
+    storage.records.set('malformed', { count: Number.NaN, resetTime: Date.now() + 60_000 })
+    const limiter = new RateLimiter({ storage })
+
+    const response = await limiter.fetch(new Request('https://rate-limiter/check?key=malformed&limit=2'))
+
+    await expect(response.json()).resolves.toMatchObject({ allowed: true, remaining: 1 })
+    expect(storage.records.get('malformed')).toMatchObject({ count: 1 })
+  })
+
+  it('falls back to safe values for invalid rate parameters', async () => {
+    const storage = createStorage()
+    const limiter = new RateLimiter({ storage })
+
+    const response = await limiter.fetch(new Request(
+      'https://rate-limiter/check?key=invalid-params&limit=not-a-number&windowMs=-10',
+    ))
+
+    await expect(response.json()).resolves.toMatchObject({
+      allowed: true,
+      remaining: 99,
+    })
+    expect(storage.records.get('invalid-params')?.resetTime).toBe(Date.now() + 60000)
+  })
 })

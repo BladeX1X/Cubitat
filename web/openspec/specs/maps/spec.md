@@ -13,6 +13,7 @@ El sistema MUST mostrar un mapa estático o interactivo reducido en la ficha de 
 - WHEN visualiza la sección de ubicación
 - THEN el sistema MUST inicializar un contenedor de MapLibre GL centrado en las coordenadas aproximadas del inmueble
 - AND el sistema MUST dibujar un círculo de radio aproximado o un marcador genérico sin indicar la dirección exacta
+- AND cuando se dibuje un area aproximada, el radio MUST estar definido en unidades geograficas para mantener la misma region al hacer zoom
 
 #### Scenario: Abrir mapa desde detalle
 - GIVEN una propiedad tiene coordenadas disponibles

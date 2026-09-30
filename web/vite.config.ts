@@ -35,6 +35,7 @@ function readLocalSupabaseServiceRoleKey(): string {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
+  const phase2UiEnabled = mode === 'phase2-dev'
   const supabaseAnonKey =
     env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
   const supabaseUrl =
@@ -43,6 +44,9 @@ export default defineConfig(({ mode }) => {
     'http://127.0.0.1:54321'
 
   return {
+    define: {
+      'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
+    },
     plugins: [
       react(),
       {
@@ -359,8 +363,8 @@ Tipo: ${body.property_type}`;
           related_applications: [
             {
               platform: 'webapp',
-              url: 'https://cubitathome.com/manifest.webmanifest',
-              id: 'https://cubitathome.com/',
+              url: `${phase2UiEnabled ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/manifest.webmanifest`,
+              id: `${phase2UiEnabled ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/`,
             },
           ],
           icons: [

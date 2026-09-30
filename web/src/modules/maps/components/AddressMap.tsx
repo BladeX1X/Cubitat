@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
@@ -286,7 +286,7 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
         })
 
         // Click on map: place/move marker and emit coordinates
-        mapRef.current.on('click', (e) => {
+        mapRef.current.on('click', (e: maplibregl.MapMouseEvent) => {
           const { lng, lat } = e.lngLat
           placeMarker(lng, lat)
           onCoordinatesRef.current(lat, lng)

@@ -72,4 +72,27 @@ describe('useModerationProperties', () => {
     expect(result.current.notice).toBe('La reevaluación terminó y la tarjeta se actualizó.')
     expect(result.current.actionLoading).toBeNull()
   })
+
+  it('restores the previous state when the AI request is rejected before processing', async () => {
+    mocks.requestAiReevaluation.mockRejectedValueOnce(new Error('provider unavailable'))
+    const { result } = renderHook(() => useModerationProperties())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await result.current.reevaluate(property)
+    })
+
+    expect(result.current.properties[0]).toMatchObject({
+      status: property.status,
+      moderation_message: property.moderation_message,
+    })
+    expect(mocks.updateModerationPropertyStatus).toHaveBeenNthCalledWith(
+      2,
+      property.id,
+      property.status,
+      property.moderation_message,
+    )
+    expect(result.current.notice).toBe('Error al iniciar la reevaluación.')
+    expect(result.current.actionLoading).toBeNull()
+  })
 })

@@ -76,4 +76,26 @@ describe('PropertyModerationCard visibility actions', () => {
     expect(screen.getByText(/cárdenas, matanzas/i)).toBeInTheDocument()
     expect(screen.getByText(/espera recibir hasta USD 5,000/i)).toBeInTheDocument()
   })
+
+  it('shows the related publication when the DEV duplicate flag is present', () => {
+    const duplicateProperty = property('pending_review')
+    duplicateProperty.duplicate_of = 'related-property'
+    duplicateProperty.duplicate_title = 'Casa relacionada en La Habana'
+
+    render(<PropertyModerationCard
+      property={duplicateProperty}
+      expanded={false}
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText(/posible duplicado/i)).toBeInTheDocument()
+    expect(screen.getByText(/casa relacionada en la habana/i)).toBeInTheDocument()
+  })
 })

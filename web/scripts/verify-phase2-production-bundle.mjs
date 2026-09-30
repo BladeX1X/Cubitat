@@ -4,13 +4,16 @@ import { fileURLToPath } from 'node:url'
 
 const assetsDirectory = new URL('../dist/assets/', import.meta.url)
 const assetsPath = fileURLToPath(assetsDirectory)
+const manifest = JSON.parse(await readFile(new URL('../dist/manifest.webmanifest', import.meta.url), 'utf8'))
 const assetNames = await readdir(assetsDirectory)
 const javascriptAssets = assetNames.filter((name) => name.endsWith('.js'))
 
 const forbiddenAssetNames = [
   /^AgentDashboardPage-.*\.js$/,
   /^AgentProfilePage-.*\.js$/,
+  /^AccountPhaseTwoSections-.*\.js$/,
   /^KycModerationTab-.*\.js$/,
+  /^PropertyVerificationModerationTab-.*\.js$/,
 ]
 
 const leakedAssetNames = javascriptAssets.filter((name) =>
@@ -23,6 +26,8 @@ const forbiddenContentMarkers = [
   'kyc_documents',
   'get_verified_agent_ids',
   'get_public_agent_profile',
+  'get_property_trust_score',
+  'property_verification_requests',
   'increment_contact_clicks',
 ]
 
@@ -44,6 +49,11 @@ if (leakedAssetNames.length > 0 || leakedContent.length > 0) {
   throw new Error(
     `El build productivo incluye módulos exclusivos de Fase 2:\n- ${details.join('\n- ')}`,
   )
+}
+
+const relatedApp = manifest.related_applications?.find((app) => app.platform === 'webapp')
+if (relatedApp?.url !== 'https://cubitathome.com/manifest.webmanifest' || relatedApp?.id !== 'https://cubitathome.com/') {
+  throw new Error('El manifest productivo no apunta a la PWA productiva')
 }
 
 console.log('Verified: production bundle excludes exclusive Phase 2 modules')

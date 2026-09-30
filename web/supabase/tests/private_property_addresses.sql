@@ -1,6 +1,7 @@
 -- Isolated local database only. Leaves no test records.
 \set ON_ERROR_STOP on
 BEGIN;
+SELECT plan(1);
 CREATE FUNCTION pg_temp.assert_true(ok boolean, message text) RETURNS void
 LANGUAGE plpgsql AS $$ BEGIN
   IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%', message; END IF;
@@ -51,5 +52,6 @@ SELECT pg_temp.assert_true((SELECT location = 'Calle Nueva 55, Playa, La Habana'
 SELECT pg_temp.assert_true((SELECT location = 'Playa, La Habana' FROM public.properties
   WHERE id = 'f1091100-0000-0000-0000-000000000099'), 'Owner update exposed address');
 RESET ROLE;
-SELECT 'private_property_addresses: ok' AS result;
+SELECT pass('private_property_addresses: ok');
+SELECT * FROM finish();
 ROLLBACK;

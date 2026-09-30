@@ -165,9 +165,11 @@ npx wrangler dev --config wrangler.phase2-dev.jsonc --test-scheduled
 Invoke-WebRequest "http://localhost:8787/cdn-cgi/handler/scheduled?format=json"
 ```
 
-Fase 2 continúa siendo exclusivamente local: Vite solo activa estos módulos
-durante `npm run dev`. La configuración Wrangler separada permite probar el
-Worker DEV con `wrangler dev`, pero no autoriza un despliegue.
+Fase 2 continúa aislada de producción, pero el Worker remoto DEV puede probar
+la UI KYC con un build explícito. `npm run build` mantiene la frontera de
+producción y excluye los módulos de Fase 2; `npm run build:phase2-dev` genera el
+bundle separado con KYC habilitado. Después de ese comando se puede desplegar
+solo con `wrangler deploy --config wrangler.phase2-dev.jsonc`.
 
 ## Login social con Google
 
@@ -185,9 +187,9 @@ Guia del proyecto:
 
 ## Tareas Pendientes (TODO)
 
-- [ ] **Configuración de Correo (SMTP):** Integrar [Resend](https://resend.com) en el panel de Supabase (`Project Settings` > `Authentication` > `SMTP Settings`) para poder activar la confirmación de correo electrónico durante el registro de usuarios. (Ver la decisión arquitectónica en [ADR-001](../docs/ADR-001-Email-Provider.md)).
-- [ ] **Sistema de Notificaciones:** Implementar el sistema de Notificaciones (campanita en el header) para mostrar mensajes reales de Supabase.
+- [ ] **Configuración de Correo (SMTP):** Completar la configuración operativa del proveedor y verificar una entrega real controlada. El dispatcher de alertas y el reenvío de confirmación ya están implementados y aislados en DEV; no se considera cerrado sin entrega observable. (Ver la decisión arquitectónica en [ADR-001](../docs/ADR-001-Email-Provider.md)).
+- [x] **Sistema de Notificaciones:** La campanita y la bandeja consumen avisos reales de Supabase; la lectura, el retiro de pendientes y la entrega Push están implementados con pruebas. La recepción y el clic Push en dispositivos físicos siguen como QA externo pendiente.
 - [ ] **Secciones Servicios y Productos:** Implementar contenido real para las secciones que actualmente están exportadas pero ocultas en HomePage. Reactivar en el JSX cuando estén listas.
-- [ ] **Extraer Header y Footer:** Crear `components/layout/Header.tsx` y `components/layout/SiteFooter.tsx` para separar del orquestador principal.
+- [x] **Extraer Header y Footer:** Separados en `components/layout/Header.tsx` y `components/layout/SiteFooter.tsx`, con cobertura del Header.
 - [ ] **React Router:** Evaluar migración cuando la cantidad de rutas crezca significativamente.
 - [ ] **Imágenes propias de provincias:** Reemplazar fotos de Unsplash de las 16 provincias por imágenes controladas del proyecto.

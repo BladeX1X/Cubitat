@@ -11,6 +11,10 @@ import {
   handlePushSubscriptionRequest,
   type PushNotificationEnv,
 } from './worker/push-notifications';
+import {
+  moderatePropertyWithAi,
+  type AiModerationRequest,
+} from './worker/ai-moderation';
 
 export { RateLimiter };
 
@@ -33,12 +37,15 @@ export interface Env extends PublicSubmissionEnv, PushNotificationEnv {
   };
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
+  PHASE2_ENABLED?: string;
   CF_API_TOKEN?: string;
   CF_ACCOUNT_ID?: string;
   SUPABASE_MANAGEMENT_TOKEN?: string;
   SUPABASE_PROJECT_ID?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
+  ALERT_EMAIL_FROM?: string;
+  PUBLIC_SITE_URL?: string;
   GA_SERVICE_ACCOUNT_JSON?: string;
   GA_PROPERTY_ID?: string;
   GEMINI_API_KEY?: string;
@@ -50,7 +57,18 @@ export interface Env extends PublicSubmissionEnv, PushNotificationEnv {
   TURNSTILE_VERIFY_URL?: string;
   RATE_LIMITER: RateLimiterNamespace;
 }
+
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getConfirmedAt(value: unknown): string | null {
+  if (!isRecord(value)) return null;
+  const confirmedAt = value.email_confirmed_at ?? value.confirmed_at;
+  return typeof confirmedAt === 'string' ? confirmedAt : null;
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return withSecurityHeaders(new Response(JSON.stringify(body), {
@@ -110,7 +128,12 @@ async function rewriteCanonicalLink(
   })
 }
 
-function withSecurityHeaders(response: Response, url?: URL, forceNoIndex = false): Response {
+function withSecurityHeaders(
+  response: Response,
+  url?: URL,
+  forceNoIndex = false,
+  supabaseUrl = '',
+): Response {
   if (response.status === 101) {
     return response;
   }
@@ -127,7 +150,8 @@ function withSecurityHeaders(response: Response, url?: URL, forceNoIndex = false
   }
 
   if (response.headers.get('Content-Type')?.includes('text/html')) {
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tohjzoncoosvjbjcakdl.supabase.co https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org https://challenges.cloudflare.com https://*.workers.dev; frame-src 'self' https://www.google.com https://www.openstreetmap.org https://challenges.cloudflare.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
+    const normalizedSupabaseUrl = supabaseUrl.replace(/\/+$/, '');
+    headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'sha256-OeFuuJVJqKusoFUuJIcP1aWwNUC9Redatv1bcLOinY4=' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${normalizedSupabaseUrl} https://www.google-analytics.com https://www.google.com https://static.cloudflareinsights.com https://*.cubitathome.com https://tiles.openfreemap.org https://challenges.cloudflare.com https://*.workers.dev; frame-src 'self' https://www.google.com https://www.openstreetmap.org https://challenges.cloudflare.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`);
     headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     headers.set('Pragma', 'no-cache');
     headers.set('Expires', '0');
@@ -269,8 +293,15 @@ async function getRequestEmail(request: Request): Promise<string> {
     const clonedRequest = request.clone();
 
     if (contentType.includes('application/json')) {
-      const body = await clonedRequest.json() as any;
-      return normalizeEmail(body?.email || body?.data?.email || body?.user?.email);
+      const body: unknown = await clonedRequest.json();
+      if (!isRecord(body)) return '';
+      const nestedData = isRecord(body.data) ? body.data : null;
+      const nestedUser = isRecord(body.user) ? body.user : null;
+      return normalizeEmail(
+        body.email
+        || nestedData?.email
+        || nestedUser?.email,
+      );
     }
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
@@ -472,10 +503,14 @@ async function getEmailConfirmedAt(email: string, env: Env): Promise<string | nu
       );
 
       if (response.ok) {
-        const data = await response.json() as any;
-        const users = Array.isArray(data?.users) ? data.users : Array.isArray(data) ? data : [];
-        const user = users.find((item: any) => normalizeEmail(item?.email) === email) || users[0];
-        return user?.email_confirmed_at || user?.confirmed_at || null;
+        const data: unknown = await response.json();
+        const users = isRecord(data) && Array.isArray(data.users)
+          ? data.users
+          : Array.isArray(data)
+            ? data
+            : [];
+        const user = users.find((item) => isRecord(item) && normalizeEmail(item.email) === email) || users[0];
+        return getConfirmedAt(user);
       }
 
       logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'service_role', status: response.status });
@@ -509,46 +544,47 @@ async function getEmailConfirmedAt(email: string, env: Env): Promise<string | nu
       return null;
     }
 
-    const data = await response.json() as any;
+    const data: unknown = await response.json();
     const rows = Array.isArray(data)
       ? data
-      : Array.isArray(data?.result)
+      : isRecord(data) && Array.isArray(data.result)
         ? data.result
-        : Array.isArray(data?.data)
+        : isRecord(data) && Array.isArray(data.data)
           ? data.data
-          : Array.isArray(data?.rows)
+          : isRecord(data) && Array.isArray(data.rows)
             ? data.rows
-            : Array.isArray(data?.result?.rows)
+            : isRecord(data) && isRecord(data.result) && Array.isArray(data.result.rows)
               ? data.result.rows
               : [];
-    const row = Array.isArray(rows) ? rows[0] : null;
-    return row?.email_confirmed_at || null;
+    return getConfirmedAt(rows[0]);
   } catch {
     logWorkerEvent('warn', 'auth_user_lookup_failed', { source: 'management_api' });
     return null;
   }
 }
 
-async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void> {
-  if (!env.RESEND_API_KEY) {
+async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<boolean> {
+  const phase2Enabled = env.PHASE2_ENABLED === 'true';
+  if (!env.RESEND_API_KEY || (phase2Enabled && !env.ALERT_EMAIL_FROM)) {
     logWorkerEvent('warn', 'transactional_email_skipped', {
       source: 'resend',
       reason: 'missing_configuration',
     });
-    return;
+    return false;
   }
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'Cubitat <notificaciones@cubitathome.com>',
-      to: [email],
-      subject: 'Tu correo ya esta confirmado en Cubitat',
-      html: `<!doctype html>
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.ALERT_EMAIL_FROM || 'Cubitat <notificaciones@cubitathome.com>',
+        to: [email],
+        subject: 'Tu correo ya esta confirmado en Cubitat',
+        html: `<!doctype html>
 <html lang="es">
   <body style="margin:0;background:#f4f7f6;color:#10231f;font-family:Arial,sans-serif;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7f6;padding:28px 12px;">
@@ -570,32 +606,54 @@ async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<void>
     </table>
   </body>
 </html>`,
-    }),
-  });
+      }),
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      logWorkerEvent('warn', 'transactional_email_failed', {
+        source: 'resend',
+        status: response.status,
+      });
+      return false;
+    }
+
+    return true;
+  } catch {
     logWorkerEvent('warn', 'transactional_email_failed', {
       source: 'resend',
-      status: response.status,
+      reason: 'network_unavailable',
     });
+    return false;
   }
 }
 
-async function resendSignupConfirmation(email: string, env: Env): Promise<void> {
-  await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/resend`, {
-    method: 'POST',
-    headers: {
-      'apikey': env.VITE_SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      type: 'signup',
-      email,
-      options: {
-        email_redirect_to: 'https://cubitathome.com/auth/callback',
+async function resendSignupConfirmation(email: string, env: Env): Promise<boolean> {
+  const phase2Enabled = env.PHASE2_ENABLED === 'true';
+  if (
+    !env.VITE_SUPABASE_URL
+    || !env.VITE_SUPABASE_ANON_KEY
+    || (phase2Enabled && !env.PUBLIC_SITE_URL)
+  ) return false;
+
+  try {
+    const response = await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/resend`, {
+      method: 'POST',
+      headers: {
+        'apikey': env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
       },
-    }),
-  });
+      body: JSON.stringify({
+        type: 'signup',
+        email,
+        options: {
+          email_redirect_to: `${(env.PUBLIC_SITE_URL || 'https://cubitathome.com').replace(/\/+$/, '')}/auth/callback`,
+        },
+      }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 export interface WorkerOptions {
@@ -632,6 +690,9 @@ export function createWorker(options: WorkerOptions = {}) {
     }
 
     const path = url.pathname;
+    const addSecurityHeaders = (response: Response, forceNoIndex = false): Response => (
+      withSecurityHeaders(response, url, forceNoIndex, env.VITE_SUPABASE_URL)
+    );
 
     if (path === '/api/push/vapid-public-key') {
       if (request.method !== 'GET') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -678,12 +739,17 @@ export function createWorker(options: WorkerOptions = {}) {
 
     // Endpoint interno para moderación con IA
     if (path === '/api/ai-moderate' && request.method === 'POST') {
-      let body: any;
+      let body: unknown;
       try {
         body = await request.json();
       } catch {
         return jsonResponse({ error: 'Invalid JSON' }, 400);
       }
+
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return jsonResponse({ error: 'Invalid JSON' }, 400);
+      }
+      const moderationRequest = body as Partial<AiModerationRequest>;
 
       const authHeader = request.headers.get('Authorization') || '';
       const user = await getAuthenticatedUser(authHeader, env);
@@ -691,179 +757,37 @@ export function createWorker(options: WorkerOptions = {}) {
         return jsonResponse({ error: 'Unauthorized' }, 401);
       }
 
-      if (!body.property_id || !uuidRegex.test(body.property_id)) {
+      const moderationRateLimit = await checkRateLimit(
+        env,
+        `user:${user.id}:ai-moderation:v1`,
+        5,
+        10 * 60 * 1000,
+      );
+      if (!moderationRateLimit.allowed) {
+        return rateLimitResponse(moderationRateLimit.resetAt);
+      }
+
+      if (typeof moderationRequest.property_id !== 'string' || !uuidRegex.test(moderationRequest.property_id)) {
         return jsonResponse({ error: 'Invalid property_id' }, 400);
       }
 
-      const allowed = await canModerateProperty(body.property_id, user.id, authHeader, env);
+      const allowed = await canModerateProperty(moderationRequest.property_id, user.id, authHeader, env);
       if (!allowed) {
         return jsonResponse({ error: 'Forbidden' }, 403);
       }
 
-      // Proceso de fondo para no colgar el cliente
-      async function moderateBackground(body: any, env: Env) {
-        try {
-          if (!body.property_id) return; // Si no hay ID, no podemos actualizar
-
-          const applyTrustedModeration = async (
-            status: string,
-            message: string,
-            provider: 'groq' | null
-          ) => {
-            if (!env.SUPABASE_SERVICE_ROLE_KEY) {
-              throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured.');
-            }
-
-            const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/set_property_ai_moderation_trusted`, {
-              method: 'POST',
-              headers: {
-                'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
-                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({
-                p_property_id: body.property_id,
-                p_status: status,
-                p_message: message,
-                p_provider: provider
-              })
-            });
-
-            if (!response.ok) {
-              throw new Error(`Trusted moderation RPC failed with status ${response.status}.`);
-            }
-          };
-
-          if (!env.GROQ_API_KEY) {
-            await applyTrustedModeration(
-              'pending_review',
-              'IA deshabilitada. Pendiente de revisión manual.',
-              null
-            );
-            return;
-          }
-          
-          const systemPrompt = `Eres un moderador experto de bienes raíces en Cuba para la plataforma Cubitat. 
-Tu tarea es analizar el siguiente anuncio y determinar si cumple con las reglas (sin lenguaje ofensivo, sin spam evidente, precio razonable, descripción coherente).
-IMPORTANTE: Si se adjuntan imágenes, analízalas también. Rechaza el anuncio si las imágenes contienen desnudos, violencia, contenido irrelevante que no sea de propiedades, o exceso de texto promocional (spam).
-Responde Únicamente con un objeto JSON válido, sin texto adicional, con exactamente estas dos propiedades:
-"status": "ai_approved" o "ai_rejected".
-"reason": Una breve explicación de por qué lo aprobaste o rechazaste. Incluye una descripción breve de las imágenes si se adjuntaron.`;
-
-          const userContent: any[] = [
-            {
-              type: 'text',
-              text: `${systemPrompt}\n\nAnuncio a moderar:\nTítulo: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} USD\nTipo: ${body.property_type}`
-            }
-          ];
-
-          if (body.images && Array.isArray(body.images)) {
-            const imagesToProcess = body.images.slice(0, 3); // Límite del modelo multimodal configurado.
-            
-            for (const dataUrl of imagesToProcess) {
-              if (typeof dataUrl === 'string') {
-                if (dataUrl.startsWith('data:image/')) {
-                  userContent.push({
-                    type: 'image_url',
-                    image_url: { url: dataUrl }
-                  });
-                } else if (dataUrl.startsWith(`${env.VITE_SUPABASE_URL}/storage/v1/object/public/property_images/`)) {
-                  try {
-                    const imgRes = await fetch(dataUrl);
-                    if (imgRes.ok) {
-                      const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
-                      const arrayBuffer = await imgRes.arrayBuffer();
-                      if (arrayBuffer.byteLength > 2000) {
-                        let binary = '';
-                        const bytes = new Uint8Array(arrayBuffer);
-                        const chunkSize = 8192;
-                        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-                          const chunk = bytes.subarray(i, i + chunkSize);
-                          binary += String.fromCharCode.apply(null, Array.from(chunk));
-                        }
-                        const base64Data = btoa(binary);
-                        userContent.push({
-                          type: 'image_url',
-                          image_url: { url: `data:${contentType};base64,${base64Data}` }
-                        });
-                      }
-                    }
-                  } catch {
-                    logWorkerEvent('warn', 'moderation_image_fetch_failed');
-                  }
-                }
-              }
-            }
-          }
-
-          let finalStatus = 'pending_review';
-          let finalReason = '';
-
-          try {
-            const groqApiKey = (env.GROQ_API_KEY || '').trim().replace(/[\r\n]/g, '');
-            const groqModel = env.GROQ_MODEL?.trim() || 'qwen/qwen3.8-27b';
-            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${groqApiKey}`
-              },
-              body: JSON.stringify({
-                model: groqModel,
-                messages: [
-                  { role: 'user', content: userContent }
-                ],
-                temperature: 0.7,
-                max_completion_tokens: 512,
-                reasoning_effort: 'none',
-                response_format: { type: 'json_object' }
-              })
-            });
-
-            const groqJson = await groqRes.json() as any;
-
-            if (!groqRes.ok) {
-              finalStatus = 'pending_review';
-              if (groqRes.status === 429) {
-                finalReason = 'Servicio de IA temporalmente saturado. Pendiente de revisión manual.';
-              } else {
-                logWorkerEvent('warn', 'moderation_provider_request_failed', {
-                  source: 'groq',
-                  status: groqRes.status,
-                });
-                finalReason = 'Servicio de IA no disponible. Pendiente de revisión manual.';
-              }
-            } else {
-              const rawText = groqJson?.choices?.[0]?.message?.content || '';
-              if (rawText) {
-                try {
-                  const cleanText = rawText.replace(/```(?:json)?/gi, '').trim();
-                  const aiResult = JSON.parse(cleanText);
-                  finalStatus = aiResult.status || 'pending_review';
-                  finalReason = aiResult.reason || '';
-                } catch {
-                  finalStatus = 'pending_review';
-                  finalReason = 'Fallo al interpretar respuesta de IA. Pendiente de revisión manual.';
-                }
-              } else {
-                finalStatus = 'pending_review';
-                finalReason = 'No hay texto en IA. Pendiente de revisión manual.';
-              }
-            }
-          } catch {
-            finalStatus = 'pending_review';
-            finalReason = 'Fallo de conexión con IA. Pendiente de revisión manual.';
-          }
-
-          await applyTrustedModeration(finalStatus, finalReason, 'groq');
-
-        } catch {
-          logWorkerEvent('error', 'moderation_background_failed');
-        }
-      }
-
-      ctx.waitUntil(moderateBackground(body, env));
+      // Ejecuta la moderación en segundo plano para mantener el endpoint rápido.
+      ctx.waitUntil(moderatePropertyWithAi({
+        property_id: moderationRequest.property_id,
+        title: typeof moderationRequest.title === 'string' ? moderationRequest.title : undefined,
+        location: typeof moderationRequest.location === 'string' ? moderationRequest.location : undefined,
+        description: typeof moderationRequest.description === 'string' ? moderationRequest.description : undefined,
+        price_usd: typeof moderationRequest.price_usd === 'string' || typeof moderationRequest.price_usd === 'number'
+          ? moderationRequest.price_usd
+          : undefined,
+        property_type: typeof moderationRequest.property_type === 'string' ? moderationRequest.property_type : undefined,
+        images: Array.isArray(moderationRequest.images) ? moderationRequest.images : undefined,
+      }, env));
 
       return new Response(JSON.stringify({ status: 'processing', reason: 'Moderación iniciada en segundo plano.' }), { 
         status: 202, 
@@ -882,6 +806,16 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       const role = await getUserRole(user.id, authHeader, env);
       if (role !== 'admin' || !hasAdminSecondFactor(authHeader)) {
         return jsonResponse({ error: 'Forbidden' }, 403);
+      }
+
+      const metricsRateLimit = await checkRateLimit(
+        env,
+        `user:${user.id}:admin-metrics:v1`,
+        30,
+        60 * 1000,
+      );
+      if (!metricsRateLimit.allowed) {
+        return rateLimitResponse(metricsRateLimit.resetAt);
       }
 
       // 1. Fetch Cloudflare Metrics (si tenemos los tokens)
@@ -909,15 +843,31 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             },
             body: JSON.stringify({ query: cfQuery })
           });
-          const cfJson: any = await cfRes.json();
-          if (cfJson?.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive?.[0]?.sum?.requests !== undefined) {
-            cloudflareData = { requests: cfJson.data.viewer.accounts[0].workersInvocationsAdaptive[0].sum.requests, error: '' };
+          if (!cfRes.ok) {
+            throw new Error(`Cloudflare metrics HTTP ${cfRes.status}`);
+          }
+          const cfJson: unknown = await cfRes.json();
+          const cfData = isRecord(cfJson) && isRecord(cfJson.data) ? cfJson.data : null;
+          const viewer = cfData && isRecord(cfData.viewer) ? cfData.viewer : null;
+          const accounts = viewer && Array.isArray(viewer.accounts) ? viewer.accounts : [];
+          const firstAccount = isRecord(accounts[0]) ? accounts[0] : null;
+          const invocations = firstAccount && Array.isArray(firstAccount.workersInvocationsAdaptive)
+            ? firstAccount.workersInvocationsAdaptive
+            : [];
+          const firstInvocation = isRecord(invocations[0]) ? invocations[0] : null;
+          const sum = firstInvocation && isRecord(firstInvocation.sum) ? firstInvocation.sum : null;
+          const requests = sum?.requests;
+          if (typeof requests === 'number' && Number.isFinite(requests)) {
+            cloudflareData = { requests, error: '' };
           } else {
-            const cfErr = cfJson?.errors?.[0]?.message || 'Error desconocido';
+            const errors = isRecord(cfJson) && Array.isArray(cfJson.errors) ? cfJson.errors : [];
+            const firstError = isRecord(errors[0]) ? errors[0] : null;
+            const cfErr = typeof firstError?.message === 'string' ? firstError.message : 'Error desconocido';
             cloudflareData.error = `Error GraphQL CF: ${cfErr}`;
           }
-        } catch (e: any) {
-          cloudflareData.error = `Excepción CF: ${e.message}`;
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Error desconocido';
+          cloudflareData.error = `Excepción CF: ${message}`;
         }
       }
 
@@ -952,26 +902,35 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         return jsonResponse({ ok: true });
       }
 
-      let body: any;
+      let body: unknown;
       try {
         body = await request.json();
       } catch {
         return jsonResponse({ ok: true });
       }
 
-      const email = normalizeEmail(body?.email);
+      const email = normalizeEmail(
+        body && typeof body === 'object' && 'email' in body
+          ? body.email
+          : undefined,
+      );
       if (!isValidEmail(email)) {
         return jsonResponse({ ok: true });
       }
 
       const confirmedAt = await getEmailConfirmedAt(email, env);
-      if (confirmedAt) {
-        await sendAlreadyConfirmedEmail(email, env);
+      const sent = confirmedAt
+        ? await sendAlreadyConfirmedEmail(email, env)
+        : await resendSignupConfirmation(email, env);
+      if (!sent) {
+        logWorkerEvent('warn', 'auth_resend_unavailable');
+        return jsonResponse({
+          ok: false,
+          message: 'El servicio de correo no está disponible temporalmente. Intenta de nuevo más tarde.',
+        }, 503);
       } else {
-        await resendSignupConfirmation(email, env);
+        return jsonResponse({ ok: true });
       }
-
-      return jsonResponse({ ok: true });
     }
 
 // 1. Interceptar solicitudes de API de Supabase Proxy
@@ -1175,7 +1134,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
+      const supabaseUrl = env.VITE_SUPABASE_URL;
       let targetUrl = request.url.replace(
         url.origin + '/api/supabase',
         supabaseUrl
@@ -1250,7 +1209,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         }
       }
 
-      return withSecurityHeaders(response, url);
+      return addSecurityHeaders(response);
     }
 
     // Interceptar solicitudes a la página de detalles: /propiedad/uuid o /propiedad/slug-uuid
@@ -1264,8 +1223,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
       
       if (uuidRegex.test(propertyId)) {
         try {
-          const supabaseUrl = env.VITE_SUPABASE_URL || "https://tohjzoncoosvjbjcakdl.supabase.co";
-          const supabaseKey = env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvaGp6b25jb29zdmpiamNha2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTY1OTgsImV4cCI6MjA5ODM3MjU5OH0.ytR4ykmBVrUh4hvPDKWpQdbTcM42_owdKEGiwta1pqo";
+          const supabaseUrl = env.VITE_SUPABASE_URL;
+          const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
 
           // Consultar la propiedad de manera asíncrona usando la API REST pública de Supabase
           const supabaseResponse = await fetch(
@@ -1279,18 +1238,24 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
           );
 
           if (supabaseResponse.ok) {
-            const properties = await supabaseResponse.json() as any[];
-            if (properties && properties.length > 0) {
+            const rawProperties: unknown = await supabaseResponse.json();
+            const properties = Array.isArray(rawProperties)
+              ? rawProperties.filter(isRecord)
+              : [];
+            if (properties.length > 0) {
               const property = properties[0];
-              const price = property.price_usd 
-                ? `USD ${property.price_usd.toLocaleString('en-US')}` 
+              const priceValue = property.price_usd;
+              const price = (typeof priceValue === 'number' || typeof priceValue === 'string') && priceValue
+                ? `USD ${priceValue.toLocaleString('en-US')}`
                 : 'Precio no informado';
-              
-              const title = `${property.title} - ${price}`;
-              const description = property.description 
-                ? `${property.description.slice(0, 150)}... Contacto en Cubitat.`
+
+              const titleValue = typeof property.title === 'string' ? property.title : 'Propiedad en Cubitat';
+              const descriptionValue = typeof property.description === 'string' ? property.description : '';
+              const image = typeof property.cover_image === 'string' ? property.cover_image : '';
+              const title = `${titleValue} - ${price}`;
+              const description = descriptionValue
+                ? `${descriptionValue.slice(0, 150)}... Contacto en Cubitat.`
                 : 'Encuentra propiedades en venta y renta en Cuba con Cubitat.';
-              const image = property.cover_image || '';
 
               // Obtener el HTML estático base desde el manejador de activos
               const assetResponse = await env.ASSETS.fetch(request);
@@ -1360,7 +1325,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
                 headers: baseHeaders
               });
 
-              const finalResponse = withSecurityHeaders(rawResponse, url);
+              const finalResponse = addSecurityHeaders(rawResponse);
 
               return finalResponse;
             }
@@ -1371,9 +1336,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             status: supabaseResponse.ok ? 404 : 503,
             headers: assetResponse.headers,
           });
-          return withSecurityHeaders(
+          return addSecurityHeaders(
             await rewriteCanonicalLink(notFoundResponse, url, false),
-            url,
             true,
           );
         } catch {
@@ -1383,9 +1347,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
             status: 503,
             headers: assetResponse.headers,
           });
-          return withSecurityHeaders(
+          return addSecurityHeaders(
             await rewriteCanonicalLink(unavailableResponse, url, false),
-            url,
             true,
           );
         }
@@ -1396,9 +1359,8 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
         status: 404,
         headers: assetResponse.headers,
       });
-      return withSecurityHeaders(
+      return addSecurityHeaders(
         await rewriteCanonicalLink(invalidPropertyResponse, url, false),
-        url,
         true,
       );
     }
@@ -1437,7 +1399,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
     response = await rewriteCanonicalLink(response, url);
 
-    return withSecurityHeaders(response, url);
+    return addSecurityHeaders(response);
     }
   };
 }

@@ -6,13 +6,14 @@ import { tmpdir } from 'node:os'
 const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
 const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
 const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://localhost:5173'
 
-test('Login, publicar y mandar mensaje', async ({ page, request }) => {
+test('Login, publicar y mandar mensaje', async ({ page, request }, testInfo) => {
   test.skip(!E2E_EMAIL || !E2E_PASSWORD, 'Definir CUBITAT_E2E_EMAIL y CUBITAT_E2E_PASSWORD')
   test.skip(!ALLOW_MUTATIONS, 'Definir CUBITAT_E2E_ALLOW_MUTATIONS=true para autorizar escrituras QA')
   // Go to home
-  await page.goto('http://localhost:5173/')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/1_home.png' })
+  await page.goto(`${BASE_URL}/`)
+  await page.screenshot({ path: testInfo.outputPath('1_home.png') })
 
   // Open login modal
   await page.click('button:has-text("Ingresar")')
@@ -21,19 +22,19 @@ test('Login, publicar y mandar mensaje', async ({ page, request }) => {
   // Fill credentials
   await page.fill('input[type="email"]', E2E_EMAIL!)
   await page.fill('input[type="password"]', E2E_PASSWORD!)
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/2_login_modal.png' })
+  await page.screenshot({ path: testInfo.outputPath('2_login_modal.png') })
 
   // Submit login
   await page.click('.login-modal-card button[type="submit"]')
   
   // Wait for user to be logged in
   await page.waitForSelector('button:has-text("Ingresar")', { state: 'detached', timeout: 15000 })
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/3_logged_in.png' })
+  await page.screenshot({ path: testInfo.outputPath('3_logged_in.png') })
 
   // Navigate to publish page
-  await page.goto('http://localhost:5173/publicar')
+  await page.goto(`${BASE_URL}/publicar`)
   await page.waitForSelector('h1')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/4_publicar_step1.png' })
+  await page.screenshot({ path: testInfo.outputPath('4_publicar_step1.png') })
 
   // --- Step 1: Dirección ---
   await page.locator('input[placeholder*="Ej: Calle 23"]').fill('Calle A #123 e/ B y C')
@@ -73,19 +74,19 @@ test('Login, publicar y mandar mensaje', async ({ page, request }) => {
   // --- Step 8: Contacto ---
   await page.locator('input[placeholder*="Ej: Alejandro"]').fill('Anunciante Test')
   await page.locator('input[placeholder*="52345678"]').fill('59999999')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/5_publicar_final.png' })
+  await page.screenshot({ path: testInfo.outputPath('5_publicar_final.png') })
 
   // --- Submit ---
   await page.locator('button[type="submit"]').click()
 
   // Verify success
   await expect(page.locator('text=Publicación recibida')).toBeVisible({ timeout: 30000 })
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/6_publicada_exito.png' })
+  await page.screenshot({ path: testInfo.outputPath('6_publicada_exito.png') })
 
   // Wait redirect or go to mis-propiedades
-  await page.goto('http://localhost:5173/mis-propiedades')
+  await page.goto(`${BASE_URL}/mis-propiedades`)
   await page.waitForSelector('text=Pendiente de revisión')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/7_mis_propiedades.png' })
+  await page.screenshot({ path: testInfo.outputPath('7_mis_propiedades.png') })
 
   // Get accessToken and userId from localStorage
   const sessionToken = await page.evaluate(() => {
@@ -97,39 +98,39 @@ test('Login, publicar y mandar mensaje', async ({ page, request }) => {
 
   // Fetch most recent property ID
   const propsRes = await request.get(
-    `http://localhost:5173/api/supabase/rest/v1/properties?user_id=eq.${userId}&order=created_at.desc&limit=1`,
+    `${BASE_URL}/api/supabase/rest/v1/properties?user_id=eq.${userId}&order=created_at.desc&limit=1`,
     { headers: { apikey: 'dummy-key-safe-from-browsers', Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
   )
   const props = await propsRes.json()
   const propId = props[0].id
 
   // Navigate to property detail page directly
-  await page.goto(`http://localhost:5173/propiedad/${propId}`)
+  await page.goto(`${BASE_URL}/propiedad/${propId}`)
   await page.waitForTimeout(5000) // Wait for React to render
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/8_detalle_raw.png' })
+  await page.screenshot({ path: testInfo.outputPath('8_detalle_raw.png') })
   await page.waitForSelector('h1')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/8_detalle_propiedad.png' })
+  await page.screenshot({ path: testInfo.outputPath('8_detalle_propiedad.png') })
 
   // Fill the contact form
   await page.fill('#contact-name', 'Cliente Interesado')
   await page.fill('#contact-phone', '+5351234567')
   await page.fill('#contact-message', 'Hola, este es un mensaje de prueba automática para verificar la base de datos y la notificación.')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/9_mensaje_formulario.png' })
+  await page.screenshot({ path: testInfo.outputPath('9_mensaje_formulario.png') })
 
   // Submit contact message
   await page.click('button:has-text("Enviar mensaje y ver contacto")')
   
   // Wait for success feedback
   await expect(page.locator('text=¡Mensaje enviado!')).toBeVisible({ timeout: 15000 })
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/10_mensaje_enviado.png' })
+  await page.screenshot({ path: testInfo.outputPath('10_mensaje_enviado.png') })
 
   // Let's reload to see if we get the notifications badge updated!
   await page.reload()
   await page.waitForLoadState('networkidle')
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/11_notificaciones_recibidas.png' })
+  await page.screenshot({ path: testInfo.outputPath('11_notificaciones_recibidas.png') })
 
   // Open the notifications menu by clicking the notification bell
   await page.click('.notification-trigger')
   await page.waitForTimeout(2000)
-  await page.screenshot({ path: 'C:/Users/Jorba/.gemini/antigravity/brain/ab5b9bdb-a516-4b5d-bc7f-166250ae927f/12_notificaciones_desplegadas.png' })
+  await page.screenshot({ path: testInfo.outputPath('12_notificaciones_desplegadas.png') })
 })

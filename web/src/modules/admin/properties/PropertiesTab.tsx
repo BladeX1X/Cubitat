@@ -35,7 +35,8 @@ export function PropertiesTab() {
             </button>
           ))}
         </div>
-        <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar por título, ubicación, anunciante, operación o tipo..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:border-[#035f53] focus:ring-2 focus:ring-[#035f53]/10" />
+        <label htmlFor="admin-property-search" className="sr-only">Buscar propiedades</label>
+        <input id="admin-property-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar por título, ubicación, anunciante, operación o tipo..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:border-[#035f53] focus:ring-2 focus:ring-[#035f53]/10" />
         <p className="text-xs text-neutral-500">Mostrando <span className="font-bold text-neutral-800">{displayed.length}</span> resultado(s)</p>
       </div>
       {displayed.length === 0 && <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">No hay propiedades que coincidan con estos filtros.</div>}

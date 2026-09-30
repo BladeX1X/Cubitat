@@ -93,26 +93,31 @@ export function useSearchAlerts(userId?: string | null) {
   const loadAlerts = useCallback(async () => {
     if (!userId) {
       setAlerts([])
+      setError(null)
+      setLoading(false)
       return
     }
 
     setLoading(true)
     setError(null)
+    try {
+      const { data, error: loadError } = await supabase
+        .from('search_alerts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
 
-    const { data, error: loadError } = await supabase
-      .from('search_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      if (loadError) {
+        setError('No se pudieron cargar tus alertas.')
+        return
+      }
 
-    setLoading(false)
-
-    if (loadError) {
+      setAlerts((data ?? []) as SearchAlert[])
+    } catch {
       setError('No se pudieron cargar tus alertas.')
-      return
+    } finally {
+      setLoading(false)
     }
-
-    setAlerts((data ?? []) as SearchAlert[])
   }, [userId])
 
   useEffect(() => {
@@ -122,51 +127,60 @@ export function useSearchAlerts(userId?: string | null) {
   const createAlert = useCallback(async (filters: SearchFilters, label?: string) => {
     setCreating(true)
     setError(null)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const currentUser = sessionData.session?.user
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-    const currentUser = sessionData.session?.user
+      if (sessionError || !currentUser) {
+        setError('Inicia sesion para guardar esta alerta.')
+        throw new Error('Unauthenticated search alert')
+      }
 
-    if (sessionError || !currentUser) {
-      setCreating(false)
-      setError('Inicia sesion para guardar esta alerta.')
-      throw new Error('Unauthenticated search alert')
-    }
+      const payload = buildPayload(currentUser.id, filters, label)
+      const { data, error: insertError } = await supabase
+        .from('search_alerts')
+        .insert(payload)
+        .select('*')
+        .single()
 
-    const payload = buildPayload(currentUser.id, filters, label)
-    const { data, error: insertError } = await supabase
-      .from('search_alerts')
-      .insert(payload)
-      .select('*')
-      .single()
+      if (insertError) {
+        setError('No se pudo crear la alerta.')
+        throw insertError
+      }
 
-    setCreating(false)
+      const alert = data as SearchAlert
+      if (!userId || userId === currentUser.id) {
+        setAlerts((current) => [alert, ...current])
+      }
 
-    if (insertError) {
+      return alert
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === 'Unauthenticated search alert') throw reason
       setError('No se pudo crear la alerta.')
-      throw insertError
+      throw reason
+    } finally {
+      setCreating(false)
     }
-
-    const alert = data as SearchAlert
-    if (!userId || userId === currentUser.id) {
-      setAlerts((current) => [alert, ...current])
-    }
-
-    return alert
   }, [userId])
 
   const deleteAlert = useCallback(async (alertId: string) => {
     setError(null)
-    const { error: deleteError } = await supabase
-      .from('search_alerts')
-      .delete()
-      .eq('id', alertId)
+    try {
+      const { error: deleteError } = await supabase
+        .from('search_alerts')
+        .delete()
+        .eq('id', alertId)
 
-    if (deleteError) {
+      if (deleteError) {
+        setError('No se pudo eliminar la alerta.')
+        throw deleteError
+      }
+
+      setAlerts((current) => current.filter((alert) => alert.id !== alertId))
+    } catch (reason) {
       setError('No se pudo eliminar la alerta.')
-      throw deleteError
+      throw reason
     }
-
-    setAlerts((current) => current.filter((alert) => alert.id !== alertId))
   }, [])
 
   return {

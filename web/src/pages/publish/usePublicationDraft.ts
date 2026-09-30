@@ -13,9 +13,15 @@ export function usePublicationDraft(
   const [error, setError] = useState<string | null>(null)
   const stopped = useRef(false)
   const restoreRef = useRef(restore)
-  restoreRef.current = restore
   const latest = useRef(value)
-  latest.current = value
+
+  useEffect(() => {
+    restoreRef.current = restore
+  }, [restore])
+
+  useEffect(() => {
+    latest.current = value
+  }, [value])
 
   useEffect(() => {
     if (waitingForProperty) return

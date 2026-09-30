@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
-import { CircleCheck, Download, RefreshCw, Share, Wifi, WifiOff, X } from 'lucide-react'
+import { RefreshCw, Wifi, WifiOff, X } from 'lucide-react'
+import { registerSW } from 'virtual:pwa-register'
 import { Button } from '../../shared/ui/button'
+import { PWAInstallToast, type BeforeInstallPromptEvent } from './PWAInstallToast'
 import {
   hasInstalledRelatedWebApp,
   isAndroidDevice,
   isIOSDevice,
   isStandalonePWA,
 } from '../../shared/pwa/installEnvironment'
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
 
 export const PWA_INSTALL_REQUEST_EVENT = 'cubitat:request-pwa-install'
 const PWA_PROMPT_DISMISSED_KEY = 'cubitat_pwa_prompt_dismissed'
@@ -48,8 +45,20 @@ export function PWAInstallPrompt() {
   const [updateServiceWorker, setUpdateServiceWorker] = useState<((reloadPage?: boolean) => Promise<void>) | null>(null)
 
   useEffect(() => {
-    // Temporarily disable SW registration while stabilizing production cache issues.
-    setUpdateServiceWorker(null)
+    let active = true
+    const update = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        if (active) setNeedsRefresh(true)
+      },
+    })
+
+    setUpdateServiceWorker(() => update)
+
+    return () => {
+      active = false
+      setUpdateServiceWorker(null)
+    }
   }, [])
 
   useEffect(() => {
@@ -102,9 +111,18 @@ export function PWAInstallPrompt() {
       setShowInstallPrompt(true)
     }
 
-    function handleBeforeInstallPrompt(event: Event) {
+    async function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault()
-      setInstalledRelatedApp(false)
+      const installed = await hasInstalledRelatedWebApp()
+      if (!active) return
+
+      setInstalledRelatedApp(installed)
+      if (installed) {
+        setDeferredPrompt(null)
+        setShowInstallPrompt(false)
+        return
+      }
+
       setDeferredPrompt(event as BeforeInstallPromptEvent)
       if (!delayAutomaticPrompt) {
         setShowInstallPrompt(true)
@@ -230,70 +248,14 @@ export function PWAInstallPrompt() {
       )}
 
       {showInstallPrompt && (
-        <div className="pwa-toast pwa-toast--install" role="status">
-          <div className="pwa-install-icon">
-            {installedRelatedApp ? <CircleCheck size={20} /> : <Download size={20} />}
-          </div>
-          <div>
-            <strong>{installedRelatedApp ? 'Cubitat ya está instalada' : 'Instalar Cubitat'}</strong>
-            {installedRelatedApp ? (
-              <span>Ábrela desde el icono de Cubitat en tu pantalla de inicio.</span>
-            ) : isIOS ? (
-              <span className="pwa-ios-copy">
-                En Safari, pulsa Compartir <Share size={12} />, selecciona <b>Añadir a pantalla de inicio</b> y confirma <b>Añadir</b>.
-              </span>
-            ) : (
-              <span>
-                {deferredPrompt
-                  ? 'Accede más rápido y conserva soporte básico sin conexión.'
-                  : isAndroid
-                    ? 'En Chrome, abre el menú y elige Instalar aplicación.'
-                    : 'Abre el menú de tu navegador y elige Instalar aplicación.'}
-              </span>
-            )}
-            {!installedRelatedApp && !isIOS && deferredPrompt && (
-              <div className="pwa-toast-actions">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="pwa-toast-secondary"
-                  onClick={handleDismissInstall}
-                >
-                  Quizás luego
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="pwa-toast-primary"
-                  onClick={handleInstallClick}
-                >
-                  Instalar app
-                </Button>
-              </div>
-            )}
-            {(installedRelatedApp || isIOS) && (
-              <div className="pwa-toast-actions">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="pwa-toast-primary"
-                  onClick={handleDismissInstall}
-                >
-                  Entendido
-                </Button>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            className="pwa-toast-close"
-            onClick={handleDismissInstall}
-            aria-label="Cerrar aviso de instalación"
-          >
-            <X size={15} />
-          </button>
-        </div>
+        <PWAInstallToast
+          installedRelatedApp={installedRelatedApp}
+          isAndroid={isAndroid}
+          isIOS={isIOS}
+          deferredPrompt={deferredPrompt}
+          onDismiss={handleDismissInstall}
+          onInstall={handleInstallClick}
+        />
       )}
     </div>
   )

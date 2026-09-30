@@ -1,19 +1,20 @@
-export function isPhaseTwoEnabled(isDevelopment: boolean, supabaseUrl: string): boolean {
-  if (!isDevelopment || !supabaseUrl) return false
+export function isPhaseTwoEnabled(isDevelopment: boolean, supabaseUrl: string, isPhaseTwoBuild = false): boolean {
+  if ((!isDevelopment && !isPhaseTwoBuild) || !supabaseUrl) return false
 
   try {
     const hostname = new URL(supabaseUrl).hostname
-    return hostname === '127.0.0.1' || hostname === 'localhost'
+    return isPhaseTwoBuild || hostname === '127.0.0.1' || hostname === 'localhost'
   } catch {
     return false
   }
 }
 
 /**
- * Fase 2 es experimental y solo puede ejecutarse con el servidor Vite en DEV.
- * Un build de producción siempre la elimina de la navegación y de las consultas.
+ * Fase 2 es experimental: solo se habilita localmente o en el build explícito
+ * de pruebas que define VITE_PHASE2_UI_ENABLED=true.
  */
 export const PHASE_TWO_ENABLED = isPhaseTwoEnabled(
   import.meta.env.DEV,
   import.meta.env.VITE_SUPABASE_URL || '',
+  import.meta.env.VITE_PHASE2_UI_ENABLED === 'true',
 )

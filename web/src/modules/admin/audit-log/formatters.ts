@@ -7,6 +7,7 @@ const STATUS_LABELS: Record<string, string> = {
 const SOURCE_LABELS: Record<AuditSource, string> = {
   admin: 'Administrador', owner: 'Propietario', automation: 'Automatización', system: 'Sistema',
 }
+const AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat('es-CU', { dateStyle: 'medium', timeStyle: 'short' })
 
 export function formatAuditAction(event: Pick<AuditLogEvent, 'action' | 'source' | 'newStatus'>) {
   if (event.action === 'delete') return 'Eliminación'
@@ -34,7 +35,7 @@ export function formatAuditStatus(status: string | null) {
 }
 
 export function formatAuditDate(date: string) {
-  return new Intl.DateTimeFormat('es-CU', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date))
+  return AUDIT_DATE_FORMATTER.format(new Date(date))
 }
 
 export function getAuditReason(event: {

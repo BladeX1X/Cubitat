@@ -125,8 +125,11 @@ export function SavedPropertiesProvider({ children }: { children: ReactNode }) {
       }
 
       return true
-    } catch (err) {
-      if (!wasSaved && (err as any)?.code === '23505') {
+    } catch (err: unknown) {
+      const errorCode = typeof err === 'object' && err !== null && 'code' in err
+        ? (err as { code?: unknown }).code
+        : undefined
+      if (!wasSaved && errorCode === '23505') {
         setSavedPropertyIds((current) => {
           const next = new Set(current)
           next.add(propertyId)

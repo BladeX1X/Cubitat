@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import {
@@ -19,6 +19,13 @@ import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
+const PropertyVerificationPanel = import.meta.env.DEV
+  || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+  ? lazy(() => import('../../modules/property-verification/PropertyVerificationPanel').then((module) => ({
+      default: module.PropertyVerificationPanel,
+    })))
+  : null
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -27,7 +34,7 @@ type Property = {
   id: string
   title: string
   location: string
-  price_usd: number
+  price_usd: number | null
   cover_image: string | null
   status: PropertyStatus
   moderation_message: string | null
@@ -52,7 +59,9 @@ export type MyPropertiesPageProps = {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function formatPrice(value: number): string {
+function formatPrice(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return 'Valor no indicado'
+
   return value.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -203,6 +212,11 @@ export function PropertyCard({
             </Button>
           </div>
         </div>
+        {PropertyVerificationPanel && property.status !== 'local_draft' && (
+          <Suspense fallback={null}>
+            <PropertyVerificationPanel propertyId={property.id} userId={property.user_id} />
+          </Suspense>
+        )}
       </div>
     </div>
   )

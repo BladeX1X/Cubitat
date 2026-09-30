@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
@@ -30,6 +30,7 @@ export function MapLibreAdapter({
   const onSelectClusterRef = useRef(onSelectCluster)
   const onViewportChangeRef = useRef(onViewportChange)
   const sourceDataRef = useRef<FeatureCollection<Point>>(createPropertySourceData([], undefined))
+  const fallbackMarkersRef = useRef<maplibregl.Marker[]>([])
   const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
@@ -92,11 +93,19 @@ export function MapLibreAdapter({
         new maplibregl.AttributionControl({ compact: true }),
         'bottom-right',
       )
-      mapRef.current.on('load', () => {
+      const markMapReady = () => {
         if (!abortController.signal.aborted) {
           setMapReady(true)
         }
-      })
+      }
+
+      mapRef.current.on('load', markMapReady)
+      mapRef.current.on('styledata', markMapReady)
+      mapRef.current.on('idle', markMapReady)
+      mapRef.current.on('render', markMapReady)
+      const readyFallback = window.setTimeout(markMapReady, 2000)
+
+      mapRef.current.once('remove', () => window.clearTimeout(readyFallback))
     }
 
     initializeMap().catch((error: unknown) => {
@@ -305,8 +314,8 @@ export function MapLibreAdapter({
         try {
           const leaves = await source.getClusterLeaves(clusterId, pointCount, 0)
           const ids = leaves
-            .map((leaf) => leaf.properties?.id as string | undefined)
-            .filter((id): id is string => !!id)
+            .map((leaf: GeoJSON.Feature) => leaf.properties?.id as string | undefined)
+            .filter((id: string | undefined): id is string => !!id)
           if (ids.length > 0) {
             onSelectClusterRef.current(ids)
             return
@@ -421,6 +430,86 @@ export function MapLibreAdapter({
       ;(existingSource as maplibregl.GeoJSONSource).setData(sourceData)
     }
   }, [mapReady, sourceData])
+
+  // MapLibre 6 can finish the style without painting the GeoJSON layers when
+  // an external style/source update races the first idle event. Keep a DOM
+  // marker fallback isolated to that case so the map remains usable while the
+  // canvas layers continue to provide clustering whenever they render.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+
+    let cancelled = false
+    let retryTimer: number | undefined
+    let stopRetryTimer: number | undefined
+    const clearFallbackMarkers = () => {
+      fallbackMarkersRef.current.forEach((marker) => marker.remove())
+      fallbackMarkersRef.current = []
+    }
+
+    const renderFallbackMarkers = () => {
+      if (cancelled) return
+
+      let renderedFeatureCount = 0
+      try {
+        renderedFeatureCount = map.queryRenderedFeatures({
+          layers: [
+            CLUSTER_SELECTED_HALO_LAYER_ID,
+            CLUSTER_LAYER_ID,
+            CLUSTER_COUNT_LAYER_ID,
+            PROPERTY_SELECTED_HALO_LAYER_ID,
+            PROPERTY_POINT_LAYER_ID,
+            PROPERTY_LABEL_LAYER_ID,
+          ],
+        }).length
+      } catch {
+        renderedFeatureCount = 0
+      }
+
+      if (renderedFeatureCount > 0 || fallbackMarkersRef.current.length > 0) {
+        if (renderedFeatureCount > 0 && retryTimer !== undefined) {
+          window.clearInterval(retryTimer)
+        }
+        return
+      }
+
+      fallbackMarkersRef.current = sourceDataRef.current.features.flatMap((feature) => {
+        const id = feature.properties?.id as string | undefined
+        const coordinates = feature.geometry.coordinates as [number, number]
+        if (!id) return []
+
+        const element = document.createElement('button')
+        element.type = 'button'
+        element.className = 'maplibre-property-marker'
+        element.textContent = String(feature.properties?.label ?? 'Ver')
+        element.setAttribute('aria-label', `Ver ${String(feature.properties?.title ?? 'propiedad')}`)
+        element.addEventListener('click', () => onSelectPropertyRef.current(id))
+
+        return [
+          new maplibregl.Marker({ element, anchor: 'bottom' })
+            .setLngLat(coordinates)
+            .addTo(map),
+        ]
+      })
+    }
+
+    // `idle` may fire before the GeoJSON source finishes its first paint.
+    // Keep the event listener for the normal path and add one delayed check
+    // so the fallback does not depend on a particular MapLibre event order.
+    retryTimer = window.setInterval(renderFallbackMarkers, 500)
+    stopRetryTimer = window.setTimeout(() => {
+      if (retryTimer !== undefined) window.clearInterval(retryTimer)
+    }, 6000)
+    map.once('idle', renderFallbackMarkers)
+    map.triggerRepaint()
+
+    return () => {
+      cancelled = true
+      if (retryTimer !== undefined) window.clearInterval(retryTimer)
+      if (stopRetryTimer !== undefined) window.clearTimeout(stopRetryTimer)
+      clearFallbackMarkers()
+    }
+  }, [mapReady])
 
   // When the property list (bounds) changes, fit the map to show all results.
   // maxZoom: 13 so a municipality-level search zooms in properly.

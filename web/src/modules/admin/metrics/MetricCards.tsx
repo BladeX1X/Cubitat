@@ -1,6 +1,14 @@
 import type { AdminMetrics } from '../core/types'
 import type { AdminStats } from './useAdminMetrics'
 
+function ProviderUnavailable({ message }: { message?: string | null }) {
+  return (
+    <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center">
+      <p className="text-xs text-neutral-600 font-medium">{message || 'Métrica no disponible.'}</p>
+    </div>
+  )
+}
+
 export function CloudflareMetricCard({ metrics }: { metrics: AdminMetrics | null }) {
   return (
     <div className="bg-white border border-neutral-200/60 rounded-3xl p-6 shadow-sm relative overflow-hidden">
@@ -8,8 +16,8 @@ export function CloudflareMetricCard({ metrics }: { metrics: AdminMetrics | null
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-xs font-black text-neutral-800 uppercase tracking-wider">Cloudflare Workers</span></div>
         <p className="text-[10px] text-neutral-500 mb-4">Límite gratuito: 100,000 peticiones / día</p>
-        {metrics?.cloudflare.error ? (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center"><p className="text-xs text-neutral-600 font-medium">{metrics.cloudflare.error}</p></div>
+        {metrics?.cloudflare.error || metrics?.cloudflare.requests == null ? (
+          <ProviderUnavailable message={metrics?.cloudflare.error} />
         ) : (
           <div className="flex flex-col gap-1">
             <span className="text-3xl font-black text-neutral-900">{metrics?.cloudflare.requests?.toLocaleString() || 0}</span>
@@ -51,8 +59,8 @@ export function AnalyticsMetricCard({ metrics }: { metrics: AdminMetrics | null 
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-xs font-black text-neutral-800 uppercase tracking-wider">Google Analytics</span></div>
         <p className="text-[10px] text-neutral-500 mb-4">Tráfico y visitantes en tiempo real</p>
-        {metrics?.analytics.error ? (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center"><p className="text-xs text-neutral-600 font-medium">{metrics.analytics.error}</p></div>
+        {metrics?.analytics.error || metrics?.analytics.activeUsers == null ? (
+          <ProviderUnavailable message={metrics?.analytics.error} />
         ) : (
           <div className="flex flex-col gap-1"><span className="text-3xl font-black text-neutral-900">{metrics?.analytics.activeUsers || 0}</span><span className="text-xs text-neutral-500 font-medium">usuarios activos ahora</span></div>
         )}

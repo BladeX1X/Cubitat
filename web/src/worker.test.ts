@@ -147,6 +147,23 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('Location')).toBe('https://cubitathome.com/resultados')
   })
 
+  it('degrada de forma segura cuando el SEO recibe una propiedad malformada', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([null, 'invalid-row', 42]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/propiedad/casa-00000000-0000-0000-0000-000000000099'),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(await response.text()).toContain('<!doctype html>')
+  })
+
   it('redirects www to the canonical root domain', async () => {
     const response = await worker.fetch(
       new Request('https://www.cubitathome.com/propiedad/demo'),
@@ -244,6 +261,40 @@ describe('Cloudflare Worker security contract', () => {
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ error: 'Invalid JSON' })
+  })
+
+  it('rate limits authenticated AI moderation requests per user', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({
+      fetch: vi.fn(async () => new Response(JSON.stringify({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 60_000,
+      }))),
+    }))
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: crypto.randomUUID() }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('Retry-After')).toBeTruthy()
+    await expect(response.json()).resolves.toEqual({
+      error: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('applies AI moderation through the trusted RPC with service-role credentials', async () => {
@@ -347,6 +398,86 @@ describe('Cloudflare Worker security contract', () => {
     })
   })
 
+  it('downloads public property images before sending them to Groq', async () => {
+    const propertyId = crypto.randomUUID()
+    const imageBytes = Uint8Array.from({ length: 3000 }, (_, index) => index % 251)
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(imageBytes, {
+        status: 200,
+        headers: { 'Content-Type': 'image/webp' },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ status: 'ai_approved', reason: 'Imagen válida.' }) } }],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          property_id: propertyId,
+          images: ['https://example.supabase.co/storage/v1/object/public/property_images/owner-1/photo.webp'],
+        }),
+      }),
+      {
+        ...createEnv(),
+        GROQ_API_KEY: 'groq-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    const groqRequest = JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))
+    const imagePart = groqRequest.messages[0].content.at(-1)
+    expect(imagePart.type).toBe('image_url')
+    expect(imagePart.image_url.url).toMatch(/^data:image\/webp;base64,/)
+    expect(JSON.parse(String(fetchMock.mock.calls[4]?.[1]?.body))).toMatchObject({
+      p_status: 'ai_approved',
+      p_provider: 'groq',
+    })
+  })
+
+  it('falls back to manual review when Groq is not configured', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key' },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))).toMatchObject({
+      p_status: 'pending_review',
+      p_message: 'IA deshabilitada. Pendiente de revisión manual.',
+      p_provider: null,
+    })
+    expect(fetchMock.mock.calls[2]?.[0]).toContain('/rest/v1/rpc/set_property_ai_moderation_trusted')
+  })
+
   it('keeps provider errors private and leaves moderation pending for manual review', async () => {
     const propertyId = crypto.randomUUID()
     const fetchMock = vi.fn()
@@ -380,6 +511,43 @@ describe('Cloudflare Worker security contract', () => {
     expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
       p_status: 'pending_review',
       p_message: 'Servicio de IA no disponible. Pendiente de revisión manual.',
+      p_provider: 'groq',
+    })
+  })
+
+  it('rejects provider states outside the moderation allowlist', async () => {
+    const propertyId = crypto.randomUUID()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ status: 'published', reason: 'No permitido.' }) } }],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const context = createContext()
+
+    await worker.fetch(
+      new Request('https://cubitathome.com/api/ai-moderate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer owner-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ property_id: propertyId }),
+      }),
+      {
+        ...createEnv(),
+        GROQ_API_KEY: 'groq-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
+      },
+      context,
+    )
+
+    await (context.waitUntil.mock.calls[0]?.[0] as Promise<void>)
+    expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
+      p_status: 'pending_review',
+      p_message: 'Respuesta de IA no válida. Pendiente de revisión manual.',
       p_provider: 'groq',
     })
   })
@@ -487,6 +655,73 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      cloudflare: {
+        requests: null,
+        error: 'Falta configurar CF_API_TOKEN y CF_ACCOUNT_ID',
+      },
+      supabase: {
+        storage_bytes: null,
+        egress_bytes: null,
+        db_bytes: null,
+        error: 'Falta configurar SUPABASE_MANAGEMENT_TOKEN y SUPABASE_PROJECT_ID',
+      },
+      analytics: {
+        activeUsers: null,
+        error: 'Falta configurar Google Analytics.',
+      },
+    })
+  })
+
+  it('reports an upstream Cloudflare metrics failure without parsing it as data', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('upstream failure', { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/metrics', {
+        headers: { Authorization: `Bearer ${testJwt('aal2')}` },
+      }),
+      { ...createEnv(), CF_API_TOKEN: 'cf-token', CF_ACCOUNT_ID: 'cf-account' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      cloudflare: {
+        requests: null,
+        error: 'Excepción CF: Cloudflare metrics HTTP 503',
+      },
+    })
+  })
+
+  it('rate limits external metrics requests per AAL2 administrator', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({
+      fetch: vi.fn(async () => new Response(JSON.stringify({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 30_000,
+      }))),
+    }))
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/metrics', {
+        headers: { Authorization: `Bearer ${testJwt('aal2')}` },
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('Retry-After')).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('blocks an aal1 admin from reevaluating another user property', async () => {
@@ -583,6 +818,9 @@ describe('Cloudflare Worker security contract', () => {
     expect(csp).toContain("base-uri 'self'")
     expect(csp).toContain("form-action 'self'")
     expect(csp).toContain("frame-ancestors 'none'")
+    expect(csp).toContain('https://example.supabase.co')
+    expect(csp).not.toContain('https://tohjzoncoosvjbjcakdl.supabase.co')
+    expect(csp).not.toContain('tohjzoncoosvjbjcakdl')
     expect(csp.match(/script-src[^;]*/)?.[0]).not.toContain("'unsafe-inline'")
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate')
   })
@@ -1037,5 +1275,127 @@ describe('Cloudflare Worker security contract', () => {
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive, nosnippet')
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-store, must-revalidate')
     expect(cacheMatch).not.toHaveBeenCalled()
+  })
+
+  it('uses the configured DEV origin for confirmation resend redirects', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      expect(String(input)).toBe('https://example.supabase.co/auth/v1/resend')
+      return new Response('{}', { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      { ...createEnv(), PUBLIC_SITE_URL: 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(
+      'https://cubitat1-phase2-dev.pochiprats18.workers.dev/auth/callback',
+    )
+  })
+
+  it('uses the configured DEV sender for already-confirmed accounts', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ email_confirmed_at: '2026-09-28T00:00:00Z' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      {
+        ...createEnv(),
+        RESEND_API_KEY: 'resend-test',
+        SUPABASE_MANAGEMENT_TOKEN: 'management-test',
+        SUPABASE_PROJECT_ID: 'project-test',
+        ALERT_EMAIL_FROM: 'Cubitat DEV <onboarding@resend.dev>',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain(
+      'Cubitat DEV <onboarding@resend.dev>',
+    )
+  })
+
+  it('does not fall back to the production sender in DEV', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ email_confirmed_at: '2026-09-28T00:00:00Z' }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      {
+        ...createEnv(),
+        PHASE2_ENABLED: 'true',
+        RESEND_API_KEY: 'resend-test',
+        SUPABASE_MANAGEMENT_TOKEN: 'management-test',
+        SUPABASE_PROJECT_ID: 'project-test',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not fall back to the production callback in DEV', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      { ...createEnv(), PHASE2_ENABLED: 'true' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns a safe error when Resend is unavailable for a confirmed account', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ email_confirmed_at: '2026-09-28T00:00:00Z' }]), { status: 200 }))
+      .mockRejectedValueOnce(new Error('network unavailable'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      {
+        ...createEnv(),
+        RESEND_API_KEY: 'resend-test',
+        SUPABASE_MANAGEMENT_TOKEN: 'management-test',
+        SUPABASE_PROJECT_ID: 'project-test',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      message: 'El servicio de correo no está disponible temporalmente. Intenta de nuevo más tarde.',
+    })
   })
 })

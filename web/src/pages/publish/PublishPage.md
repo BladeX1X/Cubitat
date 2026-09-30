@@ -24,7 +24,8 @@ Formulario guiado de publicación y edición con ocho pasos, compresión WebP y 
 - `draftStorage` descarta entradas JSON corruptas de un usuario o del formato
   legado sin bloquear la apertura del formulario ni afectar borradores de otras
   cuentas. El caso queda cubierto por pruebas de regresion para ambos formatos.
-- Validado con lint, 114 archivos/480 pruebas y build; desplegado solo en DEV.
+- Validado con lint, 114 archivos/480 pruebas y build; desplegado primero en DEV
+  y posteriormente integrado en producción mediante el commit aislado `0c9469a`.
 
 ## Validación
 

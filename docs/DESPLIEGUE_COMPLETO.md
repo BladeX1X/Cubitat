@@ -439,13 +439,24 @@ En Groq Console crear una API key y guardarla en un gestor seguro.
 
 ### 5.2 Configurar Secreto En Cloudflare
 
-Desde `web/`:
+Para la Fase 2 actual, el secreto debe configurarse únicamente en DEV desde
+`web/` usando el archivo aislado del Worker:
 
 ```powershell
-npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put GROQ_API_KEY --config wrangler.phase2-dev.jsonc
 ```
 
 Pegar la key cuando Wrangler la pida. No ponerla en `wrangler.jsonc`.
+
+Comprobar únicamente el nombre del secreto, sin leer su valor:
+
+```powershell
+npx wrangler secret list --config wrangler.phase2-dev.jsonc
+```
+
+No ejecutar este paso con `wrangler.jsonc` ni con la configuración productiva
+hasta que la Fase 2 haya sido aprobada y exista autorización explícita para
+promoverla.
 
 ## 6. Cloudflare Workers
 
@@ -506,10 +517,15 @@ fecha u orden de ejecucion.
 
 ### 6.3 Secretos Del Worker
 
+La siguiente lista corresponde al Worker productivo o a una promoción futura.
+Durante la Fase 2 no se debe ejecutar con `wrangler.jsonc`; el único secreto
+de IA habilitado para pruebas es el del Worker DEV mediante
+`wrangler.phase2-dev.jsonc`, como se explica en la sección 5.2.
+
 Configurar solo los que se usen:
 
 ```powershell
-npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put GROQ_API_KEY --config wrangler.jsonc # Solo tras autorizar la promoción a producción
 npx wrangler secret put CF_API_TOKEN
 npx wrangler secret put CF_ACCOUNT_ID
 npx wrangler secret put SUPABASE_MANAGEMENT_TOKEN

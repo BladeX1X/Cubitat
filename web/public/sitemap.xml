@@ -313,13 +313,13 @@
   </url>
   <url>
     <loc>https://cubitathome.com/casas-en-venta/holguin</loc>
-    <lastmod>2026-07-12</lastmod>
+    <lastmod>2026-09-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.84</priority>
   </url>
   <url>
     <loc>https://cubitathome.com/casas-en-venta/la-habana</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.84</priority>
   </url>
@@ -1656,6 +1656,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://cubitathome.com/propiedad/casa-en-venta-en-holguin-holguin-1d578852-0272-45cf-8990-fd42dcc9e07c</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://cubitathome.com/propiedad/casa-en-venta-en-holguin-holguin-37b77972-4f40-4fcd-b03a-ae982f8ac302</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>weekly</changefreq>
@@ -1784,6 +1790,12 @@
   <url>
     <loc>https://cubitathome.com/propiedad/casa-en-venta-en-playa-la-habana-ea3157a1-e719-4d7d-8300-7959ecc50717</loc>
     <lastmod>2026-07-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cubitathome.com/propiedad/casa-en-venta-en-plaza-de-la-revolucion-la-habana-97b6721e-8b0b-4079-a2d8-f7c14dbb147c</loc>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -2550,19 +2562,19 @@
   </url>
   <url>
     <loc>https://cubitathome.com/venta/holguin</loc>
-    <lastmod>2026-07-12</lastmod>
+    <lastmod>2026-09-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.86</priority>
   </url>
   <url>
     <loc>https://cubitathome.com/venta/holguin/holguin</loc>
-    <lastmod>2026-07-12</lastmod>
+    <lastmod>2026-09-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.72</priority>
   </url>
   <url>
     <loc>https://cubitathome.com/venta/la-habana</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.86</priority>
   </url>
@@ -2586,7 +2598,7 @@
   </url>
   <url>
     <loc>https://cubitathome.com/venta/la-habana/plaza-de-la-revolucion</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.72</priority>
   </url>

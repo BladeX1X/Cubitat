@@ -55,6 +55,13 @@ export function PropertyModerationCard({
               {property.moderation_message}
             </div>
           )}
+          {property.duplicate_of && (
+            <div className="mt-1 text-xs p-2 rounded-lg border leading-relaxed text-orange-800 bg-orange-50 border-orange-200">
+              <strong>Posible duplicado:</strong>{' '}
+              coincide con «{property.duplicate_title || 'otra publicación'}».
+              <span className="block text-orange-700/80 mt-0.5">Revisa ambas antes de aprobar.</span>
+            </div>
+          )}
           <p className="text-xs text-neutral-400">Publicado por: <span className="font-medium text-neutral-600">{property.user_email || 'Usuario'}</span></p>
           <div className="flex flex-wrap gap-2 mt-2 pt-3 border-t border-neutral-100">
             <Button variant="outline" className="rounded-xl text-xs" onClick={onToggle}>

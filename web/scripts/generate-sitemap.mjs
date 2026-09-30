@@ -4,7 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 import { buildSitemapDocument } from './sitemap-document.mjs'
 import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 
-const SITE_URL = 'https://cubitathome.com'
+const isPhase2Dev = process.argv.includes('--phase2-dev')
+const SITE_URL = isPhase2Dev
+  ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev'
+  : 'https://cubitathome.com'
 
 const staticRoutes = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
@@ -66,6 +69,10 @@ function readEnv() {
 }
 
 async function readPublishedProperties() {
+  if (process.env.SITEMAP_MODE === 'static') {
+    return []
+  }
+
   const env = readEnv()
   const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
@@ -116,8 +123,10 @@ Allow: /
 Sitemap: ${SITE_URL}/sitemap.xml
 `
 
-writeFileSync(resolve('public/sitemap.xml'), sitemap)
-writeFileSync(resolve('public/robots.txt'), robots)
+if (!isPhase2Dev) {
+  writeFileSync(resolve('public/sitemap.xml'), sitemap)
+  writeFileSync(resolve('public/robots.txt'), robots)
+}
 
 if (existsSync(resolve('dist'))) {
   writeFileSync(resolve('dist/sitemap.xml'), sitemap)

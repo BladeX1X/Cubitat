@@ -8,6 +8,9 @@ export interface PublicSubmissionEnv {
   VITE_SUPABASE_URL: string
   SUPABASE_SERVICE_ROLE_KEY?: string
   TURNSTILE_VERIFY_URL?: string
+  TURNSTILE_VERIFY?: {
+    fetch(input: string | Request, init?: RequestInit): Promise<Response>
+  }
 }
 
 type TurnstileAction = 'contact-owner' | 'report-property'
@@ -83,7 +86,7 @@ async function verifyTurnstile(
   const timeout = setTimeout(() => controller.abort(), 6000)
 
   try {
-    const response = await fetch(env.TURNSTILE_VERIFY_URL || DEFAULT_TURNSTILE_VERIFY_URL, {
+    const verifyRequest = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -92,18 +95,49 @@ async function verifyTurnstile(
         idempotency_key: crypto.randomUUID(),
       }),
       signal: controller.signal,
-    })
+    }
+    const response = await (env.TURNSTILE_VERIFY
+      ? env.TURNSTILE_VERIFY.fetch('https://turnstile-siteverify-cubitat/', verifyRequest)
+      : fetch(env.TURNSTILE_VERIFY_URL || DEFAULT_TURNSTILE_VERIFY_URL, verifyRequest))
 
-    if (!response.ok) return 'unavailable'
+    if (!response.ok) {
+      console.warn('public_submission_turnstile_unavailable', {
+        status: response.status,
+        action: expectedAction,
+      })
+      return 'unavailable'
+    }
 
     const result = await response.json() as TurnstileResult
     const requestHostname = new URL(request.url).hostname
-    if (result.success !== true) return 'invalid'
-    if (result.action !== expectedAction) return 'invalid'
-    if (result.hostname !== requestHostname) return 'invalid'
+    if (result.success !== true) {
+      console.warn('public_submission_turnstile_invalid', {
+        action: expectedAction,
+        reason: 'success_false',
+      })
+      return 'invalid'
+    }
+    if (result.action !== expectedAction) {
+      console.warn('public_submission_turnstile_invalid', {
+        action: expectedAction,
+        reason: 'action_mismatch',
+      })
+      return 'invalid'
+    }
+    if (result.hostname !== requestHostname) {
+      console.warn('public_submission_turnstile_invalid', {
+        action: expectedAction,
+        reason: 'hostname_mismatch',
+      })
+      return 'invalid'
+    }
 
     return 'valid'
   } catch {
+    console.warn('public_submission_turnstile_unavailable', {
+      action: expectedAction,
+      reason: 'request_failed',
+    })
     return 'unavailable'
   } finally {
     clearTimeout(timeout)
@@ -124,7 +158,15 @@ async function callTrustedRpc(env: PublicSubmissionEnv, rpcName: string, body: u
     body: JSON.stringify(body),
   })
 
-  return response.ok
+  if (!response.ok) {
+    console.warn('public_submission_rpc_failed', {
+      rpcName,
+      status: response.status,
+    })
+    return false
+  }
+
+  return true
 }
 
 function turnstileFailure(result: 'invalid' | 'unavailable'): Response {

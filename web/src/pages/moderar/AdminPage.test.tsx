@@ -140,6 +140,17 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} phaseTwoEnabled={false} />)
     await screen.findByText('Panel de moderación')
     expect(screen.queryByRole('button', { name: 'KYC' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Documentos' })).not.toBeInTheDocument()
+  })
+
+  it('muestra Documentos como sección aislada cuando Fase 2 está habilitada', async () => {
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} phaseTwoEnabled />)
+    await screen.findByText('Panel de moderación')
+    fireEvent.click(screen.getByRole('button', { name: 'Documentos' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('No hay verificaciones documentales pendientes')).toBeInTheDocument()
+    })
   })
 
   it('debería alternar a la pestaña de "Reportes" y listar las quejas activas', async () => {

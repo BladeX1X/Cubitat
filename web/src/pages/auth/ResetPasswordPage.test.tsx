@@ -32,6 +32,11 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
       verifyOtp: vi.fn().mockResolvedValue({ error: null }),
     },
   },
+  supabaseRecovery: {
+    auth: {
+      verifyOtp: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
 }))
 
 vi.mock('./authUrlParams', async () => {
@@ -98,6 +103,39 @@ describe('ResetPasswordPage', () => {
     await waitFor(() => expect(updateUserMock).toHaveBeenCalledWith({ password: 'NuevaClave1!' }))
     expect(verifyOtpMock).not.toHaveBeenCalled()
     expect(signOutMock).toHaveBeenCalledOnce()
+  })
+
+  it('rejects a recovery marker without credentials even when a session exists', async () => {
+    getAuthUrlParamsMock.mockReturnValue({
+      accessToken: null,
+      code: null,
+      error: null,
+      refreshToken: null,
+      tokenHash: null,
+      type: 'recovery',
+    })
+
+    render(<ResetPasswordPage onDone={vi.fn()} />)
+
+    expect(await screen.findByText(/abre el enlace completo desde el correo/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /guardar nueva contrasena/i })).toBeDisabled()
+    expect(updateUserMock).not.toHaveBeenCalled()
+  })
+
+  it('hides technical PKCE errors and tells the user to request a fresh link', async () => {
+    getAuthUrlParamsMock.mockReturnValue({
+      accessToken: null,
+      code: null,
+      error: 'PKCE code verifier not found in storage.',
+      refreshToken: null,
+      tokenHash: null,
+      type: 'recovery',
+    })
+
+    render(<ResetPasswordPage onDone={vi.fn()} />)
+
+    expect(await screen.findByText(/solicita uno nuevo/i)).toBeInTheDocument()
+    expect(screen.queryByText(/PKCE code verifier/i)).toBeNull()
   })
 
   it('asks for the TOTP code before changing password when the recovery session needs AAL2', async () => {

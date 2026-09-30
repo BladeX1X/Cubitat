@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
-import { supabase } from '../../shared/lib/supabaseClient'
+import { supabase, supabaseRecovery } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
@@ -14,6 +14,28 @@ import {
 
 type ResetPasswordPageProps = {
   onDone: () => void
+}
+
+function getRecoveryPreparationErrorMessage(error: unknown) {
+  const rawMessage = typeof error === 'string'
+    ? error
+    : error instanceof Error
+      ? error.message
+      : ''
+  const normalizedMessage = rawMessage.toLowerCase()
+
+  if (
+    normalizedMessage.includes('pkce')
+    || normalizedMessage.includes('code verifier')
+    || normalizedMessage.includes('expired')
+    || normalizedMessage.includes('invalid')
+    || normalizedMessage.includes('otp')
+    || normalizedMessage.includes('token')
+  ) {
+    return 'No pudimos validar el enlace de recuperacion. Solicita uno nuevo y abrelo desde el mismo correo.'
+  }
+
+  return 'No pudimos validar el enlace de recuperacion. Abre el enlace completo desde el correo o solicita uno nuevo.'
 }
 
 export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
@@ -41,7 +63,7 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
       let unsubscribe: (() => void) | undefined
 
       if (error) {
-        setErrorMsg(error)
+        setErrorMsg(getRecoveryPreparationErrorMessage(error))
         cleanAuthUrl('/recuperar-contrasena')
         setIsPreparingSession(false)
         return
@@ -57,7 +79,7 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         unsubscribe = () => subscription.unsubscribe()
 
         if (tokenHash && type === 'recovery') {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
+          const { error: verifyError } = await supabaseRecovery.auth.verifyOtp({
             token_hash: tokenHash,
             type: 'recovery',
           })
@@ -90,9 +112,9 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         }
         setHasRecoverySession(true)
         cleanAuthUrl('/recuperar-contrasena')
-      } catch (err: any) {
+      } catch (err: unknown) {
         cleanAuthUrl('/recuperar-contrasena')
-        setErrorMsg(err?.message || 'No pudimos validar el enlace de recuperacion.')
+        setErrorMsg(getRecoveryPreparationErrorMessage(err))
       } finally {
         unsubscribe?.()
         setIsPreparingSession(false)

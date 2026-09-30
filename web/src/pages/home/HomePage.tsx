@@ -105,7 +105,7 @@ export function PopularLocations() {
   return (
     <section className="content-section">
       <div className="section-heading-centered">
-        <h2>El portal inmobiliario más grande de Cuba</h2>
+        <h2>El portal inmobiliario para Cuba</h2>
         <p className="section-description">Compra, venta y renta de inmuebles en toda Cuba.</p>
       </div>
       <div className="location-grid-cards">

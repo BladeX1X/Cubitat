@@ -15,9 +15,13 @@ describe('Supabase Auth PKCE configuration', () => {
   })
 
   it('leaves callback code exchange exclusively to AuthCallbackPage', async () => {
+    vi.stubGlobal('window', undefined)
     await import('./supabaseClient')
 
-    expect(createClientMock).toHaveBeenCalledTimes(1)
+    expect(createClientMock).toHaveBeenCalledTimes(2)
+    const configuredUrl = (createClientMock.mock.calls as unknown[][])[0]?.[0]
+    expect(configuredUrl).not.toBe('https://tohjzoncoosvjbjcakdl.supabase.co')
+    expect(configuredUrl).toEqual(expect.any(String))
     expect(createClientMock).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -29,5 +33,19 @@ describe('Supabase Auth PKCE configuration', () => {
         }),
       }),
     )
+
+    expect(createClientMock).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({
+        auth: expect.objectContaining({
+          detectSessionInUrl: false,
+          flowType: 'implicit',
+          persistSession: true,
+        }),
+      }),
+    )
+    vi.unstubAllGlobals()
   })
 })

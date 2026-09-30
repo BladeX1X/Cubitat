@@ -465,7 +465,81 @@ que la base está actualizada y `db lint --linked` no reporta errores.
   purga con `p_dry_run = false` ni crear un Cron sin autorización posterior
   explícita y respaldo aprobado.
 
+### DEV-F2.8. `dev-migrations/20260810000000_property_verification_and_trust_score.sql`
+
+- **Estado 2026-09-27**: aplicada y verificada únicamente en el proyecto
+  Supabase DEV mediante `supabase db query --linked --file`; todavía no forma
+  parte de `supabase/migrations/` ni se ha aplicado a producción.
+- Crea solicitudes de verificación documental por propiedad, con una sola
+  solicitud pendiente, rutas en bucket privado `property_documents`, RLS por
+  propietario y lectura administrativa AAL2.
+- `submit_property_verification` valida propiedad, carpeta, objeto existente y
+  tipo permitido. `review_property_verification` exige AAL2, registra actor,
+  fecha y motivo de rechazo.
+- Las políticas de inserción, lectura y borrado de Storage exigen además que
+  `property-<uuid>` corresponda a una propiedad del usuario autenticado.
+- `get_property_trust_score` es un indicador interno de 0 a 100 con factores
+  explícitos: identidad verificada, documento aprobado, publicación activa y
+  contacto presente. No es una certificación legal y no se concede a `anon`.
+- `supabase db lint --linked --level warning` se ejecutó después de aplicar la
+  migración y terminó con `No schema errors found`.
+- **Pendiente**: QA E2E persistente con cuentas reales. No copiar esta
+  migración a la cadena productiva.
+
+### DEV-F2.9. `dev-migrations/20260928010000_property_duplicate_rules.sql`
+
+- **Estado 2026-09-28**: aplicada y verificada únicamente en el proyecto
+  Supabase DEV mediante `supabase db query --linked --file`; no se ha aplicado
+  a producción ni se incorpora a `supabase/migrations/`.
+- Crea `property_duplicate_flags`, privada para administradores AAL2, y una
+  huella normalizada de título, ubicación, operación, tipo, precio y área.
+- Una coincidencia exacta activa no se rechaza automáticamente: permanece en
+  revisión y recibe un aviso seguro para que el moderador confirme o descarte
+  el duplicado. La señal se recalcula al crear, editar o cambiar el estado.
+- La prueba transaccional asociada es
+  `supabase/tests/property_duplicate_rules.sql`; no deja filas persistentes.
+- La prueba `supabase/tests/property_duplicate_rules.sql` pasó en DEV dentro de
+  `BEGIN`/`ROLLBACK`: creó el flag y el aviso esperado, sin dejar filas QA.
+- El lint local no pudo ejecutarse porque no hay PostgreSQL local levantado;
+  queda pendiente repetirlo cuando el stack local esté disponible. No mover
+  esta migración a la cadena productiva sin revisión de falsos positivos y
+  decisión operativa.
+
+### DEV-F2.10. `dev-migrations/20260928020000_resolve_duplicate_flags_on_review.sql`
+
+- **Estado 2026-09-28**: aplicada y verificada únicamente en Supabase DEV
+  mediante `supabase db query --linked --file`; no se ha aplicado a producción.
+- Actualiza el trigger de señales para resolver flags al pasar a un estado final
+  de moderación y reabrirlos cuando la propiedad vuelve a revisión.
+- La prueba `supabase/tests/property_duplicate_rules.sql` comprobó ambos
+  cambios dentro de una transacción y terminó con `ROLLBACK`.
+
 ## Verificación después de aplicar
+
+### Matriz pgTAP local con el carril DEV
+
+La matriz de `supabase/tests/` combina pruebas de la cadena base con pruebas
+de migraciones que permanecen exclusivamente en `supabase/dev-migrations/`.
+Por eso `supabase test db --local` debe ejecutarse sobre una base local recién
+reiniciada y con las migraciones DEV cargadas únicamente en ese entorno:
+
+```powershell
+cd web
+supabase db reset --local --no-seed --yes
+Get-ChildItem supabase/dev-migrations/*.sql |
+  Sort-Object Name |
+  ForEach-Object {
+    Get-Content -Raw $_.FullName |
+      docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres
+  }
+supabase test db --local
+```
+
+Evidencia 2026-09-29: la matriz terminó con `All tests successful`, 7 archivos
+y 7 pruebas. Incluye `tests/property_verification_local.sql`, que cubre
+subida autorizada, solicitud única, Trust Score, bloqueo sin AAL2 y revisión
+administrativa AAL2. El reset y la carga DEV son locales; no deben sustituirse por
+`supabase db reset --linked` ni ejecutarse contra DEV remoto o producción.
 
 - Confirmar que `supabase migration list --linked` no muestre diferencias.
 - Probar lectura pública únicamente de propiedades publicadas.
@@ -480,3 +554,15 @@ que la base está actualizada y `db lint --linked` no reporta errores.
 - Probar subida y borrado de imágenes dentro de la carpeta autorizada del propietario.
 - Probar rechazo de MIME distinto de WebP y de objetos que superen 5 MiB en `property_images` o 1 MiB en `avatars`.
 - Registrar cualquier migración nueva en este inventario dentro del mismo cambio.
+
+## Revalidación de cobertura RLS - 2026-09-28
+
+- Se amplió `tests/phase2_local_security.sql` para cubrir el bloqueo de
+  inserciones directas de `anon` en `contacts` y `property_reports`, además del
+  aislamiento de actualización de `notifications` por `user_id`.
+- Los gates de aplicación posteriores pasaron: lint, 136 archivos y 597
+  pruebas, build productivo y build DEV.
+- La ejecución de la matriz con `supabase test db --linked` quedó pendiente por
+  falta del daemon Docker local requerido para el contenedor `pg_prove`.
+- No se aplicaron migraciones, no se modificó el esquema remoto y no quedaron
+  datos QA persistentes.

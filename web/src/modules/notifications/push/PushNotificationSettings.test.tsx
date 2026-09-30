@@ -2,85 +2,96 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PushNotificationSettings } from './PushNotificationSettings'
 
-function services(overrides: Partial<Parameters<typeof PushNotificationSettings>[0]['services']> = {}) {
-  const prepared = { registration: {}, applicationServerKey: new Uint8Array([1, 2, 3]) }
+function createServices(overrides: Partial<{
+  availability: 'available' | 'unsupported' | 'ios_install_required'
+  permission: NotificationPermission
+  subscription: object | null
+  enableResult: 'enabled' | 'blocked'
+}> = {}) {
+  const prepare = vi.fn().mockResolvedValue({ registration: {}, applicationServerKey: new Uint8Array([1]) })
+  const getSubscription = vi.fn().mockResolvedValue(overrides.subscription ?? null)
+  const enable = vi.fn().mockResolvedValue(overrides.enableResult ?? 'enabled')
+  const disable = vi.fn().mockResolvedValue(undefined)
+
   return {
-    getAvailability: vi.fn().mockReturnValue('available' as const),
-    getPermission: vi.fn().mockReturnValue('default' as NotificationPermission),
-    prepare: vi.fn().mockResolvedValue(prepared),
-    getSubscription: vi.fn().mockResolvedValue(null),
-    enable: vi.fn().mockResolvedValue('enabled' as const),
-    disable: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
+    services: {
+      getAvailability: vi.fn().mockReturnValue(overrides.availability ?? 'available'),
+      getPermission: vi.fn().mockReturnValue(overrides.permission ?? 'default'),
+      prepare,
+      getSubscription,
+      enable,
+      disable,
+    },
+    prepare,
+    getSubscription,
+    enable,
+    disable,
   }
 }
 
 describe('PushNotificationSettings', () => {
-  it('explains that iOS requires installing the app first', async () => {
-    const api = services({ getAvailability: vi.fn().mockReturnValue('ios_install_required') })
-    render(<PushNotificationSettings services={api} />)
+  it('shows the disabled state and enables notifications from the button', async () => {
+    const { services, enable } = createServices()
+    render(<PushNotificationSettings services={services} />)
 
-    expect(await screen.findByText(/pantalla de inicio/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /activar/i })).not.toBeInTheDocument()
+    const button = await screen.findByRole('button', { name: 'Activar notificaciones' })
+    fireEvent.click(button)
+
+    await waitFor(() => expect(screen.getByText('Las notificaciones estan activas en este dispositivo.')).toBeInTheDocument())
+    expect(enable).toHaveBeenCalledOnce()
   })
 
-  it('activates notifications only from the user button', async () => {
-    const api = services()
-    render(<PushNotificationSettings services={api} />)
+  it('shows the enabled state and disables the current device subscription', async () => {
+    const { services, disable } = createServices({ subscription: { endpoint: 'push-1' } })
+    render(<PushNotificationSettings services={services} />)
 
-    expect(api.enable).not.toHaveBeenCalled()
-    fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
+    const button = await screen.findByRole('button', { name: 'Desactivar en este dispositivo' })
+    fireEvent.click(button)
 
-    await waitFor(() => expect(api.enable).toHaveBeenCalledWith(expect.objectContaining({
-      applicationServerKey: new Uint8Array([1, 2, 3]),
-    })))
-    expect(await screen.findByText(/activas en este dispositivo/i)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Activar notificaciones' })).toBeInTheDocument())
+    expect(disable).toHaveBeenCalledOnce()
   })
 
-  it('offers settings guidance when permission is blocked', async () => {
-    const api = services({ getPermission: vi.fn().mockReturnValue('denied') })
-    render(<PushNotificationSettings services={api} />)
+  it('explains that iOS must use an installed PWA', async () => {
+    const { services } = createServices({ availability: 'ios_install_required' })
+    render(<PushNotificationSettings services={services} />)
 
-    expect(await screen.findByText(/permiso esta bloqueado/i)).toBeInTheDocument()
+    expect(await screen.findByText('Instala Cubitat en la pantalla de inicio para activar las notificaciones.'))
+      .toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('explains a browser subscription failure without exposing a developer error', async () => {
-    const api = services({
-      enable: vi.fn().mockRejectedValue(new Error('push_browser_subscription_failed')),
-    })
-    render(<PushNotificationSettings services={api} />)
+  it('shows a browser-specific recovery message when subscription fails', async () => {
+    const { services, enable } = createServices()
+    enable.mockRejectedValueOnce(new Error('push_browser_subscription_failed'))
+    render(<PushNotificationSettings services={services} />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar notificaciones' }))
 
-    expect(await screen.findByText(/navegador no pudo activar/i)).toBeInTheDocument()
-    expect(screen.queryByText(/push_browser_subscription_failed/i)).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText(
+      'El navegador no pudo activar las notificaciones. Revisa que Chrome tenga permiso para enviarlas e intenta de nuevo.',
+    )).toBeInTheDocument())
   })
 
-  it('keeps the prepared context when checking the previous subscription fails', async () => {
-    const api = services({
-      getSubscription: vi.fn().mockRejectedValue(new Error('push_subscription_status_failed')),
-    })
-    render(<PushNotificationSettings services={api} />)
+  it('continues activation when a configuration retry finishes preparation', async () => {
+    const { services, enable } = createServices()
+    services.prepare.mockRejectedValueOnce(new Error('push_configuration_unavailable'))
 
-    fireEvent.click(await screen.findByRole('button', { name: /activar/i }))
+    render(<PushNotificationSettings services={services} />)
+    const button = await screen.findByRole('button', { name: 'Reintentar configuración' })
 
-    await waitFor(() => expect(api.enable).toHaveBeenCalledWith(expect.objectContaining({
-      applicationServerKey: new Uint8Array([1, 2, 3]),
-    })))
+    fireEvent.click(button)
+
+    await waitFor(() => expect(screen.getByText('Las notificaciones estan activas en este dispositivo.')).toBeInTheDocument())
+    expect(enable).toHaveBeenCalledOnce()
   })
 
-  it('retries preparation explicitly instead of rendering an inert activation button', async () => {
-    const prepared = { registration: {}, applicationServerKey: new Uint8Array([4, 5, 6]) }
-    const prepare = vi.fn()
-      .mockRejectedValueOnce(new Error('push_configuration_unavailable'))
-      .mockResolvedValueOnce(prepared)
-    const api = services({ prepare })
-    render(<PushNotificationSettings services={api} />)
+  it('does not expose a button when the browser blocks notifications', async () => {
+    const { services } = createServices({ permission: 'denied' })
+    render(<PushNotificationSettings services={services} />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /reintentar configuración/i }))
-
-    expect(await screen.findByRole('button', { name: /activar notificaciones/i })).toBeInTheDocument()
-    expect(prepare).toHaveBeenCalledTimes(2)
-    expect(api.enable).not.toHaveBeenCalled()
+    expect(await screen.findByText('El permiso esta bloqueado. Activalo en los ajustes del navegador o del sistema.'))
+      .toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })

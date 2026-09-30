@@ -91,6 +91,39 @@ secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 
 No activar este bloque con secretos reales en git. Para el proyecto hosted, configurar Google desde Supabase Dashboard.
 
+## Configuración vigente de Fase 2 DEV - 2026-09-28
+
+La prueba aislada de Fase 2 usa el proyecto Supabase DEV enlazado al CLI:
+
+```txt
+https://bknwerqbbysveehcdmzr.supabase.co
+```
+
+En Google Cloud, el cliente web de DEV debe conservar como URI de
+redireccionamiento técnico únicamente el callback de Supabase DEV:
+
+```txt
+https://bknwerqbbysveehcdmzr.supabase.co/auth/v1/callback
+```
+
+En Supabase Auth DEV, `site_url` y los redirects de aplicación deben apuntar
+al Worker DEV:
+
+```txt
+https://cubitat1-phase2-dev.pochiprats18.workers.dev
+https://cubitat1-phase2-dev.pochiprats18.workers.dev/auth/callback*
+https://cubitat1-phase2-dev.pochiprats18.workers.dev/recuperar-contrasena
+```
+
+El archivo `web/supabase/config.toml` ya mantiene el `client_id` y la
+referencia segura a `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)`. En la última
+revisión ese secreto no estaba cargado en la sesión CLI, por lo que OAuth DEV
+queda pendiente de configuración externa. No se debe copiar el secreto a este
+archivo, al repositorio ni a la nota.
+
+Este bloque DEV es independiente del callback histórico de producción y no
+autoriza cambios en `cubitathome.com`.
+
 ## Nota sobre gcloud CLI
 
 Google Cloud SDK ya esta instalado en la maquina:

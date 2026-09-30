@@ -4,6 +4,7 @@ import { Building2, Heart, Home, UserRound } from 'lucide-react'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
+import { OPERATION_VALUES } from '../shared/lib/propertyTaxonomy'
 import { getPropertyContactInfo } from '../modules/properties/utils/contact'
 import { getPropertyCoverImage, normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
 import type { LocationSuggestion, SearchFilters } from '../modules/search/types'
@@ -51,12 +52,14 @@ const MyPropertiesPage = lazy(() =>
   import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
 )
 
-const AgentProfilePage = import.meta.env.DEV
+const PHASE_TWO_LAZY_UI_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+
+const AgentProfilePage = PHASE_TWO_LAZY_UI_ENABLED
   ? lazy(() =>
       import('../pages/agents/AgentProfilePage').then((module) => ({ default: module.AgentProfilePage })),
     )
   : null
-const AgentDashboardPage = import.meta.env.DEV
+const AgentDashboardPage = PHASE_TWO_LAZY_UI_ENABLED
   ? lazy(() =>
       import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
     )
@@ -97,7 +100,12 @@ function getInitialFilters(): SearchFilters {
   }
   const params = new URLSearchParams(window.location.search)
   const opsStr = params.get('operacion')
-  const operations = opsStr ? (opsStr.split(',') as any[]) : []
+  const operations = opsStr
+    ? opsStr.split(',').filter(
+        (operation): operation is SearchFilters['operations'][number] =>
+          OPERATION_VALUES.includes(operation as (typeof OPERATION_VALUES)[number]),
+      )
+    : []
   return {
     query: params.get('q') || '',
     operations,
@@ -311,7 +319,11 @@ export function CubitatApp() {
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
-        setUserRole((data as any)?.role)
+        const role = data && typeof data === 'object' && 'role' in data
+          && typeof data.role === 'string'
+          ? data.role
+          : undefined
+        setUserRole(role)
       })
   }, [user])
 
@@ -368,10 +380,12 @@ export function CubitatApp() {
       // 2. Ejecutar la llamada de red en segundo plano (SWR)
       try {
         // Si aún no tenemos propiedades de la caché, mantener el loading activo
-        if (!hasUsableCache) {
+        if (!hasUsableCache && active) {
           setLoading(true)
         }
-        setError(null)
+        if (active) {
+          setError(null)
+        }
         const [{ data, error }, verifiedAgentIds] = await Promise.all([
           supabase
             .from('properties')
@@ -416,7 +430,7 @@ export function CubitatApp() {
           setProperties(mapped)
           void saveCachedProperties(mapped) // Guardar copia para uso offline
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         logSafeEvent({
           module: 'app',
           action: 'load_properties_supabase',
@@ -425,7 +439,7 @@ export function CubitatApp() {
         })
         // Solo mostramos el error si no hay absolutamente ningún dato en memoria
         if (active && !hasUsableCache) {
-          setError(err.message || 'Error al conectar con el servidor.')
+          setError(err instanceof Error ? err.message : 'Error al conectar con el servidor.')
         }
       } finally {
         if (active) {

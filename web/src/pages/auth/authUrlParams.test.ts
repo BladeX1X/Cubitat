@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
+import {
+  cleanAuthUrl,
+  getAuthUrlParams,
+  isPasswordRecoveryFlow,
+} from './authUrlParams'
 
 afterEach(() => {
   window.history.replaceState(null, '', '/')
@@ -42,8 +46,10 @@ describe('auth URL parameters', () => {
   it('does not treat a normal authenticated session as password recovery', () => {
     expect(isPasswordRecoveryFlow(null, false, false)).toBe(false)
     expect(isPasswordRecoveryFlow('signup', false, true)).toBe(false)
-    expect(isPasswordRecoveryFlow('recovery', false, false)).toBe(true)
+    expect(isPasswordRecoveryFlow('recovery', false, false)).toBe(false)
+    expect(isPasswordRecoveryFlow('recovery', false, true)).toBe(true)
     expect(isPasswordRecoveryFlow(null, true, false)).toBe(false)
     expect(isPasswordRecoveryFlow(null, true, true)).toBe(true)
   })
+
 })

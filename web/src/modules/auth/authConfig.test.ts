@@ -20,6 +20,10 @@ describe('versioned Supabase Auth hardening', () => {
     expect(authConfig).toContain('max_frequency = "1m"')
   })
 
+  it('expires recovery links after fifteen minutes', () => {
+    expect(authConfig).toContain('otp_expiry = 900')
+  })
+
   it('keeps short-lived JWTs and refresh-token replay protection enabled', () => {
     expect(authConfig).toContain('jwt_expiry = 3600')
     expect(authConfig).toContain('enable_refresh_token_rotation = true')

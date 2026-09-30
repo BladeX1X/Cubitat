@@ -50,6 +50,31 @@ describe('getPropertyStatusConfig', () => {
     expect(screen.getByText('142')).toBeInTheDocument()
   })
 
+  it('renders a swap property without an optional USD value', () => {
+    render(
+      <PropertyCard
+        property={{
+          id: 'permuta-123',
+          title: 'Departamento en permuta en La Habana',
+          location: 'Playa, La Habana',
+          price_usd: null,
+          cover_image: null,
+          status: 'pending_review',
+          moderation_message: null,
+          created_at: new Date().toISOString(),
+          user_id: 'user-456',
+        }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onHide={vi.fn()}
+        onRestore={vi.fn()}
+        actionLoading={false}
+      />,
+    )
+
+    expect(screen.getByText('Valor no indicado')).toBeInTheDocument()
+  })
+
   it('renders "Ver cómo otros lo ven" button and triggers onView', () => {
     const mockProperty = {
       id: 'prop-123',

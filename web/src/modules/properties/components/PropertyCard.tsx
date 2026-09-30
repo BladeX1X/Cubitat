@@ -108,7 +108,7 @@ export function PropertyCard({
               const shouldRenderImage = index === 0 || index === activeImageIndex
 
               return (
-                <CarouselItem key={index} className="pl-0 h-full w-full">
+                <CarouselItem key={image} className="pl-0 h-full w-full">
                   {shouldRenderImage ? (
                     <img
                       className="property-photo-slide"

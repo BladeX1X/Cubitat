@@ -3,6 +3,7 @@ export type WorkerLogLevel = 'info' | 'warn' | 'error'
 const EVENTS = new Set([
   'auth_rate_limit_blocked',
   'auth_resend_rate_limited',
+  'auth_resend_unavailable',
   'auth_user_lookup_failed',
   'metrics_provider_failed',
   'moderation_background_failed',
@@ -31,11 +32,12 @@ const SOURCES = new Set([
   'resend',
   'service_role',
 ] as const)
-const REASONS = new Set(['missing_configuration', 'network_unavailable'] as const)
+const REASONS = new Set(['missing_configuration', 'network_unavailable', 'phase2_disabled'] as const)
 
 export type WorkerLogEvent =
   | 'auth_rate_limit_blocked'
   | 'auth_resend_rate_limited'
+  | 'auth_resend_unavailable'
   | 'auth_user_lookup_failed'
   | 'metrics_provider_failed'
   | 'moderation_background_failed'
@@ -58,7 +60,7 @@ export interface WorkerLogFields {
   dimension?: 'ip' | 'email'
   source?: 'google_analytics' | 'groq' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
   status?: number
-  reason?: 'missing_configuration' | 'network_unavailable'
+  reason?: 'missing_configuration' | 'network_unavailable' | 'phase2_disabled'
 }
 
 export function logWorkerEvent(

@@ -33,17 +33,17 @@ https://cubitathome.com/recuperar-contrasena
 ## Flujo
 
 1. El usuario pulsa `Olvide mi contrasena` en `LoginModal`.
-2. El frontend llama:
+2. El frontend llama al cliente de recuperación:
 
 ```ts
-supabase.auth.resetPasswordForEmail(email, {
+supabaseRecovery.auth.resetPasswordForEmail(email, {
   redirectTo: getAuthRedirectUrl('/recuperar-contrasena'),
 })
 ```
 
-3. Supabase genera `{{ .ConfirmationURL }}` en la plantilla de recuperacion.
+3. Supabase genera un enlace con `{{ .TokenHash }}` en la plantilla de recuperacion.
 4. El usuario abre el enlace.
-5. La plantilla preferida entrega `?token_hash=...&type=recovery`; la página llama `verifyOtp` para crear la sesión sin depender del navegador que solicitó el correo. Se conserva compatibilidad con `?code=...` y tokens en hash antiguos.
+5. La plantilla preferida entrega `?token_hash=...&type=recovery`; la página llama `supabaseRecovery.auth.verifyOtp` para crear la sesión sin depender del navegador que solicitó el correo. Este cliente usa flujo implícito únicamente para recuperación portable entre dispositivos; el cliente principal conserva PKCE para OAuth. Se conserva compatibilidad con `?code=...` y tokens en hash antiguos.
 6. La URL se limpia para no dejar codigos o tokens visibles.
 7. Solo si el enlace genera el evento `PASSWORD_RECOVERY` o incluye `type=recovery` y existe una sesion valida se habilita el formulario. Una sesion normal ya abierta no es suficiente.
 8. Si la cuenta tiene un factor TOTP verificado y la sesion de recuperacion queda

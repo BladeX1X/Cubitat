@@ -10,6 +10,30 @@ Esta guia explica como rotar las claves usadas en produccion, donde encontrarlas
 - Usar Supabase Dashboard o Management API para configuracion de Auth/SMTP.
 - Despues de pegar una clave en un chat o ticket, rotarla.
 
+## Fase 2 DEV: alcance obligatorio
+
+La Fase 2 se prueba únicamente en el Worker y proyecto Supabase DEV. Para
+consultar o cambiar secretos de esta fase, usar siempre el archivo de
+configuración explícito:
+
+```powershell
+cd D:\Proyectos\Cubitat\web
+npx wrangler secret list --config wrangler.phase2-dev.jsonc
+npx wrangler secret put NOMBRE_DEL_SECRETO --config wrangler.phase2-dev.jsonc
+npx wrangler deploy --config wrangler.phase2-dev.jsonc
+```
+
+El proyecto Supabase DEV actual es `bknwerqbbysveehcdmzr` y el Worker DEV es
+`cubitat1-phase2-dev`. No usar los comandos productivos de esta guía para
+cerrar una prueba de Fase 2, ni copiar secretos de producción al entorno DEV.
+Los valores de secretos nunca deben escribirse en el repositorio ni en esta
+nota.
+
+La sincronización de ajustes Auth de DEV usa `supabase config push` con ese
+proyecto explícito. Antes de ejecutarla, comprobar que `web/supabase/config.toml`
+mantiene `site_url` DEV y los redirects DEV, productivos y locales; el comando
+sincroniza también esos valores y no solo el ajuste que se quiera cambiar.
+
 ## Secretos a rotar ahora
 
 Estas claves fueron expuestas durante soporte y deben rotarse:
@@ -27,7 +51,7 @@ Tambien conviene revisar estas claves si fueron compartidas por otros canales:
 
 ## Cloudflare Worker
 
-Proyecto Worker:
+Proyecto Worker productivo de referencia histórica:
 
 ```txt
 cubitat1
@@ -45,7 +69,7 @@ Listar secretos actuales:
 npx wrangler secret list
 ```
 
-Subir o reemplazar un secreto:
+Subir o reemplazar un secreto productivo (solo con autorización explícita):
 
 ```powershell
 npx wrangler secret put NOMBRE_DEL_SECRETO
@@ -58,10 +82,10 @@ npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ```
 
-Despues de subir secretos, desplegar:
+Despues de subir secretos productivos, desplegar solo tras revisar el alcance:
 
 ```powershell
-npx wrangler deploy
+npx wrangler deploy --config wrangler.jsonc
 ```
 
 O con build completo:

@@ -139,7 +139,9 @@ El sistema MUST listar y permitir eliminar alertas de busqueda creadas desde res
 - GIVEN un usuario tiene alertas guardadas
 - WHEN abre el centro de cuenta
 - THEN el sistema MUST listar cada alerta con resumen de filtros y fecha de creacion
-- AND MUST indicar que el envio automatico por email esta pendiente si no esta activo
+- AND MUST presentar las alertas dentro de Cubitat sin mostrar detalles tecnicos
+  del entorno ni un formulario de correo mientras la entrega por email no sea
+  una capacidad activa del producto
 
 #### Scenario: Eliminar alerta
 - GIVEN un usuario visualiza una alerta propia

@@ -27,14 +27,13 @@ export function useKycSubmission({ userId, onClose, onSuccess }: UseKycSubmissio
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const documentPreviewUrlRef = useRef<string | null>(null)
+  const selfiePreviewUrlRef = useRef<string | null>(null)
 
   useEffect(() => () => {
-    if (documentPreviewUrl) URL.revokeObjectURL(documentPreviewUrl)
-  }, [documentPreviewUrl])
-
-  useEffect(() => () => {
-    if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl)
-  }, [selfiePreviewUrl])
+    if (documentPreviewUrlRef.current) URL.revokeObjectURL(documentPreviewUrlRef.current)
+    if (selfiePreviewUrlRef.current) URL.revokeObjectURL(selfiePreviewUrlRef.current)
+  }, [])
 
   useEffect(() => () => {
     if (completionTimer.current) clearTimeout(completionTimer.current)
@@ -52,22 +51,32 @@ export function useKycSubmission({ userId, onClose, onSuccess }: UseKycSubmissio
 
   function selectDocumentFile(selected: File | undefined) {
     if (!validateFile(selected)) return
+    if (documentPreviewUrlRef.current) URL.revokeObjectURL(documentPreviewUrlRef.current)
+    const nextPreviewUrl = URL.createObjectURL(selected)
+    documentPreviewUrlRef.current = nextPreviewUrl
     setDocumentFile(selected)
-    setDocumentPreviewUrl(URL.createObjectURL(selected))
+    setDocumentPreviewUrl(nextPreviewUrl)
   }
 
   function selectSelfieFile(selected: File | undefined) {
     if (!validateFile(selected)) return
+    if (selfiePreviewUrlRef.current) URL.revokeObjectURL(selfiePreviewUrlRef.current)
+    const nextPreviewUrl = URL.createObjectURL(selected)
+    selfiePreviewUrlRef.current = nextPreviewUrl
     setSelfieFile(selected)
-    setSelfiePreviewUrl(URL.createObjectURL(selected))
+    setSelfiePreviewUrl(nextPreviewUrl)
   }
 
   function clearDocumentFile() {
+    if (documentPreviewUrlRef.current) URL.revokeObjectURL(documentPreviewUrlRef.current)
+    documentPreviewUrlRef.current = null
     setDocumentFile(null)
     setDocumentPreviewUrl(null)
   }
 
   function clearSelfieFile() {
+    if (selfiePreviewUrlRef.current) URL.revokeObjectURL(selfiePreviewUrlRef.current)
+    selfiePreviewUrlRef.current = null
     setSelfieFile(null)
     setSelfiePreviewUrl(null)
   }
@@ -84,54 +93,61 @@ export function useKycSubmission({ userId, onClose, onSuccess }: UseKycSubmissio
 
     setLoading(true)
     setError(null)
-    let compressedDocument: File
-    let compressedSelfie: File
+    let documentPath: string | undefined
+    let selfiePath: string | undefined
+
     try {
-      ;[compressedDocument, compressedSelfie] = await Promise.all([
-        compressKycImageToWebP(documentFile),
-        compressKycImageToWebP(selfieFile),
-      ])
+      let compressedDocument: File
+      let compressedSelfie: File
+      try {
+        ;[compressedDocument, compressedSelfie] = await Promise.all([
+          compressKycImageToWebP(documentFile),
+          compressKycImageToWebP(selfieFile),
+        ])
+      } catch {
+        setError('No se pudieron optimizar las evidencias. Inténtalo con otras imágenes.')
+        return
+      }
+
+      const documentUpload = await uploadKycImage(userId, compressedDocument, 'document')
+      if (!documentUpload.success || !documentUpload.documentPath) {
+        setError(documentUpload.error || 'Error al subir la imagen del documento.')
+        return
+      }
+      documentPath = documentUpload.documentPath
+
+      const selfieUpload = await uploadKycImage(userId, compressedSelfie, 'selfie')
+      if (!selfieUpload.success || !selfieUpload.documentPath) {
+        await removeKycDocument(documentPath)
+        documentPath = undefined
+        setError(selfieUpload.error || 'Error al subir la foto sosteniendo el documento.')
+        return
+      }
+      selfiePath = selfieUpload.documentPath
+
+      const submitResult = await submitKycRequest(documentType, documentPath, selfiePath)
+      if (!submitResult.success) {
+        await Promise.all([removeKycDocument(documentPath), removeKycDocument(selfiePath)])
+        documentPath = undefined
+        selfiePath = undefined
+        setError(submitResult.error || 'No se pudo registrar la solicitud de verificación.')
+        return
+      }
+
+      setSuccess(true)
+      completionTimer.current = setTimeout(() => {
+        onSuccess()
+        onClose()
+      }, 2000)
     } catch {
-      setError('No se pudieron optimizar las evidencias. Inténtalo con otras imágenes.')
-      setLoading(false)
-      return
-    }
-
-    const documentUpload = await uploadKycImage(userId, compressedDocument, 'document')
-    if (!documentUpload.success || !documentUpload.documentPath) {
-      setError(documentUpload.error || 'Error al subir la imagen del documento.')
-      setLoading(false)
-      return
-    }
-
-    const selfieUpload = await uploadKycImage(userId, compressedSelfie, 'selfie')
-    if (!selfieUpload.success || !selfieUpload.documentPath) {
-      await removeKycDocument(documentUpload.documentPath)
-      setError(selfieUpload.error || 'Error al subir la foto sosteniendo el documento.')
-      setLoading(false)
-      return
-    }
-
-    const submitResult = await submitKycRequest(
-      documentType,
-      documentUpload.documentPath,
-      selfieUpload.documentPath,
-    )
-    setLoading(false)
-    if (!submitResult.success) {
       await Promise.all([
-        removeKycDocument(documentUpload.documentPath),
-        removeKycDocument(selfieUpload.documentPath),
+        documentPath ? removeKycDocument(documentPath) : Promise.resolve(),
+        selfiePath ? removeKycDocument(selfiePath) : Promise.resolve(),
       ])
-      setError(submitResult.error || 'No se pudo registrar la solicitud de verificación.')
-      return
+      setError('No se pudo completar el envío de la verificación. Inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
     }
-
-    setSuccess(true)
-    completionTimer.current = setTimeout(() => {
-      onSuccess()
-      onClose()
-    }, 2000)
   }
 
   return {

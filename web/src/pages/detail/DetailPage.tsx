@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode, type UIEvent } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   Bath,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { publicPropertyLocation } from '../../shared/lib/propertyLocation'
+import { createApproximateLocationArea } from '../../modules/maps/lib/approximateLocationArea'
 import { approximatePropertyCoordinates } from '../../modules/maps/lib/propertyCoordinates'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { supabase } from '../../shared/lib/supabaseClient'
@@ -30,7 +31,7 @@ import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { ExchangePreferencesSummary } from '../../modules/properties/components/ExchangePreferencesSummary'
 import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
-import type { Property } from '../../modules/properties/types'
+import type { OperationType, Property } from '../../modules/properties/types'
 import {
   getPropertyContactInfo,
   normalizePhoneForTel,
@@ -247,8 +248,8 @@ export function DetailPage({
     if (navigator.share) {
       try {
         await navigator.share(shareData)
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
           copyToClipboardFallback()
         }
       }
@@ -333,8 +334,8 @@ export function DetailPage({
               <span 
                 className="hover:text-emerald-800 cursor-pointer" 
                 onClick={() => {
-                  const ops = property.operation === 'alquiler' ? ['alquiler'] : property.operation === 'venta' ? ['venta'] : ['permuta']
-                  onChangeFilters({ ...filters, operations: ops as any })
+                  const ops: OperationType[] = [property.operation]
+                  onChangeFilters({ ...filters, operations: ops })
                   onBack()
                 }}
               >
@@ -840,10 +841,11 @@ export function DetailPage({
             ) : (
               <form onSubmit={handleReportSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
+                  <label htmlFor="property-report-reason" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                     Motivo del reporte
                   </label>
                   <select
+                    id="property-report-reason"
                     value={reportReason}
                     onChange={(e) => setReportReason(e.target.value)}
                     className="w-full h-10 px-3 border border-neutral-200 rounded-lg text-xs bg-white focus:outline-none focus:border-emerald-500"
@@ -858,10 +860,11 @@ export function DetailPage({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
+                  <label htmlFor="property-report-description" className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                     Detalles adicionales
                   </label>
                   <Textarea
+                    id="property-report-description"
                     placeholder="Explica brevemente por qué consideras que esta propiedad tiene un problema..."
                     value={reportDescription}
                     onChange={(e) => setReportDescription(e.target.value)}
@@ -1145,23 +1148,25 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
         if (!mapRef.current) return
         mapRef.current.addSource('approximate-property-location', {
           type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: center },
-            properties: {},
-          },
+          data: createApproximateLocationArea(center),
         })
         mapRef.current.addLayer({
           id: 'approximate-property-location-area',
-          type: 'circle',
+          type: 'fill',
           source: 'approximate-property-location',
           paint: {
-            'circle-radius': 64,
-            'circle-color': '#059669',
-            'circle-opacity': 0.2,
-            'circle-stroke-color': '#047857',
-            'circle-stroke-width': 2,
-            'circle-stroke-opacity': 0.75,
+            'fill-color': '#059669',
+            'fill-opacity': 0.2,
+          },
+        })
+        mapRef.current.addLayer({
+          id: 'approximate-property-location-outline',
+          type: 'line',
+          source: 'approximate-property-location',
+          paint: {
+            'line-color': '#047857',
+            'line-width': 2,
+            'line-opacity': 0.75,
           },
         })
       })
@@ -1303,7 +1308,8 @@ function ContactCard({
         level: 'error',
         code: sanitizeErrorReason(err),
       })
-      setError('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
+      const serverMessage = err instanceof Error ? err.message : ''
+      setError(serverMessage || 'Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.')
       setContactTurnstileToken(null)
       setContactTurnstileKey(prev => prev + 1)
     } finally {

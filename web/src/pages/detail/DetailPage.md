@@ -15,3 +15,7 @@ Pruebas: `DetailPage.test.tsx` usa una dirección sintética completa y verifica
 El mapa público representa una zona aproximada sobre una cuadrícula de `0.02` grados, sin pin de domicilio exacto y con aviso visible. El cliente vuelve a aproximar datos antiguos antes de dibujarlos para cubrir cachés previas.
 
 La migración `20260912010000_private_property_coordinates.sql` conserva el punto exacto en `property_private_coordinates`, protegido por RLS para el propietario, y deja solo la cuadrícula aproximada en `properties.coordinates`. La migración corrige registros existentes y el trigger aplica la misma separación a futuras altas y ediciones. Debe aplicarse antes de desplegar el repositorio que recupera las coordenadas privadas.
+
+## Área aproximada del mapa — 2026-09-23
+
+`DetailLocationMap` dibuja la zona pública como un polígono GeoJSON de `2 km` de radio mediante `createApproximateLocationArea`, no como un `circle-radius` en píxeles. Al acercar o alejar el mapa cambia su tamaño en pantalla, pero conserva la misma región geográfica aproximada.

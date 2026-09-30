@@ -200,6 +200,12 @@ export async function enablePushNotifications(
 
   let subscription: PushSubscriptionLike
   try {
+    // Chrome can retain a subscription created with an older VAPID key.
+    // Remove it before subscribing again so key rotation is recoverable.
+    const previousSubscription = await context.registration.pushManager.getSubscription()
+    if (previousSubscription && !await previousSubscription.unsubscribe()) {
+      throw new Error('push_browser_subscription_failed')
+    }
     subscription = await context.registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: context.applicationServerKey,

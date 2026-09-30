@@ -168,6 +168,11 @@ export function useModerationProperties() {
 
   const reevaluate = useCallback(async (property: ModerationProperty) => {
     setActionLoading(property.id)
+    const previousState = {
+      status: property.status,
+      moderation_message: property.moderation_message,
+    }
+    let requestAccepted = false
     try {
       await updateModerationPropertyStatus(property.id, 'pending_review', 'Reevaluando con IA...')
       setProperties((current) => current.map((item) => (
@@ -176,6 +181,7 @@ export function useModerationProperties() {
           : item
       )))
       await requestAiReevaluation(property)
+      requestAccepted = true
       const result = await waitForModerationResult(property.id)
 
       if (result) {
@@ -188,6 +194,25 @@ export function useModerationProperties() {
       }
       await refreshCounts()
     } catch (reason) {
+      if (!requestAccepted) {
+        setProperties((current) => current.map((item) => (
+          item.id === property.id ? { ...item, ...previousState } : item
+        )))
+        try {
+          await updateModerationPropertyStatus(
+            property.id,
+            previousState.status,
+            previousState.moderation_message,
+          )
+        } catch (rollbackReason) {
+          logSafeEvent({
+            module: 'admin',
+            action: 'rollback_reevaluate_property',
+            level: 'error',
+            code: sanitizeErrorReason(rollbackReason),
+          })
+        }
+      }
       logSafeEvent({
         module: 'admin',
         action: 'reevaluate_property',

@@ -22,8 +22,10 @@ import {
 } from '../utils/authRedirects'
 import { TurnstileWidget } from '../../../shared/ui/TurnstileWidget'
 import { requestPasswordResetWithCaptcha, signUpWithCaptcha } from '../captchaAuth'
-import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../passwordPolicy'
+import { getPasswordPolicyError } from '../passwordPolicy'
+import { getAuthErrorMessage } from '../authErrorMessages'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
+import { OAuthProviderButtons } from './OAuthProviderButtons'
 
 type LoginModalProps = {
   onClose?: () => void
@@ -93,7 +95,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
     if (error) {
       clearAuthReturnPath()
       setLoading(false)
-      setErrorMsg(error.message || 'No pudimos iniciar sesion con Google.')
+      const providerUnavailable = /unsupported provider|missing oauth secret|provider is not enabled/i.test(error.message || '')
+      setErrorMsg(
+        providerUnavailable
+          ? 'El inicio con Google no está disponible temporalmente. Usa correo y contraseña.'
+          : error.message || 'No pudimos iniciar sesion con Google.',
+      )
       return
     }
 
@@ -163,9 +170,9 @@ export function LoginModal({ onClose }: LoginModalProps) {
         if (error) throw error
         setSuccessMsg('Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.')
         setTurnstileToken(null)
-      } catch (err: any) {
+      } catch (err: unknown) {
         resetTurnstileChallenge()
-        setErrorMsg(err?.message || 'No pudimos enviar el correo de recuperacion.')
+        setErrorMsg(getAuthErrorMessage(err, 'No pudimos enviar el correo de recuperacion.'))
       } finally {
         setLoading(false)
       }
@@ -229,7 +236,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         setTurnstileToken(null)
         onClose?.()
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logSafeEvent({
         module: 'auth',
         action: isResettingPassword ? 'reset_password' : isRegistering ? 'register' : 'login',
@@ -237,31 +244,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         code: sanitizeErrorReason(err),
       })
       resetTurnstileChallenge()
-      let msg = 'Ocurrió un error inesperado.'
-      if (err?.message && err.message !== '{}') {
-        msg = err.message
-      } else if (typeof err === 'string' && err !== '{}') {
-        msg = err
-      } else if (err?.error_description) {
-        msg = err.error_description
-      }
-      
-      // Translate common Supabase auth errors
-      if (msg.includes('User already registered')) {
-        msg = 'Este correo ya está registrado.'
-      } else if (msg.includes('Invalid login credentials')) {
-        msg = 'Correo o contraseña incorrectos.'
-      } else if (msg.includes('Email not confirmed')) {
-        msg = 'Por favor, confirma tu correo electronico para continuar.'
-      } else if (msg.toLowerCase().includes('email rate limit exceeded')) {
-        msg = 'Alcanzamos el limite temporal de correos de prueba. Intenta de nuevo mas tarde.'
-      } else if (msg.includes('Password should be at least')
-        || msg.includes('Password should contain')
-        || err?.name === 'AuthWeakPasswordError') {
-        msg = PASSWORD_POLICY_MESSAGE
-      }
-
-      setErrorMsg(msg)
+      setErrorMsg(getAuthErrorMessage(err, 'Ocurrió un error inesperado.'))
     } finally {
       setLoading(false)
     }
@@ -288,17 +271,28 @@ export function LoginModal({ onClose }: LoginModalProps) {
         }),
       })
 
-      if (!response.ok) throw new Error('No pudimos procesar la solicitud.')
+      if (!response.ok) {
+        let message = 'No pudimos procesar la solicitud.'
+        try {
+          const payload = await response.json() as { message?: unknown }
+          if (typeof payload.message === 'string' && payload.message.trim()) {
+            message = payload.message
+          }
+        } catch {
+          // Keep the safe generic message when the response is not JSON.
+        }
+        throw new Error(message)
+      }
       setSuccessMsg('Si falta confirmar el correo, recibiras un nuevo enlace. Si ya esta confirmado, recibiras un aviso con las opciones para entrar.')
       setCanResendConfirmation(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       logSafeEvent({
         module: 'auth',
         action: 'resend_confirmation',
         level: 'error',
         code: sanitizeErrorReason(err),
       })
-      setErrorMsg(err?.message || 'No pudimos reenviar el correo de confirmacion.')
+      setErrorMsg(getAuthErrorMessage(err, 'No pudimos reenviar el correo de confirmacion.'))
     } finally {
       setLoading(false)
     }
@@ -366,22 +360,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
             </p>
           </div>
 
-          <div className="login-social-grid">
-            <Button
-              className="login-social-btn"
-              type="button"
-              variant="outline"
-              disabled={loading || isResettingPassword}
-              onClick={handleGoogleSignIn}
-            >
-              <GoogleIcon />
-              Google
-            </Button>
-            <Button className="login-social-btn" type="button" variant="outline" disabled>
-              <FacebookIcon />
-              Facebook
-            </Button>
-          </div>
+          <OAuthProviderButtons
+            disabled={loading || isResettingPassword}
+            onGoogleSignIn={handleGoogleSignIn}
+          />
 
           <div className="login-divider">
             <span>o usa tu correo</span>
@@ -511,7 +493,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
               action={turnstileAction}
               onVerify={(token) => setTurnstileToken(token)}
               onExpire={() => setTurnstileToken(null)}
-              onError={() => setTurnstileToken(null)}
+              onError={() => {
+                setTurnstileToken(null)
+                setErrorMsg('No se pudo cargar la verificación de seguridad. Revisa tu conexión y vuelve a intentarlo.')
+              }}
             />
 
             <Button className="login-submit-btn" type="submit" size="lg" disabled={loading}>
@@ -569,39 +554,5 @@ export function LoginModal({ onClose }: LoginModalProps) {
       </div>
     </div>,
     document.body,
-  )
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-        fill="#34A853"
-      />
-      <path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-        fill="#EA4335"
-      />
-    </svg>
-  )
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M24 12.07C24 5.45 18.63.07 12 .07S0 5.45 0 12.07c0 5.99 4.39 10.95 10.13 11.85v-8.38H7.08v-3.47h3.05V9.43c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.24 2.69.24v2.95h-1.52c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.47h-2.8v8.38C19.61 23.02 24 18.06 24 12.07z"
-        fill="#1877F2"
-      />
-    </svg>
   )
 }

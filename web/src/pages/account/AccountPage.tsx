@@ -29,6 +29,7 @@ import {
 } from '../../shared/lib/imageSecurity'
 
 const AccountPhaseTwoSections = import.meta.env.DEV
+  || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
   ? lazy(() => import('./AccountPhaseTwoSections').then((module) => ({
       default: module.AccountPhaseTwoSections,
     })))
@@ -329,11 +330,15 @@ export function AccountPage({
                   )}
                   <input
                     ref={avatarInputRef}
+                    id="account-avatar-upload"
                     className="sr-only"
                     type="file"
                     accept="image/*"
                     onChange={(event) => handleAvatarFile(event.target.files?.[0])}
                   />
+                  <label htmlFor="account-avatar-upload" className="sr-only">
+                    Seleccionar avatar
+                  </label>
                   <button
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}

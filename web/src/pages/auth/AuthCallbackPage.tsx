@@ -110,10 +110,10 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
         cleanAuthUrl('/auth/callback')
         setStatus('success')
         setMessage('Tu correo fue verificado correctamente. Ya puedes continuar en Cubitat.')
-      } catch (err: any) {
+      } catch (err: unknown) {
         cleanAuthUrl('/auth/callback')
         setStatus('error')
-        setMessage(getEmailConfirmationErrorMessage(err?.message))
+        setMessage(getEmailConfirmationErrorMessage(err instanceof Error ? err.message : undefined))
       }
     }
 

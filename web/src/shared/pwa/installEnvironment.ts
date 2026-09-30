@@ -12,6 +12,21 @@ type NavigatorWithInstalledRelatedApps = NavigatorWithStandalone & {
   getInstalledRelatedApps?: () => Promise<InstalledRelatedApp[]>
 }
 
+const CUBITAT_ORIGINS = new Set([
+  'https://cubitathome.com',
+  'https://cubitat1-phase2-dev.pochiprats18.workers.dev',
+])
+
+function getOrigin(value?: string) {
+  if (!value) return null
+
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
 export function isIOSDevice(navigatorObject: NavigatorWithStandalone = window.navigator) {
   const userAgent = navigatorObject.userAgent.toLowerCase()
   const isClassicIOS = /iphone|ipad|ipod/.test(userAgent)
@@ -31,7 +46,15 @@ export async function hasInstalledRelatedWebApp(
 
   try {
     const installedApps = await navigatorObject.getInstalledRelatedApps()
-    return installedApps.some((app) => app.platform === 'webapp')
+    const currentOrigin = window.location.origin
+
+    return installedApps.some((app) => {
+      if (app.platform !== 'webapp') return false
+
+      return [app.id, app.url]
+        .map(getOrigin)
+        .some((origin) => origin === currentOrigin || (origin !== null && CUBITAT_ORIGINS.has(origin)))
+    })
   } catch {
     return false
   }

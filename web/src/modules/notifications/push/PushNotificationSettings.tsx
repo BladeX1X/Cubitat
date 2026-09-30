@@ -8,10 +8,13 @@ import {
   getPushAvailability,
   preparePushNotifications,
   type PreparedPushContext,
-  type PushAvailability,
 } from './pushService'
+import {
+  getPushNotificationStatusMessage,
+  type PushNotificationStatus,
+} from './pushNotificationStatus'
 
-type Status = 'loading' | 'disabled' | 'enabled' | 'blocked' | PushAvailability | 'browser_error' | 'configuration_error' | 'error'
+type Status = PushNotificationStatus
 
 const defaultServices = {
   getAvailability: getPushAvailability,
@@ -70,8 +73,6 @@ export function PushNotificationSettings({
       if (!context) {
         context = await services.prepare()
         setPrepared(context)
-        setStatus('disabled')
-        return
       }
 
       const result = await services.enable(context)
@@ -97,21 +98,7 @@ export function PushNotificationSettings({
     }
   }
 
-  const message = status === 'ios_install_required'
-    ? 'Instala Cubitat en la pantalla de inicio para activar las notificaciones.'
-    : status === 'unsupported'
-      ? 'Este navegador no admite notificaciones de Cubitat.'
-      : status === 'blocked'
-        ? 'El permiso esta bloqueado. Activalo en los ajustes del navegador o del sistema.'
-        : status === 'enabled'
-          ? 'Las notificaciones estan activas en este dispositivo.'
-          : status === 'browser_error'
-            ? 'El navegador no pudo activar las notificaciones. Revisa que Chrome tenga permiso para enviarlas e intenta de nuevo.'
-          : status === 'configuration_error'
-            ? 'No se pudo preparar el servicio de notificaciones. Reintenta la configuración.'
-          : status === 'error'
-            ? 'No se pudo actualizar esta preferencia. Intenta de nuevo.'
-            : 'Recibe avisos de propiedades, contactos y actividad importante.'
+  const message = getPushNotificationStatusMessage(status)
 
   return (
     <section className="border-y border-[#dbe7e4] bg-white px-4 py-5 sm:px-6" aria-labelledby="push-notifications-title">

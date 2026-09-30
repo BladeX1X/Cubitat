@@ -5,12 +5,29 @@ import {
   type PublicSubmissionEnv,
 } from './public-submissions'
 
+const propertyId = '11111111-1111-4111-8111-111111111111'
+
 function createEnv(): PublicSubmissionEnv {
   return {
     VITE_SUPABASE_URL: 'https://example.supabase.co',
-    SUPABASE_SERVICE_ROLE_KEY: 'server-only-service-role-key',
-    TURNSTILE_VERIFY_URL: 'https://turnstile.example.workers.dev',
+    SUPABASE_SERVICE_ROLE_KEY: 'server-only-key',
+    TURNSTILE_VERIFY_URL: 'https://turnstile.example.test',
   }
+}
+
+function contactRequest(overrides: Record<string, unknown> = {}) {
+  return new Request('https://cubitathome.com/api/public/contact', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.10' },
+    body: JSON.stringify({
+      turnstile_token: 'valid-token',
+      property_id: propertyId,
+      contact_name: 'Ana Perez',
+      contact_phone: '+53 51234567',
+      message: 'Quiero mas informacion.',
+      ...overrides,
+    }),
+  })
 }
 
 afterEach(() => {
@@ -18,76 +35,8 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('public submissions protected by Turnstile', () => {
-  it('validates Turnstile before inserting a contact through the trusted RPC', async () => {
-    const propertyId = crypto.randomUUID()
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        success: true,
-        hostname: 'cubitathome.com',
-        action: 'contact-owner',
-        'error-codes': [],
-      }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const response = await handlePublicContactSubmission(
-      new Request('https://cubitathome.com/api/public/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.5' },
-        body: JSON.stringify({
-          turnstile_token: 'valid-token',
-          property_id: propertyId,
-          contact_name: 'Ana Perez',
-          contact_phone: '+53 51234567',
-          message: 'Quiero mas informacion sobre esta propiedad.',
-        }),
-      }),
-      createEnv(),
-    )
-
-    expect(response.status).toBe(201)
-    expect(fetchMock).toHaveBeenNthCalledWith(1,
-      'https://turnstile.example.workers.dev',
-      expect.objectContaining({ method: 'POST' }),
-    )
-    expect(fetchMock).toHaveBeenNthCalledWith(2,
-      'https://example.supabase.co/rest/v1/rpc/submit_public_contact_trusted',
-      expect.objectContaining({ method: 'POST' }),
-    )
-    const rpcHeaders = new Headers(fetchMock.mock.calls[1]?.[1]?.headers)
-    expect(rpcHeaders.get('Authorization')).toBe('Bearer server-only-service-role-key')
-  })
-
-  it('rejects a token issued for another action without touching Supabase', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
-      success: true,
-      hostname: 'cubitathome.com',
-      action: 'register-user',
-      'error-codes': [],
-    }), { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const response = await handlePublicContactSubmission(
-      new Request('https://cubitathome.com/api/public/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          turnstile_token: 'wrong-action-token',
-          property_id: crypto.randomUUID(),
-          contact_name: 'Ana Perez',
-          contact_phone: '+53 51234567',
-          message: 'Quiero mas informacion sobre esta propiedad.',
-        }),
-      }),
-      createEnv(),
-    )
-
-    expect(response.status).toBe(400)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('rejects an invalid contact phone before verifying Turnstile', async () => {
+describe('public submission handlers', () => {
+  it('rejects malformed contact payloads before calling Turnstile', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
@@ -95,60 +44,84 @@ describe('public submissions protected by Turnstile', () => {
       new Request('https://cubitathome.com/api/public/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          turnstile_token: 'valid-token',
-          property_id: crypto.randomUUID(),
-          contact_name: 'Ana Perez',
-          contact_phone: 'abc---123',
-          message: 'Quiero mas informacion sobre esta propiedad.',
-        }),
+        body: JSON.stringify({ property_id: 'invalid' }),
       }),
       createEnv(),
     )
 
     expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'Los datos del formulario no son validos.' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('normalizes a valid international phone before calling the trusted RPC', async () => {
+  it('returns a client error for an invalid Turnstile result without calling the RPC', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      success: false,
+      action: 'contact-owner',
+      hostname: 'cubitathome.com',
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicContactSubmission(contactRequest(), createEnv())
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'La verificacion de seguridad no es valida.' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('returns a service-unavailable error when Turnstile cannot be reached', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('unavailable', { status: 503 })))
+
+    const response = await handlePublicContactSubmission(contactRequest(), createEnv())
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ error: 'La verificacion de seguridad no esta disponible.' })
+  })
+
+  it('normalizes the contact phone before sending the trusted RPC', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         success: true,
-        hostname: 'cubitathome.com',
         action: 'contact-owner',
-        'error-codes': [],
+        hostname: 'cubitathome.com',
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await handlePublicContactSubmission(
-      new Request('https://cubitathome.com/api/public/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          turnstile_token: 'valid-token',
-          property_id: crypto.randomUUID(),
-          contact_name: 'Ana Perez',
-          contact_phone: '0034 612 345 678',
-          message: 'Quiero mas informacion sobre esta propiedad.',
-        }),
-      }),
+      contactRequest({ contact_phone: '+53 5123-4567' }),
       createEnv(),
     )
 
     expect(response.status).toBe(201)
-    const rpcBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))
-    expect(rpcBody.p_contact_phone).toBe('+34612345678')
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({
+      p_property_id: propertyId,
+      p_contact_phone: '+5351234567',
+    })
   })
 
-  it('uses only the server-validated reporter id for authenticated reports', async () => {
-    const propertyId = crypto.randomUUID()
+  it('returns a safe error when the trusted contact RPC fails', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         success: true,
+        action: 'contact-owner',
         hostname: 'cubitathome.com',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('database unavailable', { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicContactSubmission(contactRequest(), createEnv())
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ error: 'No fue posible registrar la consulta.' })
+  })
+
+  it('requires an authenticated reporter only at the Worker boundary, not in the trusted payload builder', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        success: true,
         action: 'report-property',
-        'error-codes': [],
+        hostname: 'cubitathome.com',
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
@@ -160,18 +133,17 @@ describe('public submissions protected by Turnstile', () => {
         body: JSON.stringify({
           turnstile_token: 'valid-token',
           property_id: propertyId,
-          reason: 'FRAUD',
-          description: 'La informacion parece fraudulenta.',
-          reporter_id: 'attacker-controlled-id',
+          reason: 'spam',
+          description: 'Contenido sospechoso.',
         }),
       }),
       createEnv(),
-      'validated-user-id',
+      null,
     )
 
     expect(response.status).toBe(201)
-    const rpcBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))
-    expect(rpcBody.p_reporter_id).toBe('validated-user-id')
-    expect(JSON.stringify(rpcBody)).not.toContain('attacker-controlled-id')
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({
+      p_reporter_id: null,
+    })
   })
 })

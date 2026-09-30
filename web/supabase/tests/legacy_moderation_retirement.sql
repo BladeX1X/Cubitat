@@ -1,5 +1,6 @@
 -- Run only against an isolated local stack after the production migrations.
 BEGIN;
+SELECT plan(1);
 DO $$
 DECLARE
   caller text;
@@ -39,5 +40,6 @@ EXCEPTION WHEN insufficient_privilege THEN NULL;
 END;
 $$;
 RESET ROLE;
-SELECT 'legacy_moderation_retirement: ok' AS result;
+SELECT pass('legacy_moderation_retirement: ok');
+SELECT * FROM finish();
 ROLLBACK;

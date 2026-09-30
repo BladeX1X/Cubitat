@@ -1552,7 +1552,15 @@ function StepAmenities({
   onNext: () => void
   onBack: () => void
 }) {
-  const amenitiesDef = [
+  const amenitiesDef: Array<{
+    key: keyof Pick<
+      PublishFormData,
+      'hasCistern' | 'hasStreetGas' | 'has220v' | 'hasAc' | 'isFurnished'
+        | 'hasLandline' | 'hasTerrace' | 'hasPatio' | 'hasPool' | 'hasPortal'
+    >
+    label: string
+    desc: string
+  }> = [
     { key: 'hasCistern', label: 'Cisterna / Tanque elevado', desc: 'Suministro de agua propio' },
     { key: 'hasStreetGas', label: 'Gas de la calle', desc: 'Gas licuado directo por tubería' },
     { key: 'has220v', label: 'Corriente 220v', desc: 'Ideal para aires acondicionados' },
@@ -1574,7 +1582,7 @@ function StepAmenities({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {amenitiesDef.map((am) => {
-          const isChecked = !!(formData as any)[am.key]
+          const isChecked = formData[am.key]
           return (
             <div
               key={am.key}

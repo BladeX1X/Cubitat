@@ -172,8 +172,7 @@ Siguiente refactor recomendado:
 - Esta solución es temporal dentro de `CubitatApp`; cuando se extraiga el layout, mover estas piezas a `components/layout/Header.tsx` y `components/layout/MobileBottomNav.tsx`.
 3. Evaluar migracion a React Router si la cantidad de rutas crece.
 4. Configurar SMTP con Resend para confirmacion de email.
-5. Implementar sistema de notificaciones (campanita en header).
-6. Actualizar los `.md` correspondientes despues de cada cambio significativo.
+5. Actualizar los `.md` correspondientes despues de cada cambio significativo.
 
 Verificacion reciente (2026-07-01):
 
@@ -209,3 +208,12 @@ Verificacion reciente (2026-07-01):
 - La moderación KYC aplica la misma frontera dentro de `AdminPage`.
 - El build ejecuta `verify-phase2-production-bundle.mjs` y falla si detecta los
   chunks exclusivos o el marcador `review_kyc_request`.
+
+## Build remoto DEV de Fase 2 — 2026-09-26
+
+- La UI KYC se habilita mediante el modo explícito `phase2-dev`, no mediante
+  `import.meta.env.DEV`, porque un Worker remoto siempre usa un bundle de
+  producción de Vite.
+- `npm run build` mantiene KYC fuera de producción.
+- `npm run build:phase2-dev` verifica que el bundle aislado contenga el módulo
+  KYC antes de desplegarlo con `wrangler.phase2-dev.jsonc`.

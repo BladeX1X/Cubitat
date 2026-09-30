@@ -36,7 +36,8 @@ Cada capacidad vive bajo `src/modules/admin`:
   propiedades. Encapsula filtros, estado asíncrono, formateo y tarjetas
   mobile-first sin depender de los módulos de propiedades, reportes o métricas.
 - `kyc`: capacidad exclusiva de Fase 2/DEV. Su importación es lazy y queda
-  detrás de `import.meta.env.DEV`, por lo que Vite elimina del build productivo
+  detrás del guard global de Fase 2, habilitado localmente o con el flag explícito `VITE_PHASE2_UI_ENABLED`,
+  por lo que Vite elimina del build productivo
   tanto la interfaz como el repositorio de moderación KYC.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
