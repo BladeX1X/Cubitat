@@ -35,6 +35,12 @@ const AccountPhaseTwoSections = import.meta.env.DEV
     })))
   : null
 
+const AccountKycSection = import.meta.env.VITE_KYC_UI_ENABLED === 'true'
+  ? lazy(() => import('./AccountKycSection').then((module) => ({
+      default: module.AccountKycSection,
+    })))
+  : null
+
 type AccountPageProps = {
   user: User
   userRole?: string
@@ -366,6 +372,12 @@ export function AccountPage({
                       onResolvedRole={handleResolvedRole}
                       onNavigateAgentDashboard={onNavigateAgentDashboard}
                     />
+                  </Suspense>
+                ) : null}
+
+                {AccountKycSection ? (
+                  <Suspense fallback={null}>
+                    <AccountKycSection userId={userId} />
                   </Suspense>
                 ) : null}
 

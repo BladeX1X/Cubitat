@@ -36,6 +36,7 @@ function readLocalSupabaseServiceRoleKey(): string {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
   const phase2UiEnabled = mode === 'phase2-dev'
+  const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const supabaseAnonKey =
     env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
   const supabaseUrl =
@@ -46,6 +47,7 @@ export default defineConfig(({ mode }) => {
   return {
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
     },
     plugins: [
       react(),

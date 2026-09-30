@@ -25,8 +25,11 @@ const BASE_SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
 ]
 
 const PHASE_TWO_ADMIN_UI_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+const KYC_ADMIN_UI_ENABLED = import.meta.env.DEV
+  || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+  || import.meta.env.VITE_KYC_UI_ENABLED === 'true'
 
-const KycModerationTab = PHASE_TWO_ADMIN_UI_ENABLED
+const KycModerationTab = KYC_ADMIN_UI_ENABLED
   ? lazy(() =>
       import('../../modules/admin/kyc/KycModerationTab').then((module) => ({
         default: module.KycModerationTab,
@@ -51,15 +54,14 @@ export function AdminPage({
   useSEO({ title: 'Panel de Administración' })
 
   const [activeSection, setActiveSection] = useState<AdminSection>('properties')
-  const hasPhaseTwoAdmin = phaseTwoEnabled && KycModerationTab !== null && PropertyVerificationModerationTab !== null
-  const sections = hasPhaseTwoAdmin
-    ? [
-        ...BASE_SECTIONS.slice(0, 2),
-        { id: 'kyc' as const, label: 'KYC' },
-        { id: 'property-verification' as const, label: 'Documentos' },
-        ...BASE_SECTIONS.slice(2),
-      ]
-    : BASE_SECTIONS
+  const hasKycAdmin = KycModerationTab !== null && (phaseTwoEnabled || import.meta.env.VITE_KYC_UI_ENABLED === 'true')
+  const hasPropertyVerificationAdmin = phaseTwoEnabled && PropertyVerificationModerationTab !== null
+  const sections = [
+    ...BASE_SECTIONS.slice(0, 2),
+    ...(hasKycAdmin ? [{ id: 'kyc' as const, label: 'KYC' }] : []),
+    ...(hasPropertyVerificationAdmin ? [{ id: 'property-verification' as const, label: 'Documentos' }] : []),
+    ...BASE_SECTIONS.slice(2),
+  ]
 
   if (userRole === undefined) {
     return (
@@ -124,12 +126,12 @@ export function AdminPage({
 
         {activeSection === 'properties' && <PropertiesTab />}
         {activeSection === 'reports' && <ReportsTab />}
-        {hasPhaseTwoAdmin && activeSection === 'kyc' && (
+        {hasKycAdmin && activeSection === 'kyc' && (
           <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}>
             <KycModerationTab />
           </Suspense>
         )}
-        {hasPhaseTwoAdmin && activeSection === 'property-verification' && (
+        {hasPropertyVerificationAdmin && activeSection === 'property-verification' && (
           <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}>
             <PropertyVerificationModerationTab />
           </Suspense>
