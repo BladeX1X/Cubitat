@@ -16,6 +16,8 @@
   "vars": {
     "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
     "PHASE2_AGENTS_ENABLED": "true",
+    "PUBLIC_SITE_URL": "https://cubitathome.com",
+    "ALERT_EMAIL_FROM": "Cubitat <notificaciones@cubitathome.com>",
     "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev",
     "GROQ_MODEL": "qwen/qwen3.8-27b"
   },

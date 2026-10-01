@@ -7,8 +7,8 @@ export interface KycEvidenceRetentionEnv {
 
 interface ClaimedKycEvidence {
   id: string
-  document_path: string
-  selfie_path: string
+  document_path: string | null
+  selfie_path: string | null
 }
 
 export interface KycEvidencePurgeSummary {
@@ -37,8 +37,7 @@ function isClaimedEvidence(value: unknown): value is ClaimedKycEvidence {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<ClaimedKycEvidence>
   return typeof candidate.id === 'string'
-    && typeof candidate.document_path === 'string'
-    && typeof candidate.selfie_path === 'string'
+    && (typeof candidate.document_path === 'string' || typeof candidate.selfie_path === 'string')
 }
 
 async function invokePurgeRpc(
@@ -103,7 +102,9 @@ export async function purgeApprovedKycEvidence(
           method: 'DELETE',
           headers: serviceHeaders(serviceRoleKey),
           body: JSON.stringify({
-            prefixes: [evidence.document_path, evidence.selfie_path],
+            prefixes: [evidence.document_path, evidence.selfie_path].filter(
+              (path): path is string => typeof path === 'string' && path.length > 0,
+            ),
           }),
         },
       )

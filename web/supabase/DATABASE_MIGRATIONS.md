@@ -548,6 +548,24 @@ que la base está actualizada y `db lint --linked` no reporta errores.
 - La prueba `supabase/tests/property_duplicate_rules.sql` comprobó ambos
   cambios dentro de una transacción y terminó con `ROLLBACK`.
 
+### PROD-F2.6. `migrations/20260930150000_add_kyc_evidence_retention.sql`
+
+- **Estado 2026-09-30**: migración productiva preparada para conservar la
+  evidencia KYC durante 24 horas después de aprobar o rechazar la solicitud.
+- La purga es server-only: solo `service_role` puede reclamar, completar o
+  liberar lotes; el Worker elimina los objetos privados y después limpia las
+  rutas del registro.
+- La migración no crea una purga de auditoría ni modifica la política de
+  `auth.audit_log_entries`.
+
+### PROD-F2.7. `migrations/20260930160000_add_alert_email_delivery.sql`
+
+- **Estado 2026-09-30**: migración productiva preparada para la cola de correo
+  de alertas de búsqueda.
+- La cola es idempotente, limita a tres intentos y solo `service_role` puede
+  reclamar entregas. El Worker usa Resend cuando existen sus secretos de
+  proveedor.
+
 ## Verificación después de aplicar
 
 ### Matriz pgTAP local con el carril DEV

@@ -5,9 +5,9 @@ import phaseTwoDevWorkerSource from './worker-phase2-dev.ts?raw'
 import phaseTwoDevWranglerConfig from '../wrangler.phase2-dev.jsonc?raw'
 
 describe('production Worker Phase 2 isolation', () => {
-  it('keeps unpromoted Phase 2 jobs out of the production entrypoint', () => {
-    expect(productionWorkerSource).not.toContain('alert-email-dispatcher')
-    expect(productionWorkerSource).not.toContain('kyc-evidence-retention')
+  it('keeps the promoted Phase 2 jobs isolated in the production entrypoint', () => {
+    expect(productionWorkerSource).toContain('alert-email-dispatcher')
+    expect(productionWorkerSource).toContain('kyc-evidence-retention')
     expect(productionWorkerSource).toContain('get_public_agent_profile')
     expect(productionWorkerSource).toContain('get_verified_agent_ids')
     expect(productionWorkerSource).toContain('handleContactMetric')
@@ -21,7 +21,7 @@ describe('production Worker Phase 2 isolation', () => {
     expect(productionWranglerConfig).not.toContain('cubitat1-phase2-dev')
   })
 
-  it('keeps the remaining experimental jobs in the dedicated DEV entrypoint', () => {
+  it('keeps the Phase 2 jobs available in the dedicated DEV entrypoint too', () => {
     expect(phaseTwoDevWorkerSource).toContain('get_public_agent_profile')
     expect(phaseTwoDevWorkerSource).toContain('submit_kyc_request')
     expect(phaseTwoDevWorkerSource).toContain('dispatchPendingAlertEmails')
