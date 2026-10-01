@@ -9,11 +9,6 @@ const wranglerCli = fileURLToPath(new URL('../node_modules/wrangler/bin/wrangler
 const outputDirectory = await mkdtemp(join(tmpdir(), 'cubitat-worker-production-'))
 
 const forbiddenMarkers = [
-  'submit_kyc_request',
-  'review_kyc_request',
-  'get_verified_agent_ids',
-  'get_public_agent_profile',
-  'increment_contact_clicks',
   'dispatchPendingAlertEmails',
   'purgeApprovedKycEvidence',
 ]
@@ -38,7 +33,7 @@ try {
     throw new Error(`El Worker productivo incluye Fase 2: ${leakedMarkers.join(', ')}`)
   }
 
-  console.log('Verified: production Worker bundle excludes exclusive Phase 2 modules')
+  console.log('Verified: production Worker bundle excludes unpromoted Phase 2 modules')
 } finally {
   await rm(outputDirectory, { recursive: true, force: true })
 }

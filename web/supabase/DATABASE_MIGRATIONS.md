@@ -26,6 +26,20 @@ Estado 2026-09-30: aplicada y verificada en producción; el trigger existe y
 `db lint --linked --level warning` no reporta errores. La consulta previa no
 encontró agentes activos, por lo que no se alteraron perfiles existentes.
 
+52. `20260930120000_add_verified_agents_and_contact_metrics.sql`: agrega los
+    datos de perfil profesional, proyecciones públicas de agentes verificados y
+    métricas de contacto deduplicadas. La escritura de métricas queda reservada
+    al `service_role` para que el navegador no controle la clave de deduplicación.
+
+53. `20260930130000_add_property_verification.sql`: crea solicitudes privadas
+    de evidencia documental por propiedad, revisión administrativa AAL2 y un
+    indicador interno de confianza que no constituye certificación legal.
+
+54. `20260930140000_add_property_duplicate_rules.sql`: detecta coincidencias
+    exactas normalizadas, las deja como señal revisable para moderación y
+    resuelve la señal al alcanzar estados finales sin rechazar automáticamente.
+
+
 ## Aplicación segura
 
 Desde `web/`, revisar primero y aplicar después:

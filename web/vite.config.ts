@@ -35,7 +35,7 @@ function readLocalSupabaseServiceRoleKey(): string {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
-  const phase2UiEnabled = mode === 'phase2-dev'
+  const phase2UiEnabled = mode === 'phase2-dev' || mode === 'phase2-agents'
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const supabaseAnonKey =
     env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''

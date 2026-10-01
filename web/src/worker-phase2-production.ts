@@ -1,0 +1,50 @@
+import {
+  checkRateLimit,
+  createWorker,
+  rateLimitResponse,
+  type Env,
+  type WorkerExecutionContext,
+} from './worker';
+import { handleContactMetric } from './worker/contact-metrics';
+import { dispatchPendingPushNotifications } from './worker/push-notifications';
+
+export { RateLimiter } from './rate-limiter';
+
+interface ProductionPhaseTwoEnv extends Env {
+  CONTACT_METRICS_SALT?: string;
+}
+
+const worker = createWorker({
+  additionalPublicRpcs: [
+    'get_public_agent_profile',
+    'get_verified_agent_ids',
+  ],
+  additionalAuthenticatedRpcs: [
+    'submit_kyc_request',
+    'review_kyc_request',
+  ],
+});
+
+export default {
+  async fetch(request: Request, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/phase2/contact-click') {
+      if (request.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'POST' },
+        });
+      }
+      const clientIp = request.headers.get('cf-connecting-ip')
+        || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || '127.0.0.1';
+      const rateLimit = await checkRateLimit(env, `${clientIp}:phase2-contact-click:v1`, 20, 60_000);
+      if (!rateLimit.allowed) return rateLimitResponse(rateLimit.resetAt);
+      return handleContactMetric(request, env);
+    }
+    return worker.fetch(request, env, ctx);
+  },
+  scheduled(_controller: unknown, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext) {
+    ctx.waitUntil(dispatchPendingPushNotifications(env));
+  },
+};
