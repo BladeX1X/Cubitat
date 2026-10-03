@@ -6,13 +6,14 @@ import phaseTwoDevWranglerConfig from '../wrangler.phase2-dev.jsonc?raw'
 
 describe('production Worker Phase 2 isolation', () => {
   it('keeps the promoted Phase 2 jobs isolated in the production entrypoint', () => {
-    expect(productionWorkerSource).toContain('alert-email-dispatcher')
     expect(productionWorkerSource).toContain('kyc-evidence-retention')
     expect(productionWorkerSource).toContain('get_public_agent_profile')
     expect(productionWorkerSource).toContain('get_verified_agent_ids')
     expect(productionWorkerSource).toContain('handleContactMetric')
     expect(productionWorkerSource).toContain('submit_kyc_request')
     expect(productionWorkerSource).toContain('review_kyc_request')
+    expect(productionWorkerSource).not.toContain('alert-email-dispatcher')
+    expect(productionWorkerSource).not.toContain('dispatchPendingAlertEmails')
   })
 
   it('keeps PHASE2_ENABLED out while allowing the production Web Push Cron', () => {

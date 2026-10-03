@@ -7,7 +7,6 @@ import {
 } from './worker';
 import { handleContactMetric } from './worker/contact-metrics';
 import { dispatchPendingPushNotifications } from './worker/push-notifications';
-import { dispatchPendingAlertEmails } from './worker/alert-email-dispatcher';
 import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 
 export { RateLimiter } from './rate-limiter';
@@ -48,7 +47,6 @@ export default {
   },
   scheduled(_controller: unknown, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext) {
     ctx.waitUntil(dispatchPendingPushNotifications(env));
-    ctx.waitUntil(dispatchPendingAlertEmails(env));
     ctx.waitUntil(purgeApprovedKycEvidence(env));
   },
 };
