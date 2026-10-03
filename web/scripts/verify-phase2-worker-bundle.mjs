@@ -8,14 +8,18 @@ const webDirectory = fileURLToPath(new URL('../', import.meta.url))
 const wranglerCli = fileURLToPath(new URL('../node_modules/wrangler/bin/wrangler.js', import.meta.url))
 const outputDirectory = await mkdtemp(join(tmpdir(), 'cubitat-worker-production-'))
 
-const forbiddenMarkers = [
+const requiredMarkers = [
   'submit_kyc_request',
   'review_kyc_request',
-  'get_verified_agent_ids',
   'get_public_agent_profile',
-  'increment_contact_clicks',
+  'get_verified_agent_ids',
+  'claim_kyc_evidence_for_purge',
+  'contact-click',
+]
+const forbiddenMarkers = [
   'dispatchPendingAlertEmails',
-  'purgeApprovedKycEvidence',
+  'cubitat1-phase2-dev',
+  'phase2-dev',
 ]
 
 try {
@@ -33,12 +37,17 @@ try {
   if (!bundleName) throw new Error('Wrangler no generó el bundle JavaScript esperado.')
 
   const source = await readFile(join(outputDirectory, bundleName), 'utf8')
-  const leakedMarkers = forbiddenMarkers.filter((marker) => source.includes(marker))
-  if (leakedMarkers.length > 0) {
-    throw new Error(`El Worker productivo incluye Fase 2: ${leakedMarkers.join(', ')}`)
+  const missingMarkers = requiredMarkers.filter((marker) => !source.includes(marker))
+  if (missingMarkers.length > 0) {
+    throw new Error(`Faltan módulos Fase 2 autorizados en Worker productivo: ${missingMarkers.join(', ')}`)
   }
 
-  console.log('Verified: production Worker bundle excludes exclusive Phase 2 modules')
+  const leakedMarkers = forbiddenMarkers.filter((marker) => source.includes(marker))
+  if (leakedMarkers.length > 0) {
+    throw new Error(`El Worker productivo incluye módulos diferidos o exclusivos de DEV: ${leakedMarkers.join(', ')}`)
+  }
+
+  console.log('Verified: production Worker bundle contains required KYC modules and excludes deferred email/DEV modules')
 } finally {
   await rm(outputDirectory, { recursive: true, force: true })
 }

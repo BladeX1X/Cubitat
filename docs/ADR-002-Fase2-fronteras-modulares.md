@@ -39,6 +39,16 @@ introducir módulos de Fase 2 en el bundle productivo.
 - La ausencia de `GROQ_API_KEY`, OAuth/CAPTCHA/Resend Auth o dispositivos reales
   mantiene esos carriles pendientes, sin impedir el avance de los demás.
 
+## Retención y alertas productivas
+
+- La evidencia KYC se retiene 24 horas después de aprobar o rechazar la
+  solicitud y luego se elimina mediante el Worker con `service_role`.
+- Las alertas de búsqueda se entregan por Resend desde una cola idempotente;
+  requieren `RESEND_API_KEY`, `ALERT_EMAIL_FROM` y `PUBLIC_SITE_URL` en el
+  entorno correspondiente.
+- La retención de auditoría de Auth permanece separada en 90 días y no se
+  activa por este módulo.
+
 ## Evidencia actual
 
 - Suite completa: 136 archivos y 600 pruebas correctas.

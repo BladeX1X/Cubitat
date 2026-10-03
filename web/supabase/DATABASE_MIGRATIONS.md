@@ -6,6 +6,40 @@ orden y propósito, pero no sustituye la lectura del SQL.
 
 Última revisión documental: 2026-09-09.
 
+## KYC base de producción — 2026-09-30
+
+50. `20260930100000_add_production_kyc.sql`: incorpora de forma idempotente la
+    tabla `kyc_requests`, el bucket privado `kyc_documents`, sus políticas RLS y
+    los RPC de envío y revisión KYC con control administrativo AAL2. Esta
+    migración es independiente de las migraciones DEV de Fase 2 y se aplica
+    únicamente tras validación del esquema productivo.
+
+Estado 2026-09-30: aplicada y verificada en el proyecto remoto vinculado; el
+historial remoto coincide y `db lint --linked --level warning` no reporta
+errores. No se crearon solicitudes ni documentos QA durante esta migración.
+
+51. `20260930110000_require_verified_kyc_for_agent_role.sql`: exige KYC
+    verificado antes de activar el rol `agent` y conserva la degradación segura
+    a `buyer` cuando una revisión KYC interna deja de estar aprobada.
+
+Estado 2026-09-30: aplicada y verificada en producción; el trigger existe y
+`db lint --linked --level warning` no reporta errores. La consulta previa no
+encontró agentes activos, por lo que no se alteraron perfiles existentes.
+
+52. `20260930120000_add_verified_agents_and_contact_metrics.sql`: agrega los
+    datos de perfil profesional, proyecciones públicas de agentes verificados y
+    métricas de contacto deduplicadas. La escritura de métricas queda reservada
+    al `service_role` para que el navegador no controle la clave de deduplicación.
+
+53. `20260930130000_add_property_verification.sql`: crea solicitudes privadas
+    de evidencia documental por propiedad, revisión administrativa AAL2 y un
+    indicador interno de confianza que no constituye certificación legal.
+
+54. `20260930140000_add_property_duplicate_rules.sql`: detecta coincidencias
+    exactas normalizadas, las deja como señal revisable para moderación y
+    resuelve la señal al alcanzar estados finales sin rechazar automáticamente.
+
+
 ## Aplicación segura
 
 Desde `web/`, revisar primero y aplicar después:
@@ -513,6 +547,24 @@ que la base está actualizada y `db lint --linked` no reporta errores.
   de moderación y reabrirlos cuando la propiedad vuelve a revisión.
 - La prueba `supabase/tests/property_duplicate_rules.sql` comprobó ambos
   cambios dentro de una transacción y terminó con `ROLLBACK`.
+
+### PROD-F2.6. `migrations/20260930150000_add_kyc_evidence_retention.sql`
+
+- **Estado 2026-09-30**: migración productiva preparada para conservar la
+  evidencia KYC durante 24 horas después de aprobar o rechazar la solicitud.
+- La purga es server-only: solo `service_role` puede reclamar, completar o
+  liberar lotes; el Worker elimina los objetos privados y después limpia las
+  rutas del registro.
+- La migración no crea una purga de auditoría ni modifica la política de
+  `auth.audit_log_entries`.
+
+### PROD-F2.7. `migrations/20260930160000_add_alert_email_delivery.sql`
+
+- **Estado 2026-09-30**: migración productiva preparada para la cola de correo
+  de alertas de búsqueda.
+- La cola es idempotente, limita a tres intentos y solo `service_role` puede
+  reclamar entregas. El Worker usa Resend cuando existen sus secretos de
+  proveedor.
 
 ## Verificación después de aplicar
 

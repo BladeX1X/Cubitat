@@ -896,15 +896,22 @@ Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
 - No hay secretos en git.
 - HSTS y CSP endurecida verificadas en la respuesta productiva.
 
-### Entorno aislado de Fase 2 — solo DEV
+### Entorno aislado y promoción de Fase 2
 
-- La migración está aislada en `web/supabase/dev-migrations/` y no se incluye en `supabase db push`.
-- La interfaz usa `PHASE_TWO_ENABLED`, que solo es verdadera con el servidor Vite en modo DEV. Un build productivo oculta KYC, perfiles y panel de agente.
-- El Cron Trigger existe únicamente en `wrangler.jsonc` bajo `env.dev`; el Worker productivo no programa tareas de Fase 2.
-- `env.dev` usa un subdominio `workers.dev` y una lista de rutas vacía: nunca debe asociarse a `cubitathome.com`.
-- `kyc_documents`, `RESEND_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` de Fase 2 deben configurarse únicamente en un proyecto/entorno DEV aislado, nunca en producción durante esta etapa.
-- Puerta de promoción: no mover migraciones, bucket, secretos, UI ni Cron de Fase 2 a producción hasta completar un lanzamiento exitoso de Fase 1 y recibir una autorización posterior y explícita.
-- Estado local del 2026-07-22: Supabase todavía no se inició. Docker Desktop quedó bloqueado con `HCS_E_HYPERV_NOT_INSTALLED` y `HypervisorPresent=False`; habilitar el arranque del hipervisor con `bcdedit /set hypervisorlaunchtype auto` en PowerShell administrador, reiniciar y volver a validar antes de ejecutar migraciones DEV.
+- Los módulos de Fase 2 se mantienen separados por migraciones y entrypoints:
+  DEV conserva su cadena propia y producción solo incluye módulos promovidos.
+- Producción ya incluye KYC, perfiles/agentes, métricas de contacto,
+  verificación de propiedades, reglas de duplicados, retención KYC de 24 horas
+  y cola de alertas por correo.
+- El Worker productivo programa Push, alertas y purga KYC; cada tarea usa
+  `service_role` únicamente en el servidor y procesa lotes idempotentes.
+- `kyc_documents` permanece privado. La evidencia se elimina 24 horas después
+  de aprobar o rechazar una solicitud; el registro mínimo permanece en la base.
+- Las alertas requieren `RESEND_API_KEY` y un remitente verificado en Resend.
+  La ausencia de verificación del dominio bloquea la entrega, pero no altera la
+  cola ni la aplicación.
+- La retención de auditoría de Auth sigue separada en 90 días y continúa sin
+  Cron destructivo.
 
 ## 15. Operacion Y Rollback
 

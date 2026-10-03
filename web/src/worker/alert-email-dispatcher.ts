@@ -77,7 +77,7 @@ export async function dispatchPendingAlertEmails(
   fetchFn: typeof fetch = fetch,
 ): Promise<AlertDispatchSummary> {
   const summary: AlertDispatchSummary = { scanned: 0, sent: 0, failed: 0 }
-  if (env.PHASE2_ENABLED !== 'true') {
+  if (env.PHASE2_ENABLED === 'false') {
     logWorkerEvent('warn', 'alert_email_dispatch_skipped', { reason: 'phase2_disabled' })
     return summary
   }
