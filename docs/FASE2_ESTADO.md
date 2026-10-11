@@ -2245,3 +2245,12 @@ Este estado posterior prevalece sobre los párrafos anteriores que describen el 
 - `AdminMfaGate` solo renderiza el contenido protegido cuando Supabase devuelve `currentLevel === 'aal2'`; observar el panel abierto en esta versión productiva confirma el paso del gate AAL2.
 - La vista quedó en el filtro predeterminado sin pendientes. No se ejecutaron aprobaciones/rechazos, no se leyó evidencia privada y no se cambiaron filas.
 - El subpunto de acceso al panel AAL2 queda verificado. Siguen pendientes las operaciones administrativas y los flujos específicos enumerados en la matriz; esta observación no los sustituye.
+
+## Recuperación del perfil integral y build automático — 2026-10-11
+
+- En producción, `/moderar` volvió a servir un bundle sin KYC, Documentos ni coincidencias pHash después de cargas automáticas de Cloudflare. La configuración visible de Workers Builds confirmó `main`, raíz `/web`, comando `npm run build` y despliegue `npx wrangler deploy`; por tanto, cada push a `main` ejecutaba el perfil base.
+- Se cambió y guardó el comando de compilación de Cloudflare a `npm run build:phase2-production`; se volvió a cargar el panel y se confirmó que persistió. El deploy sigue usando `npx wrangler deploy`, con el repositorio conectado y las variables de build ya configuradas.
+- Se restauró el perfil completo en el Worker `cubitat1` mediante Wrangler, versión `14913e18-d5a5-4864-80ea-dcb951fd2062`. `/moderar` vuelve a mostrar KYC, Documentos y Coincidencias pHash tras pasar AAL2. No se modificaron filas ni esquema de Supabase.
+- En la siguiente compilación automática de `main` hay que revisar el resultado de Workers Builds y confirmar de nuevo los módulos servidos. El cambio de configuración evita volver a usar el perfil base, pero esta verificación post-build queda pendiente hasta que ocurra un push.
+- QA funcional productivo aún limitado por los datos disponibles: 1 solicitud documental histórica y 0 pendientes; 0 vendedores verificados elegibles; 306 estados pHash, 3 imágenes procesadas/fingerprints y 0 coincidencias abiertas. No se leyeron documentos privados ni se crearon anuncios sintéticos en producción. Push físico sigue pendiente de un dispositivo PWA.
+- `.agents/AGENTS.md`, requerido por las instrucciones raíz, no existe en el checkout actual; se deja constancia y se aplicaron las reglas disponibles de `AGENTS.md` y `web/AGENTS.md`.
