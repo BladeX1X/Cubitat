@@ -14,11 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
       - name: Run pg_dump backup
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -33,7 +28,12 @@ jobs:
           fi
           mkdir -p backups
           DATE=$(date +'%Y%m%d_%H%M%S')
-          pg_dump --no-password --dbname="$SUPABASE_DB_URL" -F p -b -v -f backups/cubitat-backup-$DATE.sql
+          docker run --rm \
+            --env SUPABASE_DB_URL \
+            --env BACKUP_FILE="cubitat-backup-$DATE.sql" \
+            --volume "$GITHUB_WORKSPACE/backups:/backups" \
+            postgres:17-alpine \
+            sh -c 'pg_dump --no-password --dbname="$SUPABASE_DB_URL" -F p -b -v -f "/backups/$BACKUP_FILE"'
 
       - name: Compress backup file
         run: |
