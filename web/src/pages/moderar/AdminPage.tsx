@@ -8,7 +8,7 @@ import { AdminMfaGate } from '../../modules/auth/mfa/AdminMfaGate'
 import type { AdminSection } from '../../modules/admin/core/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
-import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+import { PHASE_TWO_ENABLED, PROPERTY_VERIFICATION_UI_ENABLED } from '../../shared/config/features'
 
 type AdminPageProps = {
   userRole?: string
@@ -24,7 +24,7 @@ const BASE_SECTIONS: ReadonlyArray<{ id: AdminSection; label: string }> = [
   { id: 'metrics', label: 'Métricas' },
 ]
 
-const PHASE_TWO_ADMIN_UI_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+const PHASE_TWO_ADMIN_UI_ENABLED = PHASE_TWO_ENABLED || PROPERTY_VERIFICATION_UI_ENABLED
 const KYC_ADMIN_UI_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
   || import.meta.env.VITE_KYC_UI_ENABLED === 'true'

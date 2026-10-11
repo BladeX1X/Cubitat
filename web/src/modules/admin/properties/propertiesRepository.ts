@@ -1,5 +1,5 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
-import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
+import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/features'
 import { PAGE_SIZE } from '../core/constants'
 import type { ModerationFilter, ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
 
@@ -35,13 +35,17 @@ export async function fetchStatusCounts(): Promise<StatusCounts> {
   const firstError = statusResults.find((result) => result.error)?.error
   if (firstError) throw firstError
 
-  const { data: imageMatches, error: imageMatchesError } = await supabase
-    .rpc('get_admin_property_image_duplicate_candidates', { p_page: 0, p_page_size: 1 })
-  if (imageMatchesError) throw imageMatchesError
+  let imageDuplicateCount = 0
+  if (IMAGE_DUPLICATE_MODERATION_ENABLED) {
+    const { data: imageMatches, error: imageMatchesError } = await supabase
+      .rpc('get_admin_property_image_duplicate_candidates', { p_page: 0, p_page_size: 1 })
+    if (imageMatchesError) throw imageMatchesError
+    imageDuplicateCount = Number((imageMatches as { total_count?: number } | null)?.total_count ?? 0)
+  }
 
   return {
     all: allResult.count ?? 0,
-    image_duplicates: Number((imageMatches as { total_count?: number } | null)?.total_count ?? 0),
+    image_duplicates: imageDuplicateCount,
     pending_review: statusResults[0]?.count ?? 0,
     ai_approved: statusResults[1]?.count ?? 0,
     ai_rejected: statusResults[2]?.count ?? 0,
@@ -99,7 +103,7 @@ export async function fetchModerationProperties(status: ModerationFilter, page: 
   const duplicateMap = new Map<string, { id: string; title: string }>()
   const imageDuplicateMap = new Map<string, NonNullable<ModerationProperty['image_duplicate_matches']>>()
   const imageHashStatusMap = new Map<string, ImageHashStatus>()
-  if (PHASE_TWO_ENABLED) {
+  if (IMAGE_DUPLICATE_MODERATION_ENABLED) {
     const { data: duplicateFlags, error: duplicateError } = await supabase
       .from('property_duplicate_flags')
       .select('property_id, duplicate_of')

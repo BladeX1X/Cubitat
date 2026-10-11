@@ -39,6 +39,13 @@ Cada capacidad vive bajo `src/modules/admin`:
   producción se incorpora únicamente con el perfil explícito
   `npm run build:phase2-kyc`, que define `VITE_KYC_UI_ENABLED=true` sin activar
   agentes, documentos ni alertas de Fase 2.
+- `property-verification`: módulo independiente. El perfil
+  `npm run build:phase2-documents` habilita solo la sección **Documentos** y el
+  panel del propietario; requiere `VITE_SUPABASE_URL` del proyecto productivo
+  y su anon key pública. El Worker productivo permite únicamente las RPC de
+  envío/revisión de evidencia y lectura del indicador, mientras RLS mantiene
+  la comprobación de propietario y AAL2. El verificador de bundle exige destino
+  productivo y excluye KYC, agentes, Push/correo y pHash.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.
@@ -86,7 +93,8 @@ la prueba arquitectónica impide que importe detalles internos de otros módulos
 La regresión de aislamiento comprueba además que KYC no aparece cuando Fase 2
 está deshabilitada. `verify-phase2-production-bundle.mjs` inspecciona el build
 normal y `verify-kyc-production-bundle.mjs` exige solo los chunks y RPC de KYC,
-rechazando agentes, documentos y alertas.
+rechazando agentes, documentos y alertas. `verify-property-documents-production-bundle.mjs`
+comprueba el perfil documental separado y su destino de Supabase productivo.
 `AdminMfaGate.test.tsx` cubre también que una sesión expirada oculte el
 formulario, ejecute el callback de recuperación y mantenga el guard bloqueado
 si ese cierre falla.

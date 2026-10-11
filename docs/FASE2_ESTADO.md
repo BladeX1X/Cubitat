@@ -2187,3 +2187,11 @@ La revisión de catálogos encontró permisos de ejecución excesivos en `claim_
 - En 11 tablas core/Fase 2 comprobadas, `anon` y `authenticated` ya no tienen privilegios `TRUNCATE`, `TRIGGER` ni `REFERENCES`. No se leyeron ni alteraron filas de usuarios.
 - Solo hubo cambios SQL; no se desplegó Worker ni se modificaron secretos Cloudflare. La UI y los módulos pHash exclusivos de DEV no se promovieron en esta operación.
 - La nota previa “Queda pendiente autorización para aplicar” queda superada por este registro posterior.
+
+## Perfil aislado de verificación documental para producción — 2026-10-10
+
+- En la rama `feat/production-property-verification-profile` se preparó un build independiente que habilita la solicitud y moderación de documentos de propiedad contra Supabase producción. Requiere la URL exacta de producción y una anon key para compilar.
+- El Worker productivo incorpora las tres RPC documentales en su allowlist autenticada, nunca en la pública. RLS y AAL2 siguen aplicando dentro de Supabase. No se creó migración nueva porque las tablas, funciones y políticas ya estaban presentes en el proyecto productivo.
+- El perfil mantiene desactivados KYC, agentes, notificaciones y pHash. También se evitó que el panel de propiedades invoque RPC de duplicados cuando el perfil de duplicados está apagado.
+- Verificación local: lint y `npm run build:phase2-documents` pasaron; los verificadores comprobaron el destino de Supabase, los marcadores documentales y la exclusión de DEV/KYC/pHash. El CI ejecutará su propia suite al abrir la PR.
+- Estado al redactar: código preparado y pendiente de PR/CI/fusión. No se desplegaron el sitio ni el Worker y no se cambió configuración remota.

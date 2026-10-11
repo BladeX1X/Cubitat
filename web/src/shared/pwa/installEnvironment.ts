@@ -14,7 +14,9 @@ type NavigatorWithInstalledRelatedApps = NavigatorWithStandalone & {
 
 const CUBITAT_ORIGINS = new Set([
   'https://cubitathome.com',
-  'https://cubitat1-phase2-dev.pochiprats18.workers.dev',
+  ...(import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+    ? ['https://cubitat1-phase2-dev.pochiprats18.workers.dev']
+    : []),
 ])
 
 function getOrigin(value?: string) {

@@ -44,3 +44,22 @@ autenticados con factores visibles: identidad del propietario verificada,
 documento de propiedad aprobado, publicación activa y datos de contacto.
 El indicador MUST quedar etiquetado como interno y no implicar una garantía
 legal.
+
+### Requirement: Perfil productivo aislado
+
+El perfil productivo de verificación documental MUST habilitar el panel del
+propietario y la sección administrativa sin activar KYC, agentes, alertas ni
+pHash. MUST apuntar al proyecto Supabase productivo. El Worker productivo
+MUST permitir solo las RPC documentales requeridas para sesiones autenticadas;
+las reglas RLS y la comprobación AAL2 de la base de datos siguen siendo la
+autoridad de acceso.
+
+#### Scenario: Build de documentos
+
+- GIVEN el build usa el modo `phase2-documents`
+- WHEN se configura una URL Supabase distinta del proyecto productivo o falta
+  la anon key
+- THEN el build MUST fallar antes de generar un artefacto deployable.
+- WHEN la configuración es válida
+- THEN el bundle MUST incluir el flujo documental y excluir los otros módulos
+  de Fase 2 no incluidos en ese perfil.
