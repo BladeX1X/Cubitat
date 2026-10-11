@@ -12,6 +12,9 @@ const ACTION_OPTIONS: ReadonlyArray<{ value: AuditActionFilter; label: string }>
   { value: 'all', label: 'Todas las acciones' },
   { value: 'update', label: 'Actualización' },
   { value: 'delete', label: 'Eliminación' },
+  { value: 'document_submitted', label: 'Envío de documento' },
+  { value: 'document_approved', label: 'Documento aprobado' },
+  { value: 'document_rejected', label: 'Documento rechazado' },
 ]
 const SOURCE_OPTIONS: ReadonlyArray<{ value: AuditSourceFilter; label: string }> = [
   { value: 'all', label: 'Todos los orígenes' },
@@ -35,7 +38,7 @@ export function AuditLogTab() {
     <section aria-labelledby="audit-log-title" className="space-y-4">
       <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
         <h2 id="audit-log-title" className="text-lg font-bold text-neutral-900">Bitácora de moderación</h2>
-        <p className="mt-1 text-sm text-neutral-500">Evidencia de solo lectura sobre cambios y eliminaciones de propiedades.</p>
+        <p className="mt-1 text-sm text-neutral-500">Evidencia de solo lectura sobre moderación de propiedades y revisiones documentales.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <label className="relative">
             <span className="sr-only">Buscar propiedad</span>

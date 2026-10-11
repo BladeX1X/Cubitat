@@ -9,4 +9,8 @@ describe('Phase 2 environment boundary', () => {
     expect(isPhaseTwoEnabled(true, 'https://project.supabase.co')).toBe(false)
     expect(isPhaseTwoEnabled(true, '')).toBe(false)
   })
+
+  it('enables Phase 2 in an explicit build when the DEV project URL is injected', () => {
+    expect(isPhaseTwoEnabled(false, 'https://bknwerqbbysveehcdmzr.supabase.co', true)).toBe(true)
+  })
 })

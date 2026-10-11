@@ -61,6 +61,9 @@ y no contienen reglas específicas de otro módulo.
 
 - Acceso restringido para roles distintos de `admin`.
 - Moderación manual y reevaluación por IA de propiedades.
+- En DEV, advertencias privadas de coincidencia por hash perceptual, con título
+  de la publicación relacionada y distancia sobre 64 bits. Son señales para el
+  moderador y nunca cambian automáticamente el estado.
 - Gestión de reportes.
 - Filtros y paginación independientes por sección.
 - Métricas de Supabase, Cloudflare y Analytics con errores aislados.

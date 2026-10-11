@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
+import type { ModerationFilter, ModerationProperty, StatusCounts } from '../core/types'
 import { getErrorMessage } from '../core/errors'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 import {
@@ -21,11 +21,12 @@ const EMPTY_COUNTS: StatusCounts = {
   paused: 0,
   owner_hidden: 0,
   all: 0,
+  image_duplicates: 0,
 }
 
 export function useModerationProperties() {
   const [properties, setProperties] = useState<ModerationProperty[]>([])
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending_review')
+  const [statusFilter, setStatusFilter] = useState<ModerationFilter>('pending_review')
   const [statusCounts, setStatusCounts] = useState<StatusCounts>(EMPTY_COUNTS)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)

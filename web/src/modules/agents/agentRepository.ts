@@ -35,6 +35,21 @@ export async function fetchVerifiedAgentIds(): Promise<Set<string>> {
   return new Set(((data ?? []) as VerifiedAgentRow[]).map(({ id }) => id))
 }
 
+export async function fetchVerifiedSellerIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.rpc('get_verified_seller_ids')
+  if (error) {
+    logSafeEvent({
+      module: 'agents',
+      action: 'fetch_verified_seller_ids',
+      level: 'warn',
+      code: sanitizeErrorReason(error),
+    })
+    throw new Error('VERIFIED_SELLER_IDS_LOAD_FAILED')
+  }
+
+  return new Set(((data ?? []) as VerifiedAgentRow[]).map(({ id }) => id))
+}
+
 export async function fetchAgentProfile(agentId: string): Promise<AgentProfile | null> {
   try {
     const { data, error } = await supabase.rpc('get_public_agent_profile', {

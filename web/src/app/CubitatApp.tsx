@@ -32,6 +32,9 @@ import {
 const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
   ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
   : null
+const fetchVerifiedSellerIdsInPhaseTwo = PHASE_TWO_ENABLED
+  ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedSellerIds())
+  : null
 
 const LoginModal = lazy(() =>
   import('../modules/auth/components/LoginModal').then((module) => ({ default: module.LoginModal })),
@@ -386,13 +389,16 @@ export function CubitatApp() {
         if (active) {
           setError(null)
         }
-        const [{ data, error }, verifiedAgentIds] = await Promise.all([
+        const [{ data, error }, verifiedAgentIds, verifiedSellerIds] = await Promise.all([
           supabase
             .from('properties')
             .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
             .eq('status', 'published'),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
             ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
+            : Promise.resolve(new Set<string>()),
+          PHASE_TWO_ENABLED && fetchVerifiedSellerIdsInPhaseTwo
+            ? fetchVerifiedSellerIdsInPhaseTwo().catch(() => new Set<string>())
             : Promise.resolve(new Set<string>()),
         ])
         
@@ -426,6 +432,7 @@ export function CubitatApp() {
             contact_info: getPropertyContactInfo(item.id, item.contact_info),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
+            isVerifiedSeller: Boolean(item.user_id && verifiedSellerIds.has(item.user_id)),
           }))
           setProperties(mapped)
           void saveCachedProperties(mapped) // Guardar copia para uso offline
@@ -463,7 +470,7 @@ export function CubitatApp() {
 
     async function fetchSingleProperty() {
       try {
-        const [{ data, error }, verifiedAgentIds] = await Promise.all([
+        const [{ data, error }, verifiedAgentIds, verifiedSellerIds] = await Promise.all([
           supabase
             .from('properties')
             .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
@@ -471,6 +478,9 @@ export function CubitatApp() {
             .single(),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
             ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
+            : Promise.resolve(new Set<string>()),
+          PHASE_TWO_ENABLED && fetchVerifiedSellerIdsInPhaseTwo
+            ? fetchVerifiedSellerIdsInPhaseTwo().catch(() => new Set<string>())
             : Promise.resolve(new Set<string>()),
         ])
 
@@ -503,6 +513,7 @@ export function CubitatApp() {
             contact_info: getPropertyContactInfo(item.id, item.contact_info),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
+            isVerifiedSeller: Boolean(item.user_id && verifiedSellerIds.has(item.user_id)),
           }
           setProperties((prev) => {
             if (prev.some((p) => p.id === mapped.id)) return prev

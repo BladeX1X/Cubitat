@@ -1,4 +1,4 @@
-export type AuditAction = 'update' | 'delete'
+export type AuditAction = 'update' | 'delete' | 'document_submitted' | 'document_approved' | 'document_rejected'
 
 export type AuditSource = 'admin' | 'owner' | 'automation' | 'system'
 

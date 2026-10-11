@@ -96,11 +96,16 @@ export function sanitizeErrorReason(err: unknown): string {
   const value = err as Record<string, unknown>
   if (value.name === 'AbortError') return 'REQUEST_ABORTED'
   if (value.name === 'TypeError') return 'CLIENT_TYPE_ERROR'
-  if (typeof value.status === 'number') return 'HTTP_REQUEST_FAILED'
   if (typeof value.code === 'string') {
-    if (/^PGRST\d{3}$/.test(value.code)) return 'SUPABASE_API_ERROR'
-    if (/^[0-9A-Z]{5}$/.test(value.code)) return 'DATABASE_ERROR'
+    if (/^PGRST\d{3}$/.test(value.code)) return value.code
+    if (/^[0-9A-Z]{5}$/.test(value.code)) return `DATABASE_${value.code}`
     return 'BACKEND_ERROR'
+  }
+  if (typeof value.status === 'number') {
+    if (Number.isInteger(value.status) && value.status >= 100 && value.status <= 599) {
+      return `HTTP_STATUS_${value.status}`
+    }
+    return 'HTTP_REQUEST_FAILED'
   }
   return 'UNHANDLED_EXCEPTION'
 }

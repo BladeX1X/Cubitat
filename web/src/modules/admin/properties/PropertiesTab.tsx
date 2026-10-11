@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from '../components/AdminStates'
 import { AdminNoticeDialog } from '../components/AdminNoticeDialog'
 import { AdminPagination } from '../components/AdminPagination'
-import { PAGE_SIZE, STATUS_FILTERS } from '../core/constants'
-import type { StatusFilter } from '../core/types'
+import { IMAGE_DUPLICATE_FILTER, PAGE_SIZE, STATUS_FILTERS } from '../core/constants'
 import { PropertyModerationCard } from './PropertyModerationCard'
 import { useModerationProperties } from './useModerationProperties'
 
@@ -30,10 +29,13 @@ export function PropertiesTab() {
       <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)] space-y-3">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map(({ value, label }) => (
-            <button key={value} type="button" onClick={() => state.setStatusFilter(value as StatusFilter)} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${state.statusFilter === value ? 'bg-[#035f53] text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}>
+            <button key={value} type="button" onClick={() => state.setStatusFilter(value)} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${state.statusFilter === value ? 'bg-[#035f53] text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}>
               {label} ({state.statusCounts[value]})
             </button>
           ))}
+          <button type="button" onClick={() => state.setStatusFilter(IMAGE_DUPLICATE_FILTER.value)} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${state.statusFilter === IMAGE_DUPLICATE_FILTER.value ? 'bg-violet-700 text-white' : 'bg-violet-50 text-violet-800 hover:bg-violet-100'}`}>
+            {IMAGE_DUPLICATE_FILTER.label} ({state.statusCounts.image_duplicates ?? 0})
+          </button>
         </div>
         <label htmlFor="admin-property-search" className="sr-only">Buscar propiedades</label>
         <input id="admin-property-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar por título, ubicación, anunciante, operación o tipo..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:border-[#035f53] focus:ring-2 focus:ring-[#035f53]/10" />

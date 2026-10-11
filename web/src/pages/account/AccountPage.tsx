@@ -368,6 +368,7 @@ export function AccountPage({
                     <AccountPhaseTwoSections
                       userId={userId}
                       userRole={userRole}
+                      showKycSection={!AccountKycSection}
                       onRoleChange={onRoleChange}
                       onResolvedRole={handleResolvedRole}
                       onNavigateAgentDashboard={onNavigateAgentDashboard}

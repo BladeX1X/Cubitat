@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const dispatchPendingAlertEmails = vi.fn().mockResolvedValue({ scanned: 0, sent: 0, failed: 0 })
 const dispatchPendingPushNotifications = vi.fn().mockResolvedValue({ scanned: 0, sent: 0, failed: 0 })
 const purgeApprovedKycEvidence = vi.fn().mockResolvedValue({ scanned: 0, deleted: 0, failed: 0 })
+const backfillPropertyImageDuplicates = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('./worker/alert-email-dispatcher', () => ({ dispatchPendingAlertEmails }))
 vi.mock('./worker/push-notifications', async () => {
@@ -10,12 +11,19 @@ vi.mock('./worker/push-notifications', async () => {
   return { ...actual, dispatchPendingPushNotifications }
 })
 vi.mock('./worker/kyc-evidence-retention', () => ({ purgeApprovedKycEvidence }))
+vi.mock('./worker/image-phash', () => ({
+  authenticateImageHashRequest: vi.fn(),
+  backfillPropertyImageDuplicates,
+  loadOwnedPropertyForImageHashing: vi.fn(),
+  refreshPropertyImageDuplicates: vi.fn(),
+}))
 
 describe('Phase 2 DEV scheduled tasks', () => {
   beforeEach(() => {
     dispatchPendingAlertEmails.mockClear()
     dispatchPendingPushNotifications.mockClear()
     purgeApprovedKycEvidence.mockClear()
+    backfillPropertyImageDuplicates.mockClear()
   })
 
   it('dispatches push notifications alongside the other Phase 2 jobs', async () => {
@@ -28,5 +36,40 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(dispatchPendingAlertEmails).toHaveBeenCalledOnce()
     expect(dispatchPendingPushNotifications).toHaveBeenCalledOnce()
     expect(purgeApprovedKycEvidence).toHaveBeenCalledOnce()
+    expect(backfillPropertyImageDuplicates).toHaveBeenCalledOnce()
+  })
+
+  it('proxies the public verified-seller identifiers RPC in DEV', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('[{"id":"seller-qa"}]', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { default: worker } = await import('./worker-phase2-dev')
+
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/rpc/get_verified_seller_ids', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer dummy-key-safe-from-browsers',
+          apikey: 'anon-key',
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      }),
+      {
+        PHASE2_ENABLED: 'true',
+        VITE_SUPABASE_URL: 'https://project.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'anon-key',
+        RATE_LIMITER: {
+          idFromName: vi.fn(() => 'global'),
+          get: vi.fn(() => ({
+            fetch: vi.fn().mockResolvedValue(new Response('{"allowed":true}', { status: 200 })),
+          })),
+        },
+      } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/rpc/get_verified_seller_ids')
   })
 })

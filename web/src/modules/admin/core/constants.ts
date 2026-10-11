@@ -21,6 +21,8 @@ export const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'Todas' },
 ]
 
+export const IMAGE_DUPLICATE_FILTER = { value: 'image_duplicates' as const, label: 'Coincidencias pHash' }
+
 export const REASON_LABELS: Record<string, string> = {
   FRAUD: 'Fraude o estafa',
   INCORRECT_INFO: 'Información falsa/desactualizada',

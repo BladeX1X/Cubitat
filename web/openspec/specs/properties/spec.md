@@ -180,3 +180,13 @@ El sistema MUST mostrar skeletons de carga animados (shimmer) en lugar de layout
 - WHEN la información del inmueble está cargando
 - THEN el sistema MUST renderizar un skeleton que simule la estructura exacta de la ficha (rejilla de fotos, líneas de texto para el título y descripción, círculos para las estadísticas rápidas y tarjeta lateral de contacto)
 - AND los elementos del skeleton MUST incluir una animación de barrido de luz degradada (shimmer) continua.
+
+### Requirement: Distintivo público de vendedor verificado en Fase 2 DEV
+- GIVEN una propiedad publicada en el entorno explícito de Fase 2 DEV pertenece a un perfil no agente cuya identidad está verificada
+- WHEN se muestra la tarjeta pública de la propiedad
+- THEN MUST mostrar «Vendedor verificado»
+- AND MUST NOT mostrar el distintivo a perfiles pendientes, rechazados o sin verificación, ni a anuncios no publicados
+- AND perfiles con rol de agente MUST conservar el distintivo «Agente verificado»
+- AND el distintivo MUST describir que Cubitat revisó la identidad, sin afirmar certificación legal de la propiedad
+- AND la lista pública de identificadores MUST incluir solo propietarios verificados con una propiedad publicada, sin exponer datos KYC
+- AND esta funcionalidad MUST permanecer deshabilitada en producción hasta una promoción explícita

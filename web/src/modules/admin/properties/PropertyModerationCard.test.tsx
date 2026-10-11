@@ -98,4 +98,88 @@ describe('PropertyModerationCard visibility actions', () => {
     expect(screen.getByText(/posible duplicado/i)).toBeInTheDocument()
     expect(screen.getByText(/casa relacionada en la habana/i)).toBeInTheDocument()
   })
+
+  it('classifies partial image matches and tells moderators to confirm manually', () => {
+    const imageMatchProperty = property('pending_review')
+    imageMatchProperty.image_duplicate_matches = [
+      { id: 'related-property', title: 'Casa similar', distance: 6 },
+    ]
+    imageMatchProperty.image_hash_status = {
+      indexed_at: '2026-10-09T12:00:00Z',
+      processed_images: 2,
+      eligible_with_images: 12,
+      indexed_with_hashes: 8,
+    }
+
+    render(<PropertyModerationCard
+      property={imageMatchProperty}
+      expanded={false}
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText(/coincidencia parcial/i)).toBeInTheDocument()
+    expect(screen.getByText(/6 de 64 diferencias/i)).toBeInTheDocument()
+    expect(screen.getByText(/compara fotos y datos del inmueble/i)).toBeInTheDocument()
+    expect(screen.getByText(/nunca rechaces solo por esta señal/i)).toBeInTheDocument()
+    expect(screen.getByText(/cobertura: 8 de 12 publicaciones activas con imágenes tienen hash/i)).toBeInTheDocument()
+  })
+
+  it('shows checked with no matches and complete index coverage', () => {
+    const checkedProperty = property('pending_review')
+    checkedProperty.image_hash_status = {
+      indexed_at: '2026-10-09T12:00:00Z',
+      processed_images: 2,
+      eligible_with_images: 12,
+      indexed_with_hashes: 12,
+    }
+
+    render(<PropertyModerationCard
+      property={checkedProperty}
+      expanded={false}
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText(/sin coincidencias de imagen/i)).toBeInTheDocument()
+    expect(screen.getByText(/se revisó todo el catálogo activo con imágenes/i)).toBeInTheDocument()
+  })
+
+  it('distinguishes unprocessed hashes from no matches', () => {
+    const unprocessedProperty = property('pending_review')
+    unprocessedProperty.image_hash_status = {
+      indexed_at: null,
+      processed_images: null,
+      eligible_with_images: 12,
+      indexed_with_hashes: 8,
+    }
+
+    render(<PropertyModerationCard
+      property={unprocessedProperty}
+      expanded={false}
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText(/revisión de imágenes pendiente/i)).toBeInTheDocument()
+    expect(screen.getByText(/no se puede confirmar que esté libre de coincidencias/i)).toBeInTheDocument()
+  })
 })

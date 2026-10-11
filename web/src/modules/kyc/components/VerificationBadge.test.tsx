@@ -10,7 +10,12 @@ describe('VerificationBadge', () => {
 
   it('renders agent verified badge when isAgent is true and status is verified', () => {
     render(<VerificationBadge status="verified" isAgent />)
-    expect(screen.getByText('Agente Verificado')).toBeInTheDocument()
+    expect(screen.getByText('Agente verificado')).toBeInTheDocument()
+  })
+
+  it('renders a distinct verified seller badge', () => {
+    render(<VerificationBadge status="verified" isSeller />)
+    expect(screen.getByText('Vendedor verificado')).toBeInTheDocument()
   })
 
   it('renders pending status badge', () => {

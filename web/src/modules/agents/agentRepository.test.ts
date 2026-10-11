@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchAgentProfile, fetchAgentProperties, fetchVerifiedAgentIds } from './agentRepository'
+import { fetchAgentProfile, fetchAgentProperties, fetchVerifiedAgentIds, fetchVerifiedSellerIds } from './agentRepository'
 import { supabase } from '../../shared/lib/supabaseClient'
 
 vi.mock('../../shared/lib/supabaseClient', () => ({
@@ -18,6 +18,16 @@ describe('agentRepository', () => {
 
     await expect(fetchVerifiedAgentIds()).resolves.toEqual(new Set(['agent-1', 'agent-2']))
     expect(supabase.rpc).toHaveBeenCalledWith('get_verified_agent_ids')
+  })
+
+  it('loads public seller identifiers with approved identity verification', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [{ id: 'seller-1' }],
+      error: null,
+    } as never)
+
+    await expect(fetchVerifiedSellerIds()).resolves.toEqual(new Set(['seller-1']))
+    expect(supabase.rpc).toHaveBeenCalledWith('get_verified_seller_ids')
   })
 
   it('fetches agent profile successfully', async () => {

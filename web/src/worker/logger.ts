@@ -20,6 +20,9 @@ const EVENTS = new Set([
   'kyc_evidence_retention_partial_failure',
   'push_dispatch_failed',
   'push_dispatch_skipped',
+  'image_duplicate_decode_failed',
+  'image_duplicate_request_failed',
+  'image_duplicate_refresh_failed',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -32,7 +35,10 @@ const SOURCES = new Set([
   'resend',
   'service_role',
 ] as const)
-const REASONS = new Set(['missing_configuration', 'network_unavailable', 'phase2_disabled'] as const)
+const REASONS = new Set([
+  'missing_configuration', 'network_unavailable', 'phase2_disabled',
+  'fetch_http', 'fetch_network', 'invalid_webp', 'decoder_init', 'decode',
+] as const)
 
 export type WorkerLogEvent =
   | 'auth_rate_limit_blocked'
@@ -54,6 +60,9 @@ export type WorkerLogEvent =
   | 'kyc_evidence_retention_partial_failure'
   | 'push_dispatch_failed'
   | 'push_dispatch_skipped'
+  | 'image_duplicate_decode_failed'
+  | 'image_duplicate_request_failed'
+  | 'image_duplicate_refresh_failed'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'
@@ -61,6 +70,7 @@ export interface WorkerLogFields {
   source?: 'google_analytics' | 'groq' | 'management_api' | 'pwned_passwords' | 'resend' | 'service_role'
   status?: number
   reason?: 'missing_configuration' | 'network_unavailable' | 'phase2_disabled'
+    | 'fetch_http' | 'fetch_network' | 'invalid_webp' | 'decoder_init' | 'decode'
 }
 
 export function logWorkerEvent(

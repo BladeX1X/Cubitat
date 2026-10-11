@@ -40,7 +40,7 @@ describe('fetchAuditLog', () => {
       query: 'Casa Vedado',
     })
 
-    expect(fromMock).toHaveBeenCalledWith('property_moderation_audit')
+    expect(fromMock).toHaveBeenCalledWith('admin_moderation_audit_log')
     expect(eqMock).toHaveBeenCalledWith('action', 'update')
     expect(eqMock).toHaveBeenCalledWith('source', 'admin')
     expect(ilikeMock).toHaveBeenCalledWith('property_title', '%Casa Vedado%')

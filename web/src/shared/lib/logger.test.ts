@@ -20,6 +20,12 @@ describe('logger.ts - Safe Frontend Logging', () => {
     expect(sanitizeErrorReason({ name: 'TypeError' })).toBe('CLIENT_TYPE_ERROR');
   });
 
+  it('preserves safe Supabase and PostgreSQL error codes without logging messages', () => {
+    expect(sanitizeErrorReason({ code: 'PGRST204', status: 400, message: 'private detail' })).toBe('PGRST204');
+    expect(sanitizeErrorReason({ code: '23514', message: 'private detail' })).toBe('DATABASE_23514');
+    expect(sanitizeErrorReason({ status: 403, message: 'private detail' })).toBe('HTTP_STATUS_403');
+  });
+
   it('redacts sensitive string patterns such as email, phone numbers, and URLs', () => {
     const rawError = 'Error at https://api.example.com/v1?token=123 for user@test.com phone 5351234567';
     const sanitized = sanitizeErrorReason(rawError);

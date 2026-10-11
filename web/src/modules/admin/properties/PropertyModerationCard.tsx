@@ -4,6 +4,7 @@ import { formatDate, formatPrice } from '../core/formatters'
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
 import { PropertyDetails } from './PropertyDetails'
+import { ImageDuplicateComparison } from './ImageDuplicateComparison'
 
 type Props = {
   property: ModerationProperty
@@ -60,6 +61,42 @@ export function PropertyModerationCard({
               <strong>Posible duplicado:</strong>{' '}
               coincide con «{property.duplicate_title || 'otra publicación'}».
               <span className="block text-orange-700/80 mt-0.5">Revisa ambas antes de aprobar.</span>
+            </div>
+          )}
+          {property.image_hash_status && (
+            <div className={`mt-1 text-xs p-2 rounded-lg border leading-relaxed ${property.image_duplicate_matches?.length ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-slate-700 bg-slate-50 border-slate-200'}`}>
+              {property.image_duplicate_matches && property.image_duplicate_matches.length > 0 ? (
+                <>
+                  <strong>Posibles coincidencias de imagen:</strong>
+                  <span className="block text-violet-700/80 mt-0.5">La tarjeta principal es la publicación nueva; compara cada candidata existente antes de decidir.</span>
+                  <span className="block text-violet-700/80 mt-0.5">Cobertura: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones activas con imágenes tienen hash.</span>
+                  <div className="mt-2 space-y-3">
+                    {property.image_duplicate_matches.slice(0, 3).map((match) => (
+                      <ImageDuplicateComparison key={match.id} property={property} match={match} />
+                    ))}
+                  </div>
+                </>
+              ) : property.image_hash_status.processed_images === null ? (
+                <>
+                  <strong>Revisión de imágenes pendiente.</strong>{' '}
+                  <span>Esta publicación aún no tiene hashes; no se puede confirmar que esté libre de coincidencias.</span>
+                </>
+              ) : property.image_hash_status.processed_images === 0 ? (
+                <>
+                  <strong>No se pudo comparar ninguna imagen.</strong>{' '}
+                  <span>No se debe interpretar como «sin coincidencias».</span>
+                </>
+              ) : (
+                <>
+                  <strong>Sin coincidencias de imagen.</strong>{' '}
+                  <span>
+                    Hash procesado. Cobertura del catálogo: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones con imágenes.
+                    {property.image_hash_status.indexed_with_hashes < property.image_hash_status.eligible_with_images
+                      ? ' La revisión sigue incompleta mientras se indexan las restantes.'
+                      : ' Se revisó todo el catálogo activo con imágenes.'}
+                  </span>
+                </>
+              )}
             </div>
           )}
           <p className="text-xs text-neutral-400">Publicado por: <span className="font-medium text-neutral-600">{property.user_email || 'Usuario'}</span></p>

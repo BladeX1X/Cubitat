@@ -4,6 +4,7 @@ import type { VerificationStatus } from '../types'
 type VerificationBadgeProps = {
   status: VerificationStatus
   isAgent?: boolean
+  isSeller?: boolean
   className?: string
   compact?: boolean
 }
@@ -11,6 +12,7 @@ type VerificationBadgeProps = {
 export function VerificationBadge({
   status,
   isAgent = false,
+  isSeller = false,
   className = '',
   compact = false,
 }: VerificationBadgeProps) {
@@ -24,10 +26,10 @@ export function VerificationBadge({
         className={`inline-flex items-center gap-1.5 font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 ${
           compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
         } ${className}`}
-        title="Este anunciante ha verificado su identidad oficialmente"
+        title="La identidad de este anunciante fue revisada por Cubitat"
       >
         <ShieldCheck className={compact ? 'w-3 h-3 text-emerald-600' : 'w-3.5 h-3.5 text-emerald-600'} />
-        <span>{isAgent ? 'Agente Verificado' : 'Verificado'}</span>
+        <span>{isAgent ? 'Agente verificado' : isSeller ? 'Vendedor verificado' : 'Verificado'}</span>
       </span>
     )
   }

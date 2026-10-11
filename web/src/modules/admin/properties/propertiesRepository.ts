@@ -1,13 +1,24 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 import { PAGE_SIZE } from '../core/constants'
-import type { ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
+import type { ModerationFilter, ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
 
 const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message'
 
 type ProfileSummary = { id: string; full_name: string | null; email: string | null }
 type DuplicateFlag = { property_id: string; duplicate_of: string }
+type ImageDuplicateFlag = { property_id: string; duplicate_of: string; hamming_distance: number }
 type DuplicateProperty = { id: string; title: string }
+type ImageDuplicateProperty = Pick<ModerationProperty,
+  'id' | 'title' | 'location' | 'price_usd' | 'cover_image' | 'images' | 'created_at' | 'operation' | 'property_type' | 'status' | 'description' | 'bedrooms' | 'bathrooms' | 'area_m2'
+>
+type ImageHashStatus = {
+  property_id: string
+  indexed_at: string | null
+  processed_images: number | null
+  eligible_with_images: number
+  indexed_with_hashes: number
+}
 
 export async function fetchStatusCounts(): Promise<StatusCounts> {
   const statuses: Array<Exclude<StatusFilter, 'all'>> = [
@@ -24,8 +35,13 @@ export async function fetchStatusCounts(): Promise<StatusCounts> {
   const firstError = statusResults.find((result) => result.error)?.error
   if (firstError) throw firstError
 
+  const { data: imageMatches, error: imageMatchesError } = await supabase
+    .rpc('get_admin_property_image_duplicate_candidates', { p_page: 0, p_page_size: 1 })
+  if (imageMatchesError) throw imageMatchesError
+
   return {
     all: allResult.count ?? 0,
+    image_duplicates: Number((imageMatches as { total_count?: number } | null)?.total_count ?? 0),
     pending_review: statusResults[0]?.count ?? 0,
     ai_approved: statusResults[1]?.count ?? 0,
     ai_rejected: statusResults[2]?.count ?? 0,
@@ -35,20 +51,35 @@ export async function fetchStatusCounts(): Promise<StatusCounts> {
   }
 }
 
-export async function fetchModerationProperties(status: StatusFilter, page: number) {
+export async function fetchModerationProperties(status: ModerationFilter, page: number) {
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
-  let query = supabase
-    .from('properties')
-    .select(PROPERTY_SELECT, { count: 'exact' })
-    .order('created_at', { ascending: false })
-
-  if (status !== 'all') query = query.eq('status', status)
-
-  const { data, error, count } = await query.range(from, to)
-  if (error) throw error
-  const properties = (data ?? []) as unknown as ModerationProperty[]
-  if (properties.length === 0) return { properties: [], total: count ?? 0 }
+  let properties: ModerationProperty[]
+  let total: number
+  if (status === 'image_duplicates') {
+    const { data: candidates, error: candidateError } = await supabase
+      .rpc('get_admin_property_image_duplicate_candidates', { p_page: page, p_page_size: PAGE_SIZE })
+    if (candidateError) throw candidateError
+    const candidateResult = candidates as { property_ids?: string[]; total_count?: number } | null
+    const ids = candidateResult?.property_ids ?? []
+    total = Number(candidateResult?.total_count ?? 0)
+    if (ids.length === 0) return { properties: [], total }
+    const { data, error } = await supabase.from('properties').select(PROPERTY_SELECT).in('id', ids)
+    if (error) throw error
+    const byId = new Map(((data ?? []) as unknown as ModerationProperty[]).map((property) => [property.id, property]))
+    properties = ids.flatMap((id) => byId.has(id) ? [byId.get(id)!] : [])
+  } else {
+    let query = supabase
+      .from('properties')
+      .select(PROPERTY_SELECT, { count: 'exact' })
+      .order('created_at', { ascending: false })
+    if (status !== 'all') query = query.eq('status', status)
+    const { data, error, count } = await query.range(from, to)
+    if (error) throw error
+    properties = (data ?? []) as unknown as ModerationProperty[]
+    total = count ?? 0
+  }
+  if (properties.length === 0) return { properties: [], total }
 
   const userIds = [...new Set(properties.map((property) => property.user_id))].filter(Boolean)
   const { data: profileData, error: profileError } = await supabase
@@ -66,6 +97,8 @@ export async function fetchModerationProperties(status: StatusFilter, page: numb
   ]))
 
   const duplicateMap = new Map<string, { id: string; title: string }>()
+  const imageDuplicateMap = new Map<string, NonNullable<ModerationProperty['image_duplicate_matches']>>()
+  const imageHashStatusMap = new Map<string, ImageHashStatus>()
   if (PHASE_TWO_ENABLED) {
     const { data: duplicateFlags, error: duplicateError } = await supabase
       .from('property_duplicate_flags')
@@ -91,15 +124,66 @@ export async function fetchModerationProperties(status: StatusFilter, page: numb
         if (title) duplicateMap.set(flag.property_id, { id: flag.duplicate_of, title })
       })
     }
+
+    const { data: imageHashStatuses, error: imageHashStatusError } = await supabase
+      .rpc('get_admin_property_image_hash_status', {
+        p_property_ids: properties.map((property) => property.id),
+      })
+    if (imageHashStatusError) throw imageHashStatusError
+    ;((imageHashStatuses ?? []) as ImageHashStatus[]).forEach((status) => {
+      imageHashStatusMap.set(status.property_id, status)
+    })
+
+    try {
+      const { data: imageFlags, error: imageFlagsError } = await supabase
+        .from('property_image_duplicate_flags')
+        .select('property_id, duplicate_of, hamming_distance')
+        .in('property_id', properties.map((property) => property.id))
+        .is('resolved_at', null)
+      if (imageFlagsError) throw imageFlagsError
+
+      const flags = (imageFlags ?? []) as ImageDuplicateFlag[]
+      const relatedIds = [...new Set(flags.map((flag) => flag.duplicate_of))]
+      if (relatedIds.length > 0) {
+        const { data: relatedProperties, error: relatedError } = await supabase
+          .from('properties')
+          .select('id, title, location, price_usd, cover_image, images, created_at, operation, property_type, status, description, bedrooms, bathrooms, area_m2')
+          .in('id', relatedIds)
+        if (relatedError) throw relatedError
+
+        const relatedById = new Map(
+          ((relatedProperties ?? []) as ImageDuplicateProperty[]).map((property) => [property.id, property]),
+        )
+        flags.forEach((flag) => {
+          const related = relatedById.get(flag.duplicate_of)
+          if (!related) return
+          const matches = imageDuplicateMap.get(flag.property_id) ?? []
+          matches.push({ ...related, distance: flag.hamming_distance })
+          imageDuplicateMap.set(flag.property_id, matches)
+        })
+      }
+    } catch (error) {
+      // Keep old DEV deployments usable while the additive image-hash migration is pending.
+      if (!(error instanceof TypeError)) throw error
+    }
   }
 
   return {
-    total: count ?? 0,
+    total,
     properties: properties.map((property) => ({
       ...property,
       user_email: profileMap.get(property.user_id),
       duplicate_of: duplicateMap.get(property.id)?.id,
       duplicate_title: duplicateMap.get(property.id)?.title,
+      image_duplicate_matches: imageDuplicateMap.get(property.id) ?? [],
+      image_hash_status: imageHashStatusMap.get(property.id)
+        ? {
+            indexed_at: imageHashStatusMap.get(property.id)?.indexed_at ?? null,
+            processed_images: imageHashStatusMap.get(property.id)?.processed_images ?? null,
+            eligible_with_images: imageHashStatusMap.get(property.id)?.eligible_with_images ?? 0,
+            indexed_with_hashes: imageHashStatusMap.get(property.id)?.indexed_with_hashes ?? 0,
+          }
+        : undefined,
     })),
   }
 }

@@ -37,17 +37,22 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
   const phase2UiEnabled = mode === 'phase2-dev' || mode === 'phase2-agents'
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
+  const phase2SupabaseUrl = phase2UiEnabled
+    ? 'https://bknwerqbbysveehcdmzr.supabase.co'
+    : ''
   const supabaseAnonKey =
     env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+  const publicSupabaseUrl =
+    env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || phase2SupabaseUrl
   const supabaseUrl =
-    env.VITE_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
+    publicSupabaseUrl ||
     'http://127.0.0.1:54321'
 
   return {
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(publicSupabaseUrl),
     },
     plugins: [
       react(),
