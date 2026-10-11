@@ -2230,3 +2230,11 @@ Este estado posterior prevalece sobre los párrafos anteriores que describen el 
 - El GET al endpoint pHash respondió 405, lo esperado para el handler POST; esto confirma que la ruta existe, no el resultado de una carga nueva. No se cambió el umbral, no se forzó backfill y no se escribieron filas.
 - Los builds `npm run build` y `npm run build:phase2-production` pasaron con `SITEMAP_MODE=static`; se ejecutaron los verificadores completos de bundles, Worker y secretos privados. Ese modo genera solo las dos rutas base, no sustituye el sitemap dinámico completo.
 - Se confirmó que el workflow de backup no tiene secretos de GitHub Actions y el último intento usó `PGPASSWORD` vacío. El host fijo tampoco corresponde al endpoint del proyecto. La rama `bugfix/supabase-backup-connection-url` actualiza el workflow para exigir una URI de conexión guardada como secreto `SUPABASE_DB_URL`. Debe copiarse del panel `Connect` en modo Session pooler; no se debe deducir el host/índice del pooler. El backup no se ejecutó porque el secreto no existe y no se exportaron datos productivos.
+
+## Backup PostgreSQL de producción verificado — 2026-10-11
+
+- El secreto GitHub Actions `SUPABASE_DB_URL` está configurado sin exponer su valor. La conexión usa el Session pooler IPv4 de Supabase producción `tohjzoncoosvjbjcakdl`.
+- PR #127 (`a4ca6b3b0902d2385cf4412aa47cdb86f3ab2c3d`) integra `postgres:17-alpine` como cliente; la versión coincide con PostgreSQL 17.6 del servidor.
+- Run [38171053663](https://github.com/BladeX1X/Cubitat/actions/runs/38171053663) completó `pg_dump`, compresión y carga de `supabase-database-backup` (293,385 bytes; vence 2027-01-09). No se modificó el esquema ni se escribieron filas en la base.
+- La operación confirma un backup manual, no respaldos automáticos: se conserva como artefacto privado de Actions por 90 días.
+- Esta evidencia posterior supersede la nota de 2026-10-11 que registraba el backup como pendiente.
