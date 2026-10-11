@@ -35,11 +35,12 @@ function readLocalSupabaseServiceRoleKey(): string {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
-  const phase2UiEnabled = mode === 'phase2-dev' || mode === 'phase2-agents'
+  const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
+  const phase2UiEnabled = phase2DevBuild || mode === 'phase2-production'
   const imageDuplicateModerationEnabled = phase2UiEnabled
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
-  const phase2SupabaseUrl = phase2UiEnabled
+  const phase2SupabaseUrl = phase2DevBuild
     ? 'https://bknwerqbbysveehcdmzr.supabase.co'
     : ''
   const supabaseAnonKey =
@@ -57,6 +58,16 @@ export default defineConfig(({ mode }) => {
     }
     if (!supabaseAnonKey) {
       throw new Error('El perfil phase2-documents requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.')
+    }
+  }
+
+  if (mode === 'phase2-production') {
+    const productionSupabaseUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'
+    if (publicSupabaseUrl !== productionSupabaseUrl) {
+      throw new Error(`El perfil phase2-production requiere VITE_SUPABASE_URL=${productionSupabaseUrl}`)
+    }
+    if (!supabaseAnonKey) {
+      throw new Error('El perfil phase2-production requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.')
     }
   }
 
@@ -384,8 +395,8 @@ Tipo: ${body.property_type}`;
           related_applications: [
             {
               platform: 'webapp',
-              url: `${phase2UiEnabled ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/manifest.webmanifest`,
-              id: `${phase2UiEnabled ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/`,
+              url: `${phase2DevBuild ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/manifest.webmanifest`,
+              id: `${phase2DevBuild ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' : 'https://cubitathome.com'}/`,
             },
           ],
           icons: [

@@ -90,7 +90,7 @@ El sistema MUST tratar URLs de imagen como datos no confiables hasta normalizarl
 - AND MUST evitar inyectar contenido ejecutable desde campos de imagen
 
 ### Requirement: Señales de coincidencia perceptual para moderación
-En DEV, el sistema MUST calcular en el Worker un hash perceptual de las imágenes
+En los perfiles DEV y `phase2-production`, el sistema MUST calcular en el Worker un hash perceptual de las imágenes
 WebP guardadas y comparar sus bits con imágenes de publicaciones activas. Una
 coincidencia es una señal privada para revisión humana; nunca MUST rechazar o
 publicar automáticamente una propiedad.
@@ -130,8 +130,8 @@ publicar automáticamente una propiedad.
 - GIVEN una publicación activa no tiene hashes perceptuales
 - WHEN el Worker procesa una nueva publicación
 - THEN SHOULD indexar gradualmente un máximo acotado de publicaciones previas
-- AND MUST evitar procesar URLs fuera del bucket `property_images` del proyecto DEV
-- AND MUST aceptar la ruta privada del Worker DEV `/api/supabase/storage/v1/object/public/property_images/` además de la URL directa de Storage de DEV
+- AND MUST evitar procesar URLs fuera del bucket `property_images` del proyecto configurado
+- AND MUST aceptar la ruta del Worker del entorno activo `/api/supabase/storage/v1/object/public/property_images/` además de la URL directa de Storage del mismo proyecto
 - AND MUST reintentar registros activos con cero imágenes procesadas después de un intervalo acotado
 
 #### Scenario: Error transitorio al calcular o guardar un hash
@@ -140,3 +140,21 @@ publicar automáticamente una propiedad.
 - THEN MUST reintentar un máximo acotado de tres veces
 - AND MUST dejar la publicación sin estado de indexación si no pudo calcular y guardar el resultado
 - AND MUST registrar un evento técnico sin URL, contenido de imagen ni identificadores del usuario
+
+### Requirement: pHash productivo con revisión humana
+
+El perfil `phase2-production` MUST apuntar exclusivamente al Supabase productivo
+y MUST incluir la moderación pHash, sin exponer fingerprints a usuarios ni a
+`anon`. El Worker MUST validar sesión, propiedad, límite de solicitudes, bucket,
+formato WebP y límites de bytes/dimensiones. Las RPC de estado y candidatas MUST
+requerir administrador AAL2; los fallos o coincidencias MUST NOT publicar,
+rechazar ni ocultar anuncios automáticamente.
+
+#### Scenario: Promoción progresiva de imágenes
+
+- GIVEN el esquema productivo pHash está aplicado y el Worker tiene activa su
+  bandera explícita
+- WHEN se crea una publicación o el Cron toma una existente
+- THEN el Worker MUST procesar como máximo el lote configurado por ciclo y
+  comparar solo imágenes del bucket de propiedades del proyecto productivo
+- AND las señales se muestran únicamente al moderador AAL2 para decisión humana

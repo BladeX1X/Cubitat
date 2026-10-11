@@ -612,6 +612,26 @@ que la base está actualizada y `db lint --linked` no reporta errores.
 
 ## Verificación después de aplicar
 
+### PROD-F2.8. `migrations/20261010120000_phase2_seller_badge_and_document_audit.sql`
+
+- Preparada en `feature/phase2-production-profile`; todavía no aplicada.
+- Añade la RPC pública `get_verified_seller_ids()` limitada a vendedores no
+  agentes con identidad verificada y una propiedad publicada.
+- Añade bitácora inmutable de envío/aprobación/rechazo documental y la integra
+  en `admin_moderation_audit_log`. La revalidación de solo lectura encontró
+  cero solicitudes documentales en producción antes de preparar el backfill.
+
+### PROD-F2.9. `migrations/20261010130000_property_image_phash_duplicates.sql`
+
+- Preparada en `feature/phase2-production-profile`; todavía no aplicada.
+- Añade fingerprints y señales privadas pHash, tareas server-only de cálculo,
+  estado/cobertura para administración y RPC paginada de candidatas. La lectura
+  de hashes exige administrador AAL2; las escrituras quedan en `service_role`.
+- La comparación solo genera candidatos para revisión humana. No publica,
+  rechaza ni oculta anuncios. El backfill queda limitado a un anuncio por Cron.
+- El dry-run de `supabase db push --linked` enumeró solo PROD-F2.8 y PROD-F2.9.
+  No aplicar hasta que el código que usa sus objetos esté fusionado en `main`.
+
 ### Matriz pgTAP local con el carril DEV
 
 La matriz de `supabase/tests/` combina pruebas de la cadena base con pruebas

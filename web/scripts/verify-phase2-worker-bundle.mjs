@@ -16,13 +16,21 @@ const requiredMarkers = [
   'get_property_trust_score',
   'get_public_agent_profile',
   'get_verified_agent_ids',
+  'get_verified_seller_ids',
   'claim_kyc_evidence_for_purge',
+  'property-image-duplicates',
+  'get_admin_property_image_hash_status',
+  'get_admin_property_image_duplicate_candidates',
   'contact-click',
 ]
 const propertyVerificationRpcs = [
   'submit_property_verification',
   'review_property_verification',
   'get_property_trust_score',
+]
+const imageDuplicateRpcs = [
+  'get_admin_property_image_hash_status',
+  'get_admin_property_image_duplicate_candidates',
 ]
 const forbiddenMarkers = [
   'dispatchPendingAlertEmails',
@@ -36,10 +44,16 @@ try {
   const publicRpcBlock = productionWorkerSource.match(/additionalPublicRpcs:\s*\[([\s\S]*?)\]/)?.[1] ?? ''
   const missingAuthenticatedRpcs = propertyVerificationRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
   const publiclyExposedRpcs = propertyVerificationRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
-  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0) {
+  const missingImageDuplicateRpcs = imageDuplicateRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
+  const publiclyExposedImageDuplicateRpcs = imageDuplicateRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
+  const missingPublicSellerBadgeRpc = !publicRpcBlock.includes("'get_verified_seller_ids'")
+  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0 || missingImageDuplicateRpcs.length > 0 || publiclyExposedImageDuplicateRpcs.length > 0 || missingPublicSellerBadgeRpc) {
     throw new Error([
       ...missingAuthenticatedRpcs.map((rpc) => `RPC documental fuera de allowlist autenticada: ${rpc}`),
       ...publiclyExposedRpcs.map((rpc) => `RPC documental expuesta en allowlist pública: ${rpc}`),
+      ...missingImageDuplicateRpcs.map((rpc) => `RPC pHash fuera de allowlist autenticada: ${rpc}`),
+      ...publiclyExposedImageDuplicateRpcs.map((rpc) => `RPC pHash expuesta en allowlist pública: ${rpc}`),
+      ...(missingPublicSellerBadgeRpc ? ['RPC de insignia de vendedor verificado fuera de allowlist pública'] : []),
     ].join('\n'))
   }
 

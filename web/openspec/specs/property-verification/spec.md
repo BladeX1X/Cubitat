@@ -63,3 +63,22 @@ autoridad de acceso.
 - WHEN la configuración es válida
 - THEN el bundle MUST incluir el flujo documental y excluir los otros módulos
   de Fase 2 no incluidos en ese perfil.
+
+### Requirement: Perfil productivo completo de Fase 2
+
+El build `phase2-production` MUST habilitar KYC, verificación documental,
+Trust Score interno, vendedor verificado y señales de duplicado pHash en un
+solo bundle productivo. MUST exigir la URL y anon key del Supabase productivo,
+excluir cualquier referencia al proyecto/Worker DEV, conservar la PWA del
+dominio productivo y no habilitar el dispatcher de correo de alertas. El Worker
+productivo MUST permitir las RPC pHash solo a sesiones autenticadas; la base de
+datos conserva AAL2, RLS y acceso `service_role` para escrituras.
+
+#### Scenario: Build combinado de producción
+
+- GIVEN se construye `npm run build:phase2-production`
+- WHEN falta la URL/anon key productiva o la URL apunta a DEV
+- THEN el build MUST fallar
+- WHEN la configuración productiva es válida
+- THEN el artefacto MUST incluir los módulos de Fase 2 y superar los guards de
+  bundle de cliente, Worker y secretos antes de poder desplegarse

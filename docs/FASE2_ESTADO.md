@@ -2195,3 +2195,19 @@ La revisión de catálogos encontró permisos de ejecución excesivos en `claim_
 - El perfil mantiene desactivados KYC, agentes, notificaciones y pHash. También se evitó que el panel de propiedades invoque RPC de duplicados cuando el perfil de duplicados está apagado.
 - Verificación local: lint y `npm run build:phase2-documents` pasaron; los verificadores comprobaron el destino de Supabase, los marcadores documentales y la exclusión de DEV/KYC/pHash. El CI ejecutará su propia suite al abrir la PR.
 - Estado al redactar: código preparado y pendiente de PR/CI/fusión. No se desplegaron el sitio ni el Worker y no se cambió configuración remota.
+
+## Perfil integral de Fase 2 para producción — 2026-10-10
+
+- Se prepara en `feature/phase2-production-profile` un build único para KYC,
+  verificación documental, Trust Score interno, distintivo de vendedor
+  verificado y revisión pHash. El build base continúa aislado.
+- Supabase producción fue consultado de solo lectura: hay cero solicitudes de
+  verificación documental; faltan la bitácora documental, la RPC de vendedores
+  verificados y las tablas/RPC de pHash. Las migraciones aditivas
+  `20261010120000` y `20261010130000` son las únicas pendientes según el dry-run.
+- El esquema remoto existente pasó `supabase db lint --linked --level warning`.
+  Las migraciones nuevas no se han aplicado y el Worker/sitio productivos no se
+  han desplegado. No marcar el rollout como completado antes de CI, merge,
+  migraciones, despliegue y smoke checks.
+- El perfil no activa el dispatcher de correo de alertas; mantiene pHash bajo
+  decisión humana y procesa como máximo el lote de backfill existente por Cron.
