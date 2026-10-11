@@ -3,7 +3,7 @@ name: Supabase Backup
 on:
   schedule:
     # Ejecutar todos los domingos a las 00:00 UTC
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
   workflow_dispatch:
     # Permitir ejecución manual desde la pestaña Actions
 
@@ -21,11 +21,19 @@ jobs:
 
       - name: Run pg_dump backup
         env:
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          if [[ -z "$SUPABASE_DB_URL" ]]; then
+            echo "::error::Missing SUPABASE_DB_URL GitHub Actions secret. Store the full session-pooler URI from Supabase Connect settings."
+            exit 1
+          fi
+          if [[ "$SUPABASE_DB_URL" != postgres://* && "$SUPABASE_DB_URL" != postgresql://* ]]; then
+            echo "::error::SUPABASE_DB_URL must be a PostgreSQL connection URI."
+            exit 1
+          fi
           mkdir -p backups
           DATE=$(date +'%Y%m%d_%H%M%S')
-          pg_dump -h aws-0-us-west-1.pooler.supabase.com -p 5432 -U postgres.tohjzoncoosvjbjcakdl -F p -b -v -f backups/cubitat-backup-$DATE.sql postgres
+          pg_dump --no-password --dbname="$SUPABASE_DB_URL" -F p -b -v -f backups/cubitat-backup-$DATE.sql
 
       - name: Compress backup file
         run: |

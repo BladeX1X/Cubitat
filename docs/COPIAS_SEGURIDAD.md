@@ -38,5 +38,5 @@ Para restaurar toda la base de datos al estado del backup:
 
 ## 🔐 3. Seguridad de las Credenciales
 Para evitar filtraciones de seguridad, la contraseña de base de datos nunca debe guardarse en código.
-*   En **GitHub**: Configure el secreto `SUPABASE_DB_PASSWORD` ingresando a `Settings > Secrets and variables > Actions > New repository secret`.
+*   En **GitHub**: Configure el secreto `SUPABASE_DB_URL` en `Settings > Secrets and variables > Actions > New repository secret`. Copie la URI completa del **Session pooler** desde `Supabase > Connect`, sustituya el marcador de contraseña y guárdela como secreto. No deduzca el host del pooler a partir de la región; copie el endpoint que muestra el proyecto. Si la contraseña contiene caracteres especiales, use su forma percent-encoded en la URI.
 *   En **Local**: El script de PowerShell le solicitará la contraseña de forma interactiva en la terminal sin imprimirla en pantalla.
