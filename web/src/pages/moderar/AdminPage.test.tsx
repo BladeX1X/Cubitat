@@ -212,7 +212,6 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
 
   it('reintenta la carga de métricas cuando falla el RPC administrativo', async () => {
     mockRpc
-      .mockResolvedValueOnce({ data: { property_ids: [], total_count: 0 }, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: 'Fallo temporal' } })
       .mockResolvedValueOnce({ data: databaseMetrics, error: null })
 
@@ -230,7 +229,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       expect(screen.getByText('313')).toBeInTheDocument()
       expect(screen.getByText('25')).toBeInTheDocument()
     })
-    expect(mockRpc).toHaveBeenCalledTimes(3)
+    expect(mockRpc).toHaveBeenCalledTimes(2)
   })
 
   it('abre la bitácora como una sección administrativa aislada', async () => {
