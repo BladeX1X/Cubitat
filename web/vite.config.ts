@@ -36,7 +36,9 @@ function readLocalSupabaseServiceRoleKey(): string {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
   const phase2UiEnabled = mode === 'phase2-dev' || mode === 'phase2-agents'
+  const imageDuplicateModerationEnabled = phase2UiEnabled
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
+  const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
   const phase2SupabaseUrl = phase2UiEnabled
     ? 'https://bknwerqbbysveehcdmzr.supabase.co'
     : ''
@@ -48,10 +50,22 @@ export default defineConfig(({ mode }) => {
     publicSupabaseUrl ||
     'http://127.0.0.1:54321'
 
+  if (mode === 'phase2-documents') {
+    const productionSupabaseUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'
+    if (publicSupabaseUrl !== productionSupabaseUrl) {
+      throw new Error(`El perfil phase2-documents requiere VITE_SUPABASE_URL=${productionSupabaseUrl}`)
+    }
+    if (!supabaseAnonKey) {
+      throw new Error('El perfil phase2-documents requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.')
+    }
+  }
+
   return {
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED': JSON.stringify(propertyVerificationUiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED': JSON.stringify(imageDuplicateModerationEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(publicSupabaseUrl),
     },
     plugins: [

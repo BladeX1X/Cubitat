@@ -3,7 +3,7 @@ import { fetchModerationProperties } from './propertiesRepository'
 
 const { fromMock, rpcMock } = vi.hoisted(() => ({ fromMock: vi.fn(), rpcMock: vi.fn() }))
 
-vi.mock('../../../shared/config/features', () => ({ PHASE_TWO_ENABLED: true }))
+vi.mock('../../../shared/config/features', () => ({ IMAGE_DUPLICATE_MODERATION_ENABLED: true }))
 vi.mock('../../../shared/lib/supabaseClient', () => ({
   supabase: { from: fromMock, rpc: rpcMock },
 }))

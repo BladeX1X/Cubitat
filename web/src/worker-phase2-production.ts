@@ -23,6 +23,9 @@ const worker = createWorker({
   additionalAuthenticatedRpcs: [
     'submit_kyc_request',
     'review_kyc_request',
+    'submit_property_verification',
+    'review_property_verification',
+    'get_property_trust_score',
   ],
 });
 

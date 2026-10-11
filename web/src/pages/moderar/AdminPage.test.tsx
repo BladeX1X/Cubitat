@@ -211,10 +211,15 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   })
 
   it('reintenta la carga de métricas cuando falla el RPC administrativo', async () => {
-    mockRpc
-      .mockResolvedValueOnce({ data: { property_ids: [], total_count: 0 }, error: null })
-      .mockResolvedValueOnce({ data: null, error: { message: 'Fallo temporal' } })
-      .mockResolvedValueOnce({ data: databaseMetrics, error: null })
+    const metricResponses = [
+      { data: null, error: { message: 'Fallo temporal' } },
+      { data: databaseMetrics, error: null },
+    ]
+    mockRpc.mockImplementation((rpcName: string) => Promise.resolve(
+      rpcName === 'get_admin_metrics'
+        ? metricResponses.shift() ?? { data: databaseMetrics, error: null }
+        : { data: { property_ids: [], total_count: 0 }, error: null },
+    ))
 
     render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
     await screen.findByText('Panel de moderación')
@@ -230,7 +235,7 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
       expect(screen.getByText('313')).toBeInTheDocument()
       expect(screen.getByText('25')).toBeInTheDocument()
     })
-    expect(mockRpc).toHaveBeenCalledTimes(3)
+    expect(mockRpc.mock.calls.filter(([rpcName]) => rpcName === 'get_admin_metrics')).toHaveLength(2)
   })
 
   it('abre la bitácora como una sección administrativa aislada', async () => {

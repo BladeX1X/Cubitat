@@ -155,8 +155,9 @@ La configuración dedicada `wrangler.phase2-dev.jsonc` conserva intencionalmente
 reemplazarlo por un proyecto DEV real; nunca apuntarlo al Supabase productivo
 para validar Fase 2. Los secretos se cargan mediante `.dev.vars.dev` en local o
 `wrangler secret put <NOMBRE> --config wrangler.phase2-dev.jsonc` en Cloudflare,
-y no se versionan. `wrangler.jsonc` es exclusivamente productivo y no contiene
-Cron, RPC ni imports de KYC o métricas de agente.
+y no se versionan. `wrangler.jsonc` es el Worker productivo: contiene las RPC
+de KYC/agentes autorizadas y los procesos Push/retención. Las RPC de alertas por
+correo siguen fuera del Worker productivo.
 
 Prueba local del handler programado:
 
@@ -165,11 +166,15 @@ npx wrangler dev --config wrangler.phase2-dev.jsonc --test-scheduled
 Invoke-WebRequest "http://localhost:8787/cdn-cgi/handler/scheduled?format=json"
 ```
 
-Fase 2 continúa aislada de producción, pero el Worker remoto DEV puede probar
-la UI KYC con un build explícito. `npm run build` mantiene la frontera de
-producción y excluye los módulos de Fase 2; `npm run build:phase2-dev` genera el
-bundle separado con KYC habilitado. Después de ese comando se puede desplegar
-solo con `wrangler deploy --config wrangler.phase2-dev.jsonc`.
+La UI de Fase 2 se promueve por perfiles explícitos. `npm run build` conserva
+la frontera productiva base y excluye los módulos de Fase 2; `npm run
+build:phase2-dev` genera el bundle DEV completo. `npm run build:phase2-kyc`
+prepara KYC aislado, mientras `npm run build:phase2-documents` prepara solo la
+verificación documental y exige `VITE_SUPABASE_URL` del proyecto productivo y
+`VITE_SUPABASE_ANON_KEY`. El CI usa una anon key ficticia y sitemap estático
+para validar la compilación; esos artefactos de CI no son desplegables. Ninguno
+de estos comandos despliega por sí mismo; la promoción a `cubitathome.com`
+requiere la autorización operativa correspondiente.
 
 ## Login social con Google
 

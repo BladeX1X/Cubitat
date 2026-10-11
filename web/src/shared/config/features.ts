@@ -18,3 +18,7 @@ export const PHASE_TWO_ENABLED = isPhaseTwoEnabled(
   import.meta.env.VITE_SUPABASE_URL || '',
   import.meta.env.VITE_PHASE2_UI_ENABLED === 'true',
 )
+
+/** Image duplicate moderation is available in the dedicated DEV Phase 2 profile. */
+export const IMAGE_DUPLICATE_MODERATION_ENABLED = import.meta.env.DEV
+  || import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED === 'true'

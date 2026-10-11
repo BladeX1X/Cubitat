@@ -11,10 +11,18 @@ const outputDirectory = await mkdtemp(join(tmpdir(), 'cubitat-worker-production-
 const requiredMarkers = [
   'submit_kyc_request',
   'review_kyc_request',
+  'submit_property_verification',
+  'review_property_verification',
+  'get_property_trust_score',
   'get_public_agent_profile',
   'get_verified_agent_ids',
   'claim_kyc_evidence_for_purge',
   'contact-click',
+]
+const propertyVerificationRpcs = [
+  'submit_property_verification',
+  'review_property_verification',
+  'get_property_trust_score',
 ]
 const forbiddenMarkers = [
   'dispatchPendingAlertEmails',
@@ -23,6 +31,18 @@ const forbiddenMarkers = [
 ]
 
 try {
+  const productionWorkerSource = await readFile(join(webDirectory, 'src/worker-phase2-production.ts'), 'utf8')
+  const authenticatedRpcBlock = productionWorkerSource.match(/additionalAuthenticatedRpcs:\s*\[([\s\S]*?)\]/)?.[1] ?? ''
+  const publicRpcBlock = productionWorkerSource.match(/additionalPublicRpcs:\s*\[([\s\S]*?)\]/)?.[1] ?? ''
+  const missingAuthenticatedRpcs = propertyVerificationRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
+  const publiclyExposedRpcs = propertyVerificationRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
+  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0) {
+    throw new Error([
+      ...missingAuthenticatedRpcs.map((rpc) => `RPC documental fuera de allowlist autenticada: ${rpc}`),
+      ...publiclyExposedRpcs.map((rpc) => `RPC documental expuesta en allowlist pública: ${rpc}`),
+    ].join('\n'))
+  }
+
   const result = spawnSync(
     process.execPath,
     [wranglerCli, 'deploy', '--dry-run', '--config', 'wrangler.jsonc', '--outdir', outputDirectory],

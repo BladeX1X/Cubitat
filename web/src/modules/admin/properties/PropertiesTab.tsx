@@ -3,6 +3,7 @@ import { AdminEmptyState, AdminErrorState, AdminLoadingState } from '../componen
 import { AdminNoticeDialog } from '../components/AdminNoticeDialog'
 import { AdminPagination } from '../components/AdminPagination'
 import { IMAGE_DUPLICATE_FILTER, PAGE_SIZE, STATUS_FILTERS } from '../core/constants'
+import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/features'
 import { PropertyModerationCard } from './PropertyModerationCard'
 import { useModerationProperties } from './useModerationProperties'
 
@@ -33,9 +34,11 @@ export function PropertiesTab() {
               {label} ({state.statusCounts[value]})
             </button>
           ))}
-          <button type="button" onClick={() => state.setStatusFilter(IMAGE_DUPLICATE_FILTER.value)} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${state.statusFilter === IMAGE_DUPLICATE_FILTER.value ? 'bg-violet-700 text-white' : 'bg-violet-50 text-violet-800 hover:bg-violet-100'}`}>
-            {IMAGE_DUPLICATE_FILTER.label} ({state.statusCounts.image_duplicates ?? 0})
-          </button>
+          {IMAGE_DUPLICATE_MODERATION_ENABLED && (
+            <button type="button" onClick={() => state.setStatusFilter(IMAGE_DUPLICATE_FILTER.value)} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${state.statusFilter === IMAGE_DUPLICATE_FILTER.value ? 'bg-violet-700 text-white' : 'bg-violet-50 text-violet-800 hover:bg-violet-100'}`}>
+              {IMAGE_DUPLICATE_FILTER.label} ({state.statusCounts.image_duplicates ?? 0})
+            </button>
+          )}
         </div>
         <label htmlFor="admin-property-search" className="sr-only">Buscar propiedades</label>
         <input id="admin-property-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar por título, ubicación, anunciante, operación o tipo..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm outline-none focus:border-[#035f53] focus:ring-2 focus:ring-[#035f53]/10" />

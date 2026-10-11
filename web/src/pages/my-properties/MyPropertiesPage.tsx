@@ -21,6 +21,7 @@ import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 const PropertyVerificationPanel = import.meta.env.DEV
   || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+  || import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED === 'true'
   ? lazy(() => import('../../modules/property-verification/PropertyVerificationPanel').then((module) => ({
       default: module.PropertyVerificationPanel,
     })))
