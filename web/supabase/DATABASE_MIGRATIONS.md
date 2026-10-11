@@ -63,6 +63,18 @@ exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
 
+### Aviso de aprobación de publicación — 2026-10-09
+
+- `20261009100000_simplify_property_approval_notification.sql`: simplifica el
+  aviso `ai_approved` a «Revisión aprobada» y «Tu publicación … fue aprobada»,
+  sin revelar el mecanismo interno. Pendiente de promoción a producción.
+- La variante `dev-migrations/20261009030000_simplify_property_approval_notification.sql`
+  se aplica únicamente a DEV; no ejecutar en producción.
+- La función remota DEV se verificó después de aplicar la variante DEV; los
+  avisos preexistentes conservan el texto con que fueron creados.
+- El panel de moderación DEV ya clasifica las distancias y muestra la regla de
+  comparación humana; Worker DEV `75fd5a20-2251-4c68-9f2c-b7c4482ccaee`.
+
 ### Esquema inicial — 2026-06-30
 
 1. `20260630140623_create_properties_schema.sql`: crea el esquema inicial de propiedades.
@@ -548,6 +560,21 @@ que la base está actualizada y `db lint --linked` no reporta errores.
 - La prueba `supabase/tests/property_duplicate_rules.sql` comprobó ambos
   cambios dentro de una transacción y terminó con `ROLLBACK`.
 
+### DEV-F2.11. `dev-migrations/20260928100000_property_verification_audit.sql`
+
+- Aplicada únicamente en Supabase DEV el 2026-10-08.
+- Registra envíos y decisiones de verificación documental en una bitácora
+  inmutable, con lectura restringida a administradores AAL2. Conserva un motivo
+  seguro y el título de la propiedad, pero nunca la ruta del archivo ni las
+  notas privadas.
+- Carga el historial de las solicitudes existentes para que los envíos y
+  revisiones anteriores también aparezcan en la Bitácora de moderación.
+- Expone la vista `admin_moderation_audit_log`, que combina estos eventos con
+  cambios y eliminaciones de propiedades para la interfaz administrativa.
+- La migración homóloga `migrations/20260930170000_property_verification_audit.sql`
+  queda preparada para producción; no se ha aplicado ni se ha desplegado código
+  a producción.
+
 ### PROD-F2.6. `migrations/20260930150000_add_kyc_evidence_retention.sql`
 
 - **Estado 2026-09-30**: migración productiva preparada para conservar la
@@ -618,3 +645,91 @@ administrativa AAL2. El reset y la carga DEV son locales; no deben sustituirse p
   falta del daemon Docker local requerido para el contenedor `pg_prove`.
 - No se aplicaron migraciones, no se modificó el esquema remoto y no quedaron
   datos QA persistentes.
+
+### DEV-F2.12. `dev-migrations/20261008010000_harden_core_table_grants.sql`
+
+- Aplicada únicamente en Supabase DEV el 2026-10-08.
+- Reduce los privilegios de `anon` y `authenticated` en `contacts`, `notifications`, `profiles`, `properties` y `property_reports` a las operaciones usadas por la aplicación. Revoca `TRUNCATE`, `TRIGGER` y `REFERENCES` de esos roles, además de escrituras directas innecesarias.
+- Conserva SELECT de contactos para usuarios autenticados bajo su política RLS, SELECT/UPDATE de sus notificaciones y perfiles, lectura pública de propiedades publicadas y CRUD autenticado de propiedades bajo RLS, y SELECT/UPDATE de reportes para moderación AAL2.
+- La verificación remota de `has_table_privilege` confirma que `anon` y `authenticated` ya no tienen `TRUNCATE`, `TRIGGER` ni `REFERENCES` en las cinco tablas. `service_role` no fue modificado. Producción no fue consultada ni modificada; evaluar sus ACL por separado antes de proponer su migración.
+
+
+### DEV-F2.13. `dev-migrations/20261008020000_harden_sensitive_rpc_grants.sql`
+
+- Aplicada únicamente en Supabase DEV el 2026-10-08.
+- Se corrigieron permisos EXECUTE históricos explícitos que habían sobrevivido a `REVOKE FROM PUBLIC`: `anon` y `authenticated` podían invocar la RPC `claim_pending_push_deliveries`, que expone credenciales de suscripciones Push, y podían invocar `authorize_push_delivery`.
+- Ambas RPC quedaron limitadas a `service_role`. Se retiró además el permiso anónimo de `get_admin_metrics`; `authenticated` conserva su llamada, protegida dentro de la función por la comprobación AAL2.
+- La verificación con `has_function_privilege` confirmó que `anon` y `authenticated` no pueden ejecutar las RPC de entrega Push y que `service_role` sí; métricas quedó sin permiso anónimo.
+- Producción no fue modificada. Revisar sus ACL funcionales por separado antes de cualquier promoción.
+
+### DEV-F2.14. `dev-migrations/20261008030000_limit_public_property_view_counter.sql`
+
+- Aplicada únicamente en Supabase DEV el 2026-10-08.
+- La RPC pública `increment_property_view_count` ahora solo actualiza filas con estado `published`; antes podía cambiar el contador de vistas de borradores u ocultas si se conocía su ID.
+- Conserva la ejecución de `anon` y `authenticated` para las páginas públicas. Se endureció también el `search_path` a `pg_catalog` y se calificaron los objetos de la función.
+- La verificación de la definición remota confirmó el filtro de estado y que los permisos de ejecución permanecen iguales. Producción no fue modificada.
+
+### DEV-F2.15. Revisión de regla anti-duplicados
+
+- La revisión del código y de la función activa en DEV confirma que la coincidencia exige igualdad del fingerprint normalizado de título, ubicación, operación, tipo, precio y superficie. La consecuencia es una señal `Posible publicación duplicada` para revisión administrativa; no rechaza ni oculta automáticamente la publicación.
+- Consulta agregada de DEV del 2026-10-08: cero grupos duplicados exactos y cero flags activos. No se consultaron títulos ni datos personales para esta comprobación.
+- No se cambió la regla porque no hay un par representativo en DEV con el que medir falsos positivos. Se mantiene pendiente probar dos anuncios legítimos de QA, especialmente unidades distintas del mismo edificio con precio y superficie coincidentes.
+
+### DEV-F2.16. `dev-migrations/20261008040000_harden_phase2_table_grants.sql`
+
+- Aplicada únicamente en Supabase DEV el 2026-10-08.
+- Se corrigieron privilegios efectivos excesivos en `kyc_requests`, `property_verification_requests`, `push_subscriptions`, `saved_properties` y `search_alerts`.
+- Las solicitudes KYC y documentales conservan SELECT autenticado; sus mutaciones siguen por RPC con controles de propietario/AAL2. `push_subscriptions` queda accesible al Worker mediante `service_role`; el cliente no accede directo. Favoritos y alertas conservan las operaciones de cliente usadas por la app, bajo RLS.
+- Verificación global posterior: ninguna tabla del esquema `public` concede `TRUNCATE`, `TRIGGER` o `REFERENCES` a `anon` ni `authenticated`. Producción no se modificó.
+
+### DEV-F2.17. `dev-migrations/20261009010000_property_image_phash_duplicates.sql`
+
+- Crea el inventario privado de hashes perceptuales WebP y la tabla de señales
+  entre publicaciones. Solo el service role puede escribir; las fingerprints y
+  coincidencias solo son legibles con sesión administrativa AAL2.
+- El Worker DEV calcula un pHash de 64 bits usando la imagen de portada y una
+  imagen de galería por publicación. Un máximo de 8 bits distintos produce una
+  posible coincidencia para moderación; no cambia automáticamente el estado.
+- Las publicaciones existentes se indexan gradualmente mediante el Cron DEV,
+  una publicación por minuto. Al indexar una imagen antigua se revisan también
+  publicaciones `pending_review` y `ai_approved` aún abiertas.
+- Los flags se resuelven al concluir la revisión. Aplicada el 2026-10-09 solo
+  al proyecto Supabase DEV `bknwerqbbysveehcdmzr`; no incluir en
+  `supabase/migrations/` ni en producción. Se verificaron las tablas, RLS,
+  lectura anónima denegada y RPC de escritura disponibles únicamente para
+  `service_role`.
+
+### DEV-F2.18. `dev-migrations/20261009020000_retry_empty_property_image_hashes.sql`
+
+- Corrige el backfill incremental para volver a intentar registros activos cuyo
+  último procesamiento no encontró imágenes elegibles, con enfriamiento de 15
+  minutos. Los ya indexados con al menos una imagen se omiten.
+- Solo se aplica a Supabase DEV. No incluir en `supabase/migrations/` ni en
+  producción.
+
+### DEV-F2.19. `dev-migrations/20261009040000_get_admin_property_image_hash_status.sql`
+
+- RPC de solo lectura, restringida a administración autenticada con AAL2. Devuelve
+  estado de procesamiento del anuncio y cobertura agregada del catálogo activo,
+  sin exponer fingerprints ni datos de propietarios.
+- Permite distinguir hash pendiente, fallo sin imágenes procesables y “sin
+  coincidencias” con cobertura completa o parcial. Exclusiva de Supabase DEV.
+### DEV-F2.20. `dev-migrations/20261009050000_admin_image_duplicate_candidates.sql`
+
+- Añade una RPC de moderación que entrega IDs únicos de publicaciones con flags
+  pHash sin resolver, ordenados y paginados desde PostgreSQL. También devuelve
+  el total para el contador del filtro. La consulta usa el índice parcial por
+  `property_id` y `resolved_at IS NULL`; el navegador no descarga ni recorre
+  todo el catálogo.
+- Requiere sesión administrativa AAL2. Aplicar solo a Supabase DEV.
+
+### DEV-F2.21. `dev-migrations/20261010100000_verified_seller_public_badge.sql`
+
+- Añade `get_verified_seller_ids()`, que expone únicamente IDs de perfiles no
+  agentes con identidad verificada y al menos una publicación activa.
+- La RPC no devuelve información KYC ni perfiles sin anuncios publicados; su
+  ejecución pública solo permite decidir si la tarjeta muestra el sello.
+- El Worker DEV permite explícitamente esta RPC en su proxy público; prueba de
+  proxy y consulta directa anon verificadas. Worker desplegado
+  `b0e3ddfe-d6cc-4f7b-a5bf-e6da2355ea9f`.
+- Exclusiva de Supabase DEV. La producción no recibe esta RPC ni el distintivo.

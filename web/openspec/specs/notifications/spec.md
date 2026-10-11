@@ -27,6 +27,14 @@
 - Los avisos de contacto abren la propiedad y su seccion de contacto.
 - Los cambios de estado de una publicacion abren `Mis publicaciones`.
 
+### Scenario: publicación aprobada en revisión
+
+- **GIVEN** una publicación cambia al estado `ai_approved`
+- **WHEN** se crea su notificación
+- **THEN** el título indica `Revisión aprobada`
+- **AND** el mensaje confirma que la publicación fue aprobada
+- **AND** el mensaje no revela qué mecanismo interno tomó la decisión
+
 ## Notificaciones push por dispositivo
 
 ### Escenario: aislamiento de cuenta y entregas en vuelo

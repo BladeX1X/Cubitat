@@ -88,3 +88,55 @@ El sistema MUST tratar URLs de imagen como datos no confiables hasta normalizarl
 - WHEN se normalizan imagenes
 - THEN el sistema MUST descartarla o reemplazarla por fallback
 - AND MUST evitar inyectar contenido ejecutable desde campos de imagen
+
+### Requirement: Señales de coincidencia perceptual para moderación
+En DEV, el sistema MUST calcular en el Worker un hash perceptual de las imágenes
+WebP guardadas y comparar sus bits con imágenes de publicaciones activas. Una
+coincidencia es una señal privada para revisión humana; nunca MUST rechazar o
+publicar automáticamente una propiedad.
+
+#### Scenario: Nueva publicación con imagen similar
+- GIVEN el propietario guarda una publicación con al menos una imagen WebP
+- WHEN el Worker termina de calcular sus hashes perceptuales
+- THEN MUST guardar los hashes con acceso restringido al administrador AAL2 y al service role
+- AND MUST mostrar al moderador la publicación relacionada y la distancia de Hamming sobre 64 bits
+- AND MUST clasificar 0 bits distintos como hash idéntico, 1–4 como similitud alta y 5–8 como coincidencia parcial
+- AND MUST instruir al moderador a comparar fotos y datos del inmueble y confirmar solo si es la misma propiedad
+- AND MUST conservar como guía que 5–8 bits es una coincidencia parcial de menor fuerza que 1–4 bits
+- AND MUST conservar la decisión final en manos del moderador
+- AND MUST NOT rechazar automáticamente por ninguna distancia perceptual
+
+#### Scenario: publicación aún no comparada
+
+- **GIVEN** una publicación de moderación todavía no tiene hashes procesados
+- **WHEN** el moderador consulta su tarjeta
+- **THEN** se muestra que la revisión está pendiente o no pudo procesar imágenes
+- **AND** el sistema MUST NOT presentar la ausencia de señales como ausencia de coincidencias
+
+#### Scenario: publicación sin coincidencias y cobertura incompleta
+
+- **GIVEN** el hash de una publicación ya fue procesado pero el backfill del catálogo sigue en curso
+- **WHEN** no se encontraron coincidencias entre los hashes disponibles
+- **THEN** el panel indica cuántas publicaciones con imágenes están indexadas del total elegible
+- **AND** MUST indicar que la revisión sigue incompleta
+
+#### Scenario: publicación sin coincidencias y catálogo indexado
+
+- **GIVEN** el hash de una publicación y todo el catálogo activo con imágenes fueron procesados
+- **WHEN** no hay señales de duplicación
+- **THEN** el panel confirma que no se encontraron coincidencias en el catálogo activo indexado
+
+#### Scenario: El inventario previo aún no tiene hashes
+- GIVEN una publicación activa no tiene hashes perceptuales
+- WHEN el Worker procesa una nueva publicación
+- THEN SHOULD indexar gradualmente un máximo acotado de publicaciones previas
+- AND MUST evitar procesar URLs fuera del bucket `property_images` del proyecto DEV
+- AND MUST aceptar la ruta privada del Worker DEV `/api/supabase/storage/v1/object/public/property_images/` además de la URL directa de Storage de DEV
+- AND MUST reintentar registros activos con cero imágenes procesadas después de un intervalo acotado
+
+#### Scenario: Error transitorio al calcular o guardar un hash
+- GIVEN el Worker no puede descargar/decodificar una WebP o guardar el resultado por un fallo transitorio
+- WHEN intenta indexar la publicación
+- THEN MUST reintentar un máximo acotado de tres veces
+- AND MUST dejar la publicación sin estado de indexación si no pudo calcular y guardar el resultado
+- AND MUST registrar un evento técnico sin URL, contenido de imagen ni identificadores del usuario

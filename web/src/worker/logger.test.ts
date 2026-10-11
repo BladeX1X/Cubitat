@@ -48,4 +48,16 @@ describe('logWorkerEvent', () => {
     })
     warn.mockRestore()
   })
+
+  it('allows safe HTTP status logging for image duplicate request failures', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    logWorkerEvent('warn', 'image_duplicate_request_failed', { status: 503 })
+
+    expect(warn).toHaveBeenCalledWith({
+      event: 'image_duplicate_request_failed',
+      status: 503,
+    })
+    warn.mockRestore()
+  })
 })

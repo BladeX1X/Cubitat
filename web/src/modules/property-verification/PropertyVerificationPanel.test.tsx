@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PropertyVerificationPanel } from './PropertyVerificationPanel'
 
 const mocks = vi.hoisted(() => ({
@@ -24,6 +24,10 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
 }))
 
 describe('PropertyVerificationPanel', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.maybeSingle.mockResolvedValue({ data: null, error: null })
@@ -55,11 +59,12 @@ describe('PropertyVerificationPanel', () => {
       p_document_path: 'user-1/property-property-1/8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f-titulo.pdf',
     })))
     expect(mocks.upload).toHaveBeenCalledOnce()
-    expect(screen.getByRole('status')).toHaveTextContent(/solicitud enviada/i)
+    expect(screen.getByText('Solicitud enviada.', { exact: true })).toHaveAttribute('role', 'status')
   })
 
   it('removes the uploaded file when request registration fails', async () => {
-    mocks.rpc.mockResolvedValue({ data: null, error: new Error('request failed') })
+    vi.stubEnv('MODE', 'phase2-dev')
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'private backend detail' } })
     render(<PropertyVerificationPanel propertyId="property-1" userId="user-1" />)
     fireEvent.click(screen.getByRole('button', { name: /solicitar verificación documental/i }))
     await waitFor(() => expect(screen.getByLabelText('Archivo privado')).toBeInTheDocument())
@@ -72,6 +77,8 @@ describe('PropertyVerificationPanel', () => {
       'user-1/property-property-1/8f5e4f5a-2e9f-4ee2-a6a6-c0e208c3f43f-titulo.pdf',
     ]))
     expect(screen.getByRole('alert')).toHaveTextContent(/no se pudo enviar/i)
+    expect(screen.getByRole('alert')).toHaveTextContent('Código técnico: PGRST202')
+    expect(screen.getByRole('alert')).not.toHaveTextContent('private backend detail')
   })
 
   it('allows a new submission after a previous request was rejected', async () => {

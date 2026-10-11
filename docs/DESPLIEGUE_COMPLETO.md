@@ -902,14 +902,21 @@ Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
   DEV conserva su cadena propia y producción solo incluye módulos promovidos.
 - Producción ya incluye KYC, perfiles/agentes, métricas de contacto,
   verificación de propiedades, reglas de duplicados, retención KYC de 24 horas
-  y cola de alertas por correo.
-- El Worker productivo programa Push, alertas y purga KYC; cada tarea usa
-  `service_role` únicamente en el servidor y procesa lotes idempotentes.
+  y el esquema de cola para alertas por correo.
+- La comparación de imágenes con hash perceptual pertenece al carril Fase 2
+  DEV (`dev-migrations/20261009010000_property_image_phash_duplicates.sql` y
+  `worker-phase2-dev.ts`). No forma parte de las reglas de duplicados
+  productivas ni debe promoverse hasta completar QA y aprobarlo explícitamente.
+- El Worker productivo programa Push y purga KYC. La entrega automatizada de
+  alertas por correo está aplazada deliberadamente desde el commit
+  `420b9ea` (`fix(production): defer alert email delivery`); el dispatcher de
+  Resend permanece habilitado solo en el Worker Phase 2 DEV hasta completar QA
+  y aprobar su promoción. No contar la cola como evidencia de correos enviados.
 - `kyc_documents` permanece privado. La evidencia se elimina 24 horas después
   de aprobar o rechazar una solicitud; el registro mínimo permanece en la base.
-- Las alertas requieren `RESEND_API_KEY` y un remitente verificado en Resend.
-  La ausencia de verificación del dominio bloquea la entrega, pero no altera la
-  cola ni la aplicación.
+- Cuando se autorice reactivar la entrega de alertas, el dispatcher requerirá
+  `RESEND_API_KEY` y un remitente verificado en Resend. Mientras esté aplazada,
+  las notificaciones internas y Push no dependen de esa entrega de correo.
 - La retención de auditoría de Auth sigue separada en 90 días y continúa sin
   Cron destructivo.
 

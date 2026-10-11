@@ -27,7 +27,7 @@ import {
 } from '../utils/images'
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 
-const VerificationBadge = import.meta.env.DEV
+const VerificationBadge = PHASE_TWO_ENABLED
   ? lazy(() => import('../../kyc/components/VerificationBadge').then((module) => ({
       default: module.VerificationBadge,
     })))
@@ -197,9 +197,14 @@ export function PropertyCard({
               {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
             </span>
           </div>
-          {PHASE_TWO_ENABLED && VerificationBadge && property.isVerifiedAgent ? (
+          {PHASE_TWO_ENABLED && VerificationBadge && (property.isVerifiedAgent || property.isVerifiedSeller) ? (
             <Suspense fallback={null}>
-              <VerificationBadge status="verified" compact />
+              <VerificationBadge
+                status="verified"
+                isAgent={property.isVerifiedAgent}
+                isSeller={property.isVerifiedSeller && !property.isVerifiedAgent}
+                compact
+              />
             </Suspense>
           ) : null}
         </div>

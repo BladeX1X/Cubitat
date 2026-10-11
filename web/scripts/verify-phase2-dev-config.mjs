@@ -5,7 +5,9 @@ const configPath = fileURLToPath(new URL('../supabase/config.toml', import.meta.
 const workerConfigPath = fileURLToPath(new URL('../wrangler.phase2-dev.jsonc', import.meta.url))
 const config = await readFile(configPath, 'utf8')
 const workerConfig = await readFile(workerConfigPath, 'utf8')
+const viteConfig = await readFile(fileURLToPath(new URL('../vite.config.ts', import.meta.url)), 'utf8')
 const devOrigin = 'https://cubitat1-phase2-dev.pochiprats18.workers.dev'
+const devSupabaseUrl = 'https://bknwerqbbysveehcdmzr.supabase.co'
 
 const requiredValues = [
   `site_url = "${devOrigin}"`,
@@ -34,6 +36,12 @@ if (config.includes('site_url = "https://cubitathome.com"')) {
 
 if (!workerConfig.includes(`"PUBLIC_SITE_URL": "${devOrigin}"`)) {
   throw new Error('La configuracion Worker DEV debe usar PUBLIC_SITE_URL del entorno DEV')
+}
+
+if (!workerConfig.includes(`"VITE_SUPABASE_URL": "${devSupabaseUrl}"`)
+  || !viteConfig.includes(`? '${devSupabaseUrl}'`)
+  || !viteConfig.includes("'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(publicSupabaseUrl)")) {
+  throw new Error('El build de Fase 2 debe habilitar la UI usando la URL pública de Supabase DEV')
 }
 
 if (!workerConfig.includes('"ALERT_EMAIL_FROM": "Cubitat DEV <onboarding@resend.dev>"')) {

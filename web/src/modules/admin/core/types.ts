@@ -9,6 +9,8 @@ export type StatusFilter =
   | 'owner_hidden'
   | 'all'
 
+export type ModerationFilter = StatusFilter | 'image_duplicates'
+
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
 export type ReportStatusFilter = ReportStatus | 'all'
 
@@ -37,6 +39,29 @@ export type ModerationProperty = {
   user_email?: string
   duplicate_of?: string
   duplicate_title?: string
+  image_duplicate_matches?: Array<{
+    id: string
+    title: string
+    location?: string
+    price_usd?: number | null
+    cover_image?: string | null
+    images?: string[] | null
+    created_at?: string
+    operation?: string
+    property_type?: string
+    status?: Exclude<StatusFilter, 'all'>
+    description?: string
+    bedrooms?: number
+    bathrooms?: number
+    area_m2?: number
+    distance: number
+  }>
+  image_hash_status?: {
+    indexed_at: string | null
+    processed_images: number | null
+    eligible_with_images: number
+    indexed_with_hashes: number
+  }
 }
 
 export type PropertyReport = {
@@ -55,7 +80,7 @@ export type PropertyReport = {
   } | null
 }
 
-export type StatusCounts = Record<StatusFilter, number>
+export type StatusCounts = Record<StatusFilter, number> & { image_duplicates?: number }
 
 export type AdminDatabaseMetrics = {
   db_bytes: number

@@ -11,6 +11,7 @@ import { usePublicationDraft } from './usePublicationDraft'
 import { uploadPublicationImages } from './uploadPublicationImages'
 import { editablePropertyAddress, publicPropertyLocation } from '../../shared/lib/propertyLocation'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 import {
   OPERATION_VALUES,
   PROPERTY_TYPE_VALUES,
@@ -706,6 +707,31 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
           level: 'warn',
           code: sanitizeErrorReason(e),
         }));
+
+        if (PHASE_TWO_ENABLED && savedPropertyId) {
+          fetch('/api/phase2/property-image-duplicates', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ property_id: savedPropertyId }),
+          }).then(response => {
+            if (!response.ok) {
+              logSafeEvent({
+                module: 'publish',
+                action: 'async_image_duplicate_check',
+                level: 'warn',
+                code: `HTTP_${response.status}`,
+              })
+            }
+          }).catch(e => logSafeEvent({
+            module: 'publish',
+            action: 'async_image_duplicate_check',
+            level: 'warn',
+            code: sanitizeErrorReason(e),
+          }));
+        }
       } catch (e) {
         logSafeEvent({
           module: 'publish',

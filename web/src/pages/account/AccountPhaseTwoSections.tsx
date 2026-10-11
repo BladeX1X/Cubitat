@@ -10,6 +10,7 @@ import type { VerificationStatus } from '../../modules/kyc/types'
 type AccountPhaseTwoSectionsProps = {
   userId: string
   userRole?: string
+  showKycSection?: boolean
   onRoleChange?: (newRole: string) => void
   onResolvedRole: (newRole: string) => void
   onNavigateAgentDashboard?: () => void
@@ -18,6 +19,7 @@ type AccountPhaseTwoSectionsProps = {
 export function AccountPhaseTwoSections({
   userId,
   userRole,
+  showKycSection = true,
   onRoleChange,
   onResolvedRole,
   onNavigateAgentDashboard,
@@ -126,7 +128,7 @@ export function AccountPhaseTwoSections({
         </section>
       ) : null}
 
-      <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
+      {showKycSection ? <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><ShieldCheck size={20} /></div><div><h2 className="text-base font-bold text-neutral-900">Verificación de Identidad (KYC)</h2><p className="text-xs text-neutral-500">Obtén la insignia oficial en tus publicaciones</p></div></div>
           <VerificationBadge status={kycStatus} />
@@ -135,9 +137,9 @@ export function AccountPhaseTwoSections({
         {kycStatus === 'pending' ? <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs text-amber-800"><strong>Tus evidencias están en revisión.</strong> Nuestro equipo de moderación validará tu identidad en breve.</div> : null}
         {kycStatus === 'verified' ? <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-xs text-emerald-800"><strong>¡Cuenta Verificada!</strong> Tu perfil cuenta con el distintivo oficial de confianza.</div> : null}
         {kycStatus === 'rejected' ? <div className="space-y-2 rounded-xl border border-red-100 bg-red-50 p-4 text-xs text-red-800"><p><strong>Solicitud Rechazada:</strong> {kycReason || 'Las evidencias presentadas no pudieron validarse.'}</p><Button onClick={() => setIsKycModalOpen(true)} variant="outline" className="h-11 rounded-full border-red-200 bg-white text-xs font-bold text-red-700">Reenviar evidencias</Button></div> : null}
-      </section>
+      </section> : null}
 
-      <KycSubmissionModal userId={userId} isOpen={isKycModalOpen} onClose={() => setIsKycModalOpen(false)} onSuccess={() => { setKycStatus('pending'); setKycReason(null) }} />
+      {showKycSection ? <KycSubmissionModal userId={userId} isOpen={isKycModalOpen} onClose={() => setIsKycModalOpen(false)} onSuccess={() => { setKycStatus('pending'); setKycReason(null) }} /> : null}
 
       {(userRole === 'buyer' || userRole === 'agent') ? (
         <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">

@@ -83,6 +83,7 @@ vi.mock('../shared/lib/logger', () => ({
 
 vi.mock('../modules/agents/agentRepository', () => ({
   fetchVerifiedAgentIds: vi.fn().mockResolvedValue(new Set()),
+  fetchVerifiedSellerIds: vi.fn().mockResolvedValue(new Set()),
 }))
 
 vi.mock('../components/layout/Header', () => ({

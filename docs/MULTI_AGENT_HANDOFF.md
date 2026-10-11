@@ -3791,3 +3791,237 @@ actual; se conserva el historial previo para trazabilidad.
   productivo y DEV.
 - No ejecuta `wrangler deploy` ni `supabase db push`; producción no puede ser
   promovida por ese workflow.
+
+## Auditoría de cierre Fase 2 DEV — 2026-10-07
+
+- Se corrigió el lockfile en `bugfix/phase2-lockfile-sync`; instalación limpia, lint, 607 pruebas (1 omitida) y builds productivo/DEV pasaron. El build DEV usó el inventario público remoto de DEV (34 rutas); producción se construyó con sitemap estático y no se desplegó.
+- Supabase DEV pasó `db lint`. No hubo escrituras. El dry-run de la cadena normal lista siete migraciones de producción; no aplicarlas como migraciones DEV. La nota de Obsidian dice que el digest diario estaba implementado, pero este checkout no contiene su código/pruebas ni la migración `20261001120000_daily_search_alert_email_digest.sql`; no aplicar SQL hasta recuperar o reimplementar y revisar el cambio.
+- Wrangler confirmó los nombres `RESEND_API_KEY` y `GROQ_API_KEY` en DEV, sin leer valores. El Worker DEV no recibe una versión de aplicación posterior a 2026-09-28. DEV y producción respondieron HTTP 200.
+- Pendientes externos: confirmar envío Resend, completar QA de documentos de propiedad con cuenta autenticada y Push en Safari iOS. Push Android ya tiene evidencia en Obsidian. Trust Score sigue interno por decisión documentada.
+- Producción no fue modificada; no se enviaron correos ni se aplicaron SQL.
+- También quedan pendientes la revisión de falsos positivos de la regla anti-duplicados con casos QA representativos y la comprobación de Turnstile con el proveedor real; las pruebas automatizadas no sustituyen esas verificaciones operativas.
+- Corrección documental: la guía de despliegue estaba desactualizada. El commit `420b9ea` (`fix(production): defer alert email delivery`) retiró deliberadamente `dispatchPendingAlertEmails` del Worker productivo. Producción conserva el esquema de cola, pero solo DEV ejecuta el dispatcher Resend; no hay evidencia de entrega automática de alertas por correo en producción. La eventual reactivación requiere QA y aprobación de promoción.
+
+## Alcance formal de cierre Fase 2 — 2026-10-08
+
+- Baseline: `Propuesta_Cubitat_completa_cliente_actualizada.pdf` (junio 2026). Fase 2 entrega panel maestro, aprobar/rechazar, KYC carnet+selfie, verificación documental de propiedad, vendedor verificado, Trust Score inicial y reglas antifraude.
+- KYC de identidad: QA completado; la bitácora registra aprobación local con AAL2/TOTP y limpieza (2026-07-24), envío/rechazo de evidencia sintética en DEV (2026-09-28) y confirmación del usuario (2026-10-08).
+- Pendientes centrales: QA E2E persistente autenticado de documentos de propiedad (revisión AAL2, aislamiento y limpieza); revisión con casos QA de anti-duplicados y moderación real de imágenes/falsos positivos.
+- El requisito “vendedor verificado” no debe confundirse con la red de agentes: el estado KYC se muestra en la cuenta del usuario, pero el indicador de resultados `isVerifiedAgent` se limita a perfiles de agente. Falta validar si la propuesta requiere un distintivo público para vendedores KYC no-agentes y cerrar ese criterio.
+- Trust Score puede permanecer interno; la propuesta no requiere su exposición pública. La validación legal manual está excluida.
+- Red de agentes, dashboard de captación y comisiones son Fase 3. Push y digest/correo no aparecen como entregables formales de Fase 2; no bloquear su cierre técnico por ellos.
+- Evidencia DEV no equivale a producción. Cualquier promoción productiva adicional se planifica aparte y requiere decisión expresa.
+
+## Diagnóstico publicación DEV — 2026-10-08
+
+- Se añadió diagnóstico estructurado seguro en `logger.ts`; lint y suite completa pasaron (137 archivos, 608 pruebas aprobadas, 1 omitida). El build productivo requirió `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` para sitemap dinámico; el bundle DEV se generó con sitemap estático de dos URLs y pasó sus guards. No se desplegó producción.
+- Se desplegó la versión DEV `14057cea-ac4b-44ea-b7bb-a2838e0eca46`. La pestaña conservaba HTML/bundle anterior por caché; al abrir `/publicar?verify=20261008` cargó el bundle nuevo `index-CBeCRUqf.js` y restauró el borrador ficticio.
+- Se hizo un solo reintento de publicación sintética en DEV. Resultado: `PGRST002` en `PUBLISH:publish_property`, también aparece al cargar propiedades y notificaciones. Supabase CLI reportó el proyecto `bknwerqbbysveehcdmzr` como `ACTIVE_HEALTHY`; no se aplicaron migraciones ni cambios de configuración de Supabase.
+- Según la guía oficial de Supabase para PGRST002, revisar en DEV **Settings > Data API > Exposed schemas**: PostgREST falla al crear la caché si algún esquema configurado ya no existe. Confirmar con los logs PostgREST antes de cambiar la lista o volver a publicar. No hacer un segundo envío hasta recuperar API.
+- Revisión posterior por CLI (solo lectura): `supabase db query --linked` se ejecutó desde un workdir temporal vinculado a DEV. Existen `public` y `graphql_public`; `authenticator` no muestra un override `pgrst.db_schemas`; `supabase postgres-config get` no devolvió overrides. Esto descarta que falte uno de esos dos esquemas estándar, pero no revela la lista efectiva de Exposed Schemas del Dashboard ni el detalle de logs PostgREST. No se cambió configuración.
+- El archivo descargado `C:\Users\UNAM-5G\Downloads\supabase_logs.json` contiene 100 filas PostgREST: 41 con `PGRST002` (reintento de carga de caché de esquema) y 5 con `PGRST003` (timeout al adquirir conexión del pool), entre 19:19:20 y 19:21:18 en los timestamps exportados. `PGRST003` hace más probable contención/conectividad transitoria que un payload inválido. Un snapshot posterior de `pg_stat_activity` mostró 10 conexiones cliente idle y una active; no demuestra ni excluye saturación en el momento del fallo. Falta revisar `postgres_logs` y `supavisor_logs` del mismo intervalo. El panel Unified Logs del navegador devolvía “No access token provided”; se usó el archivo exportado.
+- El intento pudo subir antes una foto sintética a `property_images`; debido a la respuesta de escritura ambigua no se borró nada. Verificar fila/objeto antes de cualquier limpieza. Producción permanece intacta.
+- La segunda exportación `C:\Users\UNAM-5G\Downloads\supabase_logs (1).json` trae 1,000 filas, todas de PostgREST, entre 19:07:19.383 y 19:25:56.284. Encontré 425 `PGRST002` y 39 `PGRST003`; solo entre 19:07 y 19:09 hay 58 y 4, respectivamente. A las 19:07:22, segundo del envío fallido, hay múltiples `PGRST002`. Confirma degradación sostenida del Data API alrededor de la publicación y descarta un error aislado del formulario; falta la causa interna de la caché/pool. Descargar `postgres_logs` y/o `supavisor_logs` del mismo intervalo para separar conexión, carga y schema remoto.
+- El usuario compartió otra muestra (08-Oct-2026, 13:27:55–13:28:10 CDMX): `PGRST002/003`, incluyendo timeout al consultar configuración y versión PostgreSQL, y respuestas 503 a `claim_pending_push_deliveries`, `claim_pending_alert_emails` y `claim_kyc_evidence_for_purge` con service role. En el código, el cron DEV corre cada minuto (`wrangler.phase2-dev.jsonc`) y ejecuta esos tres dispatchers en paralelo (`worker-phase2-dev.ts:37-40`). Esto demuestra que el fallo afecta varias RPC del Worker, no solo publicar; el cron puede añadir solicitudes, pero no se ha probado que origine la saturación. No desactivar ni cambiarlo sin evaluar entregas de alertas/push y retención KYC. Revisar logs Postgres/Supavisor para causa raíz.
+- La misma captura detalla que fallaron consultas internas de configuración, rol y versión con `PGRST003`, PostgREST intentó cargar caché usando `db-schemas=public,graphql_public` y `db-extra-search-path=public,extensions`, y anunció reconexión al DB en 32 segundos. Esto descarta la hipótesis simple de un nombre de esquema estándar faltante y confirma indisponibilidad/congestión de conexiones en PostgREST en ese intervalo; no cambiar Exposed Schemas. SQL de solo lectura a través de Management API respondió después, a las 19:33:25 UTC: 12 client sessions, 1 active, `max_connections=60`, por lo que no hay evidencia de saturación global en ese snapshot posterior. La causa temporal sigue sin aislar; faltan logs Postgres/Supavisor durante 19:26–19:29 UTC.
+- Verificación posterior de UI DEV `/resultados` a las 19:35 UTC: tras 3 segundos terminó en “Error al cargar datos / Error al conectar con el servidor”; la consola registró `PGRST002` en `PROPERTIES:load_saved_properties` y `APP:load_properties_supabase`. La falla de lectura de propiedades sigue activa en DEV, aun después de que la consulta SQL directa respondiera.
+- Nueva captura del usuario (13:32:54–13:37:54 CDMX): 97 eventos HTTP, 94 con 503. Fallan GET de `/properties` (8), `/profiles` (32), `/notifications` (16), `/search_alerts` (12), `/saved_properties` (8), además de las tres RPC del cron (6 cada una). En esa ventana aparecen 2 websocket Realtime 101 y 1 endpoint administrativo 200; hay un evento rutinario `checkpoint complete`. Confirma que el 503 afecta transversalmente REST/PostgREST, no solo la consulta pública de propiedades. La captura no incluye errores detallados de Postgres/Supavisor; evitar copiar identificadores de usuario que aparecen en query strings.
+
+## Recuperación Supabase DEV y publicación QA — 2026-10-08
+
+- El proyecto Supabase DEV bknwerqbbysveehcdmzr completó el reinicio y `supabase projects list` reportó `ACTIVE_HEALTHY`. La ruta DEV `/resultados` cargó 9 propiedades. Producción no se tocó.
+- Se reintentó el borrador QA conservado. La aplicación confirmó “Publicación recibida”; el anuncio quedó persistido en Mis publicaciones como “Rechazada por IA”. El motivo confirma que descripción e imágenes identifican el inmueble como ficticio. Es el resultado esperado y no debe contarse como falso positivo ni aprobarse; no aparece en el catálogo público.
+- Wrangler mostró el nombre `GROQ_API_KEY` en los secretos del Worker DEV; no se leyó su valor.
+- El reinicio recuperó el servicio, pero no identifica la causa raíz de los PGRST002/PGRST003 previos. La interrupción parece resuelta en esta comprobación; mantenerla como incidente transitorio sin causa aislada.
+- La primera publicación fallida había subido una imagen a Storage antes del 503. No se borraron objetos; verificar su asociación antes de cualquier limpieza.
+- El QA E2E de verificación documental sigue pendiente: el único anuncio de esta cuenta es ficticio/rechazado. No se cargaron documentos ni se creó una solicitud de revisión. Se necesita una propiedad de QA apta y evidencia sintética claramente marcada para validar subida, AAL2, aislamiento y limpieza.
+- Revisar aún falsos positivos anti-duplicados y moderación de una publicación/imágenes legítimas de QA. Esta prueba demuestra rechazo esperado de contenido abiertamente falso, no el comportamiento con contenido legítimo.
+# Hash perceptual de imágenes para moderación DEV — 2026-10-09
+
+- Se implementó el pHash de 64 bits en `web/src/worker/image-phash.ts`. Después
+  de guardar una publicación, el cliente envía solo su ID; el Worker autentica
+  al propietario, lee las URLs persistidas, valida dominio/bucket/propietario,
+  MIME, tamaño y dimensiones, y calcula hashes de portada y primera imagen de
+  galería.
+- La migración DEV `20261009010000_property_image_phash_duplicates.sql` se
+  aplicó al proyecto Supabase DEV `bknwerqbbysveehcdmzr`. RLS limita lectura a
+  administrador AAL2 y las mutaciones RPC al `service_role`; las verificaciones
+  de tablas, RLS y privilegios devolvieron los estados esperados.
+- Un umbral conservador de distancia de Hamming `<= 8/64` crea una advertencia
+  revisable en `/moderar`; nunca rechaza ni publica automáticamente. El Cron
+  DEV indexa una publicación antigua por minuto y vuelve a comparar señales
+  contra anuncios todavía en revisión.
+- Worker DEV desplegado como `6b3f7913-fa3b-4ec5-a119-ce37f61031d9`. El
+  módulo Wasm WebP se empaqueta y se instancia directamente desde el Worker.
+  Comprobación HTTP posterior: portada `200`, el endpoint nuevo rechaza `GET`
+  con `405` y un POST sin sesión con `401`. Producción no fue modificada.
+- `npm run lint` pasó. `npm run build:phase2-dev` pasó con `SITEMAP_MODE=static`
+  porque este checkout no tiene `.env`; generó 2 rutas estáticas que coinciden
+  con el sitemap público DEV actual y pasó verificadores de aislamiento y
+  secretos. No se ejecutó la suite de pruebas.
+- Pendiente QA con dos imágenes autorizadas para confirmar que el Worker
+  decodifica WebP en Cloudflare, muestra el anuncio relacionado y permite
+  registrar/revisar falsos positivos. No publicar fotos privadas ni usar un
+  anuncio real ajeno como fixture.
+
+## Notificación de aprobación y criterio pHash — 2026-10-09
+
+- DEV Supabase `bknwerqbbysveehcdmzr`: el siguiente aviso `ai_approved` usa el
+  título «Revisión aprobada» y el cuerpo «Tu publicación … fue aprobada», sin
+  mencionar IA ni el mecanismo de decisión. La definición remota de la función
+  `notify_property_status_change()` se consultó y confirmó después de aplicar
+  `dev-migrations/20261009030000_simplify_property_approval_notification.sql`.
+- La migración canónica `20261009100000_simplify_property_approval_notification.sql`
+  queda en espera de promoción productiva. Los avisos ya creados/entregados no
+  se reescriben.
+- Criterio pHash para moderación: 0 bits = hash idéntico; 1–4 = similitud alta;
+  5–8 = coincidencia parcial. En todos los rangos el moderador compara imágenes
+  y datos del inmueble; solo confirma si es la misma propiedad. El hash nunca
+  rechaza automáticamente.
+- Clasificación y prueba del panel añadidas; lint, build y suite pasaron (140
+  archivos, 627 pruebas aprobadas, 1 omitida). Worker DEV desplegado como
+  `758b1db1-24ed-4097-9ec1-175463a029c9`; `/` y `/moderar` respondieron 200 y
+  el bundle de administración contiene las etiquetas y la guía manual.
+
+## Estado visible de cobertura pHash en moderación — 2026-10-09
+
+- Las tarjetas DEV muestran siempre el resultado de hash: pendiente, sin imagen
+  procesable o sin coincidencias. La respuesta negativa incluye cuántas
+  publicaciones con imágenes están indexadas del total activo y advierte si el
+  backfill sigue incompleto; no se presenta una ausencia de flags como revisión
+  total sin comprobar cobertura.
+- La RPC `get_admin_property_image_hash_status(uuid[])` se aplicó a DEV y se
+  verificó que `anon` no puede ejecutarla y que exige `is_admin_aal2()`.
+- Causa de que no apareciera la consulta en el panel: `vite.config.ts` no
+  inyectaba `VITE_SUPABASE_URL` en el build sin `.env`; el guard
+  `PHASE_TWO_ENABLED` desactivaba las consultas. Los builds `phase2-dev` y
+  `phase2-agents` ahora reciben el origen público Supabase DEV; producción no
+  recibe el fallback DEV. `verify-phase2-dev-config.mjs` valida el aislamiento.
+- Worker DEV actualizado a `cfafb374-1eef-400b-a080-37c3cdfb49ca`. La primera
+  consulta desde moderación fallaba porque el proxy del Worker no permitía el
+  RPC autenticado `get_admin_property_image_hash_status`; se agregó a la lista
+  autenticada exclusiva de Fase 2 DEV. Lint y build DEV pasaron.
+- Verificación visual autenticada en Chrome: el filtro `Publicadas (9)` carga
+  las nueve fichas y muestra el estado hash en cada una. Cobertura observada:
+  1 de 9 con hash; ocho indican que no se pudo comparar ninguna imagen. La
+  ausencia de coincidencias sigue incompleta para el catálogo entero.
+- La pestaña del navegador integrado de Codex todavía conserva un bundle viejo;
+  la vista sí fue comprobada en Chrome normal. Producción no se modificó.
+
+## Revalidación UI pHash y publicación DEV — 2026-10-09
+
+- Se publicó exclusivamente el Worker `cubitat1-phase2-dev`, versión `f8cf4e0e-05d4-46b5-ae5b-10c58705baa1`; ningún cambio llegó a producción.
+- En la sesión autenticada `/moderar`, `Publicadas (9)` carga las nueve fichas, expone el filtro `Coincidencias pHash (0)` y presenta el resultado por anuncio. La cobertura real es 1/11 publicaciones con imágenes. Las fichas sin datos comparables dicen explícitamente que no hubo imágenes para comparar; por tanto, cero coincidencias no significa catálogo limpio.
+- Verificación: `npm run lint`, suite completa (140 archivos, 628 aprobadas, 1 omitida), `npm run build:phase2-dev` con `SITEMAP_MODE=static`, guards de build y `wrangler deploy --dry-run --config wrangler.phase2-dev.jsonc`; despliegue DEV confirmado y assets con las cadenas UI/RPC esperadas.
+- Build normal no llegó a generar sitemap por ausencia local de `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`. Esto no bloqueó el build/despliegue aislado DEV; no se modificó `.env` ni se hizo deploy productivo.
+- Pendiente: ejecutar QA de coincidencia positiva usando las imágenes sintéticas ya autorizadas y confirmar que el moderador puede abrir la publicación relacionada. No afirmar que la detección está completa mientras el backfill quede en 1/11.
+
+## QA pHash positivo visible — 2026-10-09 (actualización)
+
+- Al volver a consultar `/moderar`, el backfill había progresado: el filtro mostraba `Coincidencias pHash (2)` y cobertura `3 de 11` publicaciones activas con imágenes.
+- Las dos fichas QA «Casa en venta en Playa», con anunciante sintético `Prueba Cubitat DEV`, muestran hash idéntico (`0/64 bits distintos`); al abrir la ficha se puede revisar el detalle y el anuncio relacionado. No se creó una nueva propiedad durante esta comprobación: los casos QA existentes quedaron indexados por el backfill.
+- Observación a investigar antes de dar por cerrado el QA integral: el texto de decisión IA indica «No se adjuntaron imágenes para su análisis», mientras que el detalle contiene una imagen y moderación presenta hash; confirmar la diferencia entre las imágenes enviadas al evaluador IA y las URLs persistidas que lee el Worker pHash.
+- La vista demuestra el camino positivo de moderación. No demuestra cobertura completa ni falsos positivos validados; DEV únicamente, producción intacta.
+
+## Comparación visual en paralelo de alertas pHash — 2026-10-09
+
+- `ImageDuplicateComparison.tsx` renderiza cada candidata existente al lado de la publicación nueva en moderación DEV; muestra foto, estado, fecha, título, ubicación, precio, tipo/operación, área, dormitorios, baños y descripción.
+- El aviso explica el resultado de Hamming y orienta la decisión: comparar; si se confirma mismo inmueble, conservar existente y ocultar la nueva con motivo; si no se confirma, no rechazar únicamente por pHash y continuar revisión manual.
+- `propertiesRepository.ts` consulta campos de las fichas relacionadas bajo la sesión administrativa, además de los IDs y hashes. No hubo escrituras/migraciones Supabase.
+- Lint y build `phase2-dev` con `SITEMAP_MODE=static` pasaron; se comprobó en la vista DEV que el filtro sigue mostrando dos coincidencias e incluye los paneles comparativos. Worker `cubitat1-phase2-dev` desplegado como `d4dfd0e9-a562-439b-ab4e-643b5fd83a8d`. No se ejecutaron tests. Producción intacta.
+
+## Explicación de pHash en lenguaje sencillo — 2026-10-09
+
+- La tarjeta de comparación explica «El sistema detectó que ambas fotos se ven prácticamente iguales» y que eso no demuestra que sea la misma vivienda.
+- Se conserva el detalle técnico (`pHash`, distancia de 64 bits) en un desplegable secundario «Ver detalle técnico».
+- Se verificó en la cola DEV existente: comparación Nueva/Existente, aviso claro y acciones manuales visibles. Lint y build `phase2-dev` con sitemap estático correctos. Worker `cubitat1-phase2-dev` versión `42387e88-330b-4bf2-b8ab-e79d52a07147`; no se ejecutaron tests ni se tocó producción.
+
+## Revalidación de limpieza de documentos sintéticos — 2026-10-10
+
+- Tras la autorización del usuario, se inspeccionó Supabase DEV sin leer ni
+  descargar documentos: `property_verification_requests` contiene 0 filas y
+  `property_documents` contiene 0 PDFs/objetos con contenido.
+- Storage conserva 3 marcadores `.emptyFolderPlaceholder` de 0 bytes; no son
+  documentos. Se preservan 8 eventos de bitácora. La base conserva sus
+  anuncios; no se tocó producción.
+- No se encontraron solicitudes ni PDFs pendientes que borrar durante esta
+  revalidación.
+
+## 2026-10-10 — Exploración sintética de umbral pHash
+
+- Comparación local con WebP sintéticos: seis pares de escenas distintas dieron distancias de 12–36/64, por encima del umbral vigente (`<= 8`).
+- Una misma escena con recorte centrado dio 8 bits al recortar 5 %, 10 bits al recortar 10 % y 12 bits al recortar 15 %. Los recortes más amplios no entrarían en la cola actual.
+- 19 pruebas focalizadas de moderación, política y repositorio pasaron. Ningún dato fue escrito en DEV; producción y anuncios/bitácora existentes permanecen intactos.
+- Alcance: medición de algoritmo con escenas sintéticas; no valida el decodificador WebP del Worker desplegado ni tasas con fotografías reales. No ajustar `<= 8` con esta muestra; pendiente una matriz QA con fotos variadas y revisión de la cobertura del backfill.
+
+## 2026-10-10 — Prueba local con fotografías sintéticas pHash
+
+- Tres imágenes sintéticas WebP: las escenas distintas sala/cocina dieron `30/64`; otra sala con paleta parecida dio `38/64` frente a la primera. Los tres pares evaluados quedaron fuera de `<= 8`.
+- En recortes centrados, el comportamiento fue no monótono: 3 % eliminado `10/64`; 5 % y 7 % `4/64`; 10 % y 15 % `14/64`. No modificar umbral con estos pocos casos.
+- La carga E2E no se completó: el navegador conectado no ofreció un mecanismo para adjuntar el archivo. El formulario quedó cerrado sin enviar. Supabase DEV siguió en 12 anuncios activos con imágenes, 4 indexados y 4 flags abiertos; consulta de solo lectura. Producción intacta.
+- Próximo paso: habilitar un flujo de adjunto desde el navegador o usar sesión de carga de QA autorizada; ejecutar Worker y confirmar moderación visible. Mantener pendiente el backfill y medición con fotos variadas.
+
+### Revalidación local con Worker WASM — 2026-10-10
+
+- Wrangler ejecutó el módulo real `image-phash.ts` y su decodificador WebP WASM con fetch/RPC simulados. No se enviaron hashes a Supabase ni se usaron credenciales reales.
+- Resultados: sala/cocina `30/64`, sala distinta `34/64`; recortes 3/5/7/10/15 % dieron `8/4/8/12/16`. Umbral `<= 8`: sin coincidencia para las escenas distintas de esta muestra, candidata para recortes 3–7 %, omisión para 10–15 %.
+- Se mantiene pendiente el QA visual con el Worker desplegado y fotos en moderación; el selector de archivos del navegador conectado no estuvo disponible y no se envió una publicación. DEV remoto permaneció en 12 activas, 4 indexadas, 4 flags abiertos. Sin cambios productivos.
+
+## 2026-10-10 — QA pHash E2E visible en DEV
+
+- Se completó el flujo real de carga del navegador y el Worker produjo hash para el anuncio de prueba. Con una foto base de una publicación QA existente y un recorte exacto del 5 % de cada borde, el filtro `Coincidencias pHash` mostró comparación en paralelo y distancia `8/64` (coincidencia parcial), justo en el umbral inclusivo configurado.
+- La IA aprobó el contenido de prueba para revisión humana; la ficha sigue pendiente de decisión manual y no está publicada. Los anuncios explícitamente etiquetados como sintéticos fueron rechazados por la IA, aunque el Worker procesó su hash; sus flags se resuelven al quedar rechazados, por lo que no salen en la cola abierta.
+- DEV mostraba 19 anuncios, 4 aprobados por IA, 6 rechazados por IA, 9 publicados y 4 anuncios con coincidencias pHash; cobertura visible: 5/13 anuncios activos con imágenes indexados. La cobertura sigue siendo insuficiente para considerar concluyentes los casos sin resultados.
+- Producción intacta. No se aprobaron manualmente ni publicaron las fichas de prueba.
+- Pendiente: ampliar el backfill, limpiar fixtures de prueba con autorización y ampliar la matriz de similitud/recortes antes de recalibrar el umbral.
+
+## pHash: cierre del backfill elegible en DEV — 2026-10-10
+
+- Consulta de solo lectura al proyecto Supabase DEV `bknwerqbbysveehcdmzr`: 13 anuncios activos con imágenes; 5 con al menos una imagen procesada por pHash; 8 intentados con cero imágenes procesables; 0 anuncios elegibles sin intento registrado.
+- Los 5 procesados tienen rutas del bucket privado `property_images`. Los otros 8 solo referencian URLs externas o rutas que no corresponden al bucket esperado. El backfill y sus reintentos ya los alcanzaron; no son ocho trabajos esperando turno.
+- La especificación `web/openspec/specs/media/spec.md` limita el hash a WebP guardados en el bucket privado DEV y prohíbe procesar URLs fuera de él. No se habilitó fetch externo ni se cambiaron datos/Storage. Producción intacta.
+- Interpretación: `5/13` refleja cobertura del catálogo total, pero no permite declarar “sin coincidencias” para los 8 anuncios no procesables. Para comparar esos anuncios, primero se necesita una migración controlada de sus imágenes a Storage DEV, o conservarlos explícitamente como fuera de cobertura.
+- Pendiente de decisión: definir si se normalizan en DEV las 8 referencias existentes a imágenes del bucket privado. Hasta entonces el límite de cobertura está identificado y el sistema permanece cerrado a URLs arbitrarias.
+
+## 2026-10-10 — Cobertura pHash del catálogo DEV
+
+- Estado comprobado en lectura de solo lectura: 13 anuncios activos con imágenes; 5 procesados; los otros 8 ya fueron intentados pero el Worker no encontró imágenes dentro de las fuentes permitidas. No hay anuncios elegibles sin intento.
+- La regla vigente limita el cálculo a imágenes WebP del bucket privado DEV `property_images`; esos 8 anuncios conservan URLs externas o rutas no reconocidas. No se abrió el Worker a orígenes arbitrarios ni se hizo una importación de imágenes.
+- La cobertura `5/13` es parcial. El resultado «sin coincidencias» solo es concluyente dentro de lo procesado, nunca para todo el catálogo.
+- Para avanzar: decidir una migración controlada de esas imágenes a Storage DEV o mantenerlas explícitamente excluidas. No cambiar el umbral pHash con este dato. Producción intacta.
+
+### Decisión de alcance pHash — 2026-10-10
+
+El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prueba y no requieren migración ni cálculo. Se excluyen intencionalmente del backfill; no es una tarea pendiente. La cifra 5/13 describe el inventario actual de DEV incluyendo esos fixtures, no una deuda sobre anuncios reales. Mantener la restricción de imágenes privadas y no importar URLs externas.
+
+## Caso negativo pHash visible en DEV — 2026-10-10
+
+- Envío QA autorizado desde el formulario normal con la imagen generada `work/qa/property-phash-negative-qa.png` y datos ficticios. IA aprobó para revisión; moderación mostró “Sin coincidencias de imagen. Hash procesado.”
+- Cobertura mostrada: 6/14 (incluye la ficha QA recién enviada); `Coincidencias pHash` se mantuvo en 4. Los ocho registros sin imagen procesable son fixtures que el usuario indicó que no se necesitan migrar ni hashear.
+- No hubo aprobación manual ni publicación. Producción intacta.
+- Conclusión limitada al caso negativo respecto de los hashes disponibles; no prueba ausencia de coincidencias globales ni cierra medición de falsos positivos/negativos.
+
+## 2026-10-10 — Matriz pHash ampliada (local)
+
+- Medí 14 imágenes inmobiliarias sintéticas (91 pares), codificadas como WebP, con la fórmula DCT pHash de 64 bits usada por el Worker; no hubo cambios ni cargas a DEV.
+- Las escenas distintas dieron 16–42/64. Variantes visualmente casi idénticas de una sala dieron 10–16/64 y por tanto quedan fuera del umbral actual `<= 8`. Un recorte centrado de 2–3 % por borde marcó 8/64; 5 % marcó 12/64; los recortes más grandes se alejaron aún más en esta imagen.
+- No elevar el umbral únicamente con datos sintéticos: faltan casos reales etiquetados para evaluar falsos avisos. pHash detecta copias cercanas; para diferentes ángulos/fotos del mismo inmueble conviene añadir señales independientes y validar su precisión.
+- Límite: Sharp se usó para codificar/decodificar WebP y la fórmula del Worker se reprodujo localmente. Es una exploración, no una medición de rendimiento sobre anuncios reales.
+
+### Robustez ante transformaciones de copia (2026-10-10)
+
+- En una foto sintética base, recomprimir WebP a calidad 40, reducir resolución a la mitad, brillo ±15 % y saturación +25 % dieron `0–2/64` bits distintos (dentro del límite `<= 8`). Recorte 2 % por borde quedó exactamente en `8/64`; giro de 2° dio `16/64` y espejo horizontal `32/64` (fuera del límite).
+- Solo es una base artificial; no usar esto para inferir similitud entre tomas distintas ni cambiar umbral sin conjunto real etiquetado.
+
+
+## 2026-10-10 — QA positivo de revisión IA y pHash aceptado por ahora
+
+- En sesión DEV autenticada, el panel mostró una ficha QA en estado “Aprobada por IA” con una explicación que describe su imagen. El Worker solo usa ese estado ante una respuesta válida de Groq; la ausencia o fallo del proveedor deriva a revisión humana. Esto, junto con el rechazo esperado de la ficha marcada como ficticia, verifica ambos resultados principales de la revisión multimodal en DEV.
+- El usuario confirma que el pHash actual funciona bien por ahora. Se conserva el límite inclusivo `<= 8/64`; no se modifica código ni configuración. Casos reales y falsos positivos quedan para una calibración futura, no bloquean la decisión actual de mantener el comportamiento.
+- No se aprobó manualmente ni publicó la ficha QA. Producción no cambió.
+
+## Turnstile con proveedor real en contacto DEV — 2026-10-10
+
+- Se actualizó el secreto del Worker compartido turnstile-siteverify-cubitat mediante Wrangler, conservando el widget cubitat-turnstile que también usa producción.
+- Un envío QA autorizado desde la ficha de contacto de DEV fue aceptado por Siteverify (HTTP 200, outcome ok, sin códigos de error) y la interfaz confirmó “¡Mensaje enviado!”.
+- Alcance: valida el proveedor real para contacto en DEV. No se envió formulario a un anunciante en producción ni se repitió registro/login/recuperación contra Supabase Auth. No se hizo cambio de código ni despliegue de la aplicación.

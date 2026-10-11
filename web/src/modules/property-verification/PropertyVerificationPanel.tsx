@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FileCheck2, Loader2, Upload, X } from 'lucide-react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
@@ -26,18 +26,22 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
   const [expanded, setExpanded] = useState(false)
   const [request, setRequest] = useState<VerificationRequest | null>(null)
   const [loading, setLoading] = useState(false)
+  const [statusLoadError, setStatusLoadError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [documentType, setDocumentType] = useState('ownership_title')
   const [notes, setNotes] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [diagnosticCode, setDiagnosticCode] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const lastLoadedPropertyId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!expanded || request) return
+    if (!expanded && lastLoadedPropertyId.current === propertyId) return
 
     let active = true
     setLoading(true)
+    setStatusLoadError(null)
     const loadRequest = async () => {
       try {
         const { data, error: queryError } = await supabase
@@ -49,15 +53,18 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
           .maybeSingle()
         if (!active) return
         if (queryError) {
-          setError('La verificación documental aún no está disponible en este entorno.')
+          setStatusLoadError('No se pudo consultar el estado de verificación.')
           return
         }
         setRequest((data as VerificationRequest | null) ?? null)
       } catch (reason) {
-        if (active) setError('No se pudo consultar el estado de verificación.')
+        if (active) setStatusLoadError('No se pudo consultar el estado de verificación.')
         logSafeEvent({ module: 'property_verification', action: 'load_request', level: 'error', code: sanitizeErrorReason(reason) })
       } finally {
-        if (active) setLoading(false)
+        if (active) {
+          lastLoadedPropertyId.current = propertyId
+          setLoading(false)
+        }
       }
     }
     void loadRequest()
@@ -65,10 +72,28 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
     return () => {
       active = false
     }
-  }, [expanded, propertyId, request])
+  }, [expanded, propertyId])
+
+  const visibleStatus = loading && !request
+    ? 'Consultando estado…'
+    : request?.status === 'pending'
+      ? 'Pendiente de revisión administrativa'
+      : request?.status === 'approved'
+        ? 'Documento aprobado por administración'
+        : request?.status === 'rejected'
+          ? 'Solicitud rechazada'
+          : statusLoadError || 'Sin solicitud enviada'
+  const statusClassName = request?.status === 'approved'
+    ? 'text-emerald-700'
+    : request?.status === 'rejected' || statusLoadError
+      ? 'text-red-700'
+      : request?.status === 'pending'
+        ? 'text-amber-700'
+        : 'text-neutral-500'
 
   async function handleSubmit() {
     setError(null)
+    setDiagnosticCode(null)
     setSuccess(null)
     if (!file) {
       setError('Selecciona un documento antes de enviarlo.')
@@ -105,7 +130,9 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
       setNotes('')
       setSuccess('Solicitud enviada.')
     } catch (reason) {
-      logSafeEvent({ module: 'property_verification', action: 'submit_request', level: 'error', code: sanitizeErrorReason(reason) })
+      const code = sanitizeErrorReason(reason)
+      logSafeEvent({ module: 'property_verification', action: 'submit_request', level: 'error', code })
+      if (import.meta.env.DEV || import.meta.env.MODE === 'phase2-dev') setDiagnosticCode(code)
       setError('No se pudo enviar la solicitud. El archivo temporal fue retirado si llegó a subirse.')
     } finally {
       setSubmitting(false)
@@ -120,9 +147,10 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
           <div>
             <h4 className="text-sm font-bold text-neutral-900">Verificación documental</h4>
             <p className="mt-1 text-xs leading-relaxed text-neutral-600">Revisión privada y administrativa. No es una certificación legal.</p>
+            <p className={`mt-2 text-xs font-semibold ${statusClassName}`} role="status" aria-live="polite">{visibleStatus}</p>
           </div>
         </div>
-        <Button type="button" variant="ghost" size="icon" aria-label={expanded ? 'Cerrar verificación documental' : 'Solicitar verificación documental'} onClick={() => setExpanded((current) => !current)}>
+        <Button type="button" variant="ghost" size="icon" aria-label={expanded ? 'Cerrar verificación documental' : request ? 'Ver estado de verificación documental' : 'Solicitar verificación documental'} onClick={() => setExpanded((current) => !current)}>
           {expanded ? <X /> : <Upload />}
         </Button>
       </div>
@@ -155,7 +183,12 @@ export function PropertyVerificationPanel({ propertyId, userId }: { propertyId: 
               </Button>
             </>
           )}
-          {error && <p role="alert" className="text-xs font-semibold text-red-700">{error}</p>}
+          {error && (
+            <p role="alert" className="text-xs font-semibold text-red-700">
+              {error}
+              {diagnosticCode && <span className="block pt-1">Código técnico: {diagnosticCode}</span>}
+            </p>
+          )}
           {success && <p role="status" className="text-xs font-semibold text-emerald-700">{success}</p>}
         </div>
       )}

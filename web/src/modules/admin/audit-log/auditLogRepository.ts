@@ -31,7 +31,7 @@ export async function fetchAuditLog(params: FetchAuditLogParams) {
   const from = params.page * params.pageSize
   const to = from + params.pageSize - 1
   let query = supabase
-    .from('property_moderation_audit')
+    .from('admin_moderation_audit_log')
     .select(AUDIT_SELECT, { count: 'exact' })
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })

@@ -2,7 +2,7 @@ import type { AuditAction, AuditLogEvent, AuditSource } from './types'
 
 const STATUS_LABELS: Record<string, string> = {
   pending_review: 'Pendiente', ai_approved: 'Aprobada por IA', ai_rejected: 'Rechazada por IA',
-  published: 'Publicada', paused: 'Oculta',
+  published: 'Publicada', paused: 'Oculta', pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado',
 }
 const SOURCE_LABELS: Record<AuditSource, string> = {
   admin: 'Administrador', owner: 'Propietario', automation: 'Automatización', system: 'Sistema',
@@ -10,6 +10,9 @@ const SOURCE_LABELS: Record<AuditSource, string> = {
 const AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat('es-CU', { dateStyle: 'medium', timeStyle: 'short' })
 
 export function formatAuditAction(event: Pick<AuditLogEvent, 'action' | 'source' | 'newStatus'>) {
+  if (event.action === 'document_submitted') return 'Envío de documento'
+  if (event.action === 'document_approved') return 'Documento aprobado'
+  if (event.action === 'document_rejected') return 'Documento rechazado'
   if (event.action === 'delete') return 'Eliminación'
   if (event.source === 'owner') return 'Actualización del propietario'
   if (event.source === 'automation') {

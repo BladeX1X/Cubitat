@@ -1,6 +1,6 @@
 # Estado de Fase 2
 
-Fecha de corte: 2026-09-28
+Fecha de corte: 2026-10-10
 
 Este documento resume el estado técnico de la Fase 2 sin convertir pruebas
 locales en evidencia de producción. La rama de trabajo es
@@ -12,23 +12,51 @@ explícitamente lo contrario.
 | --- | --- | --- | --- |
 | Panel administrativo maestro | Implementado y verificado | Módulos de propiedades, reportes, métricas, auditoría y contexto del anunciante; guards AAL2 y pruebas existentes | QA visual móvil no bloqueante |
 | Aprobación y rechazo de publicaciones | Implementado y verificado | Moderación manual/IA, reevaluación y actualización asíncrona del panel | Fixture adicional de contenido real aprobado |
-| KYC de identidad (documento + selfie) | Implementado en DEV | UI visible en DEV, bucket privado, RLS y RPC verificadas; pruebas de validación y compensación | Prueba E2E persistente con AAL2/TOTP y limpieza posterior |
-| Vendedor/agente verificado | Implementado | Proyección canónica, insignia y guard de rol/KYC; 20 pruebas focalizadas del módulo de agentes | QA físico autenticado |
-| Verificación documental de propiedad | Base + UI DEV implementadas | Panel de propietario, pestaña administrativa, bucket privado, RLS por propietario, revisión AAL2 y RPC verificadas en Supabase DEV | QA E2E persistente con cuentas reales; validación legal manual sigue fuera de alcance |
-| Trust Score | Indicador interno DEV implementado | RPC `get_property_trust_score` con cuatro factores explicables, limitado a propietario/admin y sin acceso `anon` | Decidir si se expone públicamente; nunca presentarlo como certificación legal |
-| Reglas anti-fraude y reportes | Implementado y verificado en DEV | Reportes, Turnstile, señales del anunciante, límites, moderación manual y regla anti-duplicado server-side privada; la frontera IA degrada de forma segura si falta el proveedor | Revisar falsos positivos, verificar revisión de imágenes con proveedor configurado, revisión jurídica y contenido operativo |
+| KYC de identidad (documento + selfie) | Implementado y QA funcional completado | Aprobación local con AAL2/TOTP y limpieza completa (2026-07-24); envío y rechazo con evidencia sintética en DEV (2026-09-28); el usuario confirma que el QA de KYC ya está hecho (2026-10-08) | Sin bloqueo funcional de QA KYC en DEV; separar cualquier verificación de despliegue productivo |
+| Vendedor/agente verificado | Implementado y validado visualmente en DEV | Proyección canónica, insignia y guard de rol/KYC; fixture QA sintético verificado visualmente y eliminado (2026-10-10) | El filtro público DEV devolvió 0 resultados elegibles; no hay cuenta real elegible disponible para completar esa comprobación autenticada |
+| Verificación documental de propiedad | Base + UI DEV implementadas; flujo E2E y RLS verificados en DEV | Carga sintética, aprobación/rechazo; propietario ve su solicitud/archivo; UID autenticado ajeno y `anon` no los ven; revalidación remota: 0 solicitudes y 0 documentos con contenido, 8 eventos de bitácora preservados | Validación legal manual sigue fuera de alcance |
+| Trust Score | Indicador interno DEV implementado | RPC `get_property_trust_score` con cuatro factores explicables, limitado a propietario/admin y sin acceso `anon` | No exponer públicamente por decisión de producto; el indicador interno cubre la decisión vigente y no es certificación legal |
+| Reglas anti-fraude y reportes | Implementado y verificado en DEV | Reportes, límites, Turnstile, señales del anunciante, revisión IA multimodal con Groq y pHash privado con comparación visual | El usuario acepta mantener pHash `<= 8` por ahora; quedan como trabajo posterior muestras reales de falsos positivos y revisión jurídica/contenido; Turnstile se verificó con el proveedor real en contacto DEV |
 | Alertas y Push | Implementado técnicamente | Suscripción, preferencias, lectura, Service Worker, dispatcher y cron DEV; pruebas focalizadas; checklist física preparada en `docs/FASE2_PUSH_QA_FISICA.md` | Recepción/clic en Android e iOS con PWA instalada y permisos concedidos |
 | Autenticación y recuperación | Implementado y verificado en código/DEV | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y sesión MFA | QA física de proveedores y rotación de secretos pendiente |
 | Aislamiento de producción | Verificado | Bundle productivo excluye módulos exclusivos de Fase 2; HTTP DEV/producción comprobado; producción sin cambios en este ciclo | Mantener verificación en cada despliegue |
 
-## Criterio para pasar a la siguiente fase
+## Criterio para cerrar Fase 2 según la propuesta — 2026-10-08
 
-La Fase 2 no debe declararse completamente cerrada mientras falten las pruebas
-E2E persistentes con cuentas/dispositivos reales, la decisión de producto sobre
-la exposición pública del indicador interno y las pruebas físicas de Push
-indicadas arriba. La validación legal manual queda fuera del alcance técnico
-según la propuesta. El trabajo continuará por carriles independientes y
-reversibles.
+La propuesta comercial de junio de 2026 define Fase 2 como “Control, confianza
+y KYC”: panel administrador maestro, aprobación/rechazo, KYC con carnet y
+selfie, verificación documental de propiedad, vendedor verificado, Trust Score
+inicial y reglas antifraude. La aceptación debe medirse contra esos entregables,
+no contra todo lo que se haya explorado en el roadmap interno.
+
+- Agentes como red de captación (registro, enlaces, dashboard y comisiones) son
+  Fase 3. Push, digest/alertas por correo y exposición pública del Trust Score
+  no figuran como entregables obligatorios de la propuesta de Fase 2; quedan
+  como extensiones independientes. Un Trust Score inicial interno cumple el
+  alcance descrito, sujeto a validación del flujo.
+- La propuesta excluye la validación legal manual de documentos. Esto no elimina
+  la revisión operativa de QA con documentos sintéticos/no válidos.
+- El QA de KYC de identidad está completado: la bitácora registra aprobación
+  local con AAL2/TOTP y limpieza el 2026-07-24, envío/rechazo de evidencia
+  sintética en DEV el 2026-09-28, y el usuario confirma su cierre el
+  2026-10-08. No contarlo como pendiente.
+- La verificación documental de propiedad ya tiene recorrido persistente
+  autenticado de UI en DEV: se subió evidencia sintética, administración la
+  abrió y se verificaron aprobación y rechazo con estado/motivo visible al
+  propietario (2026-10-10). RLS entre cuentas quedó comprobado y los datos QA
+  se limpiaron: 0 solicitudes/archivos; se conservaron 8 eventos de bitácora y
+  3 propiedades. La validación legal manual sigue fuera del alcance.
+- El entregable “vendedor verificado” requiere separar identidad KYC de agente:
+  el distintivo público «Vendedor verificado» se implementó en la rama de Fase 2
+  DEV con RPC limitada a propietarios no agentes verificados y publicados.
+  Desplegado y validado visualmente el 2026-10-10 con fixture QA temporal;
+  aparece en la tarjeta y los agentes conservan su etiqueta independiente.
+  El Worker ahora permite explícitamente la RPC pública de IDs.
+- El usuario confirma el 2026-10-10 que el antifraude actual funciona bien; se conserva el umbral pHash y no se amplía esta ronda de QA. La matriz con fotografías reales queda diferida y no bloquea la aceptación actual en DEV. El diseño mantiene la decisión humana y no rechaza automáticamente por similitud.
+- Producción contiene una promoción selectiva de KYC; la verificación de
+  propiedad y el resto de capacidades aún descritas como DEV no deben marcarse
+  como producción. Cualquier promoción final se planifica por separado y no se
+  presume autorizada por esta definición de alcance.
 
 ## Auditoría de dependencias — 2026-09-28
 
@@ -1707,6 +1735,21 @@ históricos anteriores de este archivo:
 - Este bloque queda verificado técnicamente en DEV y continúa fuera de
   producción.
 
+## QA visual del distintivo de vendedor verificado — 2026-10-10
+
+- Se probó `/resultados` en DEV con perfil temporal sintético no agente, estado
+  verificado y una propiedad publicada marcada `[QA TEMP]`. La tarjeta mostró
+  «Vendedor verificado».
+- La investigación localizó un bloqueo en la lista de RPC permitidas del Worker
+  DEV. Se añadió `get_verified_seller_ids` y se confirmó que el proxy respondió
+  `200` y remitió el ID sintético. Producción no se modificó.
+- Worker DEV `b0e3ddfe-d6cc-4f7b-a5bf-e6da2355ea9f`. Después de la inspección se
+  borraron los registros Auth, perfil y propiedad. Verificación final: cero
+  filas fixture en Auth/perfiles/propiedades y cero estados de hash; no quedan
+  vendedores sintéticos elegibles.
+- Gates: lint, 141 archivos/633 pruebas aprobadas/1 omitida, build productivo
+  aislado y build `phase2-dev` con sitemap estático pasaron.
+
 ## Matriz de seguridad DEV: corrección y alcance - 2026-09-28
 
 - Se corrigió la aserción de notificaciones para comprobar el valor después de
@@ -1946,3 +1989,190 @@ completo de evidencia documental sintética: subida autorizada, una sola
 solicitud pendiente, cálculo de Trust Score, bloqueo de revisión sin AAL2,
 aprobación con AAL2 y aislamiento frente a otra cuenta. Todo termina con
 `ROLLBACK`.
+
+## Auditoría de cierre DEV — 2026-10-07
+
+- `npm ci` fallaba porque faltaban en `web/package-lock.json` las entradas opcionales multiplataforma de `@supabase/cli`; se añadieron en la rama `bugfix/phase2-lockfile-sync`. La instalación limpia y `npm run lint` terminaron correctamente.
+- `npm run test:run`: 137 archivos; 607 pruebas aprobadas y 1 omitida.
+- `npm run build:phase2-dev`: correcto con inventario público remoto de DEV; generó 34 rutas y aprobó los verificadores de bundle y secretos.
+- `npm run build`: correcto con sitemap estático de CI; se confirmó aislamiento productivo de módulos DEV y ausencia de marcadores de secretos. No se publicó.
+- Supabase DEV (`bknwerqbbysveehcdmzr`): `db lint` sin errores. No se aplicaron migraciones ni se escribieron datos. El dry-run sobre la cadena normal mostró siete migraciones `20260930` de la ruta de producción; no se confundieron con la cadena aislada `dev-migrations`.
+- Cloudflare confirma `RESEND_API_KEY` y `GROQ_API_KEY` por nombre en DEV; no se leyeron valores. La última versión del Worker DEV continúa siendo del 2026-09-28. DEV, su manifest y la portada productiva responden HTTP 200.
+- La entrega real de correo Resend, el digest diario (la nota del vault afirma que código/pruebas existían, pero este checkout no contiene esa implementación ni la migración `20261001120000_daily_search_alert_email_digest.sql`) y Push físico en iOS siguen pendientes. El QA E2E documental DEV se completó y se limpiaron solicitudes y PDFs sintéticos el 2026-10-10. No aplicar una migración no versionada ni revisada. Android ya consta como verificado en el vault. Trust Score permanece interno por decisión documentada; la revisión legal manual sigue fuera del alcance.
+- No se desplegó ningún Worker, no se tocó producción y no se enviaron correos.
+- También quedan pendientes la revisión de falsos positivos de la regla anti-duplicados con casos QA representativos y la comprobación de Turnstile con el proveedor real; las pruebas automatizadas no sustituyen esas verificaciones operativas.
+- Corrección documental: la guía de despliegue estaba desactualizada. El commit `420b9ea` (`fix(production): defer alert email delivery`) retiró deliberadamente `dispatchPendingAlertEmails` del Worker productivo. Producción conserva el esquema de cola, pero solo DEV ejecuta el dispatcher Resend; no hay evidencia de entrega automática de alertas por correo en producción. La eventual reactivación requiere QA y aprobación de promoción.
+
+## Recuperación Supabase DEV y publicación QA — 2026-10-08
+
+- El proyecto Supabase DEV bknwerqbbysveehcdmzr completó el reinicio y `supabase projects list` reportó `ACTIVE_HEALTHY`. La ruta DEV `/resultados` cargó 9 propiedades. Producción no se tocó.
+- Se reintentó el borrador QA conservado. La aplicación confirmó “Publicación recibida”; el anuncio quedó persistido en Mis publicaciones como “Rechazada por IA”. El motivo confirma que descripción e imágenes identifican el inmueble como ficticio. Es el resultado esperado y no debe contarse como falso positivo ni aprobarse; no aparece en el catálogo público.
+- Wrangler mostró el nombre `GROQ_API_KEY` en los secretos del Worker DEV; no se leyó su valor.
+- El reinicio recuperó el servicio, pero no identifica la causa raíz de los PGRST002/PGRST003 previos. La interrupción parece resuelta en esta comprobación; mantenerla como incidente transitorio sin causa aislada.
+- La primera publicación fallida había subido una imagen a Storage antes del 503. No se borraron objetos; verificar su asociación antes de cualquier limpieza.
+- El QA E2E de verificación documental DEV ya se completó con evidencia PDF sintética: subida, revisión aprobada/rechazada, estado del propietario y aislamiento RLS. La limpieza posterior dejó 0 solicitudes y 0 archivos QA; se conservaron 8 eventos inmutables y 3 propiedades. No se modificó producción.
+- Revisar aún falsos positivos anti-duplicados y moderación de una publicación/imágenes legítimas de QA. Esta prueba demuestra rechazo esperado de contenido abiertamente falso, no el comportamiento con contenido legítimo.
+## Endurecimiento de privilegios Data API — 2026-10-08
+
+- Se confirmó en Supabase DEV que `anon` y `authenticated` tenían privilegios efectivos de `TRUNCATE`, `TRIGGER` y `REFERENCES` en `contacts`, `notifications`, `profiles`, `properties` y `property_reports`, además de escrituras innecesarias. RLS protege las filas, pero no sustituye estos privilegios de tabla.
+- La migración `web/supabase/dev-migrations/20261008010000_harden_core_table_grants.sql` se aplicó únicamente a DEV. Se conservaron las operaciones requeridas por cliente y las políticas RLS existentes.
+- La verificación con `has_table_privilege` confirmó la revocación de esos tres privilegios para `anon` y `authenticated`; `service_role` no cambió.
+- Producción no se consultó ni modificó. Antes de considerar un cambio allí hay que auditar sus ACL y comparar sus políticas activas.
+
+## Endurecimiento de permisos RPC en DEV — 2026-10-08
+
+- La auditoría de funciones `SECURITY DEFINER` descubrió que, pese al `REVOKE FROM PUBLIC` histórico, los grants explícitos a `anon` y `authenticated` seguían habilitando `claim_pending_push_deliveries` y `authorize_push_delivery`. La primera devuelve credenciales de suscripciones Push y ambas deben ser exclusivas del Worker con `service_role`.
+- `web/supabase/dev-migrations/20261008020000_harden_sensitive_rpc_grants.sql` revocó esos permisos en DEV y mantuvo la ejecución solo para `service_role`. También retiró el grant anónimo de `get_admin_metrics`; la función conserva su verificación interna de AAL2 para usuarios autenticados.
+- La verificación remota de `has_function_privilege` confirmó el aislamiento esperado. Producción no se modificó.
+
+## Revisión adicional de RPC expuestas — 2026-10-08
+
+- Se contrastaron las funciones `SECURITY DEFINER` de DEV con sus consumidores y controles internos. El Trust Score requiere propietario o administrador AAL2; las funciones de ocultar/restaurar verifican propietario; las funciones de revisión documental/KYC exigen administrador AAL2. Las RPC de entrega Push quedaron reservadas a `service_role` en DEV-F2.13.
+- Se encontró que `increment_property_view_count` aceptaba llamadas públicas y actualizaba cualquier fila por ID, incluidos borradores u ocultos. DEV-F2.14 conserva la llamada pública pero restringe la actualización a propiedades `published` y usa `search_path` seguro.
+- La definición y los permisos efectivos se verificaron en Supabase DEV. Producción no se modificó.
+
+## Revisión de anti-duplicados en DEV — 2026-10-08
+
+- La regla compara coincidencia exacta del fingerprint normalizado (título, ubicación, operación, tipo, precio y superficie) y solo añade una señal para revisión administrativa; no rechaza la propiedad automáticamente.
+- Consulta agregada DEV: cero grupos con fingerprint repetido y cero flags activos. No hay muestra actual para evaluar falsos positivos, por lo que no se alteró el criterio.
+- Pendiente: QA con dos anuncios legítimos, en particular unidades distintas del mismo edificio con atributos coincidentes.
+
+## QA E2E de verificación documental de propiedad — 2026-10-10
+
+- En Supabase/Worker DEV se completó el flujo con evidencia PDF sintética,
+  marcada como prueba y sin datos reales ni validez legal.
+- Se verificó la solicitud del propietario, la apertura del documento privado
+  desde administración y ambos desenlaces: aprobación y rechazo. La cuenta del
+  propietario mostró el estado actualizado y, para el rechazo, el motivo
+  `no validos para este fin`.
+- Esto verifica el recorrido funcional de una cuenta; no demuestra todavía el
+  aislamiento frente a una segunda cuenta ni constituye validación legal.
+- RLS comprobada en DEV dentro de transacciones de solo lectura: el propietario
+  ve 1 solicitud y 1 objeto; un UID ajeno bajo el rol `authenticated` ve 0 y 0;
+  `anon` ve 0 objetos y carece de permiso SELECT sobre la tabla de solicitudes.
+  El UID ajeno se simuló con claims Postgres; no se usó una segunda sesión real.
+- Revalidación tras la autorización de limpieza (2026-10-10): la tabla quedó
+  con 0 solicitudes y el bucket con 0 PDFs/objetos con contenido; permanecen
+  solo 3 marcadores de carpeta vacía de 0 bytes (`.emptyFolderPlaceholder`).
+  Se conservaron las 8 entradas de bitácora. No se modificó producción.
+
+## Barrido completo de privilegios de tablas — DEV — 2026-10-08
+
+- El barrido del esquema público detectó privilegios efectivos `TRUNCATE`, `TRIGGER` y `REFERENCES` en diez tablas de datos, además de escrituras directas innecesarias en varias.
+- Se limitaron los grants en las tablas de perfiles, propiedades, contactos, notificaciones, reportes, KYC, verificación documental, Push, favoritos y alertas mediante DEV-F2.12 y DEV-F2.16, preservando las operaciones que usa la aplicación y sus políticas RLS.
+- La consulta global posterior con `has_table_privilege` devolvió cero tablas públicas con esos privilegios para `anon` y `authenticated`. Las RPC server-only de Push también quedaron reservadas a `service_role`.
+- Los cambios se aplicaron solo a Supabase DEV. Producción queda pendiente de una auditoría ACL independiente antes de cualquier promoción.
+
+# 2026-10-09 — Error de carga del panel y consulta de estado pHash (DEV)
+
+- Causa: el proxy de `cubitat1-phase2-dev` rechazaba el RPC autenticado
+  `get_admin_property_image_hash_status`, aunque la función existía en Supabase
+  DEV y requería correctamente administrador AAL2. El fallo de ese dato
+  complementario impedía cargar todas las propiedades.
+- Se añadió la función a la allowlist autenticada del Worker Fase 2 DEV y se
+  desplegó `cfafb374-1eef-400b-a080-37c3cdfb49ca`. Lint y build DEV pasaron.
+- Verificación visual en sesión autenticada: `Publicadas (9)` muestra las nueve
+  propiedades y el bloque de hash en cada tarjeta. Cobertura: 1/9 con hash; las
+  otras ocho advierten que no pudieron compararse. No se afirma cobertura
+  completa ni ausencia global de duplicados. Producción intacta.
+# 2026-10-09 — Coincidencias de imágenes por hash perceptual (DEV)
+
+- Implementado en el Worker DEV: pHash de 64 bits sobre WebP de portada y una
+  imagen de galería; umbral inicial `<= 8/64` para mostrar candidatos al
+  moderador. La señal es privada y no rechaza ni publica automáticamente.
+- La aplicación envía al Worker únicamente el ID guardado. El Worker comprueba
+  la sesión y propiedad, descarga desde el bucket permitido, aplica límites de
+  tamaño/dimensiones y persiste fingerprints y flags mediante RPC reservadas al
+  `service_role`.
+- DEV incorpora la migración `20261009010000_property_image_phash_duplicates.sql`.
+  Las publicaciones antiguas se indexan por Cron, una por minuto; el
+  reconciliador actualiza candidatos que continúan en revisión.
+- Worker DEV desplegado como `6b3f7913-fa3b-4ec5-a119-ce37f61031d9`; portada
+  responde `200` y la nueva ruta rechaza `GET` con `405`. `npm run lint` y
+  `npm run build:phase2-dev` pasaron; este build usó `SITEMAP_MODE=static` por
+  ausencia de `.env`. Pendiente QA con dos imágenes autorizadas para confirmar
+  decode real, coincidencia visible y tasa de falsos positivos. No se cambió
+  producción.
+
+## QA exploratorio pHash: escenas distintas y recortes — 2026-10-10
+
+- Experimento local con imágenes WebP sintéticas y la misma fórmula DCT de 64 bits del Worker: escenas distintas de interior/exterior quedaron entre 12 y 36 bits; el umbral DEV es `<= 8`, así que ninguna habría generado candidato en esta muestra.
+- Recortes centrados de la misma escena: 5 % de recorte = 8 bits (entra como candidato), 10 % = 10 bits y 15 % = 12 bits (quedan fuera). Esto sugiere riesgo de falso negativo con recortes moderados; no se amplió el umbral porque la muestra es pequeña y sintética.
+- Pruebas focalizadas de política/UI/repositorio: 19/19 pasaron. No se escribieron filas ni objetos en Supabase DEV, no se abrió un anuncio nuevo y no se modificó producción.
+- Esto no sustituye el QA E2E del Worker con fotografías inmobiliarias variadas ni el backfill del catálogo. Mantener pendiente la validación operativa de falsos positivos/negativos y ampliar cobertura.
+
+## QA pHash con fotografías sintéticas — 2026-10-10 (continuación)
+
+- Se generaron tres fotografías inmobiliarias sintéticas en WebP y se midió pHash con muestreo/DCT de 64 bits. Pares visualmente distintos: sala/cocina `30/64`, sala/sala diferente `38/64`, cocina/sala diferente `24/64`; ninguno cruzó `<= 8` en esta muestra.
+- Recortes centrados de una foto no cambiaron de forma monotónica: eliminar 3 % dio `10/64`; 5 % y 7 % dieron `4/64`; eliminar 10 % y 15 % dio `14/64`. El umbral detecta algunos recortes y omite otros; se necesitan más fotografías y tipos de recorte antes de calibrar.
+- 19 pruebas focalizadas de moderación/pHash pasaron en la continuación anterior. Intenté preparar un anuncio por el formulario, pero la interfaz disponible no permitió adjuntar el archivo; cerré el formulario sin enviar y no se creó un anuncio.
+- Recuento remoto de solo lectura después del intento: 12 anuncios activos con imágenes, 4 indexados y 4 flags pHash sin resolver; no hubo cambios en la base. Producción intacta.
+- Pendiente: un QA E2E con carga de fotos sintéticas por el formulario normal, confirmar hashes de Worker y resultado visible, limpiar solo esos fixtures; ampliar el backfill (4/12) y evaluar una matriz de fotos similares antes de ajustar `<= 8`.
+
+### Confirmación con el decodificador real del Worker — 2026-10-10
+
+- Se ejecutó `refreshPropertyImageDuplicates` desde un Worker local de Wrangler con el WebP decoder WASM real. El mock interceptó el RPC de persistencia en memoria; no se usó una clave real ni hubo escrituras externas.
+- Distancias resultantes: sala/cocina `30`, otra sala distinta `34`; recortes de la sala: 3 % `8`, 5 % `4`, 7 % `8`, 10 % `12`, 15 % `16`. Con `<= 8`, la muestra separa las escenas distintas y detecta recortes pequeños; los recortes del 10–15 % no generan candidata.
+- El formulario remoto no pudo completar la carga de archivos; se cerró antes de enviar. Los conteos DEV siguen en 12 propiedades activas con imágenes, 4 indexadas y 4 flags no resueltos. Producción permanece intacta.
+
+## QA pHash E2E en DEV con recorte — 2026-10-10
+
+- La carga por el formulario normal ya funciona con el selector de archivos del navegador. Se enviaron tres anuncios sintéticos de QA al ambiente DEV; los que indicaban explícitamente que eran pruebas fueron rechazados por la IA, pero igualmente quedaron con hash procesado. No se aprobaron manualmente ni se publicaron al catálogo.
+- Para que la alerta fuera visible en moderación, se envió una segunda variante de prueba con descripción inmobiliaria normal y la misma foto base recortada 5 % por cada borde. La IA la aprobó para revisión humana; la publicación quedó bajo revisión, sin aprobar ni publicar manualmente.
+- El panel `/moderar`, filtro `Coincidencias pHash`, mostró la nueva y la existente lado a lado: `coincidencia parcial · 8 de 64 diferencias`. Esto confirma que el umbral inclusivo `<= 8` incluye este recorte límite. El revisor puede comparar ambas fichas y resolver; la señal por sí sola no publica ni rechaza.
+- La ficha indicó cobertura `5 de 13` publicaciones activas con imágenes indexadas. El filtro mostró 4 anuncios con coincidencias. Por tanto, el resultado positivo es verificable, pero la cobertura continúa incompleta y un resultado sin candidata no prueba ausencia de duplicados.
+- También se comprobó el flujo de salida: un anuncio explícitamente etiquetado como sintético fue rechazado por la IA; al quedar `ai_rejected`, la señal pHash se resuelve automáticamente y no aparece en la cola de coincidencias. Para validar la interfaz de comparación se requiere que la ficha siga en `pending_review` o `ai_approved`.
+- Producción no se modificó. Ningún anuncio de prueba recibió aprobación humana ni se publicó.
+- Pendiente: limpiar solo estos anuncios y sus imágenes sintéticas cuando se autorice; ampliar backfill de 5/13 y continuar matriz de recortes y fotos parecidas antes de cambiar el umbral.
+
+## Cobertura pHash DEV aclarada — 2026-10-10
+
+La lectura de Supabase DEV confirmó 13 anuncios activos con imágenes: 5 procesados y 8 intentados sin imágenes procesables; no hay anuncios elegibles sin intento. Los 5 procesados tienen rutas del bucket privado `property_images`; los otros 8 usan URLs externas o rutas no compatibles. La especificación de media prohíbe calcular hashes fuera del bucket privado DEV, por lo que no se amplió el allowlist ni se modificaron anuncios o Storage. La cobertura `5/13` sigue siendo parcial y una búsqueda sin candidata no descarta duplicados entre los 8 no procesables. Próximo paso sujeto a decisión: normalizar/copiar imágenes de esos 8 a Storage DEV mediante un proceso controlado, o dejar esas referencias fuera de cobertura. Producción intacta.
+
+### Decisión de alcance pHash — 2026-10-10
+
+El usuario confirmó que los 8 anuncios sin hash procesable son fixtures de prueba; no hace falta procesarlos ni migrarlos. Se excluyen intencionalmente del alcance y no bloquean el cierre de cobertura real. `5/13` describe el conteo bruto que incluye los fixtures. Mantener la fuente privada permitida, sin importar URLs externas.
+
+## QA pHash negativo visible en moderación DEV — 2026-10-10
+
+- Con autorización del usuario se envió por el formulario DEV una ficha QA ficticia con imagen generada para el caso negativo. El Worker procesó el hash y `/moderar` mostró **“Sin coincidencias de imagen. Hash procesado.”** La descripción de cobertura indica que la revisión del catálogo sigue incompleta.
+- La tarjeta quedó aprobada por IA, pero permanece bajo revisión humana: no se aprobó manualmente ni se publicó.
+- El contador de candidatas pHash siguió en 4; la cobertura pasó de 5/13 a 6/14 por la nueva ficha QA. Las otras ocho fichas sin imagen procesable son fixtures que el usuario indicó que no hace falta migrar ni procesar.
+- Imagen de QA preservada en `work/qa/property-phash-negative-qa.png`. Producción intacta.
+- El caso comprueba que una imagen distinta del inventario procesado se presenta sin candidata; no demuestra cobertura global ni basta para recalibrar el umbral. Pendiente una matriz mayor de positivos/negativos antes de declarar cerrado el QA antifraude.
+
+## QA pHash local ampliado: escenas parecidas y recortes — 2026-10-10
+
+- Amplié la matriz local a 14 imágenes sintéticas inmobiliarias (91 pares), codificadas como WebP y medidas con la misma fórmula pHash de 64 bits del Worker. No se subieron imágenes nuevas a DEV ni se modificaron datos.
+- Entre imágenes de escenas distintas, las distancias observadas fueron 16–42/64; no hubo candidatos con el umbral actual `<= 8`.
+- Variantes visualmente casi iguales de una sala quedaron a 10, 12, 14 y 16/64. El umbral vigente no detectaría esos pares, aunque la escena se ve prácticamente igual. Recortes centrados de una imagen: 2–3 % por borde = 8/64; 5 % = 12/64; 10 % = 18/64; 15 % = 22/64; 20 % = 30/64. La respuesta depende mucho de la imagen/recorte.
+- Conclusión: pHash funciona para copias muy cercanas, pero no basta para inferir que fotos diferentes muestran el mismo inmueble. No subir el umbral solo con esta muestra sintética; podría incrementar falsas alertas. El paso correcto es validar una matriz etiquetada de fotos reales del mismo inmueble y de inmuebles distintos; considerar combinar pHash con señales adicionales si se exige reconocer otras tomas del mismo inmueble.
+- Límite del experimento: se usaron imágenes generadas localmente, codificadas/decodificadas como WebP con Sharp, y se reprodujo la fórmula DCT y el muestreo del Worker. No equivale a validar una población real de anuncios ni mide tasa de falsos positivos/falsos negativos.
+
+### Transformaciones de una misma foto (continuación local, 2026-10-10)
+
+- En una imagen sintética, volver a codificar como WebP (calidad 40), reducir a la mitad la resolución, cambiar brillo ±15 % y saturación +25 % produjo `0–2/64` diferencias; esas variantes entran en `<= 8`.
+- Recortar 2 % de cada borde produjo `8/64` (límite incluido); girar 2° dio `16/64` y reflejar horizontalmente `32/64`, por lo que ambas transformaciones quedan fuera.
+- Es una sola foto base y transformaciones digitales, así que describe robustez de copia y no permite fijar umbral para decidir si fotos distintas son del mismo inmueble.
+
+
+## QA de moderación IA con imagen y decisión del umbral pHash — 2026-10-10
+
+- Revisión de solo lectura en la sesión autenticada DEV: el panel muestra una ficha QA con estado **Aprobada por IA** y una explicación que describe los detalles de la fotografía. La ruta de aprobación solo se alcanza con una respuesta válida del proveedor; sin `GROQ_API_KEY` o si Groq falla, el Worker deja la ficha en revisión manual. Esto confirma el caso positivo multimodal en DEV junto al rechazo previo de contenido que se identificaba explícitamente como ficticio.
+- El usuario confirma que el comportamiento pHash actual le funciona por ahora; se conserva el umbral `<= 8/64`. No se cambia código ni configuración. La prueba local ampliada queda como exploración; la medición con fotos reales sigue siendo mejora futura, no tarea inmediata de recalibración.
+- La ficha QA no fue aprobada manualmente ni publicada. Producción permanece intacta.
+
+## Turnstile con proveedor real — DEV — 2026-10-10
+
+- Se conservó en DEV el widget compartido cubitat-turnstile usado también por producción. Tras actualizar el secreto del Worker turnstile-siteverify-cubitat mediante Wrangler, se completó un único envío QA autorizado desde una ficha de contacto DEV.
+- La interfaz confirmó “¡Mensaje enviado!” y el Worker recibió siteverify HTTP 200 con outcome: ok y sin códigos de error. Esto confirma un token real y el flujo de contacto en DEV.
+- No se envió ningún formulario en producción. Esta comprobación no sustituye una prueba independiente de CAPTCHA de Supabase Auth ni prueba otros formularios.
+
+## Decisión de aceptación del antifraude — 2026-10-10
+
+El usuario confirma que el comportamiento antifraude actual funciona bien. Se mantiene pHash <= 8/64, orientativo y sujeto a decisión humana; no se ajusta el umbral ni se amplía la matriz de fotos reales en este ciclo. Esa calibración queda diferida por decisión de producto y no bloquea la aceptación actual en DEV. La verificación real de Turnstile para contacto DEV quedó registrada arriba. Esta aceptación no implica promoción a producción.
+## Lectura del filtro de vendedor verificado en DEV — 2026-10-10
+
+- Consulta pública de solo lectura: el catálogo cargó 9 propiedades y, al activar Solo verificados, mostró “No encontramos propiedades con esos filtros”.
+- No hay en este momento una ficha pública elegible para comprobar el distintivo con una cuenta real autenticada. La prueba visual previa usó un fixture sintético ya eliminado.
+- No se creó ni modificó ninguna cuenta, verificación KYC o propiedad. Para cerrar esa evidencia hace falta una sesión de DEV con una cuenta ya elegible y una propiedad publicada; no se debe aprobar KYC real solo para hacer la prueba.
