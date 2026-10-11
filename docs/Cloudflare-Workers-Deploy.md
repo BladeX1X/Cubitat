@@ -69,3 +69,5 @@ Production branch: main
 ```
 
 `npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fase 2. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. La configuración vigente fue comprobada en Cloudflare el 2026-10-11 y persistió tras recargar el panel. Ver matriz y evidencia en `docs/FASE2_ESTADO.md`.
+
+Verificación posterior: el merge de PR #130 (`3e46bec`) disparó el build `6086639e-5c26-4b49-876a-b6d1045d2067`; build y deploy terminaron en verde usando el comando anterior, y la versión `98c825b6-a653-48b1-9c60-6ea76bf40e06` quedó activa al 100%. El smoke autenticado volvió a mostrar los módulos KYC, Documentos y Coincidencias pHash.
