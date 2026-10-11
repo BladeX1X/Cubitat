@@ -15,7 +15,7 @@ Este documento resume el estado técnico de la Fase 2 sin convertir pruebas loca
 | Reglas anti-fraude y reportes | Implementado y verificado en DEV | Reportes, límites, Turnstile, señales del anunciante, revisión IA multimodal con Groq y pHash privado con comparación visual | El usuario acepta mantener pHash `<= 8` por ahora; quedan como trabajo posterior muestras reales de falsos positivos y revisión jurídica/contenido; Turnstile se verificó con el proveedor real en contacto DEV |
 | Alertas y Push | Implementado técnicamente | Suscripción, preferencias, lectura, Service Worker, dispatcher y cron DEV; pruebas focalizadas; checklist física preparada en `docs/FASE2_PUSH_QA_FISICA.md` | Recepción/clic en Android e iOS con PWA instalada y permisos concedidos |
 | Autenticación y recuperación | Implementado y verificado en código/DEV | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y sesión MFA | QA física de proveedores y rotación de secretos pendiente |
-| Perfil integral de producción (rollout 2026-10-11) | Desplegado y smoke HTTP verificado | PR #124/commit `19b91e8`; Supabase hasta `20261010130000`; Worker `b82e6c75-7a3d-423b-b128-bdd5f60adb82` al 100% | QA autenticado AAL2, documento privado, pHash con ficha elegible, vendedor verificado y Push real en dispositivo |
+| Perfil integral de producción (rollout 2026-10-11) | Desplegado; smoke HTTP y acceso al panel AAL2 verificados | PR #124/commit `19b91e8`; Supabase hasta `20261010130000`; Worker `6873a1a5-82b2-47eb-a325-30c8a0430620` al 100%; `/moderar` renderizó contenido tras el gate AAL2 el 2026-10-11 | Mutaciones administrativas, lectura de documento privado, pHash con ficha elegible, vendedor verificado y Push real en dispositivo |
 
 ## Criterio para cerrar Fase 2 según la propuesta — 2026-10-08
 
@@ -2238,3 +2238,10 @@ Este estado posterior prevalece sobre los párrafos anteriores que describen el 
 - Run [38171053663](https://github.com/BladeX1X/Cubitat/actions/runs/38171053663) completó `pg_dump`, compresión y carga de `supabase-database-backup` (293,385 bytes; vence 2027-01-09). No se modificó el esquema ni se escribieron filas en la base.
 - La operación confirma un backup manual, no respaldos automáticos: se conserva como artefacto privado de Actions por 90 días.
 - Esta evidencia posterior supersede la nota de 2026-10-11 que registraba el backup como pendiente.
+
+## Gate AAL2 de moderación observado en producción — 2026-10-11
+
+- La sesión autenticada de Chrome abrió `https://cubitathome.com/moderar`; la página mostró el panel administrativo y los conteos de propiedades de producción.
+- `AdminMfaGate` solo renderiza el contenido protegido cuando Supabase devuelve `currentLevel === 'aal2'`; observar el panel abierto en esta versión productiva confirma el paso del gate AAL2.
+- La vista quedó en el filtro predeterminado sin pendientes. No se ejecutaron aprobaciones/rechazos, no se leyó evidencia privada y no se cambiaron filas.
+- El subpunto de acceso al panel AAL2 queda verificado. Siguen pendientes las operaciones administrativas y los flujos específicos enumerados en la matriz; esta observación no los sustituye.
