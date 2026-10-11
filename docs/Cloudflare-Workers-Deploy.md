@@ -56,3 +56,16 @@ www.cubitathome.com
 ```
 
 Como el dominio fue comprado en Cloudflare, el DNS debería poder configurarse desde el mismo panel.
+
+## Perfil integral de Fase 2 en producción
+
+El Worker productivo `cubitat1` debe compilarse con:
+
+```txt
+Build command: npm run build:phase2-production
+Deploy command: npx wrangler deploy
+Root directory: /web
+Production branch: main
+```
+
+`npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fase 2. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. La configuración vigente fue comprobada en Cloudflare el 2026-10-11 y persistió tras recargar el panel. Ver matriz y evidencia en `docs/FASE2_ESTADO.md`.
