@@ -46,6 +46,10 @@ Cada capacidad vive bajo `src/modules/admin`:
   envío/revisión de evidencia y lectura del indicador, mientras RLS mantiene
   la comprobación de propietario y AAL2. El verificador de bundle exige destino
   productivo y excluye KYC, agentes, Push/correo y pHash.
+- `npm run build:phase2-production` combina KYC, verificación documental,
+  indicador Trust Score interno, distintivo de vendedor verificado y señales
+  pHash. Exige el proyecto Supabase productivo; el Worker mantiene la decisión
+  humana, AAL2 para moderación de hashes y no habilita el dispatcher de correo.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.

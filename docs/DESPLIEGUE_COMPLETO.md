@@ -903,10 +903,12 @@ Esperado: HSTS con vigencia anual e `includeSubDomains`; CSP sin
 - Producción ya incluye KYC, perfiles/agentes, métricas de contacto,
   verificación de propiedades, reglas de duplicados, retención KYC de 24 horas
   y el esquema de cola para alertas por correo.
-- La comparación de imágenes con hash perceptual pertenece al carril Fase 2
-  DEV (`dev-migrations/20261009010000_property_image_phash_duplicates.sql` y
-  `worker-phase2-dev.ts`). No forma parte de las reglas de duplicados
-  productivas ni debe promoverse hasta completar QA y aprobarlo explícitamente.
+- La comparación pHash permanece fuera del build productivo base. La promoción
+  explícita de Fase 2 usa `npm run build:phase2-production`, las migraciones
+  productivas `20261010120000` y `20261010130000`, y la bandera
+  `PHASE2_IMAGE_DUPLICATES_ENABLED`; la señal solo es visible a moderación AAL2
+  y nunca publica/rechaza automáticamente. No desplegar ese perfil antes de
+  confirmar las migraciones y el build aislado.
 - El Worker productivo programa Push y purga KYC. La entrega automatizada de
   alertas por correo está aplazada deliberadamente desde el commit
   `420b9ea` (`fix(production): defer alert email delivery`); el dispatcher de
