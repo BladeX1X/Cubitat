@@ -4,8 +4,16 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-09-09.
+Última revisión documental: 2026-10-10.
 
+## Auditoría de permisos de Fase 2 en producción — 2026-10-10
+
+- Historial remoto consultado de solo lectura con el proyecto de producción identificado explícitamente (`tohjzoncoosvjbjcakdl`): coincide hasta `20260930160000`. La única migración pendiente en `main` era el ajuste del texto de aprobación `20261009100000_simplify_property_approval_notification.sql`.
+- La consulta de catálogos mostró que `anon` y `authenticated` todavía pueden ejecutar `claim_pending_push_deliveries(integer)` y `authorize_push_delivery(uuid,integer)`. La primera devuelve credenciales de suscripción Push; solo debe ejecutarla `service_role`.
+- También se confirmó grant anónimo de `get_admin_metrics()`, privilegios de tabla más amplios que los requeridos en tablas core y Fase 2, y que `increment_property_view_count(uuid)` permite incrementar vistas de cualquier estado y usa `search_path=public`.
+- `20261010110000_harden_production_phase2_privileges.sql` replica el endurecimiento ya aplicado y verificado en DEV: revoca grants históricos innecesarios, preserva las operaciones cliente/RLS requeridas, reserva las RPC Push a `service_role`, quita el grant anónimo de métricas y limita el contador a propiedades publicadas.
+- No aplicado todavía. El dry-run contra producción, desde copia temporal aislada de las migraciones versionadas en `origin/main`, enumeró solo la notificación y esta migración de endurecimiento. No se leyeron filas de usuarios ni se cambió Supabase durante la auditoría.
+- Cloudflare indicó que `cubitat1` servía al 100% la versión `f704da45-1a0b-4c0d-86f4-3081cdbb3cb0`, subida el 2026-10-11 01:33 UTC. El registro no incluye SHA de Git; no atribuirlo al PR #119 sin evidencia adicional.
 ## KYC base de producción — 2026-09-30
 
 50. `20260930100000_add_production_kyc.sql`: incorpora de forma idempotente la
@@ -62,6 +70,10 @@ manual desde SQL Editor queda reservada para contingencias y debe respetar
 exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
+
+### Endurecimiento de permisos de Fase 2 en producción — 2026-10-10
+
+- `20261010110000_harden_production_phase2_privileges.sql`: migración preparada tras auditar los grants efectivos y las definiciones RPC remotas. Solo se aplicará después de revisar el PR y confirmar el despliegue. La auditoría identificó grants públicos de RPC Push sensibles y permisos de tabla innecesarios.
 
 ### Aviso de aprobación de publicación — 2026-10-09
 
