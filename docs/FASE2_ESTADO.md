@@ -2,11 +2,7 @@
 
 Fecha de corte: 2026-10-10
 
-Este documento resume el estado técnico de la Fase 2 sin convertir pruebas
-locales en evidencia de producción. La rama de trabajo es
-`feature/phase2-dev-remote-bootstrap`; los cambios de Fase 2 permanecen
-aislados del Worker y del proyecto Supabase productivos salvo donde se indique
-explícitamente lo contrario.
+Este documento resume el estado técnico de la Fase 2 sin convertir pruebas locales en evidencia de producción. La matriz siguiente conserva el estado de aceptación funcional DEV; no implica que el esquema productivo esté aislado. La auditoría remota del 2026-10-10 confirma una promoción selectiva de esquema y Worker en producción; se documenta en el addendum al final. La rama histórica de trabajo fue `feature/phase2-dev-remote-bootstrap`.
 
 | Entregable | Estado | Evidencia actual | Pendiente |
 | --- | --- | --- | --- |
@@ -2176,3 +2172,9 @@ El usuario confirma que el comportamiento antifraude actual funciona bien. Se ma
 - Consulta pública de solo lectura: el catálogo cargó 9 propiedades y, al activar Solo verificados, mostró “No encontramos propiedades con esos filtros”.
 - No hay en este momento una ficha pública elegible para comprobar el distintivo con una cuenta real autenticada. La prueba visual previa usó un fixture sintético ya eliminado.
 - No se creó ni modificó ninguna cuenta, verificación KYC o propiedad. Para cerrar esa evidencia hace falta una sesión de DEV con una cuenta ya elegible y una propiedad publicada; no se debe aprobar KYC real solo para hacer la prueba.
+
+## Auditoría remota de producción — 2026-10-10
+
+La consulta de solo lectura se hizo al proyecto Supabase de producción identificado explícitamente. El historial de migraciones coincide hasta `20260930160000`; por tanto, producción ya contiene la base de KYC, métricas/agentes, verificación documental, reglas de duplicados exactos, retención KYC y cola de correo. Esta evidencia corrige la nota previa que describía esos elementos como exclusivos de DEV. El Worker `cubitat1` sirve al 100% la versión `f704da45-1a0b-4c0d-86f4-3081cdbb3cb0` (upload 2026-10-11 01:33 UTC), pero Cloudflare no muestra el commit de origen.
+
+La revisión de catálogos encontró permisos de ejecución excesivos en `claim_pending_push_deliveries(integer)` y `authorize_push_delivery(uuid,integer)` para `anon` y `authenticated`; la primera devuelve credenciales Push. También se encontraron grants de tabla más amplios que las operaciones de cliente, ejecución anónima de `get_admin_metrics()` (la función conserva chequeo interno AAL2), y un contador público que afecta anuncios no publicados. El parche propuesto replica los hardenings ya verificados en DEV y queda pendiente de PR, dry-run final y autorización para aplicar a producción. No se consultaron filas de usuarios ni se modificaron datos/configuración remotos.
