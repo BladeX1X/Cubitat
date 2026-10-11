@@ -1,8 +1,8 @@
 # Estado de Fase 2
 
-Fecha de corte: 2026-10-10
+Fecha de corte: 2026-10-11
 
-Este documento resume el estado técnico de la Fase 2 sin convertir pruebas locales en evidencia de producción. La matriz siguiente conserva el estado de aceptación funcional DEV; no implica que el esquema productivo esté aislado. La auditoría remota del 2026-10-10 confirma una promoción selectiva de esquema y Worker en producción; se documenta en el addendum al final. La rama histórica de trabajo fue `feature/phase2-dev-remote-bootstrap`.
+Este documento resume el estado técnico de la Fase 2 sin convertir pruebas locales en evidencia de producción. La matriz conserva evidencia funcional de DEV; no sustituye el estado del rollout productivo. El addendum final documenta la promoción integral verificada el 2026-10-11 y prevalece sobre los pendientes de despliegue anteriores. La rama histórica de trabajo fue `feature/phase2-dev-remote-bootstrap`.
 
 | Entregable | Estado | Evidencia actual | Pendiente |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Este documento resume el estado técnico de la Fase 2 sin convertir pruebas loca
 | Reglas anti-fraude y reportes | Implementado y verificado en DEV | Reportes, límites, Turnstile, señales del anunciante, revisión IA multimodal con Groq y pHash privado con comparación visual | El usuario acepta mantener pHash `<= 8` por ahora; quedan como trabajo posterior muestras reales de falsos positivos y revisión jurídica/contenido; Turnstile se verificó con el proveedor real en contacto DEV |
 | Alertas y Push | Implementado técnicamente | Suscripción, preferencias, lectura, Service Worker, dispatcher y cron DEV; pruebas focalizadas; checklist física preparada en `docs/FASE2_PUSH_QA_FISICA.md` | Recepción/clic en Android e iOS con PWA instalada y permisos concedidos |
 | Autenticación y recuperación | Implementado y verificado en código/DEV | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y sesión MFA | QA física de proveedores y rotación de secretos pendiente |
-| Aislamiento de producción | Verificado | Bundle productivo excluye módulos exclusivos de Fase 2; HTTP DEV/producción comprobado; producción sin cambios en este ciclo | Mantener verificación en cada despliegue |
+| Perfil integral de producción (rollout 2026-10-11) | Desplegado y smoke HTTP verificado | PR #124/commit `19b91e8`; Supabase hasta `20261010130000`; Worker `b82e6c75-7a3d-423b-b128-bdd5f60adb82` al 100% | QA autenticado AAL2, documento privado, pHash con ficha elegible, vendedor verificado y Push real en dispositivo |
 
 ## Criterio para cerrar Fase 2 según la propuesta — 2026-10-08
 
@@ -2211,3 +2211,14 @@ La revisión de catálogos encontró permisos de ejecución excesivos en `claim_
   migraciones, despliegue y smoke checks.
 - El perfil no activa el dispatcher de correo de alertas; mantiene pHash bajo
   decisión humana y procesa como máximo el lote de backfill existente por Cron.
+
+## Promoción integral Fase 2 a producción — 2026-10-11
+
+Este estado posterior prevalece sobre los párrafos anteriores que describen el rollout como pendiente. El código está integrado en `main` (PR #124, merge `19b91e8`) y desplegado en producción.
+
+- Supabase `tohjzoncoosvjbjcakdl`: aplicadas `20261010120000_phase2_seller_badge_and_document_audit.sql` y `20261010130000_property_image_phash_duplicates.sql`. `supabase migration list --linked` confirmó ambas presentes en el historial remoto. Se verificaron tablas/auditoría, acceso `anon` denegado a tablas privadas, RPC de moderación sin EXECUTE para `anon`, y `get_verified_seller_ids()` pública.
+- Cloudflare Worker `cubitat1`: versión `b82e6c75-7a3d-423b-b128-bdd5f60adb82` al 100%; rutas `cubitathome.com/*` y `www.cubitathome.com/*`; cron `* * * * *` sincronizado. El cron pHash puede procesar una ficha elegible por ciclo, con imágenes permitidas del bucket `property_images`.
+- Perfil de build `phase2-production`: KYC, verificación documental, Trust Score interno, distintivo de vendedor y pHash habilitados; configuración excluye DEV y dispatcher Resend.
+- Smoke en producción: `/`, `/resultados`, `/publicar`, `/moderar`, `/manifest.webmanifest` y `/sitemap.xml` devolvieron HTTP 200; 10 de 10 respuestas al home coincidieron con el HTML generado por ese build. El GET inválido al endpoint pHash devolvió 405, consistente con POST requerido. Esto verifica entrega técnica, no reemplaza una sesión de usuario autenticada.
+- QA aún pendiente: sesión de moderador con AAL2; carga/lectura de documento privado y estado del propietario; comparación pHash en un anuncio elegible; distintivo con vendedor verificado elegible; recepción real de Push en dispositivo. El dispatcher de correo Resend continúa excluido.
+- Sin respaldo previo al rollout: Supabase Free no incluye respaldo automático; el workflow manual de GitHub falló porque `SUPABASE_DB_PASSWORD` no está configurado. No se alteraron filas de usuarios durante la verificación; las migraciones son aditivas y las tablas nuevas inician vacías. Resolver respaldos antes de futuras operaciones destructivas.
