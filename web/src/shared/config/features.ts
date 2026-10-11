@@ -25,4 +25,5 @@ export const PROPERTY_VERIFICATION_UI_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED === 'true'
 
 /** Image duplicate moderation is available in the dedicated DEV Phase 2 profile. */
-export const IMAGE_DUPLICATE_MODERATION_ENABLED = import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED === 'true'
+export const IMAGE_DUPLICATE_MODERATION_ENABLED = import.meta.env.DEV
+  || import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED === 'true'
