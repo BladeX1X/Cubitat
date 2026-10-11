@@ -18,9 +18,10 @@ import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/prop
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
-import { PROPERTY_VERIFICATION_UI_ENABLED } from '../../shared/config/features'
 
-const PropertyVerificationPanel = PROPERTY_VERIFICATION_UI_ENABLED
+const PropertyVerificationPanel = import.meta.env.DEV
+  || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+  || import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED === 'true'
   ? lazy(() => import('../../modules/property-verification/PropertyVerificationPanel').then((module) => ({
       default: module.PropertyVerificationPanel,
     })))
