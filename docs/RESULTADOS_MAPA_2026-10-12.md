@@ -22,3 +22,10 @@
 - `npm run lint`, `npx tsc -b --pretty false` y `npx vite build` pasan localmente.
 - Sin escrituras de Supabase ni anuncios sintéticos nuevos.
 
+## Diagnóstico del mapa base — 2026-10-12
+
+- En producción, el estilo Liberty y el manifiesto CSP permiten pedir recursos a `tiles.openfreemap.org`. Desde el entorno de inspección, TileJSON, tesela vectorial versionada, tesela de relieve y glifos respondieron HTTP 200. El endpoint vectorial sin el segmento de versión devolvió un cuerpo vacío; el TileJSON actual anuncia la ruta versionada.
+- En el navegador se ven el relieve raster y los marcadores DOM de respaldo, pero no se aprecian etiquetas o carreteras. Esto sitúa el fallo en la carga/pintado de los recursos vectoriales en el navegador, aunque la inspección de red remota no pudo obtener el detalle de sus fallos.
+- Se añadió observabilidad `map.on('error')` limitada por instancia. Registra códigos cerrados y categorías seguras (`vector_tiles`, `raster_tiles`, `property_data`, `other`), sin volcar mensajes ni URLs. La causa final queda pendiente de observar esos eventos en un despliegue.
+- Aún no se ha desplegado esta instrumentación a producción ni se afirma que los errores del proveedor sean la causa.
+

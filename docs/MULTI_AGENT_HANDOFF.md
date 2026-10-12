@@ -1,5 +1,11 @@
 # Relevo y coordinación multiagente de Cubitat
 
+## Diagnóstico de capas vectoriales del mapa — 2026-10-12
+
+- Producción muestra el relieve raster y marcadores de respaldo, pero no se aprecian calles ni etiquetas. CSP permite `tiles.openfreemap.org`; TileJSON, tesela versionada, relieve y glifos responden HTTP 200 desde la inspección. El endpoint vectorial sin versión no devuelve contenido, mientras el TileJSON publica rutas fechadas.
+- Se añadió un listener `map.on('error')` con códigos cerrados y categorías de recurso seguras, deduplicado por instancia. Nunca registra mensaje original, URL ni IDs; helper y pruebas en `web/src/modules/maps/lib/mapErrorDiagnostics.ts`.
+- Lint correcto; suite completa: 638 aprobadas y 1 omitida; build correcto con `SITEMAP_MODE=static` (sitemap público preservado). **Pendiente:** desplegar la instrumentación, observar la consola productiva y corregir la causa real antes de marcar el mapa base cerrado. `.agents/AGENTS.md` no estaba disponible en este checkout.
+
 ## Guard de callback y remitente de autenticación DEV — 2026-09-28
 
 - Con `PHASE2_ENABLED=true`, el reenvío de confirmación exige el origen DEV y
