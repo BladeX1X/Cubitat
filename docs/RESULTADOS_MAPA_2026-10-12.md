@@ -16,6 +16,9 @@
 
 ## Estado y verificación
 
-- Implementado localmente en rama `fix/rent-results-map-clustering`; todavía requiere revisión/CI y despliegue antes de comprobarse en producción.
-- `npm run lint`, `npx tsc -b --pretty false` y `npx vite build` pasan.
-- No se ejecutaron pruebas unitarias en esta tarea.
+- PR [#135](https://github.com/BladeX1X/Cubitat/pull/135) se fusionó a `main` con merge `e23e9468f7ee3fc31557b2ddce5c959498f03a6d`; CI pasó auditoría, lint, pruebas unitarias y builds de perfiles base/DEV/documental/Fase 2.
+- El Worker `cubitat1` desplegó `6b62585b-aaaa-44c4-b7eb-4623e099700b` al 100% el 2026-10-12 18:02 UTC.
+- Tras recargar producción, `/resultados?operacion=alquiler` mostró 96 anuncios y grupos numerados. Al activar estacionamiento `2`, el contador y la lista mostraron 20 y el mapa actualizó sus pines a alquileres/grupos. Pulsar `Ver 20 resultados` cerró el filtro manteniendo los 20 anuncios.
+- `npm run lint`, `npx tsc -b --pretty false` y `npx vite build` pasan localmente.
+- Sin escrituras de Supabase ni anuncios sintéticos nuevos.
+
