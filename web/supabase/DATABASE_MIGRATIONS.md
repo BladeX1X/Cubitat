@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-10-11.
+Última revisión documental: 2026-10-12.
 
 ## Auditoría de permisos de Fase 2 en producción — 2026-10-10
 
@@ -771,11 +771,20 @@ administrativa AAL2. El reset y la carga DEV son locales; no deben sustituirse p
   `b0e3ddfe-d6cc-4f7b-a5bf-e6da2355ea9f`.
 - Exclusiva de Supabase DEV. La producción no recibe esta RPC ni el distintivo.
 
+### DEV-F2.22. `dev-migrations/20261012170000_include_verified_admin_sellers.sql`
+
+- Incluye perfiles `admin` en `get_verified_seller_ids()` cuando KYC está
+  verificado y existe al menos una propiedad publicada. Devuelve únicamente IDs;
+  no expone campos ni estados KYC.
+- Mantiene el EXECUTE público de la proyección mínima y no cambia RLS ni roles.
+- Aplicar únicamente en Supabase DEV.
+
 ## Migraciones integrales de Fase 2 en producción — 2026-10-11
 
 Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones son las de `supabase/migrations/`; no convertir las migraciones exclusivas de `dev-migrations/` en productivas.
 
 - `20261010120000_phase2_seller_badge_and_document_audit.sql`: crea la proyección pública mínima `get_verified_seller_ids()` y el registro inmutable de auditoría documental, integrado con `admin_moderation_audit_log`. Aplicada con `supabase db push --linked --yes`; historial remoto confirmado.
+- `20261012170000_include_verified_admin_sellers.sql`: amplía `get_verified_seller_ids()` a perfiles `admin` con KYC verificado y al menos una propiedad publicada; solo devuelve IDs. Aplicada a `tohjzoncoosvjbjcakdl` el 2026-10-12. `migration list --linked` confirmó sincronía y una consulta sin exponer IDs confirmó que el anuncio productivo «Casa en venta en Holguín» califica.
 - `20261010130000_property_image_phash_duplicates.sql`: crea fingerprints perceptuales privados, señales de coincidencia y RPC de estado/candidatas para moderación AAL2. Las escrituras de indexación están limitadas al Worker/service role. Aplicada con `supabase db push --linked --yes`; historial remoto confirmado.
 - Verificación de permisos: `anon` no ejecuta RPCs administrativas ni lee tablas privadas. `authenticated` conserva grants SELECT sujetos a políticas RLS/AAL2; `get_verified_seller_ids()` está disponible para la consulta pública mínima.
 - La consulta final de migraciones mostró local/remoto iguales hasta `20261010130000`.
