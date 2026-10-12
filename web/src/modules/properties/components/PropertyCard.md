@@ -24,6 +24,7 @@ type PropertyCardProps = {
 
 - Imagen de portada grande:
   - En builds habilitados de Fase 2 DEV o producción, muestra «Vendedor verificado» o «Agente verificado» solo si el propietario cumple la verificación de identidad y tiene una propiedad publicada.
+  - Los perfiles propietarios `buyer`, `seller` y `admin` pueden mostrar «Vendedor verificado» bajo esas condiciones; el estado de verificación nunca se expone en la tarjeta.
   - Usa el fallback SVG local inmediato cuando el anuncio no tiene portada, evitando una descarga genérica remota en el LCP.
   - Usa `property.coverImage`, `property.images` y `property.coverTone`.
   - Muestra badge editorial cuando existe.
