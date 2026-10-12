@@ -18,3 +18,4 @@
 8. **Coordenadas defensivas:** Normaliza tanto `latitude/longitude` como el formato legado `lat/lng` y omite de la fuente GeoJSON cualquier coordenada no finita o fuera de rango para que una fila defectuosa no derribe resultados.
 9. **Sincronización del respaldo:** Regenera los marcadores de respaldo cuando cambia la fuente filtrada o el viewport; elimina los marcadores viejos y entrega los IDs de un grupo a la lista de resultados al pulsarlo.
 10. **Viewport inicial:** No filtra la lista con los límites provisionales del mapa al abrirse; la lista se limita al área visible después de que el usuario mueve o acerca el mapa.
+11. **Diagnóstico de recursos:** Escucha los errores posteriores a la inicialización de MapLibre y registra una sola vez cada combinación de recurso/código. Los recursos se reducen a categorías permitidas (teselas vectoriales, relieve, datos de propiedades u otros) y los mensajes originales/URLs no se escriben en consola.

@@ -6,6 +6,7 @@ import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
+import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
@@ -83,6 +84,26 @@ export function MapLibreAdapter({
         minZoom: 2,
         maxZoom: 15,
         attributionControl: false,
+      })
+
+      const reportedMapErrors = new Set<string>()
+      mapRef.current.on('error', (event) => {
+        if (abortController.signal.aborted) return
+
+        const errorEvent = event as maplibregl.ErrorEvent & { sourceId?: unknown }
+        const resource = classifyMapErrorResource(errorEvent.sourceId)
+        const code = classifyMapError(errorEvent.error)
+        const signature = `${resource}:${code}`
+        if (reportedMapErrors.has(signature)) return
+        reportedMapErrors.add(signature)
+
+        logSafeEvent({
+          module: 'maps',
+          action: 'maplibre_resource',
+          level: 'error',
+          code,
+          context: { resource },
+        })
       })
 
       mapRef.current.addControl(

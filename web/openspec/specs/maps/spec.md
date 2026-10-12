@@ -54,6 +54,13 @@ El sistema MUST encapsular la integracion de MapLibre detras de un componente/ad
 - AND MUST evitar romper toda la pagina
 - AND SHOULD mostrar fallback o estado de carga/error si el producto lo define
 
+#### Scenario: Error al cargar recursos del mapa
+- GIVEN el estilo ya inicializó y falla una tesela, una fuente de glifos o el contexto WebGL
+- WHEN MapLibre emite un error de recurso
+- THEN el sistema MUST registrar una categoría segura del recurso y un código cerrado del error
+- AND MUST omitir el mensaje original, la URL, los identificadores y cualquier dato personal
+- AND MUST limitar la repetición de errores equivalentes durante la vida de la instancia del mapa
+
 ### Requirement: Clusters y pines
 El sistema MUST representar muchas propiedades con clusters y pines comprensibles.
 
