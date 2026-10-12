@@ -77,3 +77,11 @@ El sistema MUST evitar revelar direccion exacta si el producto requiere ubicacio
 - WHEN se muestra en mapa publico
 - THEN el sistema SHOULD usar coordenadas aproximadas o zona
 - AND MUST evitar mostrar calle exacta salvo requisito explicito
+
+### Requirement: Respaldo de pines sincronizado y agrupado
+#### Scenario: Las capas del mapa no se pintan
+- GIVEN las capas GeoJSON no se pueden pintar y se activa el respaldo de marcadores DOM
+- WHEN cambian las propiedades filtradas o el usuario desplaza o acerca el mapa
+- THEN el respaldo MUST actualizarse con las propiedades vigentes y retirar pines obsoletos
+- AND MUST agrupar propiedades cercanas en pantalla con un conteo accesible
+- AND al pulsar un grupo MUST mostrar sus propiedades o acercar el mapa al grupo
