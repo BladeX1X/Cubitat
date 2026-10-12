@@ -395,11 +395,6 @@ export function MapLibreAdapter({
     map.on('rotateend', handleViewportChange)
     map.on('pitchend', handleViewportChange)
 
-    // Fire initial viewport change after the map renders
-    requestAnimationFrame(() => {
-      onViewportChangeRef.current?.(getVisiblePropertyIds())
-    })
-
     return () => {
       map.off('click', handleMapClick)
       map.off('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)
@@ -442,6 +437,7 @@ export function MapLibreAdapter({
     let cancelled = false
     let retryTimer: number | undefined
     let stopRetryTimer: number | undefined
+    let lastFallbackSignature: string | null = null
     const clearFallbackMarkers = () => {
       fallbackMarkersRef.current.forEach((marker) => marker.remove())
       fallbackMarkersRef.current = []
@@ -466,30 +462,73 @@ export function MapLibreAdapter({
         renderedFeatureCount = 0
       }
 
-      if (renderedFeatureCount > 0 || fallbackMarkersRef.current.length > 0) {
-        if (renderedFeatureCount > 0 && retryTimer !== undefined) {
-          window.clearInterval(retryTimer)
-        }
+      if (renderedFeatureCount > 0) {
+        clearFallbackMarkers()
+        lastFallbackSignature = null
+        if (retryTimer !== undefined) window.clearInterval(retryTimer)
         return
       }
 
-      fallbackMarkersRef.current = sourceDataRef.current.features.flatMap((feature) => {
-        const id = feature.properties?.id as string | undefined
-        const coordinates = feature.geometry.coordinates as [number, number]
-        if (!id) return []
+      // Rebuild from the latest filtered source each time. Keeping the old
+      // markers here made sale pins persist after switching to rentals and
+      // prevented fallback markers from ever grouping.
+      const groups = new Map<string, typeof sourceDataRef.current.features>()
+      const cellSize = 65
+      for (const feature of sourceDataRef.current.features) {
+        const pixel = map.project(feature.geometry.coordinates as [number, number])
+        const key = `${Math.floor(pixel.x / cellSize)}:${Math.floor(pixel.y / cellSize)}`
+        groups.set(key, [...(groups.get(key) ?? []), feature])
+      }
+
+      const signature = [...groups.entries()]
+        .map(([cell, features]) => `${cell}:${features.map((feature) => feature.properties?.id).join(',')}`)
+        .sort()
+        .join('|')
+      if (signature === lastFallbackSignature) return
+      lastFallbackSignature = signature
+      clearFallbackMarkers()
+
+      fallbackMarkersRef.current = [...groups.values()].flatMap((features) => {
+        const entries = features.flatMap((feature) => {
+          const id = feature.properties?.id as string | undefined
+          return id ? [{
+            id,
+            title: String(feature.properties?.title ?? 'propiedad'),
+            label: String(feature.properties?.label ?? 'Ver'),
+            coordinates: feature.geometry.coordinates as [number, number],
+          }] : []
+        })
+        if (entries.length === 0) return []
 
         const element = document.createElement('button')
         element.type = 'button'
-        element.className = 'maplibre-property-marker'
-        element.textContent = String(feature.properties?.label ?? 'Ver')
-        element.setAttribute('aria-label', `Ver ${String(feature.properties?.title ?? 'propiedad')}`)
-        element.addEventListener('click', () => onSelectPropertyRef.current(id))
+        const isCluster = entries.length > 1
+        element.className = isCluster
+          ? 'maplibre-property-marker maplibre-cluster-marker'
+          : 'maplibre-property-marker'
+        element.textContent = isCluster ? String(entries.length) : entries[0].label
+        element.setAttribute(
+          'aria-label',
+          isCluster
+            ? `${entries.length} propiedades agrupadas. Ver resultados del grupo`
+            : `Ver ${entries[0].title}`,
+        )
+        element.addEventListener('click', () => {
+          if (entries.length > 1 && onSelectClusterRef.current) {
+            onSelectClusterRef.current(entries.map((entry) => entry.id))
+            return
+          }
+          if (entries.length === 1) {
+            onSelectPropertyRef.current(entries[0].id)
+            return
+          }
+          const coordinates = entries[0].coordinates
+          map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 15) })
+        })
 
-        return [
-          new maplibregl.Marker({ element, anchor: 'bottom' })
-            .setLngLat(coordinates)
-            .addTo(map),
-        ]
+        const longitude = entries.reduce((sum, entry) => sum + entry.coordinates[0], 0) / entries.length
+        const latitude = entries.reduce((sum, entry) => sum + entry.coordinates[1], 0) / entries.length
+        return [new maplibregl.Marker({ element, anchor: 'bottom' }).setLngLat([longitude, latitude]).addTo(map)]
       })
     }
 
@@ -501,15 +540,19 @@ export function MapLibreAdapter({
       if (retryTimer !== undefined) window.clearInterval(retryTimer)
     }, 6000)
     map.once('idle', renderFallbackMarkers)
+    map.on('moveend', renderFallbackMarkers)
+    map.on('sourcedata', renderFallbackMarkers)
     map.triggerRepaint()
 
     return () => {
       cancelled = true
+      map.off('moveend', renderFallbackMarkers)
+      map.off('sourcedata', renderFallbackMarkers)
       if (retryTimer !== undefined) window.clearInterval(retryTimer)
       if (stopRetryTimer !== undefined) window.clearTimeout(stopRetryTimer)
       clearFallbackMarkers()
     }
-  }, [mapReady])
+  }, [mapReady, sourceData])
 
   // When the property list (bounds) changes, fit the map to show all results.
   // maxZoom: 13 so a municipality-level search zooms in properly.
