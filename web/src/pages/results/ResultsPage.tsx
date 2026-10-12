@@ -199,7 +199,9 @@ export function ResultsPage({
     let list = properties
 
     if (PHASE_TWO_ENABLED && filters.verifiedOnly) {
-      list = list.filter((property) => property.isVerifiedAgent === true)
+      list = list.filter(
+        (property) => property.isVerifiedAgent === true || property.isVerifiedSeller === true,
+      )
     }
 
     if (sortBy === 'relevance') return list
