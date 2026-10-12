@@ -96,8 +96,8 @@ El sistema MUST permitir crear alertas desde la barra de filtros y desde accione
 - AND despues de iniciar sesion MUST crear la alerta pendiente o mostrar error recuperable
 
 ### Requirement: Verificacion canonica de anunciantes
-El sistema MUST mostrar y filtrar agentes verificados usando una proyeccion
-canonica del backend.
+El sistema MUST mostrar y filtrar agentes y vendedores verificados usando las
+proyecciones canonicas del backend.
 
 #### Scenario: Mostrar la insignia de agente verificado
 - GIVEN una propiedad publicada pertenece a un perfil con rol `agent`
@@ -111,7 +111,7 @@ canonica del backend.
 - GIVEN el usuario activa `Solo Verificados`
 - WHEN el sistema filtra los resultados
 - THEN MUST conservar unicamente propiedades marcadas por la proyeccion
-  canonica de agentes verificados
+  canonica de agentes o vendedores verificados
 
 #### Scenario: Trust Score diferido
 - GIVEN Trust Score no forma parte del alcance aprobado actual
