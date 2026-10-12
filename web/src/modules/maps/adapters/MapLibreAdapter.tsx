@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
@@ -16,6 +17,11 @@ const CLUSTER_COUNT_LAYER_ID = 'property-cluster-count'
 const PROPERTY_SELECTED_HALO_LAYER_ID = 'property-selected-halo'
 const PROPERTY_POINT_LAYER_ID = 'property-points'
 const PROPERTY_LABEL_LAYER_ID = 'property-labels'
+
+// Vite does not emit MapLibre's package-relative worker URL automatically.
+// Bundle it as a normal asset so production serves JavaScript here instead of
+// falling back to the SPA HTML route.
+maplibregl.setWorkerUrl(maplibreWorkerUrl)
 
 export function MapLibreAdapter({
   properties,

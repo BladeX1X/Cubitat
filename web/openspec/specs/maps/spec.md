@@ -92,3 +92,13 @@ El sistema MUST evitar revelar direccion exacta si el producto requiere ubicacio
 - THEN el respaldo MUST actualizarse con las propiedades vigentes y retirar pines obsoletos
 - AND MUST agrupar propiedades cercanas en pantalla con un conteo accesible
 - AND al pulsar un grupo MUST mostrar sus propiedades o acercar el mapa al grupo
+
+### Requirement: Worker de MapLibre empaquetado
+El build MUST incluir el worker de MapLibre y sus dependencias como recursos JavaScript servibles, y configurar MapLibre para usar el URL emitido por Vite.
+
+#### Scenario: Abrir y acercar el mapa de búsqueda
+- GIVEN el Worker de Cubitat aplica fallback SPA a las rutas desconocidas
+- WHEN el usuario abre la vista de mapa
+- THEN la URL del worker MUST responder con JavaScript del build, no con `index.html`
+- AND MapLibre MUST cargar teselas vectoriales y dibujar el mapa base al acercar, además de los marcadores de propiedades
+- AND un fallo del worker MUST registrarse como error de recurso del mapa
