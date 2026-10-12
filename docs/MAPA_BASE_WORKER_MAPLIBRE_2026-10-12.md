@@ -1,7 +1,7 @@
 # Mapa base de MapLibre: worker sin empaquetar
 
 Fecha: 2026-10-12  
-Estado: corrección implementada y validada localmente; pendiente integración y verificación productiva.
+Estado: desplegado y verificado en producción el 2026-10-12.
 
 ## Síntoma y causa
 
@@ -19,8 +19,13 @@ En `https://cubitathome.com/resultados?operacion=alquiler` los controles de zoom
 - Se sirvió el worker del nuevo build en una sesión de Chrome abierta contra la página productiva. No aparecieron errores de MapLibre; las teselas PBF y los glifos respondieron HTTP 200; el mapa mostró Florida, Bahamas, Cuba, calles y etiquetas junto a las agrupaciones.
 - Supabase no recibió escrituras.
 
-Esta prueba demuestra el efecto del arreglo en el runtime, pero no equivale a un despliegue productivo.
+## Verificación en producción
 
-## Pendiente
+- PR [#138](https://github.com/BladeX1X/Cubitat/pull/138) integrada a `main` como `a34a476d69c7196b030dea5e51d7b542917b5191`.
+- Worker `cubitat1` desplegado al 100% como versión `84ea6424-c9a5-4edf-8a1a-a5dffbd7dbcb`.
+- Chrome pidió `/assets/maplibre-gl-worker-DoDmivcI.js` y recibió `200 text/javascript`; el navegador creó el worker correctamente.
+- Al acercar, se cargaron PBF de zoom 5 y 6. No hubo errores de MapLibre y la captura productiva muestra calles, Cuba, ciudades y topónimos junto con los grupos.
+- El zoom actualiza la lista con las propiedades que quedan dentro del área visible.
+- Sin cambios ni escrituras de Supabase.
 
-Integrar a `main`, dejar que Workers Builds compile/despliegue `phase2-production` y comprobar en producción que el worker responde con JavaScript y que el zoom revela calles y topónimos.
+La corrección del worker queda cerrada. Como mejora visual opcional se puede revisar el contraste del estilo en zoom nacional y la separación de grupos sobre los centros urbanos.
