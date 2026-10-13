@@ -41,7 +41,7 @@ jobs:
             echo "::error::SUPABASE_DB_URL does not identify the Cubitat production project."
             exit 1
           fi
-          plan="$(supabase db push --db-url "$SUPABASE_DB_URL" --dry-run)"
+          plan="$(supabase db push --db-url "$SUPABASE_DB_URL" --dry-run 2>&1)"
           printf '%s\n' "$plan"
           migrations=()
           while IFS= read -r line; do
