@@ -4,7 +4,22 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-10-12.
+Última revisión documental: 2026-10-13.
+
+## Excepción temporal de MFA administrativo en producción — 2026-10-13
+
+- `20261013180000_temporary_admin_mfa_bypass.sql` prepara una suspensión de
+  siete días que comienza al aplicar la migración. No elimina factores TOTP.
+- La fecha única vive en una tabla sin acceso para clientes; la función
+  `is_admin_aal2()` vuelve a exigir AAL2 cuando la fecha vence, sin otra
+  publicación. El RPC de lectura solo devuelve esa fecha al usuario admin.
+- El panel muestra el vencimiento y se bloquea de nuevo automáticamente; el
+  Worker consulta la misma fecha para sus rutas de métricas y moderación IA.
+- **Estado:** preparado y probado en código; pendiente fusionar, desplegar el
+  Worker y aplicar únicamente esta migración al proyecto de producción
+  `tohjzoncoosvjbjcakdl`. El reloj de siete días no empezará antes de aplicar
+  la migración. Esta es una excepción de seguridad temporal, no un mecanismo
+  para eliminar MFA en la recuperación de una cuenta.
 
 ## Auditoría de permisos de Fase 2 en producción — 2026-10-10
 

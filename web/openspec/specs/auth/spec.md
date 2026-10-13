@@ -119,11 +119,26 @@ El sistema MUST resolver permisos desde la sesion y el perfil del usuario sin co
 ### Requirement: Segundo factor para administracion
 El sistema MUST exigir TOTP verificado y una sesion `aal2` antes de abrir funciones administrativas.
 
+La única excepción temporal MUST estar activada por una migración explícita con
+fecha de expiración en la base. La excepción MUST aplicar solo a perfiles admin,
+exponer su vencimiento al panel y dejar de funcionar automáticamente al expirar,
+sin eliminar ni desverificar factores TOTP.
+
 #### Scenario: Administrador sin segundo factor
 - GIVEN un usuario con rol administrador y una sesion `aal1`
 - WHEN intenta abrir el panel administrativo
 - THEN MUST completar enrolamiento o desafio TOTP antes de ver datos administrativos
 - AND el cliente MUST NOT persistir ni registrar QR, secreto o codigo TOTP
+
+#### Scenario: Excepción temporal de producción
+- GIVEN existe un override de MFA administrativo con vencimiento futuro
+- WHEN un administrador accede al panel con sesión `aal1`
+- THEN el panel y las operaciones administrativas permiten acceso solo mientras el override siga vigente
+- AND el panel informa la fecha de vencimiento
+- AND la base y el Worker MUST comprobar el mismo vencimiento en cada operación sensible
+- AND tras la expiración MUST volver a exigir AAL2 sin depender de una nueva publicación
+- AND el factor TOTP de la cuenta MUST permanecer inscrito y verificado
+- AND una sesión `aal1` de usuario no administrador MUST continuar bloqueada
 
 #### Scenario: Usuario normal
 - GIVEN un usuario autenticado sin rol administrador

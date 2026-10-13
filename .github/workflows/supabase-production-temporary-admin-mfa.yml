@@ -1,0 +1,108 @@
+name: Enable temporary production admin MFA bypass
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+jobs:
+  enable-temporary-bypass:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.108.0
+
+      - name: Confirm production target and exact migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$SUPABASE_DB_URL" ]]; then
+            echo "::error::Missing SUPABASE_DB_URL GitHub Actions secret."
+            exit 1
+          fi
+          if [[ "$SUPABASE_DB_URL" != *"postgres.tohjzoncoosvjbjcakdl"* ]]; then
+            echo "::error::SUPABASE_DB_URL does not identify Cubitat production."
+            exit 1
+          fi
+          plan="$(supabase db push --db-url "$SUPABASE_DB_URL" --dry-run 2>&1)"
+          printf '%s\n' "$plan"
+          migrations=()
+          while IFS= read -r line; do
+            if [[ "$line" == *".sql" ]]; then
+              migrations+=("${line##* }")
+            fi
+          done <<< "$plan"
+          printf 'Pending migration files: %s\n' "${migrations[*]:-none}"
+          if (( ${#migrations[@]} != 1 )) || [[ "${migrations[0]:-}" != "20261013180000_temporary_admin_mfa_bypass.sql" ]]; then
+            echo "::error::Expected only 20261013180000; no migration was applied."
+            exit 1
+          fi
+
+      - name: Apply the seven-day override
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
+      - name: Verify remote migration history
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          history="$(supabase migration list --db-url "$SUPABASE_DB_URL")"
+          printf '%s\n' "$history"
+          if ! printf '%s\n' "$history" | grep -q '20261013180000'; then
+            echo "::error::Temporary admin MFA migration is missing from remote history."
+            exit 1
+          fi
+
+      - name: Verify active deadline and restricted access
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/verify-admin-mfa-override.sql" <<'SQL'
+          DO $$
+          DECLARE
+            override_expiry timestamptz;
+          BEGIN
+            SELECT expires_at INTO override_expiry
+            FROM public.admin_mfa_temporary_overrides
+            WHERE override_key = 'global';
+
+            IF override_expiry IS NULL
+              OR override_expiry <= statement_timestamp()
+              OR override_expiry > statement_timestamp() + interval '7 days'
+              OR override_expiry < statement_timestamp() + interval '6 days 23 hours'
+            THEN
+              RAISE EXCEPTION 'Temporary admin MFA override deadline is missing or outside the expected seven-day window';
+            END IF;
+
+            IF NOT has_function_privilege('authenticated', 'public.get_admin_mfa_bypass_until()', 'EXECUTE')
+              OR has_function_privilege('anon', 'public.get_admin_mfa_bypass_until()', 'EXECUTE')
+              OR has_table_privilege('authenticated', 'public.admin_mfa_temporary_overrides', 'SELECT')
+            THEN
+              RAISE EXCEPTION 'Temporary admin MFA override access grants are not restricted as expected';
+            END IF;
+
+            RAISE NOTICE 'Temporary admin MFA override expires at %', override_expiry;
+          END;
+          $$;
+          SQL
+          supabase db query --db-url "$SUPABASE_DB_URL" --file "$RUNNER_TEMP/verify-admin-mfa-override.sql"

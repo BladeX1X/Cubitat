@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { AdminMfaGate } from './AdminMfaGate'
 
-const { getAal, listFactors, enroll, unenroll, challengeAndVerify } = vi.hoisted(() => ({
+const { getAal, listFactors, enroll, unenroll, challengeAndVerify, rpc } = vi.hoisted(() => ({
   getAal: vi.fn(),
   listFactors: vi.fn(),
   enroll: vi.fn(),
   unenroll: vi.fn(),
   challengeAndVerify: vi.fn(),
+  rpc: vi.fn(),
 }))
 
 vi.mock('../../../shared/lib/supabaseClient', () => ({
   supabase: {
+    rpc,
     auth: {
       mfa: {
         getAuthenticatorAssuranceLevel: getAal,
@@ -27,6 +29,7 @@ vi.mock('../../../shared/lib/supabaseClient', () => ({
 describe('AdminMfaGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    rpc.mockResolvedValue({ data: null, error: null })
     getAal.mockResolvedValue({
       data: { currentLevel: 'aal2', nextLevel: 'aal2' },
       error: null,
@@ -38,6 +41,40 @@ describe('AdminMfaGate', () => {
     render(<AdminMfaGate onSessionExpired={vi.fn()}><div>Contenido administrativo</div></AdminMfaGate>)
 
     expect(await screen.findByText('Contenido administrativo')).toBeInTheDocument()
+  })
+
+  it('permite temporalmente al administrador mientras el vencimiento de base sigue vigente', async () => {
+    const expiresAt = new Date(Date.now() + 60_000).toISOString()
+    rpc.mockResolvedValue({ data: expiresAt, error: null })
+    getAal.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' }, error: null })
+
+    render(<AdminMfaGate onSessionExpired={vi.fn()}><div>Contenido administrativo</div></AdminMfaGate>)
+
+    expect(await screen.findByText('Contenido administrativo')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/segundo factor no se exige temporalmente/i)
+    expect(getAal).not.toHaveBeenCalled()
+    expect(enroll).not.toHaveBeenCalled()
+  })
+
+  it('vuelve a bloquear la sesión cuando vence el periodo aunque el panel siga abierto', async () => {
+    vi.useFakeTimers()
+    const startedAt = new Date('2026-10-13T00:00:00.000Z')
+    vi.setSystemTime(startedAt)
+    rpc.mockResolvedValue({ data: new Date(startedAt.getTime() + 1000).toISOString(), error: null })
+    getAal.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' }, error: null })
+    listFactors.mockResolvedValue({
+      data: { all: [{ id: 'factor-1', factor_type: 'totp', status: 'verified' }], totp: [{ id: 'factor-1' }] },
+      error: null,
+    })
+
+    render(<AdminMfaGate onSessionExpired={vi.fn()}><div>Contenido administrativo</div></AdminMfaGate>)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(screen.getByText('Contenido administrativo')).toBeInTheDocument()
+
+    await act(async () => { vi.advanceTimersByTime(1000); await Promise.resolve(); await Promise.resolve() })
+    expect(screen.getByLabelText(/código de 6 dígitos/i)).toBeInTheDocument()
+    expect(screen.queryByText('Contenido administrativo')).not.toBeInTheDocument()
+    vi.useRealTimers()
   })
 
   it('pide el código sin mostrar el panel cuando ya existe un factor verificado', async () => {

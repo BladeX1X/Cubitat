@@ -220,6 +220,29 @@ function hasAdminSecondFactor(authHeader: string): boolean {
   return getJwtAssuranceLevel(authHeader) === 'aal2';
 }
 
+async function hasActiveAdminMfaBypass(authHeader: string, env: Env): Promise<boolean> {
+  try {
+    const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/get_admin_mfa_bypass_until`, {
+      method: 'POST',
+      headers: {
+        apikey: env.VITE_SUPABASE_ANON_KEY,
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (!response.ok) return false;
+    const expiresAt: unknown = await response.json();
+    return typeof expiresAt === 'string' && Date.parse(expiresAt) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+async function canAdminUseSensitiveFeatures(authHeader: string, env: Env): Promise<boolean> {
+  return hasAdminSecondFactor(authHeader) || hasActiveAdminMfaBypass(authHeader, env);
+}
+
 async function canModerateProperty(propertyId: string, userId: string, authHeader: string, env: Env): Promise<boolean> {
   const response = await fetch(
     `${env.VITE_SUPABASE_URL}/rest/v1/properties?id=eq.${encodeURIComponent(propertyId)}&select=id,user_id`,
@@ -246,7 +269,7 @@ async function canModerateProperty(propertyId: string, userId: string, authHeade
   }
 
   return (await getUserRole(userId, authHeader, env)) === 'admin'
-    && hasAdminSecondFactor(authHeader);
+    && await canAdminUseSensitiveFeatures(authHeader, env);
 }
 
 async function isRateLimited(env: Env, ip: string, limit: number, windowMs: number): Promise<boolean> {
@@ -804,7 +827,7 @@ export function createWorker(options: WorkerOptions = {}) {
       }
 
       const role = await getUserRole(user.id, authHeader, env);
-      if (role !== 'admin' || !hasAdminSecondFactor(authHeader)) {
+      if (role !== 'admin' || !await canAdminUseSensitiveFeatures(authHeader, env)) {
         return jsonResponse({ error: 'Forbidden' }, 403);
       }
 
@@ -950,6 +973,7 @@ export function createWorker(options: WorkerOptions = {}) {
       ];
       const allowedAuthenticatedRpcs = [
         'get_admin_metrics',
+        'get_admin_mfa_bypass_until',
         ...(options.additionalAuthenticatedRpcs ?? []),
       ];
 
