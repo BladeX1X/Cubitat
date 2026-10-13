@@ -1,0 +1,6 @@
+- [x] Agregar filtros de texto, operación, tipo y fecha en la pestaña Propiedades.
+- [x] Aplicar criterios en Supabase antes de paginar y contar resultados coincidentes.
+- [x] Mantener filtros al cambiar de página y limpiar criterios explícitamente.
+- [x] Cubrir repositorio, hook y controles con pruebas.
+- [x] Ejecutar lint, suite completa y build.
+- [ ] Integrar por PR y verificar visualmente en producción antes de marcarlo como cerrado.

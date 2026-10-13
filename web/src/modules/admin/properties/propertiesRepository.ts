@@ -1,7 +1,7 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/features'
 import { PAGE_SIZE } from '../core/constants'
-import type { ModerationFilter, ModerationProperty, StatusCounts, StatusFilter } from '../core/types'
+import type { ModerationFilter, ModerationProperty, PropertyModerationFilters, StatusCounts, StatusFilter } from '../core/types'
 
 const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message'
 
@@ -55,7 +55,27 @@ export async function fetchStatusCounts(): Promise<StatusCounts> {
   }
 }
 
-export async function fetchModerationProperties(status: ModerationFilter, page: number) {
+function safePropertySearch(value: string) {
+  return value
+    .trim()
+    .replace(/[(),.*:%\\"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 100)
+}
+
+function nextUtcDay(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = new Date(`${value}T00:00:00.000Z`)
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString()
+}
+
+export async function fetchModerationProperties(
+  status: ModerationFilter,
+  page: number,
+  filters?: PropertyModerationFilters,
+) {
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
   let properties: ModerationProperty[]
@@ -78,6 +98,15 @@ export async function fetchModerationProperties(status: ModerationFilter, page: 
       .select(PROPERTY_SELECT, { count: 'exact' })
       .order('created_at', { ascending: false })
     if (status !== 'all') query = query.eq('status', status)
+    const search = safePropertySearch(filters?.query ?? '')
+    if (search) query = query.or(`title.ilike.%${search}%,location.ilike.%${search}%`)
+    if (filters?.operation && filters.operation !== 'all') query = query.eq('operation', filters.operation)
+    if (filters?.propertyType && filters.propertyType !== 'all') query = query.eq('property_type', filters.propertyType)
+    if (filters?.createdAfter && /^\d{4}-\d{2}-\d{2}$/.test(filters.createdAfter)) {
+      query = query.gte('created_at', `${filters.createdAfter}T00:00:00.000Z`)
+    }
+    const exclusiveEnd = filters?.createdBefore ? nextUtcDay(filters.createdBefore) : null
+    if (exclusiveEnd) query = query.lt('created_at', exclusiveEnd)
     const { data, error, count } = await query.range(from, to)
     if (error) throw error
     properties = (data ?? []) as unknown as ModerationProperty[]
