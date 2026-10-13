@@ -8,6 +8,7 @@ import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
 import { observeElementResize } from '../lib/observeElementResize'
+import { shouldFitInitialBounds } from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
@@ -39,6 +40,7 @@ export function MapLibreAdapter({
   const onViewportChangeRef = useRef(onViewportChange)
   const sourceDataRef = useRef<FeatureCollection<Point>>(createPropertySourceData([], undefined))
   const fallbackMarkersRef = useRef<maplibregl.Marker[]>([])
+  const hasFittedInitialBoundsRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
@@ -592,19 +594,23 @@ export function MapLibreAdapter({
     }
   }, [mapReady, sourceData])
 
-  // When the property list (bounds) changes, fit the map to show all results.
-  // maxZoom: 13 so a municipality-level search zooms in properly.
+  // Fit the initial results once. Later filter changes update features/clusters
+  // but preserve the camera position chosen by the user.
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapReady) return
+    const boundsAreEmpty = bounds.isEmpty()
+    if (
+      !map ||
+      !mapReady ||
+      !shouldFitInitialBounds(hasFittedInitialBoundsRef.current, boundsAreEmpty)
+    ) return
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, {
-        padding: { top: 74, right: 74, bottom: 180, left: 74 },
-        maxZoom: 13,
-        duration: 500,
-      })
-    }
+    hasFittedInitialBoundsRef.current = true
+    map.fitBounds(bounds, {
+      padding: { top: 74, right: 74, bottom: 180, left: 74 },
+      maxZoom: 13,
+      duration: 500,
+    })
   }, [bounds, mapReady])
 
   // NOTE: We intentionally do NOT zoom/pan when selectedPropertyId changes.
