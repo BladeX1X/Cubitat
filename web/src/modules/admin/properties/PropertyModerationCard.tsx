@@ -69,7 +69,8 @@ export function PropertyModerationCard({
                 <>
                   <strong>Posibles coincidencias de imagen:</strong>
                   <span className="block text-violet-700/80 mt-0.5">La tarjeta principal es la publicación nueva; compara cada candidata existente antes de decidir.</span>
-                  <span className="block text-violet-700/80 mt-0.5">Cobertura: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones activas con imágenes tienen hash.</span>
+                  <span className="block text-violet-700/80 mt-0.5">Cobertura de fotos comparables: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones activas con fotos propias procesables tienen hash.</span>
+                  <span className="block text-violet-700/80 mt-0.5">Las imágenes externas, incluidas las de stock, no se comparan.</span>
                   <div className="mt-2 space-y-3">
                     {property.image_duplicate_matches.slice(0, 3).map((match) => (
                       <ImageDuplicateComparison key={match.id} property={property} match={match} />
@@ -83,17 +84,18 @@ export function PropertyModerationCard({
                 </>
               ) : property.image_hash_status.processed_images === 0 ? (
                 <>
-                  <strong>No se pudo comparar ninguna imagen.</strong>{' '}
-                  <span>No se debe interpretar como «sin coincidencias».</span>
+                  <strong>No se compararon imágenes propias guardadas.</strong>{' '}
+                  <span>Las imágenes externas quedan fuera del análisis; esto no significa «sin coincidencias».</span>
                 </>
               ) : (
                 <>
                   <strong>Sin coincidencias de imagen.</strong>{' '}
                   <span>
-                    Hash procesado. Cobertura del catálogo: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones con imágenes.
+                    Hash procesado. Cobertura de fotos comparables: {property.image_hash_status.indexed_with_hashes} de {property.image_hash_status.eligible_with_images} publicaciones activas con fotos propias procesables.
                     {property.image_hash_status.indexed_with_hashes < property.image_hash_status.eligible_with_images
                       ? ' La revisión sigue incompleta mientras se indexan las restantes.'
-                      : ' Se revisó todo el catálogo activo con imágenes.'}
+                      : ' Todas las fotos propias procesables del catálogo activo tienen hash.'}
+                    {' '}Las imágenes externas, incluidas las de stock, no se comparan.
                   </span>
                 </>
               )}

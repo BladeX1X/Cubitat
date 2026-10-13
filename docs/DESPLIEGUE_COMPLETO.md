@@ -148,6 +148,15 @@ No crear politicas alternativas de insercion publica para `contacts` ni
 exclusivas de `service_role`. El antiguo bloque SQL de esta guia fue retirado
 porque contradecia esa frontera.
 
+#### 3.3.2 Migración productiva puntual de cobertura pHash
+
+La cobertura pHash se amplía mediante una migración numerada. El workflow
+manual `Apply production pHash coverage migration` solo se ejecuta desde `main`
+y solo aplica `20261013110000` si el dry-run confirma que es la única migración
+pendiente en el proyecto productivo `tohjzoncoosvjbjcakdl`. Usa el secreto
+`SUPABASE_DB_URL` de GitHub Actions; no ejecutar `db push --linked` desde un
+checkout conectado a DEV para este fin.
+
 ### 3.4 Auth URLs
 
 En Supabase Dashboard:

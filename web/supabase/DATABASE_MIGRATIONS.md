@@ -789,3 +789,17 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - Verificación de permisos: `anon` no ejecuta RPCs administrativas ni lee tablas privadas. `authenticated` conserva grants SELECT sujetos a políticas RLS/AAL2; `get_verified_seller_ids()` está disponible para la consulta pública mínima.
 - La consulta final de migraciones mostró local/remoto iguales hasta `20261010130000`.
 - Antes de esta operación se intentó el workflow de respaldo de GitHub: falló por `SUPABASE_DB_PASSWORD` ausente. El panel Supabase informa que Free no incluye backups del proyecto. No se hizo dump local porque esta máquina no tiene Docker/pg_dump. Las migraciones son aditivas; para cambios destructivos futuros, disponer primero de un respaldo recuperable.
+
+### Cobertura comparable pHash — 2026-10-13
+
+- `20261013110000_count_only_comparable_property_images.sql` conserva la RPC
+  `get_admin_property_image_hash_status(uuid[])` y su requisito AAL2, pero su
+  denominador cuenta solo imágenes servidas desde el bucket productivo
+  `property_images` dentro de la carpeta de su propietario.
+- Las URLs externas, fotos de stock y anuncios sin imagen propia ya no inflan
+  el total elegible. No se alteran filas, hashes existentes, umbral ni señales.
+- Pendiente de aplicar al proyecto productivo; verificar mediante moderación
+  AAL2 después del despliegue.
+- El workflow manual `.github/workflows/supabase-production-phash-migration.yml`
+  ejecuta un dry-run y se detiene si encuentra cualquier migración pendiente
+  adicional a `20261013110000`; después registra el historial remoto con la CLI.
