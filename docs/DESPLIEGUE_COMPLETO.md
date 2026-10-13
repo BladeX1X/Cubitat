@@ -155,7 +155,9 @@ manual `Apply production pHash coverage migration` solo se ejecuta desde `main`
 y solo aplica `20261013110000` si el dry-run confirma que es la única migración
 pendiente en el proyecto productivo `tohjzoncoosvjbjcakdl`. Usa el secreto
 `SUPABASE_DB_URL` de GitHub Actions; no ejecutar `db push --linked` desde un
-checkout conectado a DEV para este fin.
+checkout conectado a DEV para este fin. Ejecutado el 2026-10-13 en el workflow
+38366110447; el dry-run confirmó que era la única pendiente y el historial
+remoto quedó verificado.
 
 ### 3.4 Auth URLs
 
