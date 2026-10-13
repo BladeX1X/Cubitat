@@ -22,6 +22,15 @@ limpiar Auth, caché offline y borrador legado, volver a `/` y abrir el login.
 Si el callback falla, el guard permanece bloqueado, no muestra datos
 administrativos y ofrece reintentar con un mensaje seguro.
 
+## Excepción temporal de MFA administrativo
+
+La excepción operativa solo se habilita con la migración productiva numerada.
+El panel obtiene el vencimiento desde `get_admin_mfa_bypass_until`; un error de
+lectura conserva el desafío TOTP normal. Mientras el vencimiento esté vigente,
+la UI informa la fecha y programa el bloqueo al expirar. El backend y el Worker
+validan esa misma fecha en cada operación sensible. Los factores TOTP no se
+eliminan y AAL2 vuelve a ser obligatorio automáticamente al vencer.
+
 ## Módulos
 
 Cada capacidad vive bajo `src/modules/admin`:

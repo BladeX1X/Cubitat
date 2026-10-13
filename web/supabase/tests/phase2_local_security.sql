@@ -212,6 +212,39 @@ SELECT pg_temp.assert_raises(
 
 RESET ROLE;
 
+-- La excepción temporal abre las rutas de administración solo a admin y solo
+-- hasta la fecha almacenada. Estas mutaciones se revierten al final del test.
+UPDATE public.admin_mfa_temporary_overrides
+SET expires_at = statement_timestamp() + interval '1 hour'
+WHERE override_key = 'global';
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000003","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true(public.is_admin_aal2(), 'temporary override grants sensitive admin access while active');
+RESET ROLE;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000002","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true(NOT public.is_admin_aal2(), 'temporary override never authorizes a non-admin');
+RESET ROLE;
+UPDATE public.admin_mfa_temporary_overrides
+SET expires_at = statement_timestamp() - interval '1 second'
+WHERE override_key = 'global';
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"f2000000-0000-0000-0000-000000000003","role":"authenticated","aal":"aal1"}',
+  true
+);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true(NOT public.is_admin_aal2(), 'expired override restores the AAL2 requirement');
+RESET ROLE;
+
 -- Administrador AAL1: el rol solo no concede moderación KYC.
 SELECT set_config(
   'request.jwt.claims',

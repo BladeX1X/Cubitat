@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - main
-      - 'feature/**'
-      - 'bugfix/**'
-      - 'hotfix/**'
+      - "feature/**"
+      - "bugfix/**"
+      - "hotfix/**"
   pull_request:
   workflow_dispatch:
 
@@ -65,3 +65,24 @@ jobs:
           VITE_SUPABASE_URL: https://tohjzoncoosvjbjcakdl.supabase.co
           VITE_SUPABASE_ANON_KEY: phase2-ci-placeholder-not-a-credential
         run: npm run build:phase2-production
+
+  database-security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.108.0
+
+      - name: Start isolated Supabase and run database security suite
+        run: |
+          set -euo pipefail
+          supabase start -x studio,edge-runtime,logflare,vector
+          supabase db reset --local --no-seed --yes
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/temporary_admin_mfa_override.sql

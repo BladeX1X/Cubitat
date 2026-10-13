@@ -57,6 +57,12 @@ export async function getAdminMfaStatus(): Promise<AdminMfaStatus> {
   }
 }
 
+export async function getAdminMfaBypassUntil(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_admin_mfa_bypass_until')
+  if (error) return null
+  return typeof data === 'string' && Number.isFinite(Date.parse(data)) ? data : null
+}
+
 export async function startTotpEnrollment(unverifiedFactorIds: string[]) {
   for (const factorId of unverifiedFactorIds) {
     const { error } = await supabase.auth.mfa.unenroll({ factorId })

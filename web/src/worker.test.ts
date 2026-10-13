@@ -625,6 +625,7 @@ describe('Cloudflare Worker security contract', () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('null', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await worker.fetch(
@@ -637,7 +638,26 @@ describe('Cloudflare Worker security contract', () => {
 
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('allows an admin at aal1 while the database MFA bypass has not expired', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify('2099-10-20T17:00:00Z'), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/metrics', {
+        headers: { Authorization: `Bearer ${testJwt('aal1')}` },
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('https://example.supabase.co/rest/v1/rpc/get_admin_mfa_bypass_until')
   })
 
   it('allows an admin at aal2 to request metrics', async () => {
@@ -730,6 +750,7 @@ describe('Cloudflare Worker security contract', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('null', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await worker.fetch(
@@ -756,6 +777,16 @@ describe('Cloudflare Worker security contract', () => {
 
     const allowedResponse = await worker.fetch(
       new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/get_admin_metrics', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer admin-token' },
+        body: '{}',
+      }),
+      env,
+      createContext(),
+    )
+
+    const bypassStatusResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/get_admin_mfa_bypass_until', {
         method: 'POST',
         headers: { Authorization: 'Bearer admin-token' },
         body: '{}',
@@ -795,6 +826,7 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(allowedResponse.status).toBe(200)
+    expect(bypassStatusResponse.status).toBe(200)
     expect(publicProfileResponse.status).toBe(403)
     expect(kycResponse.status).toBe(403)
     expect(blockedResponse.status).toBe(403)

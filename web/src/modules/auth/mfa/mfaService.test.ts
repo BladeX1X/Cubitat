@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '../../../shared/lib/supabaseClient'
 import {
   getAdminMfaStatus,
+  getAdminMfaBypassUntil,
   MfaVerificationError,
   startTotpEnrollment,
   verifyTotp,
@@ -18,6 +19,7 @@ vi.mock('../../../shared/lib/supabaseClient', () => ({
         challengeAndVerify: vi.fn(),
       },
     },
+    rpc: vi.fn(),
   },
 }))
 
@@ -46,6 +48,19 @@ describe('mfaService', () => {
       verifiedFactorId: 'verified-1',
       unverifiedFactorIds: ['pending-1'],
     })
+  })
+
+  it('returns the database-controlled admin MFA expiry', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: '2026-10-20T17:00:00Z', error: null } as never)
+
+    await expect(getAdminMfaBypassUntil()).resolves.toBe('2026-10-20T17:00:00Z')
+    expect(supabase.rpc).toHaveBeenCalledWith('get_admin_mfa_bypass_until')
+  })
+
+  it('fails closed when the bypass status cannot be read', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: new Error('private details') } as never)
+
+    await expect(getAdminMfaBypassUntil()).resolves.toBeNull()
   })
 
   it('fails closed when factor status cannot be loaded', async () => {

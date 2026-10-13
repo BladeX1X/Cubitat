@@ -3,6 +3,7 @@ import { Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import {
   getAdminMfaStatus,
+  getAdminMfaBypassUntil,
   MfaVerificationError,
   startTotpEnrollment,
   verifyTotp,
@@ -42,12 +43,21 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
   const [message, setMessage] = useState('')
   const [sessionExpired, setSessionExpired] = useState(false)
   const [recoveringSession, setRecoveringSession] = useState(false)
+  const [bypassUntil, setBypassUntil] = useState<string | null>(null)
 
   const loadStatus = useCallback(async () => {
     setState('loading')
     setMessage('')
     setSessionExpired(false)
     try {
+      const temporaryExpiry = await getAdminMfaBypassUntil()
+      if (temporaryExpiry && Date.parse(temporaryExpiry) > Date.now()) {
+        setBypassUntil(temporaryExpiry)
+        setState('allowed')
+        return
+      }
+      setBypassUntil(null)
+
       const status = await getAdminMfaStatus()
       setUnverifiedFactorIds(status.unverifiedFactorIds)
       if (status.currentLevel === 'aal2') {
@@ -67,6 +77,17 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
   useEffect(() => {
     void loadStatus()
   }, [loadStatus])
+
+  useEffect(() => {
+    if (state !== 'allowed' || !bypassUntil) return
+    const delay = Date.parse(bypassUntil) - Date.now()
+    if (delay <= 0) {
+      void loadStatus()
+      return
+    }
+    const timeoutId = window.setTimeout(() => void loadStatus(), delay)
+    return () => window.clearTimeout(timeoutId)
+  }, [bypassUntil, loadStatus, state])
 
   const beginEnrollment = async () => {
     setState('loading')
@@ -120,7 +141,20 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
     }
   }
 
-  if (state === 'allowed') return <>{children}</>
+  if (state === 'allowed') {
+    return (
+      <>
+        {bypassUntil && (
+          <aside className="mx-auto mt-4 max-w-7xl rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+            El segundo factor no se exige temporalmente. Se restablecerá automáticamente el{' '}
+            {new Intl.DateTimeFormat('es', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(bypassUntil))}.
+            Tus factores TOTP siguen configurados.
+          </aside>
+        )}
+        {children}
+      </>
+    )
+  }
 
   if (state === 'loading') {
     return (
