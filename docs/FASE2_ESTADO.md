@@ -2,20 +2,20 @@
 
 Fecha de corte: 2026-10-13
 
-Este documento resume la evidencia funcional de Fase 2 en DEV y producción. Los addenda fechados actualizan los estados anteriores sin convertir pruebas locales en evidencia productiva. El corte vigente incluye la promoción integral y la cobertura pHash comparable verificada el 2026-10-13.
+Este documento resume la evidencia funcional de Fase 2 en DEV y producción. Los addenda fechados conservan la historia sin convertir pruebas locales en evidencia productiva. El corte vigente incluye la promoción integral y la cobertura pHash comparable verificada el 2026-10-13.
 
 | Entregable | Estado | Evidencia actual | Pendiente |
 | --- | --- | --- | --- |
-| Panel administrativo maestro | Implementado y verificado | Módulos de propiedades, reportes, métricas, auditoría y contexto del anunciante; guards AAL2 y pruebas existentes | QA visual móvil no bloqueante |
-| Aprobación y rechazo de publicaciones | Implementado y verificado | Moderación manual/IA, reevaluación y actualización asíncrona del panel | Fixture adicional de contenido real aprobado |
-| KYC de identidad (documento + selfie) | Implementado y QA funcional completado | Aprobación local con AAL2/TOTP y limpieza completa (2026-07-24); envío y rechazo con evidencia sintética en DEV (2026-09-28); el usuario confirma que el QA de KYC ya está hecho (2026-10-08) | Sin bloqueo funcional de QA KYC en DEV; separar cualquier verificación de despliegue productivo |
-| Vendedor/agente verificado | Implementado y validado visualmente en DEV | Proyección canónica, insignia y guard de rol/KYC; fixture QA sintético verificado visualmente y eliminado (2026-10-10) | El filtro público DEV devolvió 0 resultados elegibles; no hay cuenta real elegible disponible para completar esa comprobación autenticada |
-| Verificación documental de propiedad | Base + UI DEV implementadas; flujo E2E y RLS verificados en DEV | Carga sintética, aprobación/rechazo; propietario ve su solicitud/archivo; UID autenticado ajeno y `anon` no los ven; revalidación remota: 0 solicitudes y 0 documentos con contenido, 8 eventos de bitácora preservados | Validación legal manual sigue fuera de alcance |
-| Trust Score | Indicador interno DEV implementado | RPC `get_property_trust_score` con cuatro factores explicables, limitado a propietario/admin y sin acceso `anon` | No exponer públicamente por decisión de producto; el indicador interno cubre la decisión vigente y no es certificación legal |
-| Reglas anti-fraude y reportes | Implementadas en producción; pHash comparable verificado | Turnstile, reportes y revisión humana; pHash de 64 bits con límite `<= 8/64`. Moderación AAL2 muestra 3/3 publicaciones con fotos propias procesables indexadas y 0 señales abiertas entre ellas | Las otras 303 filas amplias (301 Unsplash y 2 sin imagen) no son comparables; no inferir que las fotos externas estén libres de coincidencias. Calibración con imágenes reales etiquetadas sigue diferida |
-| Alertas y Push | Implementado técnicamente | Suscripción, preferencias, lectura, Service Worker, dispatcher y cron DEV; pruebas focalizadas; checklist física preparada en `docs/FASE2_PUSH_QA_FISICA.md` | Recepción/clic en Android e iOS con PWA instalada y permisos concedidos |
-| Autenticación y recuperación | Implementado y verificado en código/DEV | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y sesión MFA | QA física de proveedores y rotación de secretos pendiente |
-| Perfil integral de producción | Desplegado y verificado | `/moderar` carga tras el gate AAL2; Supabase registra migraciones hasta `20261013110000`; Worker `cubitat1` `34f435c3-589f-46cc-90b9-673ccda03d82` al 100% | QA físico de Push sigue pendiente de un dispositivo PWA; no bloquea el alcance comercial de Fase 2 |
+| Panel administrativo maestro | Desplegado; acceso AAL2 verificado en producción | `/moderar` carga sus secciones; la sesión administrativa observada accedió a catálogo, métricas y estado pHash | La sesión reciente fue de solo lectura; no repetir mutaciones con fixtures |
+| Aprobación y rechazo de publicaciones | Implementados y desplegados | Moderación manual/IA, reevaluación y estados incluidos en el perfil productivo | Los anuncios QA históricos no son necesarios para volver a demostrarlo en producción |
+| KYC de identidad | Implementado; QA funcional sintético completado en DEV | Aprobación AAL2/TOTP local y envío/rechazo sintético en DEV; cierre confirmado por el usuario | No usar documentos de identidad personales para repetir QA productivo |
+| Vendedor/agente verificado | Distintivo y filtro comprobados en producción | Una ficha elegible mostró «Vendedor verificado»; la proyección pública devuelve solo IDs bajo las condiciones aprobadas | No exponer el estado KYC ni ampliar elegibilidad sin decisión de producto |
+| Verificación documental de propiedad | Desplegada; QA sintético completado en producción | Revisión AAL2, rechazo con motivo, estado visible al propietario y evento en bitácora; no quedaron solicitudes pendientes | Validación jurídica manual fuera del alcance; no usar documentos personales |
+| Trust Score | Señal interna implementada y restringida | Cuatro factores explicables; RPC disponible solo para propietario/admin y presentación dentro de la revisión documental. No aparece en resultados públicos | La cola documental productiva está vacía, así que no hay solicitud elegible para volver a observar la tarjeta del score; no crear datos solo para la prueba |
+| Reglas anti-fraude y reportes | Implementadas y desplegadas | Turnstile real aceptó un envío QA en DEV; pHash conserva `<= 8/64` y decisión humana. Producción: 3/3 fotos WebP propias procesables con hash y 0 coincidencias abiertas entre ellas | Las otras 303 filas amplias (301 Unsplash y 2 sin imagen) no son comparables; no inferir ausencia de coincidencias en fotos externas. Calibración con pares reales etiquetados queda diferida |
+| Alertas y Push | Extensión técnica implementada | Suscripciones, preferencias, Service Worker y dispatchers están implementados | La entrega/clic requiere QA físico con PWA; no es entregable obligatorio de la propuesta de Fase 2 |
+| Autenticación y recuperación | Implementadas en el perfil integral | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y MFA | No se ha repetido la matriz física de todos los proveedores/dispositivos; no bloquea los entregables comerciales descritos |
+| Perfil integral de producción | Desplegado y verificado | `/moderar` carga tras AAL2; Supabase registra migraciones hasta `20261013110000`; Worker `cubitat1` `34f435c3-589f-46cc-90b9-673ccda03d82` recibe el 100% del tráfico | QA físico de Push requiere un dispositivo PWA y queda fuera del criterio comercial de Fase 2 |
 
 ## Criterio para cerrar Fase 2 según la propuesta — 2026-10-08
 
@@ -36,23 +36,24 @@ no contra todo lo que se haya explorado en el roadmap interno.
   local con AAL2/TOTP y limpieza el 2026-07-24, envío/rechazo de evidencia
   sintética en DEV el 2026-09-28, y el usuario confirma su cierre el
   2026-10-08. No contarlo como pendiente.
-- La verificación documental de propiedad ya tiene recorrido persistente
-  autenticado de UI en DEV: se subió evidencia sintética, administración la
-  abrió y se verificaron aprobación y rechazo con estado/motivo visible al
-  propietario (2026-10-10). RLS entre cuentas quedó comprobado y los datos QA
-  se limpiaron: 0 solicitudes/archivos; se conservaron 8 eventos de bitácora y
-  3 propiedades. La validación legal manual sigue fuera del alcance.
-- El entregable “vendedor verificado” requiere separar identidad KYC de agente:
-  el distintivo público «Vendedor verificado» se implementó en la rama de Fase 2
-  DEV con RPC limitada a propietarios no agentes verificados y publicados.
-  Desplegado y validado visualmente el 2026-10-10 con fixture QA temporal;
-  aparece en la tarjeta y los agentes conservan su etiqueta independiente.
-  El Worker ahora permite explícitamente la RPC pública de IDs.
-- El usuario confirma el 2026-10-10 que el antifraude actual funciona bien; se conserva el umbral pHash y no se amplía esta ronda de QA. La matriz con fotografías reales queda diferida y no bloquea la aceptación actual en DEV. El diseño mantiene la decisión humana y no rechaza automáticamente por similitud.
-- Producción contiene una promoción selectiva de KYC; la verificación de
-  propiedad y el resto de capacidades aún descritas como DEV no deben marcarse
-  como producción. Cualquier promoción final se planifica por separado y no se
-  presume autorizada por esta definición de alcance.
+- La verificación documental de propiedad se desplegó y su recorrido sintético
+  se verificó en producción con AAL2 el 2026-10-11: revisión, rechazo con
+  motivo, estado visible al propietario y registro en bitácora. La cola quedó
+  sin solicitudes pendientes; la validación legal manual sigue fuera del
+  alcance.
+- El entregable “vendedor verificado” separa identidad KYC de agente. El
+  distintivo y el filtro se verificaron en producción el 2026-10-12 con una
+  ficha elegible; la RPC pública proyecta solo los IDs autorizados.
+- pHash conserva el umbral `<= 8/64` y la decisión humana. DEV cubrió casos
+  positivos/negativos. En producción, la migración `20261013110000` corrige el
+  denominador y la vista AAL2 confirma 3/3 fotos WebP propias procesables con
+  hash. Las 303 filas restantes (301 Unsplash y 2 sin imagen) quedan fuera del
+  análisis; las imágenes externas no se consideran libres de coincidencias.
+- El rollout integral está en producción. La cobertura pHash se verificó en
+  `/moderar` con sesión AAL2 el 2026-10-13. Los QA físicos de Push y la
+  inspección del Trust Score en una solicitud nueva requieren dispositivo o
+  solicitud elegible; no se deben crear datos personales o artificiales en
+  producción para cerrar esos puntos.
 
 ## Auditoría de dependencias — 2026-09-28
 
