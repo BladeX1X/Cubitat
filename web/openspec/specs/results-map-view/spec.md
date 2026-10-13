@@ -103,6 +103,13 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - AND la pagina MUST filtrar la lista a solo esas propiedades
 - AND MUST reiniciar la pagina a 1
 
+#### Scenario: El panel del mapa cambia de tamaño
+- GIVEN el mapa desktop ya calculo las propiedades visibles
+- WHEN el contenedor del mapa cambia de tamaño por el layout o la ventana
+- THEN el mapa MUST recalcular su tamaño y sus bounds
+- AND MUST notificar los ids visibles actualizados via `onViewportChange`
+- AND la lista MUST coincidir con las propiedades del area visible actual
+
 #### Scenario: Cluster click en desktop
 - GIVEN el mapa desktop muestra clusters
 - WHEN el usuario pulsa un cluster

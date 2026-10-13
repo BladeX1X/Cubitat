@@ -7,6 +7,7 @@ import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
+import { observeElementResize } from '../lib/observeElementResize'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
@@ -398,10 +399,8 @@ export function MapLibreAdapter({
         .filter((id): id is string => !!id)
     }
 
-    const handleViewportChange = (event: maplibregl.MapLibreEvent) => {
-      if (event.originalEvent) {
-        onViewportChangeRef.current?.(getVisiblePropertyIds())
-      }
+    const handleViewportChange = () => {
+      onViewportChangeRef.current?.(getVisiblePropertyIds())
     }
 
     map.on('click', handleMapClick)
@@ -422,6 +421,17 @@ export function MapLibreAdapter({
     map.on('rotateend', handleViewportChange)
     map.on('pitchend', handleViewportChange)
 
+    const container = containerRef.current
+    const stopObservingResize = container
+      ? observeElementResize(container, () => {
+          requestAnimationFrame(() => {
+            if (mapRef.current !== map) return
+            map.resize()
+            handleViewportChange()
+          })
+        })
+      : () => undefined
+
     return () => {
       map.off('click', handleMapClick)
       map.off('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)
@@ -440,6 +450,7 @@ export function MapLibreAdapter({
       map.off('zoomend', handleViewportChange)
       map.off('rotateend', handleViewportChange)
       map.off('pitchend', handleViewportChange)
+      stopObservingResize()
     }
   }, [mapReady])
 
