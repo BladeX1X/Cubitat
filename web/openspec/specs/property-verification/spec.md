@@ -45,6 +45,16 @@ documento de propiedad aprobado, publicación activa y datos de contacto.
 El indicador MUST quedar etiquetado como interno y no implicar una garantía
 legal.
 
+#### Scenario: Moderator inspects a listing without a document request
+
+- GIVEN un moderador con sesión AAL2 abre una ficha en el panel de propiedades
+- AND la ficha no tiene una solicitud documental pendiente
+- WHEN solicita ver el indicador interno
+- THEN el sistema MUST consultar únicamente el Trust Score de esa ficha
+- AND mostrar el puntaje y sus cuatro factores con lenguaje comprensible
+- AND aclarar que el indicador no es una certificación legal
+- AND MUST NOT modificar la publicación ni exponer el puntaje al público.
+
 ### Requirement: Perfil productivo aislado
 
 El perfil productivo de verificación documental MUST habilitar el panel del

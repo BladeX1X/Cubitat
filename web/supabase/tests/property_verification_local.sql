@@ -146,6 +146,12 @@ SELECT pg_temp.assert_true(
    WHERE property_id = 'f2500000-0000-0000-0000-000000000099'),
   'AAL2 admin must approve and record the reviewer'
 );
+SELECT pg_temp.assert_true(
+  (SELECT score = 100 AND identity_verified AND document_verified
+          AND published AND contact_present
+   FROM public.get_property_trust_score('f2500000-0000-0000-0000-000000000099')),
+  'AAL2 admin must inspect the score and factors for a property without a pending request'
+);
 
 RESET ROLE;
 SELECT set_config(
