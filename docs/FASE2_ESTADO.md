@@ -1,8 +1,8 @@
 # Estado de Fase 2
 
-Fecha de corte: 2026-10-11
+Fecha de corte: 2026-10-13
 
-Este documento resume el estado técnico de la Fase 2 sin convertir pruebas locales en evidencia de producción. La matriz conserva evidencia funcional de DEV; no sustituye el estado del rollout productivo. El addendum final documenta la promoción integral verificada el 2026-10-11 y prevalece sobre los pendientes de despliegue anteriores. La rama histórica de trabajo fue `feature/phase2-dev-remote-bootstrap`.
+Este documento resume la evidencia funcional de Fase 2 en DEV y producción. Los addenda fechados actualizan los estados anteriores sin convertir pruebas locales en evidencia productiva. El corte vigente incluye la promoción integral y la cobertura pHash comparable verificada el 2026-10-13.
 
 | Entregable | Estado | Evidencia actual | Pendiente |
 | --- | --- | --- | --- |
@@ -12,10 +12,10 @@ Este documento resume el estado técnico de la Fase 2 sin convertir pruebas loca
 | Vendedor/agente verificado | Implementado y validado visualmente en DEV | Proyección canónica, insignia y guard de rol/KYC; fixture QA sintético verificado visualmente y eliminado (2026-10-10) | El filtro público DEV devolvió 0 resultados elegibles; no hay cuenta real elegible disponible para completar esa comprobación autenticada |
 | Verificación documental de propiedad | Base + UI DEV implementadas; flujo E2E y RLS verificados en DEV | Carga sintética, aprobación/rechazo; propietario ve su solicitud/archivo; UID autenticado ajeno y `anon` no los ven; revalidación remota: 0 solicitudes y 0 documentos con contenido, 8 eventos de bitácora preservados | Validación legal manual sigue fuera de alcance |
 | Trust Score | Indicador interno DEV implementado | RPC `get_property_trust_score` con cuatro factores explicables, limitado a propietario/admin y sin acceso `anon` | No exponer públicamente por decisión de producto; el indicador interno cubre la decisión vigente y no es certificación legal |
-| Reglas anti-fraude y reportes | Implementado y verificado en DEV | Reportes, límites, Turnstile, señales del anunciante, revisión IA multimodal con Groq y pHash privado con comparación visual | El usuario acepta mantener pHash `<= 8` por ahora; quedan como trabajo posterior muestras reales de falsos positivos y revisión jurídica/contenido; Turnstile se verificó con el proveedor real en contacto DEV |
+| Reglas anti-fraude y reportes | Implementadas en producción; pHash comparable verificado | Turnstile, reportes y revisión humana; pHash de 64 bits con límite `<= 8/64`. Moderación AAL2 muestra 3/3 publicaciones con fotos propias procesables indexadas y 0 señales abiertas entre ellas | Las otras 303 filas amplias (301 Unsplash y 2 sin imagen) no son comparables; no inferir que las fotos externas estén libres de coincidencias. Calibración con imágenes reales etiquetadas sigue diferida |
 | Alertas y Push | Implementado técnicamente | Suscripción, preferencias, lectura, Service Worker, dispatcher y cron DEV; pruebas focalizadas; checklist física preparada en `docs/FASE2_PUSH_QA_FISICA.md` | Recepción/clic en Android e iOS con PWA instalada y permisos concedidos |
 | Autenticación y recuperación | Implementado y verificado en código/DEV | OAuth, CAPTCHA, recuperación, política de contraseñas, Pwned Password y sesión MFA | QA física de proveedores y rotación de secretos pendiente |
-| Perfil integral de producción (rollout 2026-10-11) | Desplegado; smoke HTTP y acceso al panel AAL2 verificados | PR #124/commit `19b91e8`; Supabase hasta `20261010130000`; Worker `6873a1a5-82b2-47eb-a325-30c8a0430620` al 100%; `/moderar` renderizó contenido tras el gate AAL2 el 2026-10-11 | Mutaciones administrativas, lectura de documento privado, pHash con ficha elegible, vendedor verificado y Push real en dispositivo |
+| Perfil integral de producción | Desplegado y verificado | `/moderar` carga tras el gate AAL2; Supabase registra migraciones hasta `20261013110000`; Worker `cubitat1` `34f435c3-589f-46cc-90b9-673ccda03d82` al 100% | QA físico de Push sigue pendiente de un dispositivo PWA; no bloquea el alcance comercial de Fase 2 |
 
 ## Criterio para cerrar Fase 2 según la propuesta — 2026-10-08
 
@@ -2271,13 +2271,15 @@ Este estado posterior prevalece sobre los párrafos anteriores que describen el 
   publicar y ejecuta el backfill gradual. Hashar las fotos de stock sería
   engañoso porque un mismo recurso puede aparecer en propiedades distintas.
 - La cobertura mostrada por la RPC usaba como denominador cualquier anuncio con
-  una URL de imagen. Se añade `20261013110000` para contar solo WebP propias
-  guardadas en `property_images` bajo la carpeta del propietario, y el panel
-  explica por qué las URLs externas quedan fuera.
+  una URL de imagen. `20261013110000` se aplicó a producción y cuenta solo WebP
+  propias guardadas en `property_images` bajo la carpeta del propietario; el
+  panel explica por qué las URLs externas quedan fuera.
 - Validación local: `npm run lint` correcto; 145 archivos/643 pruebas aprobadas
   y 1 omitida; `npm run build` y `npm run build:phase2-production` correctos
   con `SITEMAP_MODE=static`. El build Phase 2 verificó que mantiene pHash y
   excluye DEV/correo. La lint SQL local no se pudo ejecutar porque no hay una
   base Supabase local disponible.
-- La nueva migración/UI aún no se han aplicado/desplegado; la verificación
-  productiva de la cobertura corregida queda pendiente.
+- Verificación en moderación con sesión administrativa AAL2: cobertura visible
+  de 3/3 anuncios elegibles con hashes; no hay coincidencias abiertas entre
+  ellos. Las publicaciones con fotos externas informan que no se analizaron.
+  No se alteraron anuncios, fingerprints ni señales.

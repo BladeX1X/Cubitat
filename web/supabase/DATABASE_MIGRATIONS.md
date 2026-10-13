@@ -787,7 +787,10 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - `20261012170000_include_verified_admin_sellers.sql`: amplía `get_verified_seller_ids()` a perfiles `admin` con KYC verificado y al menos una propiedad publicada; solo devuelve IDs. Aplicada a `tohjzoncoosvjbjcakdl` el 2026-10-12. `migration list --linked` confirmó sincronía y una consulta sin exponer IDs confirmó que el anuncio productivo «Casa en venta en Holguín» califica.
 - `20261010130000_property_image_phash_duplicates.sql`: crea fingerprints perceptuales privados, señales de coincidencia y RPC de estado/candidatas para moderación AAL2. Las escrituras de indexación están limitadas al Worker/service role. Aplicada con `supabase db push --linked --yes`; historial remoto confirmado.
 - Verificación de permisos: `anon` no ejecuta RPCs administrativas ni lee tablas privadas. `authenticated` conserva grants SELECT sujetos a políticas RLS/AAL2; `get_verified_seller_ids()` está disponible para la consulta pública mínima.
-- La consulta final de migraciones mostró local/remoto iguales hasta `20261010130000`.
+- La sincronización observada inicialmente llegó hasta `20261010130000`; desde
+  entonces se aplicaron `20261012170000` y `20261013110000` en producción. El
+  workflow 38366110447 confirmó que `20261013110000` era la única migración
+  pendiente, la aplicó y verificó el historial remoto.
 - Antes de esta operación se intentó el workflow de respaldo de GitHub: falló por `SUPABASE_DB_PASSWORD` ausente. El panel Supabase informa que Free no incluye backups del proyecto. No se hizo dump local porque esta máquina no tiene Docker/pg_dump. Las migraciones son aditivas; para cambios destructivos futuros, disponer primero de un respaldo recuperable.
 
 ### Cobertura comparable pHash — 2026-10-13
@@ -798,8 +801,8 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
   `property_images` dentro de la carpeta de su propietario.
 - Las URLs externas, fotos de stock y anuncios sin imagen propia ya no inflan
   el total elegible. No se alteran filas, hashes existentes, umbral ni señales.
-- Pendiente de aplicar al proyecto productivo; verificar mediante moderación
-  AAL2 después del despliegue.
+- Aplicada al proyecto productivo el 2026-10-13; moderación AAL2 confirmó 3/3
+  publicaciones con fotos WebP propias procesables indexadas.
 - El workflow manual `.github/workflows/supabase-production-phash-migration.yml`
   ejecuta un dry-run y se detiene si encuentra cualquier migración pendiente
   adicional a `20261013110000`; después registra el historial remoto con la CLI.
