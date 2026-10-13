@@ -110,6 +110,13 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - AND MUST notificar los ids visibles actualizados via `onViewportChange`
 - AND la lista MUST coincidir con las propiedades del area visible actual
 
+#### Scenario: Aplicar filtros conserva la cámara
+- GIVEN el usuario ya movio o acerco el mapa
+- WHEN aplica o quita un filtro de resultados
+- THEN el mapa MUST actualizar los anuncios y grupos
+- AND MUST conservar el centro y nivel de zoom elegidos por el usuario
+- AND MUST NOT encuadrar automaticamente los nuevos resultados
+
 #### Scenario: Cluster click en desktop
 - GIVEN el mapa desktop muestra clusters
 - WHEN el usuario pulsa un cluster
