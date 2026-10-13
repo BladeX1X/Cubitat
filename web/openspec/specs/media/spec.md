@@ -119,12 +119,14 @@ publicar automáticamente una propiedad.
 - **WHEN** no se encontraron coincidencias entre los hashes disponibles
 - **THEN** el panel indica cuántas publicaciones con imágenes están indexadas del total elegible
 - **AND** MUST indicar que la revisión sigue incompleta
+- **AND** MUST contar como elegibles solo imágenes WebP del bucket `property_images` guardadas bajo la carpeta del propietario
+- **AND** MUST explicar que los enlaces externos y las imágenes de stock no forman parte de la cobertura comparable
 
 #### Scenario: publicación sin coincidencias y catálogo indexado
 
-- **GIVEN** el hash de una publicación y todo el catálogo activo con imágenes fueron procesados
+- **GIVEN** el hash de una publicación y todas las imágenes comparables del catálogo activo fueron procesados
 - **WHEN** no hay señales de duplicación
-- **THEN** el panel confirma que no se encontraron coincidencias en el catálogo activo indexado
+- **THEN** el panel confirma que no se encontraron coincidencias en las imágenes comparables indexadas
 
 #### Scenario: El inventario previo aún no tiene hashes
 - GIVEN una publicación activa no tiene hashes perceptuales

@@ -2261,3 +2261,23 @@ Este estado posterior prevalece sobre los párrafos anteriores que describen el 
 - La migración `20261012170000_include_verified_admin_sellers.sql` se aplicó en Supabase producción `tohjzoncoosvjbjcakdl`; el dry-run previo enumeró solo esta migración y el historial remoto quedó sincronizado. El aviso de Docker afectó únicamente la caché local del catálogo.
 - Una consulta de solo lectura confirmó que la proyección pública incluye un ID admin verificado y que «Casa en venta en Holguín» califica. En `cubitathome.com/resultados`, la tarjeta muestra «Vendedor verificado».
 - El frontend ya contiene la corrección del filtro `Solo Verificados` fusionada en PR #132; no se alteraron perfiles ni anuncios. La migración quedó versionada en `main` mediante PR #133, merge `71c58f4a0444a8980cea85e377f5a720c3363788`; ambas verificaciones automáticas pasaron. El Worker ya servía la interfaz, así que no necesitó otro cambio de frontend para mostrar el sello.
+
+## Cobertura pHash comparable en producción — 2026-10-13
+
+- La auditoría de solo lectura documentada el 2026-10-11 encontró 306 filas
+  activas con estado pHash, pero solo 3 con fingerprints. De las restantes,
+  301 usan referencias a `images.unsplash.com` y 2 no tienen imagen.
+- El pHash productivo ya está habilitado: el Worker `cubitat1` calcula al
+  publicar y ejecuta el backfill gradual. Hashar las fotos de stock sería
+  engañoso porque un mismo recurso puede aparecer en propiedades distintas.
+- La cobertura mostrada por la RPC usaba como denominador cualquier anuncio con
+  una URL de imagen. Se añade `20261013110000` para contar solo WebP propias
+  guardadas en `property_images` bajo la carpeta del propietario, y el panel
+  explica por qué las URLs externas quedan fuera.
+- Validación local: `npm run lint` correcto; 145 archivos/643 pruebas aprobadas
+  y 1 omitida; `npm run build` y `npm run build:phase2-production` correctos
+  con `SITEMAP_MODE=static`. El build Phase 2 verificó que mantiene pHash y
+  excluye DEV/correo. La lint SQL local no se pudo ejecutar porque no hay una
+  base Supabase local disponible.
+- La nueva migración/UI aún no se han aplicado/desplegado; la verificación
+  productiva de la cobertura corregida queda pendiente.

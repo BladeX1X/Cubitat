@@ -63,7 +63,7 @@ Formulario guiado de publicación y edición con ocho pasos, compresión WebP y 
 
 ## Validación
 
-En DEV, al guardar la publicación el formulario envía solo su ID al endpoint
+En DEV y en el perfil `phase2-production`, al guardar la publicación el formulario envía solo su ID al endpoint
 `/api/phase2/property-image-duplicates`. El Worker autentica al propietario,
 lee las URLs almacenadas y calcula los hashes de WebP en el servidor. El cliente
 nunca aporta ni decide los hashes. El procesamiento es en segundo plano para no
@@ -79,6 +79,9 @@ bloquear la confirmación de publicación.
 - Las URLs de portada de la app usan el proxy del Worker (`/api/supabase/...`);
   el indexador permite esa ruta exacta además del host Supabase del proyecto y
   vuelve a intentar cada 15 minutos registros activos con cero imágenes procesadas.
+- Solo se comparan imágenes WebP del bucket `property_images` bajo la carpeta
+  del propietario. Las URLs externas, incluidas las imágenes de stock, quedan
+  fuera del cálculo para evitar falsos positivos.
 
 Pruebas de lote parcial/total y reintento, lifecycle de recuperación/autoguardado, desmontaje y supresión de resurrección del borrador. Integración del formulario prueba que no se escribe una propiedad cuando falla una foto y que el reintento conserva todas las imágenes.
 

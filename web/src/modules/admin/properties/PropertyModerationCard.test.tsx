@@ -128,7 +128,8 @@ describe('PropertyModerationCard visibility actions', () => {
     expect(screen.getByText(/6 de 64 diferencias/i)).toBeInTheDocument()
     expect(screen.getByText(/compara fotos y datos del inmueble/i)).toBeInTheDocument()
     expect(screen.getByText(/nunca rechaces solo por esta señal/i)).toBeInTheDocument()
-    expect(screen.getByText(/cobertura: 8 de 12 publicaciones activas con imágenes tienen hash/i)).toBeInTheDocument()
+    expect(screen.getByText(/cobertura de fotos comparables: 8 de 12 publicaciones activas con fotos propias procesables/i)).toBeInTheDocument()
+    expect(screen.getByText(/imágenes externas, incluidas las de stock, no se comparan/i)).toBeInTheDocument()
   })
 
   it('shows checked with no matches and complete index coverage', () => {
@@ -154,7 +155,7 @@ describe('PropertyModerationCard visibility actions', () => {
     />)
 
     expect(screen.getByText(/sin coincidencias de imagen/i)).toBeInTheDocument()
-    expect(screen.getByText(/se revisó todo el catálogo activo con imágenes/i)).toBeInTheDocument()
+    expect(screen.getByText(/todas las fotos propias procesables del catálogo activo tienen hash/i)).toBeInTheDocument()
   })
 
   it('distinguishes unprocessed hashes from no matches', () => {
@@ -181,5 +182,31 @@ describe('PropertyModerationCard visibility actions', () => {
 
     expect(screen.getByText(/revisión de imágenes pendiente/i)).toBeInTheDocument()
     expect(screen.getByText(/no se puede confirmar que esté libre de coincidencias/i)).toBeInTheDocument()
+  })
+
+  it('explains that external stock images are outside pHash coverage', () => {
+    const externalImageProperty = property('pending_review')
+    externalImageProperty.image_hash_status = {
+      indexed_at: '2026-10-09T12:00:00Z',
+      processed_images: 0,
+      eligible_with_images: 3,
+      indexed_with_hashes: 3,
+    }
+
+    render(<PropertyModerationCard
+      property={externalImageProperty}
+      expanded={false}
+      actionLoading={false}
+      onToggle={vi.fn()}
+      onApprove={vi.fn()}
+      onReject={vi.fn()}
+      onHide={vi.fn()}
+      onRestore={vi.fn()}
+      onReevaluate={vi.fn()}
+      onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText(/no se compararon imágenes propias guardadas/i)).toBeInTheDocument()
+    expect(screen.getByText(/imágenes externas quedan fuera del análisis/i)).toBeInTheDocument()
   })
 })
