@@ -43,8 +43,14 @@ jobs:
           fi
           plan="$(supabase db push --db-url "$SUPABASE_DB_URL" --dry-run)"
           printf '%s\n' "$plan"
-          versions="$(printf '%s\n' "$plan" | grep -Eo '[0-9]{14}' | sort -u || true)"
-          if [[ "$versions" != "20261013110000" ]]; then
+          migrations=()
+          while IFS= read -r line; do
+            if [[ "$line" == *".sql" ]]; then
+              migrations+=("${line##* }")
+            fi
+          done <<< "$plan"
+          printf 'Pending migration files: %s\n' "${migrations[*]:-none}"
+          if (( ${#migrations[@]} != 1 )) || [[ "${migrations[0]:-}" != "20261013110000_count_only_comparable_property_images.sql" ]]; then
             echo "::error::Expected only migration 20261013110000 to be pending; no migration was applied."
             exit 1
           fi
