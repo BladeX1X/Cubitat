@@ -289,3 +289,16 @@ El sistema MUST ofrecer al administrador contexto mínimo y verificable sobre el
 - THEN MUST vivir bajo `src/modules/admin/advertiser-context`
 - AND MUST encapsular sus consultas, estado asíncrono, reglas derivadas y presentación
 - AND MUST recibir únicamente el identificador del anunciante desde el módulo de propiedades
+
+### Requirement: Navegación directa en listas administrativas
+El sistema MUST permitir que el moderador abra directamente una página concreta
+de resultados en las listas administrativas paginadas.
+
+#### Scenario: Moderador navega una lista extensa
+- GIVEN una sección administrativa contiene varias páginas de resultados
+- WHEN el moderador consulta la paginación
+- THEN MUST ver números de página y la página activa claramente identificada
+- AND MUST poder saltar a un número de página directamente
+- AND MUST conservar navegación anterior/siguiente y un control compacto para rangos largos
+- AND MUST anunciar la navegación de forma accesible y adaptarse a pantallas estrechas
+- AND MUST delegar la carga al módulo actual sin alterar sus filtros
