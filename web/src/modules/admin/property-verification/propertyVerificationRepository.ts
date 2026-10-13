@@ -1,5 +1,6 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
+import { fetchPropertyTrustScore, type PropertyTrustScore } from '../trust-score'
 
 export type PendingPropertyVerification = {
   id: string
@@ -15,14 +16,7 @@ export type PendingPropertyVerification = {
   properties?: { title?: string | null; location?: string | null } | null
 }
 
-export type PropertyTrustScore = {
-  score: number
-  identity_verified: boolean
-  document_verified: boolean
-  published: boolean
-  contact_present: boolean
-  internal_indicator: string
-}
+export type { PropertyTrustScore } from '../trust-score'
 
 async function createSignedUrl(path: string) {
   const { data, error } = await supabase.storage.from('property_documents').createSignedUrl(path, 300)
@@ -34,13 +28,12 @@ async function createSignedUrl(path: string) {
 }
 
 async function fetchTrustScore(propertyId: string): Promise<PropertyTrustScore | null> {
-  const { data, error } = await supabase.rpc('get_property_trust_score', { p_property_id: propertyId })
-  if (error) {
-    logSafeEvent({ module: 'admin_property_verification', action: 'fetch_trust_score', level: 'warn', code: sanitizeErrorReason(error) })
+  try {
+    return await fetchPropertyTrustScore(propertyId)
+  } catch {
+    logSafeEvent({ module: 'admin_property_verification', action: 'fetch_trust_score', level: 'warn', code: 'trust_score_unavailable' })
     return null
   }
-  const row = Array.isArray(data) ? data[0] : data
-  return (row as PropertyTrustScore | null) ?? null
 }
 
 export async function fetchPendingPropertyVerifications(): Promise<PendingPropertyVerification[]> {

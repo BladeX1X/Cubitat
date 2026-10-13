@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Bot, Check, Eye, EyeOff, Loader2, MapPin, RotateCcw, Trash2, X } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { formatDate, formatPrice } from '../core/formatters'
@@ -5,6 +6,10 @@ import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
 import { PropertyDetails } from './PropertyDetails'
 import { ImageDuplicateComparison } from './ImageDuplicateComparison'
+
+const TrustScoreDisclosure = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+  ? lazy(() => import('../trust-score').then((module) => ({ default: module.TrustScoreDisclosure })))
+  : null
 
 type Props = {
   property: ModerationProperty
@@ -102,6 +107,11 @@ export function PropertyModerationCard({
             </div>
           )}
           <p className="text-xs text-neutral-400">Publicado por: <span className="font-medium text-neutral-600">{property.user_email || 'Usuario'}</span></p>
+          {TrustScoreDisclosure && (
+            <Suspense fallback={null}>
+              <TrustScoreDisclosure propertyId={property.id} />
+            </Suspense>
+          )}
           <div className="flex flex-wrap gap-2 mt-2 pt-3 border-t border-neutral-100">
             <Button variant="outline" className="rounded-xl text-xs" onClick={onToggle}>
               <Eye className="w-3.5 h-3.5" />{expanded ? 'Cerrar detalle' : 'Ver detalle'}

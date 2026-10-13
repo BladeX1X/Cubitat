@@ -46,6 +46,12 @@ Cada capacidad vive bajo `src/modules/admin`:
   envío/revisión de evidencia y lectura del indicador, mientras RLS mantiene
   la comprobación de propietario y AAL2. El verificador de bundle exige destino
   productivo y excluye KYC, agentes, Push/correo y pHash.
+- `trust-score`: indicador de confianza privado para moderadores. Cada ficha
+  en DEV y `phase2-production` permite consultar el puntaje bajo demanda, sin
+  necesidad de una solicitud
+  documental; presenta los cuatro factores y su alcance orientativo. No altera
+  el anuncio ni lo expone al catálogo público. Otros módulos consumen solo la
+  interfaz pública de `src/modules/admin/trust-score`.
 - `npm run build:phase2-production` combina KYC, verificación documental,
   indicador Trust Score interno, distintivo de vendedor verificado y señales
   pHash. Exige el proyecto Supabase productivo; el Worker mantiene la decisión
@@ -80,6 +86,8 @@ y no contienen reglas específicas de otro módulo.
 - Métricas de Supabase, Cloudflare y Analytics con errores aislados.
 - Contexto del anunciante bajo demanda: antigüedad, publicaciones, reportes y
   señales orientativas que siempre requieren revisión humana.
+- Trust Score bajo demanda por ficha, con estado de carga, error recuperable,
+  factores explicables y aviso de que no constituye certificación legal.
 - Bitácora administrativa con filtros por acción/origen, búsqueda de propiedad,
   orden estable y estados de carga, error y vacío aislados.
 
