@@ -11,6 +11,14 @@ export type StatusFilter =
 
 export type ModerationFilter = StatusFilter | 'image_duplicates'
 
+export type PropertyModerationFilters = {
+  query: string
+  operation: 'all' | 'venta' | 'alquiler' | 'permuta'
+  propertyType: 'all' | 'casa' | 'apartamento' | 'terreno'
+  createdAfter: string
+  createdBefore: string
+}
+
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
 export type ReportStatusFilter = ReportStatus | 'all'
 

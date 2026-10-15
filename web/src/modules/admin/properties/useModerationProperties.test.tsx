@@ -73,6 +73,31 @@ describe('useModerationProperties', () => {
     expect(result.current.actionLoading).toBeNull()
   })
 
+  it('applies filters from the first page and keeps them when navigating pages', async () => {
+    const { result } = renderHook(() => useModerationProperties())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    act(() => {
+      result.current.updateDraftFilters({ operation: 'alquiler', propertyType: 'apartamento' })
+    })
+    act(() => {
+      result.current.applyFilters()
+    })
+    await waitFor(() => expect(mocks.fetchModerationProperties).toHaveBeenLastCalledWith(
+      'pending_review',
+      0,
+      expect.objectContaining({ operation: 'alquiler', propertyType: 'apartamento' }),
+    ))
+
+    await act(async () => result.current.load(3))
+    expect(mocks.fetchModerationProperties).toHaveBeenLastCalledWith(
+      'pending_review',
+      3,
+      expect.objectContaining({ operation: 'alquiler', propertyType: 'apartamento' }),
+    )
+    expect(result.current.page).toBe(3)
+  })
+
   it('restores the previous state when the AI request is rejected before processing', async () => {
     mocks.requestAiReevaluation.mockRejectedValueOnce(new Error('provider unavailable'))
     const { result } = renderHook(() => useModerationProperties())

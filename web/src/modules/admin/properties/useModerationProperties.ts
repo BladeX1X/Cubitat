@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import type { ModerationFilter, ModerationProperty, StatusCounts } from '../core/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ModerationFilter, ModerationProperty, PropertyModerationFilters, StatusCounts } from '../core/types'
 import { getErrorMessage } from '../core/errors'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 import {
@@ -24,9 +24,19 @@ const EMPTY_COUNTS: StatusCounts = {
   image_duplicates: 0,
 }
 
+const EMPTY_FILTERS: PropertyModerationFilters = {
+  query: '',
+  operation: 'all',
+  propertyType: 'all',
+  createdAfter: '',
+  createdBefore: '',
+}
+
 export function useModerationProperties() {
   const [properties, setProperties] = useState<ModerationProperty[]>([])
   const [statusFilter, setStatusFilter] = useState<ModerationFilter>('pending_review')
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS)
   const [statusCounts, setStatusCounts] = useState<StatusCounts>(EMPTY_COUNTS)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
@@ -34,6 +44,7 @@ export function useModerationProperties() {
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const requestId = useRef(0)
 
   const refreshCounts = useCallback(async () => {
     try {
@@ -49,14 +60,17 @@ export function useModerationProperties() {
   }, [])
 
   const load = useCallback(async (targetPage = 0) => {
+    const currentRequest = ++requestId.current
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchModerationProperties(statusFilter, targetPage)
+      const result = await fetchModerationProperties(statusFilter, targetPage, filters)
+      if (requestId.current !== currentRequest) return
       setProperties(result.properties)
       setTotal(result.total)
       setPage(targetPage)
     } catch (reason) {
+      if (requestId.current !== currentRequest) return
       logSafeEvent({
         module: 'admin',
         action: 'load_moderation_properties',
@@ -65,13 +79,24 @@ export function useModerationProperties() {
       })
       setError(getErrorMessage(reason, 'Error al cargar propiedades'))
     } finally {
-      setLoading(false)
+      if (requestId.current === currentRequest) setLoading(false)
     }
-  }, [statusFilter])
+  }, [filters, statusFilter])
 
   useEffect(() => {
     void Promise.all([load(0), refreshCounts()])
   }, [load, refreshCounts])
+
+  const updateDraftFilters = useCallback((updates: Partial<PropertyModerationFilters>) => {
+    setDraftFilters((current) => ({ ...current, ...updates }))
+  }, [])
+
+  const applyFilters = useCallback(() => setFilters({ ...draftFilters }), [draftFilters])
+
+  const clearFilters = useCallback(() => {
+    setDraftFilters(EMPTY_FILTERS)
+    setFilters(EMPTY_FILTERS)
+  }, [])
 
   const changeStatus = useCallback(async (
     id: string,
@@ -230,6 +255,11 @@ export function useModerationProperties() {
     properties,
     statusFilter,
     setStatusFilter,
+    filters,
+    draftFilters,
+    updateDraftFilters,
+    applyFilters,
+    clearFilters,
     statusCounts,
     page,
     total,
