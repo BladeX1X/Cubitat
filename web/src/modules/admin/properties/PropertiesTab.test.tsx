@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropertyModerationFilters } from '../core/types'
 import { PropertiesTab } from './PropertiesTab'
 
@@ -13,6 +13,8 @@ const defaultFilters: PropertyModerationFilters = {
 let hookState: Record<string, unknown>
 
 describe('PropertiesTab filters', () => {
+  afterEach(() => vi.useRealTimers())
+
   beforeEach(() => {
     hookState = {
       properties: [],
@@ -55,13 +57,51 @@ describe('PropertiesTab filters', () => {
     expect(screen.getByLabelText('Fecha final')).toBeInTheDocument()
   })
 
-  it('applies entered criteria only after the moderator submits the filter form', () => {
+  it('applies a selected operation immediately', async () => {
     render(<PropertiesTab />)
 
-    fireEvent.change(screen.getByPlaceholderText('Ej. casa en Holguín'), { target: { value: 'El Vedado' } })
-    fireEvent.click(screen.getByRole('button', { name: /Aplicar filtros/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar por operación' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Alquiler' }))
 
-    expect(hookState.updateDraftFilters).toHaveBeenCalledWith({ query: 'El Vedado' })
-    expect(hookState.applyFilters).toHaveBeenCalledOnce()
+    await waitFor(() => expect(hookState.updateDraftFilters).toHaveBeenCalledWith({ operation: 'alquiler' }))
+    expect(hookState.applyFilters).toHaveBeenCalledWith({ ...defaultFilters, operation: 'alquiler' })
+  })
+
+  it('applies a selected date immediately', () => {
+    render(<PropertiesTab />)
+
+    fireEvent.change(screen.getByLabelText('Fecha inicial'), { target: { value: '2026-10-01' } })
+
+    expect(hookState.updateDraftFilters).toHaveBeenCalledWith({ createdAfter: '2026-10-01' })
+    expect(hookState.applyFilters).toHaveBeenCalledWith({ ...defaultFilters, createdAfter: '2026-10-01' })
+  })
+
+  it('does not auto-apply a search while the date range is invalid', () => {
+    vi.useFakeTimers()
+    hookState.draftFilters = { ...defaultFilters, createdAfter: '2026-10-10', createdBefore: '2026-10-01' }
+    const view = render(<PropertiesTab />)
+
+    fireEvent.change(screen.getByPlaceholderText('Ej. casa en Holguín'), { target: { value: 'Holguín' } })
+    hookState.draftFilters = { ...hookState.draftFilters as PropertyModerationFilters, query: 'Holguín' }
+    view.rerender(<PropertiesTab />)
+    act(() => vi.advanceTimersByTime(400))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('La fecha inicial debe ser anterior o igual a la fecha final.')
+    expect(hookState.applyFilters).not.toHaveBeenCalled()
+  })
+
+  it('debounces free-text search and explains automatic application', () => {
+    vi.useFakeTimers()
+    const view = render(<PropertiesTab />)
+
+    fireEvent.change(screen.getByPlaceholderText('Ej. casa en Holguín'), { target: { value: 'El Vedado' } })
+    hookState.draftFilters = { ...defaultFilters, query: 'El Vedado' }
+    view.rerender(<PropertiesTab />)
+    expect(hookState.applyFilters).not.toHaveBeenCalled()
+    expect(screen.getByText(/se aplican automáticamente/i)).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(400))
+    expect(hookState.applyFilters).toHaveBeenCalled()
+    vi.useRealTimers()
   })
 })

@@ -91,7 +91,10 @@ export function useModerationProperties() {
     setDraftFilters((current) => ({ ...current, ...updates }))
   }, [])
 
-  const applyFilters = useCallback(() => setFilters({ ...draftFilters }), [draftFilters])
+  const applyFilters = useCallback((nextFilters: PropertyModerationFilters = draftFilters) => {
+    setDraftFilters({ ...nextFilters })
+    setFilters({ ...nextFilters })
+  }, [draftFilters])
 
   const clearFilters = useCallback(() => {
     setDraftFilters(EMPTY_FILTERS)
