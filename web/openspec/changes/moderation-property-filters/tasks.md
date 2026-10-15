@@ -4,3 +4,4 @@
 - [x] Cubrir repositorio, hook y controles con pruebas.
 - [x] Ejecutar lint, suite completa y build.
 - [ ] Integrar por PR y verificar visualmente en producción antes de marcarlo como cerrado.
+- [x] Aplicar automáticamente selección de filtros; retrasar búsqueda textual 350 ms y bloquear rango de fechas inválido.
