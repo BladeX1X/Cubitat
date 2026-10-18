@@ -62,7 +62,7 @@ export function KycSubmissionModal({ userId, isOpen, onClose, onSuccess }: KycSu
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-xs animate-fadeIn sm:p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget && !submission.loading) onClose()
       }}
@@ -72,7 +72,7 @@ export function KycSubmissionModal({ userId, isOpen, onClose, onSuccess }: KycSu
         role="dialog"
         aria-modal="true"
         aria-label="Solicitud de verificacion KYC"
-        className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative"
+        className="relative flex max-h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:p-6"
       >
         <button ref={closeButtonRef} type="button" onClick={onClose} disabled={submission.loading}
           className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 focus:outline-none disabled:opacity-50"
@@ -80,7 +80,7 @@ export function KycSubmissionModal({ userId, isOpen, onClose, onSuccess }: KycSu
           <X size={20} />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
+        <div className="mb-4 flex shrink-0 items-center gap-3 pr-7">
           <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
             <ShieldCheck size={20} />
           </div>

@@ -79,6 +79,18 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - THEN el sistema MUST mostrar `Mostrar lista` y acciones de alerta cuando existan
 - AND NO MUST mostrar boton GPS si la fase actual no lo requiere
 
+#### Scenario: Acciones de resultados no cubren las tarjetas en móvil
+- GIVEN el usuario está en la lista de resultados en un viewport móvil
+- WHEN aparecen los controles `Mostrar mapa` y `Crear alerta`
+- THEN MUST ubicarse en el flujo de la página antes del catálogo
+- AND MUST NOT cubrir tarjetas ni controles de paginación mientras se desplaza
+
+#### Scenario: Resultados en un viewport estrecho
+- GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
+- WHEN se muestran el encabezado, las tarjetas y la paginación
+- THEN el documento MUST NOT tener desbordamiento horizontal
+- AND los controles MUST conservarse visibles y utilizables
+
 ### Requirement: Crear alerta desde resultados
 El sistema MUST permitir crear alertas desde la barra de filtros y desde acciones del mapa.
 

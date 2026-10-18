@@ -28,7 +28,7 @@ export function KycDocumentForm(props: KycDocumentFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
       {props.error && (
         <div className="bg-red-50 text-red-800 p-3 rounded-xl border border-red-100 text-xs flex items-center gap-2">
           <AlertTriangle size={16} className="shrink-0 text-red-500" /><span>{props.error}</span>

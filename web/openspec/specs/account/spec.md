@@ -199,3 +199,14 @@ El sistema MUST exigir dos imágenes privadas para crear una solicitud KYC: un d
 - AND la RPC MUST comprobar que las dos rutas son distintas y que ambos objetos existen
 - AND un usuario distinto o anónimo MUST NOT leer las evidencias
 - AND si falla el envío parcial, el cliente MUST intentar retirar los objetos huérfanos
+
+### Requirement: Formulario KYC adaptable a pantallas bajas
+El modal de solicitud KYC MUST permanecer dentro del alto visible y permitir
+desplazarse por el formulario sin ocultar el encabezado ni las acciones.
+
+#### Scenario: Completar KYC en móvil o pantalla baja
+- GIVEN el modal KYC está abierto en un viewport móvil o de poca altura
+- WHEN el contenido supera el espacio disponible
+- THEN el diálogo MUST limitar su altura al viewport
+- AND el formulario MUST desplazarse de forma independiente
+- AND la cabecera y el botón de cierre MUST permanecer visibles
