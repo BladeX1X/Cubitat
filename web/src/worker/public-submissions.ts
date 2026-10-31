@@ -1,4 +1,5 @@
 import { normalizePhoneForStorage, validatePhone } from '../shared/lib/phone'
+import { readBoundedJsonObject } from './boundedJson.js'
 
 const DEFAULT_TURNSTILE_VERIFY_URL = 'https://turnstile-siteverify-cubitat.pochiprats18.workers.dev'
 const MAX_REQUEST_BYTES = 16 * 1024
@@ -53,25 +54,6 @@ function normalizedString(value: unknown): string {
 
 function validLength(value: string, min: number, max: number): boolean {
   return value.length >= min && value.length <= max
-}
-
-async function parseJsonBody(request: Request): Promise<Record<string, unknown> | null> {
-  if (!request.headers.get('content-type')?.includes('application/json')) return null
-
-  const declaredLength = Number(request.headers.get('content-length') || 0)
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) return null
-
-  const rawBody = await request.text()
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_REQUEST_BYTES) return null
-
-  try {
-    const parsed = JSON.parse(rawBody)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
-      : null
-  } catch {
-    return null
-  }
 }
 
 async function verifyTurnstile(
@@ -183,8 +165,14 @@ export async function handlePublicContactSubmission(
     return json({ error: 'El formulario no esta disponible.' }, 503)
   }
 
-  const body = await parseJsonBody(request) as ContactPayload | null
-  if (!body) return json({ error: 'Solicitud no valida.' }, 400)
+  const parsed = await readBoundedJsonObject<ContactPayload>(request, MAX_REQUEST_BYTES)
+  if (!parsed.ok) {
+    const message = parsed.status === 413 ? 'Solicitud demasiado grande.'
+      : parsed.status === 408 ? 'La solicitud tardó demasiado.'
+        : 'Solicitud no valida.'
+    return json({ error: message }, parsed.status)
+  }
+  const body = parsed.value
 
   const token = normalizedString(body.turnstile_token)
   const propertyId = normalizedString(body.property_id)
@@ -224,8 +212,14 @@ export async function handlePublicReportSubmission(
     return json({ error: 'El formulario no esta disponible.' }, 503)
   }
 
-  const body = await parseJsonBody(request) as ReportPayload | null
-  if (!body) return json({ error: 'Solicitud no valida.' }, 400)
+  const parsed = await readBoundedJsonObject<ReportPayload>(request, MAX_REQUEST_BYTES)
+  if (!parsed.ok) {
+    const message = parsed.status === 413 ? 'Solicitud demasiado grande.'
+      : parsed.status === 408 ? 'La solicitud tardó demasiado.'
+        : 'Solicitud no valida.'
+    return json({ error: message }, parsed.status)
+  }
+  const body = parsed.value
 
   const token = normalizedString(body.turnstile_token)
   const propertyId = normalizedString(body.property_id)

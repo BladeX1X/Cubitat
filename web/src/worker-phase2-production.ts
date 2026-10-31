@@ -9,6 +9,7 @@ import { handleContactMetric } from './worker/contact-metrics';
 import { dispatchPendingPushNotifications } from './worker/push-notifications';
 import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 import { logWorkerEvent } from './worker/logger';
+import { readBoundedJsonObject } from './worker/boundedJson.js';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -65,17 +66,14 @@ export default {
 
       if (env.PHASE2_IMAGE_DUPLICATES_ENABLED !== 'true') return respond(404, { error: 'Not found' });
       if (request.method !== 'POST') return respond(405, { error: 'Method not allowed' });
-      if (Number(request.headers.get('content-length') ?? '0') > 4096) return respond(413, { error: 'Request too large' });
-
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return respond(400, { error: 'Invalid JSON' });
+      const parsed = await readBoundedJsonObject(request, 4_096);
+      if (!parsed.ok) {
+        const message = parsed.status === 413 ? 'Request too large'
+          : parsed.status === 408 ? 'Request body timed out'
+            : 'Invalid JSON';
+        return respond(parsed.status, { error: message });
       }
-      const propertyId = body && typeof body === 'object' && !Array.isArray(body)
-        ? (body as Record<string, unknown>).property_id
-        : null;
+      const propertyId = parsed.value.property_id;
       if (typeof propertyId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId)) {
         return respond(400, { error: 'Invalid property_id' });
       }

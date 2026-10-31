@@ -63,3 +63,36 @@ before issuing requests.
 - GIVEN a test can create or delete business data
 - WHEN either its app or Supabase target is not loopback
 - THEN the test fails before its first request.
+
+### Requirement: Worker request bodies have byte and duration limits
+
+The Worker MUST validate declared content length when present and count actual
+streamed bytes before parsing or forwarding request bodies. Each endpoint MUST
+use an explicit maximum appropriate to its payload. A body above the maximum
+MUST be cancelled and rejected with HTTP 413; a body that does not finish
+within the read deadline MUST be cancelled and rejected with HTTP 408. The
+Supabase proxy MUST enforce limits before sending a body upstream, including
+bucket-specific limits for Storage uploads. Authentication and rate limits
+MUST run before parsing bodies on routes where the identity can be established
+without parsing the body.
+
+#### Scenario: Body exceeds its declared length or byte budget
+
+- GIVEN a Worker endpoint with a configured request-body maximum
+- WHEN `Content-Length` exceeds the maximum or the streamed bytes cross it
+- THEN the Worker MUST return HTTP 413
+- AND MUST cancel the stream
+- AND MUST NOT call Turnstile or forward that body to an upstream API or RPC.
+
+#### Scenario: Body stream stalls
+
+- GIVEN an incoming body stream that does not reach EOF before the deadline
+- WHEN the Worker reads the request body
+- THEN it MUST cancel the stream and return HTTP 408
+- AND MUST NOT forward a partial request upstream.
+
+#### Scenario: Unauthenticated AI moderation request
+
+- GIVEN a request to `/api/ai-moderate` without a valid bearer token
+- WHEN its body is malformed or large
+- THEN authentication MUST be checked before the body is parsed.

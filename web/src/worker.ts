@@ -6,6 +6,7 @@ import {
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
+import { readBoundedBytes, readBoundedJsonObject, readBoundedText } from './worker/boundedJson.js';
 import {
   dispatchPendingPushNotifications,
   handlePushSubscriptionRequest,
@@ -59,6 +60,18 @@ export interface Env extends PublicSubmissionEnv, PushNotificationEnv {
 }
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_AI_MODERATION_REQUEST_BYTES = 8 * 1024 * 1024;
+const DEFAULT_SUPABASE_PROXY_BODY_LIMIT_BYTES = 64 * 1024;
+
+export function getSupabaseProxyBodyLimit(subPath: string, method: string): number {
+  if ((method === 'POST' || method === 'PUT') && subPath.startsWith('/storage/v1/object/')) {
+    const bucket = subPath.match(/^\/storage\/v1\/object\/(?:public\/|authenticated\/)?([^/?]+)/)?.[1];
+    if (bucket === 'property_images') return 5 * 1024 * 1024;
+    if (bucket === 'avatars') return 1024 * 1024;
+    if (bucket === 'kyc_documents' || bucket === 'property_documents') return 10 * 1024 * 1024;
+  }
+  return DEFAULT_SUPABASE_PROXY_BODY_LIMIT_BYTES;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -310,32 +323,24 @@ async function sha256Hex(value: string): Promise<string> {
     .join('');
 }
 
-async function getRequestEmail(request: Request): Promise<string> {
-  try {
-    const contentType = request.headers.get('content-type') || '';
-    const clonedRequest = request.clone();
-
-    if (contentType.includes('application/json')) {
-      const body: unknown = await clonedRequest.json();
-      if (!isRecord(body)) return '';
-      const nestedData = isRecord(body.data) ? body.data : null;
-      const nestedUser = isRecord(body.user) ? body.user : null;
-      return normalizeEmail(
-        body.email
-        || nestedData?.email
-        || nestedUser?.email,
-      );
-    }
-
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      const form = await clonedRequest.formData();
-      return normalizeEmail(form.get('email'));
-    }
-  } catch {
-    return '';
+async function getRequestEmail(request: Request): Promise<{ email: string; status?: 408 | 413 }> {
+  const contentType = request.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const parsed = await readBoundedJsonObject(request.clone(), 16 * 1024);
+    if (!parsed.ok) return parsed.status === 408 || parsed.status === 413 ? { email: '', status: parsed.status } : { email: '' };
+    const body = parsed.value;
+    const nestedData = isRecord(body.data) ? body.data : null;
+    const nestedUser = isRecord(body.user) ? body.user : null;
+    return { email: normalizeEmail(body.email || nestedData?.email || nestedUser?.email) };
   }
 
-  return '';
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const parsed = await readBoundedText(request.clone(), 16 * 1024);
+    if (!parsed.ok) return parsed.status === 408 || parsed.status === 413 ? { email: '', status: parsed.status } : { email: '' };
+    return { email: normalizeEmail(new URLSearchParams(parsed.value).get('email')) };
+  }
+
+  return { email: '' };
 }
 
 async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string, subPath: string): Promise<Response | null> {
@@ -385,7 +390,10 @@ async function enforceAuthRateLimit(request: Request, env: Env, clientIp: string
     return rateLimitResponse(ipCheck.resetAt);
   }
 
-  const email = await getRequestEmail(request);
+  const requestEmail = await getRequestEmail(request);
+  if (requestEmail.status === 408) return jsonResponse({ error: 'Request body timed out' }, 408);
+  if (requestEmail.status === 413) return jsonResponse({ error: 'Payload too large' }, 413);
+  const email = requestEmail.email;
   if (email) {
     const emailHash = await sha256Hex(email);
     const emailCheck = await checkRateLimit(env, `email:${emailHash}:auth:${action}:v1`, emailLimit, emailWindowMs);
@@ -727,6 +735,9 @@ export function createWorker(options: WorkerOptions = {}) {
       if (request.method !== 'PUT' && request.method !== 'DELETE' && request.method !== 'POST') {
         return jsonResponse({ error: 'Method not allowed' }, 405);
       }
+      const clientIp = request.headers.get('cf-connecting-ip') || 'unknown';
+      const pushRateLimit = await checkRateLimit(env, `${clientIp}:push-subscription:v1`, 30, 60_000);
+      if (!pushRateLimit.allowed) return rateLimitResponse(pushRateLimit.resetAt);
       return withSecurityHeaders(await handlePushSubscriptionRequest(request, env), url);
     }
 
@@ -762,18 +773,6 @@ export function createWorker(options: WorkerOptions = {}) {
 
     // Endpoint interno para moderación con IA
     if (path === '/api/ai-moderate' && request.method === 'POST') {
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return jsonResponse({ error: 'Invalid JSON' }, 400);
-      }
-
-      if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        return jsonResponse({ error: 'Invalid JSON' }, 400);
-      }
-      const moderationRequest = body as Partial<AiModerationRequest>;
-
       const authHeader = request.headers.get('Authorization') || '';
       const user = await getAuthenticatedUser(authHeader, env);
       if (!user) {
@@ -789,6 +788,18 @@ export function createWorker(options: WorkerOptions = {}) {
       if (!moderationRateLimit.allowed) {
         return rateLimitResponse(moderationRateLimit.resetAt);
       }
+
+      const parsed = await readBoundedJsonObject<Partial<AiModerationRequest>>(
+        request,
+        MAX_AI_MODERATION_REQUEST_BYTES,
+      );
+      if (!parsed.ok) {
+        const message = parsed.status === 413 ? 'Payload too large'
+          : parsed.status === 408 ? 'Request body timed out'
+            : 'Invalid JSON';
+        return jsonResponse({ error: message }, parsed.status);
+      }
+      const moderationRequest = parsed.value;
 
       if (typeof moderationRequest.property_id !== 'string' || !uuidRegex.test(moderationRequest.property_id)) {
         return jsonResponse({ error: 'Invalid property_id' }, 400);
@@ -925,15 +936,16 @@ export function createWorker(options: WorkerOptions = {}) {
         return jsonResponse({ ok: true });
       }
 
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
+      const parsed = await readBoundedJsonObject(request, 4 * 1024);
+      if (!parsed.ok) {
+        if (parsed.status === 408) return jsonResponse({ error: 'Request body timed out' }, 408);
+        if (parsed.status === 413) return jsonResponse({ error: 'Payload too large' }, 413);
         return jsonResponse({ ok: true });
       }
+      const body = parsed.value;
 
       const email = normalizeEmail(
-        body && typeof body === 'object' && 'email' in body
+        'email' in body
           ? body.email
           : undefined,
       );
@@ -1017,8 +1029,13 @@ export function createWorker(options: WorkerOptions = {}) {
 
         let password: unknown;
         try {
-          const authBody = await request.clone().json() as { password?: unknown };
-          password = authBody.password;
+          const parsed = await readBoundedJsonObject<{ password?: unknown }>(request.clone(), 16 * 1024);
+          if (!parsed.ok) {
+            if (parsed.status === 408) return jsonResponse({ error: 'Request body timed out' }, 408);
+            if (parsed.status === 413) return jsonResponse({ error: 'Payload too large' }, 413);
+          } else {
+            password = parsed.value.password;
+          }
         } catch {
           password = undefined;
         }
@@ -1050,12 +1067,13 @@ export function createWorker(options: WorkerOptions = {}) {
       }
 
       if (allowedAuthenticatedProfilePatch) {
-        let profilePatchBody: unknown;
-        try {
-          profilePatchBody = await request.clone().json();
-        } catch {
+        const parsed = await readBoundedJsonObject(request.clone(), 16 * 1024);
+        if (!parsed.ok) {
+          if (parsed.status === 408) return jsonResponse({ error: 'Request body timed out' }, 408);
+          if (parsed.status === 413) return jsonResponse({ error: 'Payload too large' }, 413);
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
         }
+        const profilePatchBody = parsed.value;
 
         if (
           !profilePatchBody
@@ -1216,6 +1234,15 @@ export function createWorker(options: WorkerOptions = {}) {
       };
 
       if (request.method !== 'GET' && request.method !== 'HEAD') {
+        if (request.body) {
+          const boundedBody = await readBoundedBytes(request.clone(), getSupabaseProxyBodyLimit(subPath, method));
+          if (!boundedBody.ok) {
+            const message = boundedBody.status === 413 ? 'Payload too large'
+              : boundedBody.status === 408 ? 'Request body timed out'
+                : 'Invalid request body';
+            return jsonResponse({ error: message }, boundedBody.status);
+          }
+        }
         fetchOptions.body = request.body;
       }
 

@@ -1,3 +1,5 @@
+import { readBoundedJsonObject } from './boundedJson.js'
+
 interface ContactMetricEnv {
   VITE_SUPABASE_URL: string
   SUPABASE_SERVICE_ROLE_KEY?: string
@@ -54,14 +56,14 @@ export async function handleContactMetric(
     return jsonResponse({ error: 'Contact metrics are not configured' }, 503)
   }
 
-  let body: { propertyId?: unknown; channel?: unknown }
-  try {
-    const rawBody = await request.text()
-    if (rawBody.length > 1_024) return jsonResponse({ error: 'Payload too large' }, 413)
-    body = JSON.parse(rawBody) as typeof body
-  } catch {
-    return jsonResponse({ error: 'Invalid JSON' }, 400)
+  const parsed = await readBoundedJsonObject<{ propertyId?: unknown; channel?: unknown }>(request, 1_024)
+  if (!parsed.ok) {
+    const message = parsed.status === 413 ? 'Payload too large'
+      : parsed.status === 408 ? 'Request body timed out'
+        : 'Invalid JSON'
+    return jsonResponse({ error: message }, parsed.status)
   }
+  const body = parsed.value
 
   if (typeof body.propertyId !== 'string' || !UUID_PATTERN.test(body.propertyId)) {
     return jsonResponse({ error: 'Invalid propertyId' }, 400)

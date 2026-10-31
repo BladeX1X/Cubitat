@@ -5,6 +5,7 @@ import {
   type VapidKeys,
 } from '@block65/webcrypto-web-push'
 import { logWorkerEvent } from './logger'
+import { readBoundedJsonObject } from './boundedJson.js'
 
 export interface PushNotificationEnv {
   VITE_SUPABASE_URL: string
@@ -100,12 +101,14 @@ export async function handlePushSubscriptionRequest(
   const userId = await authenticatedUserId(request.headers.get('Authorization') || '', env, fetchFn)
   if (!userId) return jsonResponse({ error: 'Unauthorized' }, 401)
 
-  let body: SubscriptionBody
-  try {
-    body = await request.json() as SubscriptionBody
-  } catch {
-    return jsonResponse({ error: 'Invalid request' }, 400)
+  const parsed = await readBoundedJsonObject<SubscriptionBody>(request, 8 * 1024)
+  if (!parsed.ok) {
+    const message = parsed.status === 413 ? 'Payload too large'
+      : parsed.status === 408 ? 'Request body timed out'
+        : 'Invalid request'
+    return jsonResponse({ error: message }, parsed.status)
   }
+  const body = parsed.value
 
   if (request.method === 'PUT') {
     const subscription = parseSubscription(body)
