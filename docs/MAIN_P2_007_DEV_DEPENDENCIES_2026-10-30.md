@@ -59,5 +59,5 @@ Los cuatro avisos bajos corresponden a `deepmerge` 4.x dentro de
 versión corregida de `deepmerge` para ese aviso; npm propone `--force`, que
 degrada `vite-plugin-pwa` y no se aplicó. MAIN-P2-007 queda parcialmente
 remediado: desaparecieron todos los avisos moderados y no hay vulnerabilidades
-de producción, pero persiste ese aviso bajo en herramientas de desarrollo.
-El cambio aún debe pasar por revisión de PR/CI antes de considerarse integrado.
+de producción, pero persisten cuatro avisos bajos en herramientas de desarrollo.
+El cambio se integró a `main` mediante PR #156, merge `038d82dd727d4faebcd0ea3387aca4ec312191f1`; CI de calidad y seguridad SQL PASS. No se desplegó nada ni se modificaron servicios remotos.
