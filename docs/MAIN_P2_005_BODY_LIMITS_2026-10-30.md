@@ -1,7 +1,7 @@
 # MAIN-P2-005 — límites de cuerpos HTTP del Worker
 
 Fecha: 2026-10-30 (CDMX)  
-Estado: candidata en `bugfix/audit-p2-005-limits`; PR/CI de integración pendientes. No desplegada.
+Estado: integrado en `main` por PR #176, merge `7451a17bfb01e000d7af360d7df3fed5d188fb52`. Los checks `quality` y `database-security` del PR pasaron. CI post-merge en `main` (run `41169103539`) sigue en curso. No desplegada.
 
 ## Cambio
 
