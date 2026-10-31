@@ -45,3 +45,8 @@ private GitHub repository currently cannot enforce branch protection under its
 plan, so the merge gate remains a process control. Quick Tunnels are public
 URLs; Cloudflare documents `--allowed-mail` as an optional one-time-PIN gate.
 Reference: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
+
+The quality workflow initially stopped at the pre-existing high findings in
+`MAIN-P2-007`. A compatible toolchain patch was added in this branch so CI can
+run. Its scope and remaining moderate advisories are recorded in
+[`MAIN_P2_007_DEV_DEPENDENCIES_2026-10-30.md`](MAIN_P2_007_DEV_DEPENDENCIES_2026-10-30.md).
