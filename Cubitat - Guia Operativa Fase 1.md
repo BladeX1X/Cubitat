@@ -299,14 +299,29 @@ Para levantar el entorno de desarrollo y generar una URL pública (útil para pr
    ```bash
    npm run dev
    ```
-   Esto levantará la app en `http://localhost:5173`.
+   Esto levanta la app solo en loopback, normalmente en `http://127.0.0.1:5173`.
 
-2. **Túnel Público (Cloudflare):**
-   Abre una segunda terminal y ejecuta:
-   ```bash
-   cloudflared tunnel --url http://localhost:5173
+2. **Túnel temporal para una prueba remota (Cloudflare):**
+   El Quick Tunnel publica temporalmente el servidor local. Limita la prueba a tu
+   correo y usa solo datos sintéticos; el enlace y el PIN permiten entrar al
+   entorno mientras el túnel esté activo.
+
+   En una segunda terminal ejecuta el túnel con el correo autorizado:
+   ```powershell
+   cloudflared tunnel --url http://127.0.0.1:5173 --allowed-mail tu-correo@ejemplo.com
    ```
-   Busca en la salida de la consola una URL que termina en `.trycloudflare.com`. Ese enlace es público y seguro.
+   Copia de la salida únicamente el hostname, sin `https://` ni ruta (por
+   ejemplo, `nombre-aleatorio.trycloudflare.com`). En la terminal de Vite,
+   detén el servidor con `Ctrl+C`, permite ese hostname exacto y reinicia Vite:
+   ```powershell
+   $env:CUBITAT_DEV_ADDITIONAL_ALLOWED_HOSTS = "nombre-aleatorio.trycloudflare.com"
+   npm run dev
+   ```
+   Sustituye el ejemplo por el hostname que generó tu túnel. No uses comodines.
+   El nombre cambia al crear otro Quick Tunnel. Al terminar, detén ambos
+   procesos y cierra la terminal de Vite para eliminar la variable temporal.
+   Para desarrollo habitual, basta con `npm run dev` y el acceso queda limitado
+   a `127.0.0.1`.
 
 ---
 
@@ -1004,7 +1019,7 @@ Para agilizar el flujo de trabajo, la automatización y las pruebas, el agente d
 
 1. **Playwright CLI**: Para automatización de navegadores y pruebas visuales (E2E) de la UI. [Repositorio](https://github.com/microsoft/playwright)
 2. **GitHub CLI (`gh`)**: Para gestión automatizada de repositorios, ramas y Pull Requests desde la terminal. [Repositorio](https://github.com/cli/cli)
-3. **Cloudflare Tunnel (`cloudflared`)**: Para exponer de manera segura el entorno de desarrollo local mediante URLs públicas y facilitar pruebas con el cliente. [Repositorio](https://github.com/cloudflare/cloudflared)
+3. **Cloudflare Tunnel (`cloudflared`)**: Para compartir temporalmente una prueba local. Los Quick Tunnels generan URLs públicas, cambian de hostname y deben restringirse por correo; no son un entorno privado ni de producción. [Repositorio](https://github.com/cloudflare/cloudflared)
 4. **TestSprite CLI**: Para la generación automática de casos de prueba robustos en el frontend asistidos por IA. [Repositorio](https://github.com/TestSprite/testsprite-cli)
 
 *(Nota: Railway CLI y Context7 también figuran como alternativas documentadas para escalado de infraestructura y contexto de memoria a largo plazo).*

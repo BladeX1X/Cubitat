@@ -11,6 +11,7 @@ import {
   isDevelopmentServiceWorkerRequest,
 } from './src/shared/pwa/developmentServiceWorkerCleanup.js'
 import { handleContactMetric } from './src/worker/contact-metrics.js'
+import { getDevServerAllowedHosts } from './src/devServerHosts.js'
 
 let cachedLocalServiceRoleKey: string | undefined
 const localContactMetricsSalt = randomBytes(32).toString('hex')
@@ -34,6 +35,8 @@ function readLocalSupabaseServiceRoleKey(): string {
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
+  // Ignore Vite's ambient additional-host escape hatch; use the validated app setting.
+  delete process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
   const env = loadEnv(mode, __dirname, '')
   const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
   const phase2UiEnabled = phase2DevBuild || mode === 'phase2-production'
@@ -424,7 +427,11 @@ Tipo: ${body.property_type}`;
       })
     ],
     server: {
-      allowedHosts: true,
+      host: '127.0.0.1',
+      allowedHosts: getDevServerAllowedHosts(
+        env.CUBITAT_DEV_ADDITIONAL_ALLOWED_HOSTS
+          || process.env.CUBITAT_DEV_ADDITIONAL_ALLOWED_HOSTS,
+      ),
       proxy: {
         '/api/supabase': {
           target: supabaseUrl,
