@@ -31,9 +31,33 @@ auditoría de dependencias de producción (`npm audit --omit=dev`) devolvió cer
 - `SITEMAP_MODE=static npm run build`: PASS; guards de producción, Worker y
   secretos PASS.
 
-El reporte de npm sugiere `--force` para parte de los avisos moderados, lo que
-intentaría degradar `vite-plugin-pwa` a `1.1.0`. No se aplicó esa opción porque
-implica un cambio rompedor no validado. MAIN-P2-007 queda **parcialmente
-remediado**: el gate high/critical pasa y no hay avisos de producción; el
-toolchain aún conserva avisos moderados que requieren revisar/actualizar la
-cadena PWA en un cambio separado.
+El reporte de npm sugería `--force`, que degrada `vite-plugin-pwa` a una versión
+antigua. No se usó esa opción.
+
+## Continuación: reducir avisos moderados (2026-10-30)
+
+En una rama separada se añadieron overrides acotados a las dependencias de
+desarrollo `workbox-build` y `filelist`: `glob` 14.0.2 y `minimatch` 11.0.1.
+Esto elimina los avisos moderados de `glob` y `minimatch` sin reemplazar el
+plugin PWA ni forzar una versión mayor no validada. El test de host local, que
+ocasionalmente excedía su timeout mientras Vite iniciaba su optimizador, ahora
+dispone de 15 segundos.
+
+Evidencia en la rama, 2026-10-30:
+
+- `npm audit`: 4 avisos bajos, 0 moderados/altos/críticos.
+- `npm audit --audit-level=high`: exit 0.
+- `npm audit --omit=dev --audit-level=low`: cero vulnerabilidades.
+- `npm run lint`: PASS.
+- `npm run test:run`: 152 archivos, 667 PASS y 1 SKIP.
+- `SITEMAP_MODE=static npm run build`: PASS; guards de producción, Worker y
+  secretos PASS.
+- `git diff --check`: PASS.
+
+Los cuatro avisos bajos corresponden a `deepmerge` 4.x dentro de
+`@rollup/plugin-node-resolve` → Workbox. GitHub Advisory Database no ofrece una
+versión corregida de `deepmerge` para ese aviso; npm propone `--force`, que
+degrada `vite-plugin-pwa` y no se aplicó. MAIN-P2-007 queda parcialmente
+remediado: desaparecieron todos los avisos moderados y no hay vulnerabilidades
+de producción, pero persiste ese aviso bajo en herramientas de desarrollo.
+El cambio aún debe pasar por revisión de PR/CI antes de considerarse integrado.

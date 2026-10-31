@@ -53,5 +53,5 @@ describe('Vite development server network boundary', () => {
         process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = previousViteOverride
       }
     }
-  })
+  }, 15_000)
 })
