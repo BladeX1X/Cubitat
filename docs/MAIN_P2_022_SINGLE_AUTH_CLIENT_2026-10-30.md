@@ -1,8 +1,8 @@
 # MAIN-P2-022 — un solo cliente Supabase Auth en recuperación
 
-Fecha: 2026-10-30 (CDMX)  
-Estado: implementado en rama aislada; PR/CI pendientes.  
-Entornos hosted: no probados ni modificados.
+Fecha: 2026-10-30 (CDMX); cierre de integración: 2026-10-30 (CDMX).
+Estado: integrado en `main` mediante PR #170, merge commit `210fba969dd7d51a71cd7518bd2356e636b8bc80`. CI `quality` y `database-security` pasaron en dos ejecuciones.
+Entornos hosted: no probados ni modificados; no desplegado.
 
 ## Hallazgo
 
@@ -39,5 +39,7 @@ Supabase documenta `verifyOtp` como mecanismo de inicio de sesión con el
   `SITEMAP_MODE=static npm run build` y verificadores PASS.
 - Build TypeScript encontró una llamada adicional en `captchaAuth.ts`; se
   actualizó al singleton y el build completo pasó en el segundo ciclo.
+- CI de GitHub: dos ejecuciones completas de `quality` y `database-security`
+  PASS antes del merge.
 - No hubo envío de correos ni verificación OTP real; ningún servicio hosted se
   consultó o alteró.
