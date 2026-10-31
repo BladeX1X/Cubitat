@@ -1,6 +1,6 @@
 # MAIN-P2-007 — parche del toolchain de desarrollo
 
-Fecha: 2026-10-30  
+Fecha: 2026-10-30
 Alcance: lockfile y pruebas locales; producción no afectada.
 
 ## Hallazgo observado al ejecutar CI
