@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test'
+import { assertLocalMutationTarget } from './qaTarget'
 
-const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://localhost:5173'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://127.0.0.1:5174'
+const SUPABASE_URL = process.env.CUBITAT_E2E_SUPABASE_URL
+  ?? process.env.VITE_SUPABASE_URL
+  ?? 'http://127.0.0.1:54321'
 const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
 const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
 const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
@@ -10,6 +14,7 @@ test.describe('search alerts with an isolated QA account', () => {
   test.skip(!ALLOW_MUTATIONS, 'Definir CUBITAT_E2E_ALLOW_MUTATIONS=true para autorizar escrituras QA')
 
   test('creates and removes only the alert created by this test', async ({ page }) => {
+    assertLocalMutationTarget(BASE_URL, SUPABASE_URL)
     const uniqueQuery = `qa-alert-${Date.now()}`
     let alertCreated = false
 

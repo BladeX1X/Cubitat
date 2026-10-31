@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
 const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
-const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://localhost:5173'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://127.0.0.1:5174'
 
 test('Auditoría completa de páginas de Cubitat', async ({ page }, testInfo) => {
   const consoleErrors: string[] = []

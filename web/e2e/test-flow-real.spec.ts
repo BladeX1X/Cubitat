@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { assertLocalMutationTarget } from './qaTarget'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -6,11 +7,15 @@ import { tmpdir } from 'node:os'
 const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
 const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
 const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
-const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://localhost:5173'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://127.0.0.1:5174'
+const SUPABASE_URL = process.env.CUBITAT_E2E_SUPABASE_URL
+  ?? process.env.VITE_SUPABASE_URL
+  ?? 'http://127.0.0.1:54321'
 
 test('Login, publicar y mandar mensaje', async ({ page, request }, testInfo) => {
   test.skip(!E2E_EMAIL || !E2E_PASSWORD, 'Definir CUBITAT_E2E_EMAIL y CUBITAT_E2E_PASSWORD')
   test.skip(!ALLOW_MUTATIONS, 'Definir CUBITAT_E2E_ALLOW_MUTATIONS=true para autorizar escrituras QA')
+  assertLocalMutationTarget(BASE_URL, SUPABASE_URL)
   // Go to home
   await page.goto(`${BASE_URL}/`)
   await page.screenshot({ path: testInfo.outputPath('1_home.png') })

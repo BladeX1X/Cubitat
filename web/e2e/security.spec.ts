@@ -1,20 +1,25 @@
 import { test, expect } from '@playwright/test'
+import { assertLoopbackSecurityProbeTargets } from './qaTarget'
 
-const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://localhost:5173'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL
+  ?? `http://127.0.0.1:${process.env.CUBITAT_E2E_PORT ?? '5174'}`
 const SUPABASE_URL = process.env.CUBITAT_E2E_SUPABASE_URL
   ?? process.env.VITE_SUPABASE_URL
-  ?? 'https://tohjzoncoosvjbjcakdl.supabase.co'
+  ?? 'http://127.0.0.1:54321'
+
+// This spec must stay local even when a separate E2E run opts in to cloud targets.
+assertLoopbackSecurityProbeTargets(BASE_URL, SUPABASE_URL)
 
 test.describe('Auditoría de Seguridad - Evasión de Proxy y Anon Key', () => {
   test('debería bloquear el acceso directo a Supabase con la clave dummy (Evasión Bloqueada)', async ({ request }) => {
-    // Intentar consultar directamente el endpoint real de Supabase usando la clave dummy del cliente
+    // Intentar consultar el Supabase local con una clave dummy de cliente
     const response = await request.get(`${SUPABASE_URL}/rest/v1/properties`, {
       headers: {
         'apikey': 'dummy-key-safe-from-browsers'
       }
     })
 
-    // La base de datos debe rechazar la conexión con 401 ya que la clave real no está expuesta
+    // Supabase local debe rechazar la conexión con 401 porque la clave no es válida
     expect(response.status()).toBe(401)
   })
 
