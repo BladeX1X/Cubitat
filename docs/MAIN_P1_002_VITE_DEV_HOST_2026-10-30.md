@@ -2,7 +2,7 @@
 
 Date: 2026-10-30
 Baseline: `origin/main` at `5b0516b76f6b941c0ad35eee1ee59a316546b501`
-Status: fixed and verified on an isolated branch; not yet integrated into `main`.
+Status: integrated into `main` by PR #154 at merge commit `b3505c8e44cce97299bc0b6c8802bc9fe7096cec`.
 
 ## Finding
 
@@ -40,10 +40,10 @@ change the production Worker.
 ## Release boundary
 
 This only hardens the developer workstation. No Worker/UI deployment, database
-write, or production change was made. Integrate through review into `main`; the
-private GitHub repository currently cannot enforce branch protection under its
-plan, so the merge gate remains a process control. Quick Tunnels are public
-URLs; Cloudflare documents `--allowed-mail` as an optional one-time-PIN gate.
+write, or production change was made. The private GitHub repository currently
+cannot enforce branch protection under its plan, so PR checks and the reviewed
+merge were process controls. Quick Tunnels are public URLs; Cloudflare documents
+`--allowed-mail` as an optional one-time-PIN gate.
 Reference: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
 
 The quality workflow initially stopped at the pre-existing high findings in
