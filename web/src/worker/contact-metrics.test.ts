@@ -20,6 +20,22 @@ function request(body: unknown) {
 }
 
 describe('handleContactMetric', () => {
+  it('rejects oversized request bytes before calling the service-role RPC', async () => {
+    const fetchFn = vi.fn()
+    const response = await handleContactMetric(
+      new Request('https://phase2.example/api/phase2/contact-click', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ propertyId: 'x'.repeat(1_024) }),
+      }),
+      env as never,
+      fetchFn,
+    )
+
+    expect(response.status).toBe(413)
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
   it('derives the viewer key on the server and calls the service-role RPC', async () => {
     const fetchFn = vi.fn().mockResolvedValue(new Response(JSON.stringify([{
       phone_clicks_count: 2,

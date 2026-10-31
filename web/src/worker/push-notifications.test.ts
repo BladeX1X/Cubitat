@@ -17,12 +17,28 @@ const baseEnv: PushNotificationEnv = {
 afterEach(() => vi.restoreAllMocks())
 
 describe('push subscription endpoint', () => {
+  it('authenticates before rejecting an oversized subscription body', async () => {
+    const fetchFn = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ id: 'user-1' }), { status: 200 }))
+    const response = await handlePushSubscriptionRequest(
+      new Request('https://cubitathome.com/api/push/subscription', {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: 'x'.repeat(8 * 1024) }),
+      }),
+      baseEnv,
+      fetchFn,
+    )
+
+    expect(response.status).toBe(413)
+    expect(fetchFn).toHaveBeenCalledOnce()
+  })
+
   it('checks server ownership rather than browser existence', async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'user-2' })))
       .mockResolvedValueOnce(new Response('[]'))
     const response = await handlePushSubscriptionRequest(new Request('https://cubitathome.com/api/push/subscription', {
-      method: 'POST', headers: { Authorization: 'Bearer token' },
+      method: 'POST', headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint: 'https://push.test/one' }),
     }), baseEnv, fetchFn)
     expect(await response.json()).toEqual({ active: false })

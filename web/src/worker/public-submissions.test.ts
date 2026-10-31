@@ -36,6 +36,23 @@ afterEach(() => {
 })
 
 describe('public submission handlers', () => {
+  it('rejects an oversized streamed contact body before Turnstile or RPC calls', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await handlePublicContactSubmission(
+      new Request('https://cubitathome.com/api/public/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'x'.repeat(16 * 1024) }),
+      }),
+      createEnv(),
+    )
+
+    expect(response.status).toBe(413)
+    await expect(response.json()).resolves.toEqual({ error: 'Solicitud demasiado grande.' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('rejects malformed contact payloads before calling Turnstile', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import worker, { fetchGoogleAnalyticsMetrics, type Env } from './worker'
+import worker, { fetchGoogleAnalyticsMetrics, getSupabaseProxyBodyLimit, type Env } from './worker'
 
 function createEnv(assetResponse = new Response('<!doctype html><html></html>', {
   headers: { 'Content-Type': 'text/html' },
@@ -36,6 +36,13 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
+  it('uses configured upload limits for each Storage bucket and caps general proxy requests', () => {
+    expect(getSupabaseProxyBodyLimit('/storage/v1/object/public/property_images/id.webp', 'POST')).toBe(5 * 1024 * 1024)
+    expect(getSupabaseProxyBodyLimit('/storage/v1/object/avatars/user/avatar.webp', 'PUT')).toBe(1024 * 1024)
+    expect(getSupabaseProxyBodyLimit('/storage/v1/object/property_documents/user/file.pdf', 'POST')).toBe(10 * 1024 * 1024)
+    expect(getSupabaseProxyBodyLimit('/rest/v1/rpc/increment_property_view_count', 'POST')).toBe(64 * 1024)
+  })
+
   it('authenticates ownership checks without exposing endpoints in a query string', async () => {
     const response = await worker.fetch(
       new Request('https://cubitathome.com/api/push/subscription', {
@@ -248,19 +255,40 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('rejects malformed moderation payloads before authentication', async () => {
+  it('authenticates moderation requests before parsing the body', async () => {
+    const request = new Request('https://cubitathome.com/api/ai-moderate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{invalid-json',
+    })
+    const getReader = vi.spyOn(request.body!, 'getReader')
     const response = await worker.fetch(
-      new Request('https://cubitathome.com/api/ai-moderate', {
+      request,
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+    expect(getReader).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized Supabase proxy bodies without forwarding them upstream', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/rpc/increment_property_view_count', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{invalid-json',
+        body: JSON.stringify({ value: 'x'.repeat(64 * 1024) }),
       }),
       createEnv(),
       createContext(),
     )
 
-    expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toEqual({ error: 'Invalid JSON' })
+    expect(response.status).toBe(413)
+    await expect(response.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('rate limits authenticated AI moderation requests per user', async () => {
