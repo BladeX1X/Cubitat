@@ -79,6 +79,12 @@ El diseño se adapta automáticamente:
   Auth. El navegador no lo consume antes mediante `siteverify`; Supabase valida
   el token y el widget se renueva despues de cualquier fallo para impedir su
   reutilizacion.
+- **Reenvio de confirmacion:** La accion pide un token Turnstile fresco con
+  `resend-confirmation`. El Worker aplica cuotas por IP y por SHA-256 del correo;
+  para cuentas pendientes pasa el token a Supabase Auth y para cuentas ya
+  confirmadas lo valida mediante el servicio compartido antes de enviar el aviso.
+  El usuario recibe una respuesta generica y el widget se renueva al terminar,
+  incluso si el proveedor falla.
 - **Privacidad en recuperacion:** El mensaje de recuperacion no confirma si el correo existe. Siempre debe decir: `Si el correo esta registrado, recibiras un enlace para crear una nueva contrasena.`
 - **Enlaces legales:** Los enlaces del modal navegan a `/terminos` y `/privacidad`; no usan hashes internos.
 - **Rate limit de Supabase:** Si Supabase devuelve `email rate limit exceeded`, el modal muestra un mensaje amable de limite temporal. El arreglo real es configurar SMTP propio con dominio verificado.

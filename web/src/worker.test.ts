@@ -30,6 +30,17 @@ function testJwt(aal: 'aal1' | 'aal2') {
   return `header.${payload}.signature`
 }
 
+function createResendTurnstileVerifier(hostname: string, result: Record<string, unknown> = {}) {
+  return {
+    fetch: vi.fn(async () => new Response(JSON.stringify({
+      success: true,
+      action: 'resend-confirmation',
+      hostname,
+      ...result,
+    }), { status: 200 })),
+  }
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -1338,8 +1349,11 @@ describe('Cloudflare Worker security contract', () => {
   })
 
   it('uses the configured DEV origin for confirmation resend redirects', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe('https://example.supabase.co/auth/v1/resend')
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        gotrue_meta_security: { captcha_token: 'valid-token' },
+      })
       return new Response('{}', { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -1348,7 +1362,7 @@ describe('Cloudflare Worker security contract', () => {
       new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'qa@example.com' }),
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
       }),
       { ...createEnv(), PUBLIC_SITE_URL: 'https://cubitat1-phase2-dev.pochiprats18.workers.dev' },
       createContext(),
@@ -1370,10 +1384,11 @@ describe('Cloudflare Worker security contract', () => {
       new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'qa@example.com' }),
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
       }),
       {
         ...createEnv(),
+        TURNSTILE_VERIFY: createResendTurnstileVerifier('cubitat1-phase2-dev.pochiprats18.workers.dev'),
         RESEND_API_KEY: 'resend-test',
         SUPABASE_MANAGEMENT_TOKEN: 'management-test',
         SUPABASE_PROJECT_ID: 'project-test',
@@ -1397,10 +1412,11 @@ describe('Cloudflare Worker security contract', () => {
       new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'qa@example.com' }),
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
       }),
       {
         ...createEnv(),
+        TURNSTILE_VERIFY: createResendTurnstileVerifier('cubitat1-phase2-dev.pochiprats18.workers.dev'),
         PHASE2_ENABLED: 'true',
         RESEND_API_KEY: 'resend-test',
         SUPABASE_MANAGEMENT_TOKEN: 'management-test',
@@ -1409,7 +1425,8 @@ describe('Cloudflare Worker security contract', () => {
       createContext(),
     )
 
-    expect(response.status).toBe(503)
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -1421,17 +1438,22 @@ describe('Cloudflare Worker security contract', () => {
       new Request('https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/auth/resend-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'qa@example.com' }),
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
       }),
-      { ...createEnv(), PHASE2_ENABLED: 'true' },
+      {
+        ...createEnv(),
+        PHASE2_ENABLED: 'true',
+        TURNSTILE_VERIFY: createResendTurnstileVerifier('cubitat1-phase2-dev.pochiprats18.workers.dev'),
+      },
       createContext(),
     )
 
-    expect(response.status).toBe(503)
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('returns a safe error when Resend is unavailable for a confirmed account', async () => {
+  it('does not reveal Resend delivery failures for a confirmed account', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([{ email_confirmed_at: '2026-09-28T00:00:00Z' }]), { status: 200 }))
       .mockRejectedValueOnce(new Error('network unavailable'))
@@ -1441,10 +1463,11 @@ describe('Cloudflare Worker security contract', () => {
       new Request('https://cubitathome.com/api/auth/resend-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'qa@example.com' }),
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
       }),
       {
         ...createEnv(),
+        TURNSTILE_VERIFY: createResendTurnstileVerifier('cubitathome.com'),
         RESEND_API_KEY: 'resend-test',
         SUPABASE_MANAGEMENT_TOKEN: 'management-test',
         SUPABASE_PROJECT_ID: 'project-test',
@@ -1452,10 +1475,202 @@ describe('Cloudflare Worker security contract', () => {
       createContext(),
     )
 
-    expect(response.status).toBe(503)
-    await expect(response.json()).resolves.toEqual({
-      ok: false,
-      message: 'El servicio de correo no está disponible temporalmente. Intenta de nuevo más tarde.',
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
+  })
+
+  it('requires a Turnstile token before looking up or sending confirmation email', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('validates the resend action and hostname before emailing confirmed accounts', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([
+      { email_confirmed_at: '2026-09-28T00:00:00Z' },
+    ]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const verifier = createResendTurnstileVerifier('attacker.example')
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'invalid-token' }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-test',
+        TURNSTILE_VERIFY: verifier,
+        RESEND_API_KEY: 'resend-test',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(400)
+    expect(verifier.fetch).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the response generic when Turnstile is unavailable for a confirmed account', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([
+      { email_confirmed_at: '2026-09-28T00:00:00Z' },
+    ]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const verifier = { fetch: vi.fn(async () => new Response('unavailable', { status: 503 })) }
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
+      }),
+      {
+        ...createEnv(),
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-test',
+        TURNSTILE_VERIFY: verifier,
+        RESEND_API_KEY: 'resend-test',
+      },
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
+    expect(verifier.fetch).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('limits confirmation resends by a one-way email hash without revealing quota state', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const rateLimitRequests: Array<{ key: string; limit: string | null; windowMs: string | null }> = []
+    const hits = new Map<string, number>()
+    const env = createEnv()
+    env.RATE_LIMITER = {
+      idFromName: vi.fn(() => 'resend-rate-limit'),
+      get: vi.fn(() => ({
+        fetch: vi.fn(async (input: string | URL | Request) => {
+          const url = new URL(String(input))
+          const key = url.searchParams.get('key') || ''
+          rateLimitRequests.push({
+            key,
+            limit: url.searchParams.get('limit'),
+            windowMs: url.searchParams.get('windowMs'),
+          })
+          const count = (hits.get(key) || 0) + 1
+          hits.set(key, count)
+          const maximum = key.startsWith('email:') ? 3 : 5
+          return new Response(JSON.stringify({ allowed: count <= maximum }))
+        }),
+      })),
+    }
+
+    const responses: Response[] = []
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      responses.push(await worker.fetch(
+        new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.50' },
+          body: JSON.stringify({ email: 'QA@example.com', turnstileToken: `token-${attempt}` }),
+        }),
+        env,
+        createContext(),
+      ))
+    }
+
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200, 200])
+    await expect(responses[3]?.json()).resolves.toEqual({ ok: true })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    const emailKeys = rateLimitRequests.map(({ key }) => key).filter((key) => key.startsWith('email:'))
+    expect(emailKeys).toHaveLength(4)
+    expect(emailKeys[0]).toMatch(/^email:[a-f0-9]{64}:resend-confirmation:v1$/)
+    expect(emailKeys[0]).not.toContain('qa@example.com')
+    expect(new Set(emailKeys).size).toBe(1)
+    expect(rateLimitRequests.filter(({ key }) => key.startsWith('203.0.113.50:'))).toHaveLength(4)
+    expect(rateLimitRequests.find(({ key }) => key.startsWith('email:'))).toMatchObject({
+      limit: '3',
+      windowMs: '3600000',
     })
+  })
+
+  it('does not let Supabase reject a CAPTCHA token and consume the email quota', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'captcha_failed' }), { status: 400 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const counts = new Map<string, number>()
+    const limiterOperations: string[] = []
+    const env = createEnv()
+    env.RATE_LIMITER = {
+      idFromName: vi.fn(() => 'resend-rate-limit'),
+      get: vi.fn(() => ({
+        fetch: vi.fn(async (input: string | URL | Request) => {
+          const url = new URL(String(input))
+          const key = url.searchParams.get('key') || ''
+          const operation = url.searchParams.get('operation') || 'reserve'
+          limiterOperations.push(`${operation}:${key}`)
+          if (operation === 'release') {
+            counts.set(key, Math.max(0, (counts.get(key) || 0) - 1))
+            return new Response(JSON.stringify({ released: true }))
+          }
+          const count = (counts.get(key) || 0) + 1
+          counts.set(key, count)
+          return new Response(JSON.stringify({ allowed: count <= 3 }))
+        }),
+      })),
+    }
+
+    const responses: Response[] = []
+    for (const token of ['invalid-captcha', 'fresh-captcha']) {
+      responses.push(await worker.fetch(
+        new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.51' },
+          body: JSON.stringify({ email: 'qa@example.com', turnstileToken: token }),
+        }),
+        env,
+        createContext(),
+      ))
+    }
+
+    expect(responses.map((response) => response.status)).toEqual([400, 200])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const emailOperations = limiterOperations.filter((operation) => operation.includes('email:'))
+    expect(emailOperations).toHaveLength(3)
+    expect(emailOperations[0]).toMatch(/^reserve:email:[a-f0-9]{64}:resend-confirmation:v1$/)
+    expect(emailOperations[1]).toBe(emailOperations[0]?.replace('reserve:', 'release:'))
+    expect(emailOperations[2]).toBe(emailOperations[0])
+    expect(counts.get(emailOperations[0]?.slice('reserve:'.length) || '')).toBe(1)
+  })
+
+  it('returns the same generic success when Supabase Auth cannot send an unconfirmed signup email', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'valid-token' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
   })
 })

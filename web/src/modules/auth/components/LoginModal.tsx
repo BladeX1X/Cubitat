@@ -58,9 +58,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
   const turnstileAction = isResettingPassword
     ? 'forgot-password'
-    : isRegistering
-      ? 'register-user'
-      : 'login-password'
+    : canResendConfirmation && isRegistering
+      ? 'resend-confirmation'
+      : isRegistering
+        ? 'register-user'
+        : 'login-password'
 
   function resetTurnstileChallenge() {
     setTurnstileToken(null)
@@ -256,6 +258,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
       setErrorMsg('Escribe el correo para reenviar la confirmacion.')
       return
     }
+    if (!turnstileToken) {
+      setErrorMsg('Por favor, completa la verificación de seguridad.')
+      return
+    }
 
     setLoading(true)
     setErrorMsg(null)
@@ -268,6 +274,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         },
         body: JSON.stringify({
           email: cleanEmail,
+          turnstileToken,
         }),
       })
 
@@ -283,7 +290,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         }
         throw new Error(message)
       }
-      setSuccessMsg('Si falta confirmar el correo, recibiras un nuevo enlace. Si ya esta confirmado, recibiras un aviso con las opciones para entrar.')
+      setSuccessMsg('Si la solicitud puede procesarse, recibiras un correo con los pasos para continuar.')
       setCanResendConfirmation(false)
     } catch (err: unknown) {
       logSafeEvent({
@@ -294,6 +301,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       })
       setErrorMsg(getAuthErrorMessage(err, 'No pudimos reenviar el correo de confirmacion.'))
     } finally {
+      resetTurnstileChallenge()
       setLoading(false)
     }
   }

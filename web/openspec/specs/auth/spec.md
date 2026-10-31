@@ -109,6 +109,19 @@ El sistema MUST limitar intentos repetidos de autenticacion y recuperacion para 
 - THEN el Worker MUST responder con `429` o respuesta segura equivalente segun el endpoint
 - AND MUST reducir riesgo de enumeracion y spam de correo
 
+#### Scenario: Reenvío de confirmación protegido sin enumerar cuentas
+- GIVEN una persona solicita reenviar la confirmación de correo
+- WHEN envía el formulario
+- THEN el cliente MUST pedir un token Turnstile nuevo con la acción `resend-confirmation`
+- AND el Worker MUST limitar a 5 solicitudes por IP cada 10 minutos y 3 por hash SHA-256 del correo cada hora
+- AND el Worker MUST validar el token en Turnstile para cuentas ya confirmadas, y Supabase Auth MUST validarlo para cuentas pendientes
+- AND el token MUST ser menor o igual a 2048 caracteres y no MUST registrarse
+- AND para cuentas pendientes, si Supabase Auth rechaza explícitamente el token como `captcha_failed`, el Worker MUST liberar de forma idempotente la reserva de cuota por correo
+- AND solicitudes denegadas por exceder el cupo MUST NOT seguir incrementando el contador durante esa ventana
+- AND tras cualquier respuesta del endpoint el widget MUST renovarse
+- AND el endpoint MUST devolver la misma respuesta genérica para dirección desconocida, cuenta confirmada, fallos de entrega y caída del verificador
+- AND los logs MUST excluir correo, token, claves e identificadores de cuenta
+
 ### Requirement: Roles y permisos de sesion
 El sistema MUST resolver permisos desde la sesion y el perfil del usuario sin confiar en datos manipulables del cliente.
 
