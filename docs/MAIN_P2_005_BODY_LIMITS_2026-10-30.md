@@ -1,7 +1,7 @@
 # MAIN-P2-005 — límites de cuerpos HTTP del Worker
 
 Fecha: 2026-10-30 (CDMX)  
-Estado: integrado en `main` por PR #176, merge `7451a17bfb01e000d7af360d7df3fed5d188fb52`. Los checks `quality` y `database-security` del PR pasaron. CI post-merge en `main` (run `41169103539`) sigue en curso. No desplegada.
+Estado: integrado en `main` por PR #176, merge `7451a17bfb01e000d7af360d7df3fed5d188fb52`. Pasaron `quality` y `database-security` del PR y el CI post-merge de `main` (run `41169103539`). No desplegada.
 
 ## Cambio
 
