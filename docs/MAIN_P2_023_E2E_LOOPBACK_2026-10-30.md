@@ -1,7 +1,7 @@
 # MAIN-P2-023 — aislar destinos de pruebas E2E
 
 Fecha: 2026-10-30  
-Estado: remediación implementada en rama; pendiente CI e integración en `main`.  
+Estado: integrada en `main` mediante PR #160, commit `2119cba25e44611389c60b46cf3d38074aaa6b76`; CI de calidad y seguridad DB PASS.
 Alcance: configuración Playwright y pruebas E2E; sin solicitudes a DEV/producción.
 
 ## Hallazgo
