@@ -1,8 +1,8 @@
 # MAIN-P2-002 — guard para despliegues manuales
 
 Fecha: 2026-10-30  
-Estado: implementado y validado en la rama `bugfix/audit-p2-002-deploy-guard`; pendiente de CI/PR.  
-Producción y DEV alojados: sin cambios.
+Estado: integrado en `main` mediante PR #158, merge `87b08685f3563411a046e4a0d77fbb6912d676ac`; CI de calidad y seguridad SQL PASS.  
+Cloudflare remoto, Worker y Supabase: sin cambios ni despliegues.
 
 ## Cambio
 
