@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimiter } from './rate-limiter'
 
-type RateLimitEntry = { count: number; resetTime: number }
+type RateLimitEntry = {
+  count: number
+  resetTime: number
+  reservations?: string[]
+  releasedReservations?: string[]
+}
 
 function createStorage() {
   const records = new Map<string, RateLimitEntry>()
@@ -107,5 +112,31 @@ describe('RateLimiter durable object', () => {
       remaining: 99,
     })
     expect(storage.records.get('invalid-params')?.resetTime).toBe(Date.now() + 60000)
+  })
+
+  it('releases only the matching email quota reservation after CAPTCHA rejection', async () => {
+    const storage = createStorage()
+    const limiter = new RateLimiter({ storage })
+    const reserve = (reservationId: string) => limiter.fetch(new Request(
+      `https://rate-limiter/check?key=email%3Ahash&limit=1&windowMs=3600000&reservationId=${reservationId}`,
+    ))
+
+    const first = await reserve('attempt-1')
+    await expect(first.json()).resolves.toMatchObject({ allowed: true })
+    const blocked = await reserve('blocked-attempt')
+    await expect(blocked.json()).resolves.toMatchObject({ allowed: false })
+    expect(storage.records.get('email:hash')?.reservations).toEqual(['attempt-1'])
+    const released = await limiter.fetch(new Request(
+      'https://rate-limiter/check?key=email%3Ahash&operation=release&reservationId=attempt-1',
+    ))
+    await expect(released.json()).resolves.toEqual({ released: true })
+    const next = await reserve('attempt-2')
+    await expect(next.json()).resolves.toMatchObject({ allowed: true })
+
+    const duplicateRelease = await limiter.fetch(new Request(
+      'https://rate-limiter/check?key=email%3Ahash&operation=release&reservationId=attempt-1',
+    ))
+    await expect(duplicateRelease.json()).resolves.toEqual({ released: false })
+    expect(storage.records.get('email:hash')?.count).toBe(1)
   })
 })

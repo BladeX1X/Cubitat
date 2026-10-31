@@ -14,7 +14,7 @@ export interface PublicSubmissionEnv {
   }
 }
 
-type TurnstileAction = 'contact-owner' | 'report-property'
+type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation'
 
 type TurnstileResult = {
   success?: boolean
@@ -56,7 +56,7 @@ function validLength(value: string, min: number, max: number): boolean {
   return value.length >= min && value.length <= max
 }
 
-async function verifyTurnstile(
+export async function verifyTurnstile(
   request: Request,
   env: PublicSubmissionEnv,
   token: string,

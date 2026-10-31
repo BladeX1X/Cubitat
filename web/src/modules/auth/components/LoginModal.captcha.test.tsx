@@ -121,4 +121,39 @@ describe('LoginModal CAPTCHA', () => {
       }))
     })
   })
+
+  it('requires a fresh resend-action CAPTCHA and sends it with a generic confirmation request', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    signUpWithCaptchaMock.mockResolvedValueOnce({
+      data: { user: { identities: [] } },
+      error: null,
+    })
+    render(<LoginModal />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta gratis' }))
+    fireEvent.change(screen.getByPlaceholderText('Juan Perez'), { target: { value: 'QA Auth' } })
+    fireEvent.change(screen.getByPlaceholderText('tucorreo@ejemplo.com'), { target: { value: 'QA@example.com' } })
+    const passwordFields = screen.getAllByPlaceholderText('********')
+    fireEvent.change(passwordFields[0], { target: { value: 'Secure1!' } })
+    fireEvent.change(passwordFields[1], { target: { value: 'Secure1!' } })
+    fireEvent.click(screen.getByTestId('turnstile-register-user'))
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+
+    const resendButton = await screen.findByRole('button', { name: 'Reenviar enlace si falta confirmar' })
+    expect(screen.getByTestId('turnstile-resend-confirmation')).toBeInTheDocument()
+    fireEvent.click(resendButton)
+    expect(await screen.findByText('Por favor, completa la verificación de seguridad.')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('turnstile-resend-confirmation'))
+    fireEvent.click(resendButton)
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/resend-confirmation', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'qa@example.com', turnstileToken: 'token-resend-confirmation' }),
+      }))
+    })
+    expect(await screen.findByText('Si la solicitud puede procesarse, recibiras un correo con los pasos para continuar.')).toBeInTheDocument()
+  })
 })

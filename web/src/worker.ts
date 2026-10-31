@@ -2,6 +2,7 @@ import { RateLimiter } from './rate-limiter';
 import {
   handlePublicContactSubmission,
   handlePublicReportSubmission,
+  verifyTurnstile,
   type PublicSubmissionEnv,
 } from './worker/public-submissions';
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
@@ -285,13 +286,30 @@ async function canModerateProperty(propertyId: string, userId: string, authHeade
     && await canAdminUseSensitiveFeatures(authHeader, env);
 }
 
-async function isRateLimited(env: Env, ip: string, limit: number, windowMs: number): Promise<boolean> {
+async function isRateLimited(
+  env: Env,
+  ip: string,
+  limit: number,
+  windowMs: number,
+  reservationId?: string,
+): Promise<boolean> {
   const id = env.RATE_LIMITER.idFromName('global');
   const stub = env.RATE_LIMITER.get(id);
-  const url = `https://dummy/check?key=${encodeURIComponent(ip)}&limit=${limit}&windowMs=${windowMs}`;
+  const reservation = reservationId ? `&reservationId=${encodeURIComponent(reservationId)}` : '';
+  const url = `https://dummy/check?key=${encodeURIComponent(ip)}&limit=${limit}&windowMs=${windowMs}${reservation}`;
   const res = await stub.fetch(url);
   const data = await res.json() as { allowed: boolean };
   return !data.allowed;
+}
+
+async function releaseRateLimitReservation(env: Env, key: string, reservationId: string): Promise<boolean> {
+  const id = env.RATE_LIMITER.idFromName('global');
+  const stub = env.RATE_LIMITER.get(id);
+  const url = `https://dummy/check?key=${encodeURIComponent(key)}&operation=release&reservationId=${encodeURIComponent(reservationId)}`;
+  const response = await stub.fetch(url);
+  if (!response.ok) return false;
+  const result = await response.json() as { released?: boolean };
+  return result.released === true;
 }
 
 export async function checkRateLimit(env: Env, key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
@@ -425,6 +443,11 @@ function normalizeEmail(value: unknown): string {
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function hashRateLimitEmail(email: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 type GoogleServiceAccountCredentials = {
@@ -658,13 +681,17 @@ async function sendAlreadyConfirmedEmail(email: string, env: Env): Promise<boole
   }
 }
 
-async function resendSignupConfirmation(email: string, env: Env): Promise<boolean> {
+async function resendSignupConfirmation(
+  email: string,
+  turnstileToken: string,
+  env: Env,
+): Promise<'sent' | 'captcha-invalid' | 'unavailable'> {
   const phase2Enabled = env.PHASE2_ENABLED === 'true';
   if (
     !env.VITE_SUPABASE_URL
     || !env.VITE_SUPABASE_ANON_KEY
     || (phase2Enabled && !env.PUBLIC_SITE_URL)
-  ) return false;
+  ) return 'unavailable';
 
   try {
     const response = await fetch(`${env.VITE_SUPABASE_URL}/auth/v1/resend`, {
@@ -676,14 +703,24 @@ async function resendSignupConfirmation(email: string, env: Env): Promise<boolea
       body: JSON.stringify({
         type: 'signup',
         email,
+        gotrue_meta_security: { captcha_token: turnstileToken },
         options: {
           email_redirect_to: `${(env.PUBLIC_SITE_URL || 'https://cubitathome.com').replace(/\/+$/, '')}/auth/callback`,
         },
       }),
     });
-    return response.ok;
+    if (response.ok) return 'sent';
+    if (response.status === 400 || response.status === 422) {
+      try {
+        const payload: unknown = await response.clone().json();
+        if (isRecord(payload) && payload.code === 'captcha_failed') return 'captcha-invalid';
+      } catch {
+        // Treat an unrecognized provider error as unavailable and keep it private.
+      }
+    }
+    return 'unavailable';
   } catch {
-    return false;
+    return 'unavailable';
   }
 }
 
@@ -931,9 +968,14 @@ export function createWorker(options: WorkerOptions = {}) {
 
     if (path === '/api/auth/resend-confirmation' && request.method === 'POST') {
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
-      if (await isRateLimited(env, `${clientIp}:resend-confirmation:v2`, 5, 600000)) {
-        logWorkerEvent('info', 'auth_resend_rate_limited');
-        return jsonResponse({ ok: true });
+      try {
+        if (await isRateLimited(env, `${clientIp}:resend-confirmation:ip:v1`, 5, 600000)) {
+          logWorkerEvent('info', 'auth_resend_rate_limited');
+          return jsonResponse({ ok: true });
+        }
+      } catch {
+        logWorkerEvent('warn', 'auth_resend_unavailable');
+        return jsonResponse({ error: 'La solicitud no está disponible temporalmente.' }, 503);
       }
 
       const parsed = await readBoundedJsonObject(request, 4 * 1024);
@@ -949,23 +991,71 @@ export function createWorker(options: WorkerOptions = {}) {
           ? body.email
           : undefined,
       );
+      const tokenValue = 'turnstileToken' in body ? body.turnstileToken : undefined;
+      const turnstileToken = typeof tokenValue === 'string' ? tokenValue.trim() : '';
+      if (!turnstileToken || turnstileToken.length > 2048) {
+        return jsonResponse({ error: 'La verificación de seguridad no es válida.' }, 400);
+      }
       if (!isValidEmail(email)) {
         return jsonResponse({ ok: true });
       }
 
+      const emailHash = await hashRateLimitEmail(email);
+      const emailQuotaKey = `email:${emailHash}:resend-confirmation:v1`;
+      const emailQuotaReservation = crypto.randomUUID();
+      const reserveEmailQuota = async (): Promise<boolean> => {
+        try {
+          const limited = await isRateLimited(env, emailQuotaKey, 3, 3600000, emailQuotaReservation);
+          if (limited) logWorkerEvent('info', 'auth_resend_rate_limited');
+          return !limited;
+        } catch {
+          try {
+            await releaseRateLimitReservation(env, emailQuotaKey, emailQuotaReservation);
+          } catch {
+            // A failed reservation request may have reached the Durable Object before its response was lost.
+          }
+          logWorkerEvent('warn', 'auth_resend_unavailable');
+          return false;
+        }
+      };
+
       const confirmedAt = await getEmailConfirmedAt(email, env);
-      const sent = confirmedAt
-        ? await sendAlreadyConfirmedEmail(email, env)
-        : await resendSignupConfirmation(email, env);
-      if (!sent) {
-        logWorkerEvent('warn', 'auth_resend_unavailable');
-        return jsonResponse({
-          ok: false,
-          message: 'El servicio de correo no está disponible temporalmente. Intenta de nuevo más tarde.',
-        }, 503);
+      if (confirmedAt) {
+        const captchaResult = await verifyTurnstile(request, env, turnstileToken, 'resend-confirmation');
+        if (captchaResult === 'invalid') {
+          return jsonResponse({ error: 'La verificación de seguridad no es válida.' }, 400);
+        }
+        if (captchaResult === 'unavailable') {
+          // Do not let a verifier outage reveal that the address belongs to a confirmed account.
+          logWorkerEvent('warn', 'auth_resend_unavailable');
+          return jsonResponse({ ok: true });
+        }
+        if (!(await reserveEmailQuota())) {
+          // Keep quota infrastructure failures independent of the account state.
+          return jsonResponse({ ok: true });
+        }
+        if (!(await sendAlreadyConfirmedEmail(email, env))) {
+          logWorkerEvent('warn', 'auth_resend_unavailable');
+        }
       } else {
-        return jsonResponse({ ok: true });
+        if (!(await reserveEmailQuota())) return jsonResponse({ ok: true });
+        const resendResult = await resendSignupConfirmation(email, turnstileToken, env);
+        if (resendResult === 'captcha-invalid') {
+          try {
+            const released = await releaseRateLimitReservation(env, emailQuotaKey, emailQuotaReservation);
+            if (!released) logWorkerEvent('warn', 'auth_resend_unavailable');
+          } catch {
+            logWorkerEvent('warn', 'auth_resend_unavailable');
+          }
+          return jsonResponse({ error: 'La verificación de seguridad no es válida.' }, 400);
+        }
+        if (resendResult === 'unavailable') {
+          logWorkerEvent('warn', 'auth_resend_unavailable');
+        }
       }
+
+      // Keep downstream delivery status identical for confirmed and unknown addresses.
+      return jsonResponse({ ok: true });
     }
 
 // 1. Interceptar solicitudes de API de Supabase Proxy
