@@ -566,15 +566,13 @@ Notas:
 Desde `web/`:
 
 ```powershell
-npm run build
-npx wrangler deploy
+npm run deploy
 ```
 
-O:
-
-```powershell
-npm run cf:deploy
-```
+Este comando ejecuta lint, pruebas, el build integral de Fase 2, solicita la
+frase `DEPLOY PRODUCTION` en una terminal interactiva y solo entonces ejecuta
+Wrangler con la configuración de producción. Para DEV, usa
+`npm run deploy:phase2-dev` y escribe `DEPLOY DEV` cuando se solicite.
 
 ### 6.5 Deploy Desde GitHub
 
@@ -583,7 +581,7 @@ En Cloudflare conectar:
 ```txt
 Repository: BladeX1X/Cubitat
 Root directory: web
-Build command: npm run build
+Build command: npm run build:phase2-production
 Deploy command: npx wrangler deploy
 ```
 

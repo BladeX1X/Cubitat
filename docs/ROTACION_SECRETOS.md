@@ -20,7 +20,7 @@ configuración explícito:
 cd D:\Proyectos\Cubitat\web
 npx wrangler secret list --config wrangler.phase2-dev.jsonc
 npx wrangler secret put NOMBRE_DEL_SECRETO --config wrangler.phase2-dev.jsonc
-npx wrangler deploy --config wrangler.phase2-dev.jsonc
+npm run deploy:phase2-dev
 ```
 
 El proyecto Supabase DEV actual es `bknwerqbbysveehcdmzr` y el Worker DEV es
@@ -82,17 +82,16 @@ npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ```
 
-Despues de subir secretos productivos, desplegar solo tras revisar el alcance:
+Después de subir secretos productivos, publica solo tras revisar el alcance:
 
 ```powershell
-npx wrangler deploy --config wrangler.jsonc
+npm run deploy
 ```
 
-O con build completo:
-
-```powershell
-npm run cf:deploy
-```
+`npm run cf:deploy` se conserva como alias del guard de producción `npm run deploy`.
+Usa `npm run deploy` para la siguiente publicación: ambos comandos ejecutan
+validaciones, compilan el perfil integral de producción y exigen confirmación
+interactiva. No ejecutes `npx wrangler deploy` manualmente.
 
 ## RESEND_API_KEY
 
@@ -173,7 +172,7 @@ npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 4. Desplegar:
 
 ```powershell
-npx wrangler deploy
+npm run deploy
 ```
 
 5. Probar el endpoint:
@@ -227,7 +226,7 @@ npx wrangler secret put SUPABASE_MANAGEMENT_TOKEN
 3. Desplegar:
 
 ```powershell
-npx wrangler deploy
+npm run deploy
 ```
 
 4. Revocar el token viejo en Supabase.
@@ -372,16 +371,16 @@ npx wrangler secret put GEMINI_API_KEY
 
 ## Validacion despues de rotar
 
-Ejecutar build:
+Validar el perfil integral de producción:
 
 ```powershell
-npm run build
+npm run build:phase2-production
 ```
 
 Desplegar:
 
 ```powershell
-npx wrangler deploy
+npm run deploy
 ```
 
 Ver logs:
@@ -420,11 +419,9 @@ Deploy completo:
 npm run cf:deploy
 ```
 
-Deploy Worker/assets sin rebuild:
-
-```powershell
-npx wrangler deploy
-```
+No publiques Worker/assets manualmente sin rebuild. Usa `npm run deploy` para
+producción o `npm run deploy:phase2-dev` para DEV; ambos verifican el build
+correspondiente y requieren confirmación interactiva.
 
 Listar versiones desplegadas:
 

@@ -12,15 +12,15 @@ Documentacion relacionada:
 Desde `web/`:
 
 ```bash
-npm run cf:deploy
+npm run deploy
 ```
 
-Ese comando ejecuta:
+Ese comando ejecuta lint, pruebas y el build integral de Fase 2, solicita la
+frase `DEPLOY PRODUCTION` y después despliega. Debe iniciarse desde una terminal
+interactiva. Para DEV usa `npm run deploy:phase2-dev` y confirma con
+`DEPLOY DEV`.
 
-```bash
-npm run build
-wrangler deploy
-```
+`npm run cf:deploy` se conserva como alias de `npm run deploy`.
 
 Antes de desplegar cambios de base de datos, aplicar migraciones:
 
