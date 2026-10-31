@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
-import { supabase, supabaseRecovery } from '../../shared/lib/supabaseClient'
+import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
@@ -79,7 +79,7 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         unsubscribe = () => subscription.unsubscribe()
 
         if (tokenHash && type === 'recovery') {
-          const { error: verifyError } = await supabaseRecovery.auth.verifyOtp({
+          const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: 'recovery',
           })

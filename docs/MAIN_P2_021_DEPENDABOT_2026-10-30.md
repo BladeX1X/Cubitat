@@ -1,7 +1,7 @@
 # MAIN-P2-021 — detección y actualización de dependencias
 
 Fecha: 2026-10-30 (CDMX)  
-Estado: configuración en rama; pendiente CI e integración.  
+Estado: PR #161 integrado en `main`, commit `f7a1b81b32a6cb283fbe0c3dcaa22a9151d10d98`. CI quality y database-security PASS.
 Producción: sin relación ni cambios.
 
 ## Hallazgo
@@ -22,7 +22,8 @@ programado y la API de GitHub devolvía `404 Vulnerability alerts are disabled`.
 
 ## Validación y alcance
 
-- Pendiente CI del PR; se repetirá lint, suite, builds y security workflow.
+- Gates locales: lint PASS; Vitest 154 archivos, 677 PASS, 1 SKIP; build estático y guards PASS. CI remoto pasó en ambas ejecuciones.
+- Ambos archivos versionados están presentes en `main`. El primer ciclo programado aún no se ha ejecutado.
 - Settings de GitHub comprobados mediante API; el dependency graph se habilitó
   junto con las alertas. No se infiere contenido de avisos a partir del ajuste.
 - No hubo despliegues ni acceso a servicios Cubitat DEV/producción.

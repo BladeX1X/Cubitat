@@ -42,6 +42,15 @@ El sistema MUST permitir el acceso seguro mediante credenciales de email y contr
 - AND MUST rechazar destinos externos, rutas de autenticacion y destinos expirados
 - AND MUST eliminar el destino temporal si OAuth no puede iniciarse
 
+#### Scenario: Recuperación de contraseña con token portable
+- GIVEN un usuario abre el enlace de recuperación en cualquier navegador o dispositivo
+- WHEN el enlace contiene `token_hash` y `type=recovery`
+- THEN el cliente Auth único MUST verificar el token con `verifyOtp`
+- AND MUST guardar la sesión resultante en el almacenamiento compartido de Auth
+- AND el formulario solo se habilita si esa misma sesión es válida
+- AND OAuth conserva PKCE y el intercambio del callback sigue siendo manual
+- AND la inicialización de la app MUST NOT crear un segundo cliente Auth con la misma `storageKey`
+
 #### Scenario: Intento de inicio de sesión con credenciales inválidas o correo no confirmado
 - GIVEN un usuario que intenta ingresar credenciales incorrectas o su correo no ha sido verificado
 - WHEN envía el formulario de inicio de sesión

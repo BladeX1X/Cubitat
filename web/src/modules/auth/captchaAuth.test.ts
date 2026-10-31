@@ -16,11 +16,6 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
       signUp: signUpMock,
     },
   },
-  supabaseRecovery: {
-    auth: {
-      resetPasswordForEmail: resetPasswordForEmailMock,
-    },
-  },
 }))
 
 describe('Supabase Auth CAPTCHA contract', () => {
