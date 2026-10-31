@@ -16,11 +16,20 @@ Root directory / Path:
 web
 
 Build command:
-npm run build
+npm run build:phase2-production
 
 Deploy command:
 npx wrangler deploy
 ```
+
+El flujo conectado de Cloudflare ejecuta primero su Build command y después
+`npx wrangler deploy`. Para publicaciones manuales desde una terminal, usa los
+scripts del repositorio: `npm run deploy` ejecuta lint, pruebas y el build
+integral de producción antes de pedir la confirmación `DEPLOY PRODUCTION` y
+llamar a Wrangler. En DEV usa `npm run deploy:phase2-dev`; este construye el
+perfil DEV, pide `DEPLOY DEV` y despliega con `wrangler.phase2-dev.jsonc`.
+Ambos comandos requieren una terminal interactiva y se detienen si falla una
+validación o la confirmación. `npm run cf:deploy` es un alias de producción.
 
 ## Configuración Del Repositorio
 
@@ -67,6 +76,10 @@ Deploy command: npx wrangler deploy
 Root directory: /web
 Production branch: main
 ```
+
+La configuración remota de Cloudflare no se modifica con estos scripts. El
+guard aplica a las publicaciones manuales mediante npm; en Cloudflare Builds,
+mantén el Build command del perfil integral seguido por el Deploy command.
 
 `npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fase 2. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. La configuración vigente fue comprobada en Cloudflare el 2026-10-11 y persistió tras recargar el panel. Ver matriz y evidencia en `docs/FASE2_ESTADO.md`.
 
