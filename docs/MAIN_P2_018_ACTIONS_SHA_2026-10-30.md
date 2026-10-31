@@ -1,7 +1,7 @@
 # MAIN-P2-018 — Actions fijadas a SHA inmutable
 
 Fecha: 2026-10-30 (CDMX)
-Estado: remediación local; CI/PR pendientes.
+Estado: integrado en `main` mediante PR #172, merge commit `06305c169775ed31ac66d9b21dcf647b5c80f97b`.
 Entornos Supabase/Cloudflare: no consultados ni modificados.
 
 ## Hallazgo
@@ -33,8 +33,9 @@ versiones sin volver a usar referencias móviles.
   GitHub API. La validación estática confirma que cada referencia `uses:` tiene
   un SHA hexadecimal de 40 caracteres y que no quedan etiquetas `@vN`.
 - `git diff --check` pasa.
-- CI de PR pendiente; no se ejecutó el workflow de backup ni los workflows que
-  contienen secretos de producción.
+- CI `quality` y `database-security` PASS en dos ejecuciones completas.
+- No se ejecutó el workflow de backup ni los workflows que contienen secretos
+  de producción.
 - No se inspeccionaron artefactos de backup ni se consultaron secretos.
 
 Esto fija el código de las Actions referenciadas; no crea protección de rama ni
