@@ -1,11 +1,15 @@
 import { test, expect } from '@playwright/test'
+import { assertLocalMutationTarget } from './qaTarget'
 import { writeFileSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const E2E_EMAIL = process.env.CUBITAT_E2E_EMAIL
 const E2E_PASSWORD = process.env.CUBITAT_E2E_PASSWORD
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://tohjzoncoosvjbjcakdl.supabase.co'
+const SUPABASE_URL = process.env.CUBITAT_E2E_SUPABASE_URL
+  ?? process.env.VITE_SUPABASE_URL
+  ?? 'http://127.0.0.1:54321'
+const BASE_URL = process.env.CUBITAT_E2E_BASE_URL ?? 'http://127.0.0.1:5174'
 const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ALLOW_MUTATIONS = process.env.CUBITAT_E2E_ALLOW_MUTATIONS === 'true'
@@ -16,6 +20,7 @@ test.describe('Publicación Real E2E', () => {
   test.skip(!ALLOW_MUTATIONS, 'Salta: definir CUBITAT_E2E_ALLOW_MUTATIONS=true')
 
   test('flujo completo: login real → publicar → pending_review → no en resultados → limpiar', async ({ page, request }) => {
+    assertLocalMutationTarget(BASE_URL, SUPABASE_URL)
     const qaMarker = `qa-e2e-publish-${Date.now()}`
     // 1. Login via Supabase Auth REST
     const authRes = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
