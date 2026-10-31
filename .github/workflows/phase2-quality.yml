@@ -9,6 +9,9 @@ on:
       - "hotfix/**"
   pull_request:
   workflow_dispatch:
+  # Re-run the existing audit and quality gates even when no code changes land.
+  schedule:
+    - cron: '17 19 * * 1'
 
 permissions:
   contents: read
