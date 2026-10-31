@@ -27,15 +27,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce'
   }
 })
-
-// Password-recovery links must work when the email is opened in another
-// browser or device. Keep the regular client on PKCE for OAuth, but use the
-// portable implicit flow for the recovery token exchange.
-export const supabaseRecovery = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storageKey: 'cubitat-auth-token',
-    persistSession: true,
-    detectSessionInUrl: false,
-    flowType: 'implicit',
-  },
-})

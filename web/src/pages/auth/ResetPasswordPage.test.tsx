@@ -7,6 +7,7 @@ const {
   getAdminMfaStatusMock,
   getAuthUrlParamsMock,
   getSessionMock,
+  authVerifyOtpMock,
   onAuthStateChangeMock,
   signOutMock,
   updateUserMock,
@@ -16,6 +17,7 @@ const {
   getAdminMfaStatusMock: vi.fn(),
   getAuthUrlParamsMock: vi.fn(),
   getSessionMock: vi.fn(),
+  authVerifyOtpMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
   signOutMock: vi.fn(),
   updateUserMock: vi.fn(),
@@ -29,12 +31,7 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
       onAuthStateChange: onAuthStateChangeMock,
       signOut: signOutMock,
       updateUser: updateUserMock,
-      verifyOtp: vi.fn().mockResolvedValue({ error: null }),
-    },
-  },
-  supabaseRecovery: {
-    auth: {
-      verifyOtp: vi.fn().mockResolvedValue({ error: null }),
+      verifyOtp: authVerifyOtpMock,
     },
   },
 }))
@@ -84,6 +81,7 @@ describe('ResetPasswordPage', () => {
     })
     updateUserMock.mockResolvedValue({ data: {}, error: null })
     signOutMock.mockResolvedValue({ error: null })
+    authVerifyOtpMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
     verifyOtpMock.mockResolvedValue(undefined)
   })
 
@@ -91,6 +89,9 @@ describe('ResetPasswordPage', () => {
     render(<ResetPasswordPage onDone={vi.fn()} />)
 
     await screen.findByRole('button', { name: /guardar nueva contrasena/i })
+    expect(authVerifyOtpMock).toHaveBeenCalledWith({ token_hash: 'recovery-token', type: 'recovery' })
+    expect(getSessionMock).toHaveBeenCalledOnce()
+    expect(authVerifyOtpMock.mock.invocationCallOrder[0]).toBeLessThan(getSessionMock.mock.invocationCallOrder[0])
     const passwordInputs = screen.getAllByPlaceholderText('********')
     fireEvent.change(passwordInputs[0], {
       target: { value: 'NuevaClave1!' },
