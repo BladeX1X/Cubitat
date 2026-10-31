@@ -67,8 +67,14 @@ estados inconsistentes despues de un `F5`.
 Supabase storage publico:
 
 - Estrategia: `CacheFirst`
-- Uso: imagenes publicas.
+- Uso: imagenes publicas de Storage, excepto el bucket `property_images`.
 - Ventaja: reutiliza imagenes vistas y reduce trafico.
+- Solo se guardan respuestas legibles con estado `200`.
+- Al activar una nueva version del service worker se eliminan las URLs publicas
+  heredadas de `property_images` que una version anterior pudiera haber guardado.
+  Si no se puede hacer la limpieza selectiva, se elimina el cache de imagenes
+  completo; la app vuelve a descargar los demas recursos publicos.
+- Las URLs privadas de Storage y las respuestas REST autenticadas no se cachean.
 
 ## Flujo de instalacion
 
