@@ -68,3 +68,10 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - Esto es una validación local con configuración pública de producción; no es un despliegue ni valida por sí sola flujos autenticados de F3.
 - El build regeneró `public/sitemap.xml` y `public/robots.txt`; se restauraron al estado versionado para no guardar artefactos generados. El resultado de build permanece en `dist/` ignorado por Git.
 - GitHub Actions para el commit `b23a3fe` completó los dos workflows duplicados (quality y database-security) en PASS.
+
+## Inicio de validación de documentos de postulaciones — 2026-11-03
+
+- Se añadió al candidato una utilidad del Worker que identifica PDF/JPG/PNG por firma de bytes y acepta como máximo inclusivo 10 MiB por archivo; no confía en el MIME del navegador.
+- Pruebas dirigidas: 4/4 PASS, incluidos encabezados truncados/no admitidos y límite exacto de 10 MiB frente a 10 MiB + 1 byte.
+- La utilidad aún no recibe solicitudes ni escribe archivos. No hay formulario, endpoint de carga, bucket privado, revisión AAL2, notificación, cuota provincial ni purga; la sección A de F3 continúa abierta.
+- Sin migración, cambios en DEV/producción, merge ni despliegue. Siguiente implementación: endpoint de postulación autenticado y almacenamiento privado con pruebas de autorización, límites y limpieza ante fallos.
