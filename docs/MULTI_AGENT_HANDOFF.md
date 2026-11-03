@@ -4074,3 +4074,10 @@ La consulta actual a DEV encontró 11 versiones solo locales (5 de F2 y las 6 ca
 - `npm run test:run -- --maxWorkers=2`: 181 archivos, 814 PASS, 1 SKIP. La suite emitió avisos de conexiones de prueba a localhost:3000/Turnstile, pero terminó con exit code 0.
 - `npm run build`: PASS con sitemap estático de fallback. `npm run build:phase3-production:ci`: PASS con los placeholders públicos definidos por el workflow; no usa credenciales ni verifica despliegue.
 - Falta que GitHub Actions ejecute `database-security` sobre las 56 fuentes recuperadas; después revisar cualquier divergencia del replay.
+
+## F3 — integración en `main` — 2026-11-03
+
+- PR #186 se fusionó en `main` como `99e315369c3d1f69f58a699a9d1a635971bbb4ef` (candidato `9a91649`). Los checks `quality` y `database-security` del candidato pasaron; el segundo ejecutó replay de migraciones y pruebas SQL en Supabase aislado.
+- El merge integra código y fuentes, pero no activa el Worker ni aplica migraciones hosted. `PHASE3_ENABLED=false`; producción/Supabase permanecieron intactos.
+- Reconciliación DEV en lectura: 11 versiones locales sin registro remoto (5 F2 y 6 F3). Objetos pHash están presentes con RLS y grants revisados; `get_verified_seller_ids()` y el override MFA temporal no existen. Esquema de solicitudes/outbox/cupos/atribución F3 ausente.
+- Siguiente paso: documentar/cotejar las cinco fuentes F2 locales sin aplicar, y definir una ejecución controlada en DEV para las seis F3, con fixtures QA y verificación posterior. No usar `db push` global ni `migration repair`.

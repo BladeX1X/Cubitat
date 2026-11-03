@@ -881,3 +881,7 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 ## Actualización de lectura hosted DEV — 2026-11-03
 
 La lectura más reciente encontró 11 versiones locales sin marca remota y 58 versiones remotas sin fuente en este checkout. No asumir que el diff del listado significa que cada migración local carece de esquema: el detalle de los seis objetos F3 comprobados y la secuencia segura de reconciliación está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`. No usar `db push` ni `migration repair` aún.
+
+### Integración del candidato F3 en main — 2026-11-03
+
+PR #186 fusionada como `99e315369c3d1f69f58a699a9d1a635971bbb4ef`. Los contratos SQL y replay completo de CI pasan en entorno aislado. Esto valida la cadena versionada, no aplica ni reconcilia cambios en DEV/producción. El Worker conserva `PHASE3_ENABLED=false`. Ver `docs/RECONCILIACION_F3_DEV_2026-11-03.md`; no ejecutar `db push` global ni `migration repair` hasta cerrar dependencias.
