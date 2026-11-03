@@ -1,26 +1,36 @@
 /**
  * Referrals tracker utility.
- * Captures '?ref=xxx' query parameters from the URL and persists them.
+ * Removes deferred referral parameters and legacy session state while the
+ * referral program is paused pending owner approval.
  */
 
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger';
 
 const REFERRAL_STORAGE_KEY = 'cubitat_referral_id';
+const REFERRAL_CODE_PATTERN = /^AG-[0-9A-F]{8}$/i
 
+export function isValidAgentReferralCode(value: string): boolean {
+  return REFERRAL_CODE_PATTERN.test(value.trim())
+}
 /**
- * Checks the current URL for a referral parameter and saves it to sessionStorage if found.
+ * Scrubs referral attribution from the URL and storage without recording it.
  */
 export function trackReferral(): string | null {
   if (typeof window === 'undefined') return null;
 
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const ref = urlParams.get('ref');
-
-    if (ref && ref.trim().length > 0) {
-      sessionStorage.setItem(REFERRAL_STORAGE_KEY, ref.trim());
-      return ref.trim();
+    const hasReferralParameter = urlParams.has('ref')
+    if (hasReferralParameter) {
+      urlParams.delete('ref')
+      const search = urlParams.toString()
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`,
+      )
     }
+    sessionStorage.removeItem(REFERRAL_STORAGE_KEY)
   } catch (err) {
     logSafeEvent({
       module: 'referrals',
@@ -34,13 +44,14 @@ export function trackReferral(): string | null {
 }
 
 /**
- * Returns the currently stored referral ID, if any.
+ * Referral attribution is paused; clear any legacy code instead of using it.
  */
 export function getReferralId(): string | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    return sessionStorage.getItem(REFERRAL_STORAGE_KEY);
+    sessionStorage.removeItem(REFERRAL_STORAGE_KEY)
+    return null
   } catch (err) {
     logSafeEvent({
       module: 'referrals',

@@ -39,7 +39,6 @@ describe('agentRepository', () => {
         verification_status: 'verified',
         created_at: new Date().toISOString(),
         active_properties_count: 3,
-        reports_count: 0,
       }],
       error: null,
     } as never)

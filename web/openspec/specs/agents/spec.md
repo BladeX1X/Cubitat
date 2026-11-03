@@ -1,0 +1,296 @@
+# Red de agentes y captación — Fase 3
+
+> **Actualización de producto (2026-11-03):** el dueño definió postulación
+> abierta con máximo cuatro agentes por provincia, graduación de nivel superior
+> como requisito, experiencia como mérito, enlace por agente y comisión de 20%
+> de cada pago del usuario atribuido, ajustada por reembolsos. También definió
+> prueba de 30 días sin tarjeta y precios CUP por tipo de cuenta/período.
+> Para la primera salida, las funciones actuales siguen gratuitas: no hay cobros,
+> paywall ni bloqueos automáticos hasta aprobar la matriz final. El correo de CV
+> `pochiprats18@gmail.com` es provisional; solo se envía un enlace firmado.
+> Se aceptan PDF/JPG/PNG hasta 10 MB y se borran 30 días tras la decisión final.
+> Los detalles y arquitectura se documentan en
+> `docs/FASE3_AGENTES_SUSCRIPCIONES_PROPUESTA.md`. Esto resuelve la política
+> comercial básica, pero no activa las RPC: pagos/suscripciones aún no existen,
+> hay reglas de liquidación/retención y de cuenta jurídica por definir, y el
+> proveedor CUP debe confirmarse antes de aceptar cobros.
+
+Hasta implementar los contratos descritos en esta especificación, el panel
+MUST NOT aprovisionar códigos ni consultar repositorios de referidos, contactos
+atribuidos o comisiones. Las oportunidades consentidas siguen disponibles de
+forma independiente. El Worker MUST descartar atribución de referido por
+defecto y solo aceptarla cuando el entorno la habilite explícitamente; la
+configuración productiva permanece desactivada.
+Mientras continúe la pausa técnica, PostgreSQL MUST revocar `EXECUTE` de `anon`,
+`authenticated` y `service_role` en las RPC de creación de enlaces, atribución
+de visitas y mutación de comisiones; ocultar la UI o la allowlist del Worker no
+es suficiente porque el cliente podría llamar directamente al Data API.
+Cuando se implemente la atribución de altas, `ensure_agent_referral_link()` MUST preservar enlaces
+existentes con `active=false`; una llamada de recuperación nunca debe
+reactivarlos. Al entrar en conflicto con un enlace ya existente, la RPC MUST
+volver a leer su estado y nunca convertir la consulta idempotente en una orden
+de activación.
+
+## Propósito
+
+Completar el programa de agentes existente con captación de propiedades y
+clientes, seguimiento, atribución de contactos y comisiones auditables.
+
+## Alcance heredado y fronteras
+
+- La activación de rol `agent`, verificación KYC, perfil público, distintivo,
+  catálogo de propiedades y métricas de contacto ya existen y se reutilizan.
+- Un agente elegible tiene rol canónico `agent` o `admin` y
+  `verification_status = verified`; los administradores participan también
+  como agentes sin perder sus controles administrativos AAL2.
+- La app no asume tasas universales, acuerdos legales, pagos bancarios ni
+  custodia de dinero. El cierre digital/escrow permanece fuera del alcance.
+- El perfil público de agente MUST omitir documentos e identificadores de KYC,
+  incluido el número de licencia. El distintivo de verificación comunica el
+  estado sin divulgar la evidencia usada para decidirlo. MUST omitir conteos de
+  denuncias, moderación y otras métricas internas.
+- El teléfono solo se devuelve para agentes verificados con publicaciones
+  activas cuando el agente habilitó explícitamente `public_whatsapp_enabled`.
+  El valor predeterminado MUST ser `false`; retirar el consentimiento MUST
+  ocultar el número del perfil público.
+- Los datos de prospectos son privados y solo se recogen con autorización del
+  prospecto para contacto.
+
+## Límites de módulo y contratos
+
+- Identidad/elegibilidad reutiliza el perfil profesional y KYC existentes; no
+  crea cuentas de agente paralelas.
+- Referidos mantiene código/enlace y atribución. La captura solo consulta el
+  código activo mediante el Worker/RPC confiable.
+- El contrato de código del agente vive en
+  `src/modules/agents/referrals/agentReferralRepository.ts`; el tracker
+  `src/modules/referrals/utils/tracker.ts` solo gestiona atribución de sesión y
+  no aprovisiona códigos ni consulta oportunidades.
+- Los repositorios de oportunidades y sus eventos viven en
+  `src/modules/agents/leads/`; comisiones y sus eventos viven en
+  `src/modules/agents/commissions/`. Los compositores F/G no consultan tablas.
+- Oportunidades es dueño de `agent_leads` y `agent_lead_events`; comisiones es
+  dueño de `agent_commissions` y `agent_commission_events`.
+- Comisiones recibe `lead_id` y verifica conversión en servidor; el módulo de
+  oportunidades no importa ni invoca el módulo de comisiones.
+- Los dashboards de agente y administración componen lecturas/acciones de los
+  módulos y no escriben directamente en tablas privadas.
+- Cada módulo valida identidad/rol/RLS en el servidor; una pantalla oculta o un
+  feature flag no sustituye autorización.
+- El código actual comparte una migración y un flag por fase. La separación
+  define ownership funcional; habilitación independiente por release requiere
+  migraciones y flags separados y queda fuera del alcance presente.
+
+## Requisitos
+
+### Requisito: Postulación abierta y selección de agentes
+
+- GIVEN una persona interesada en ser agente
+- WHEN envía una postulación, ya sea por convocatoria o iniciativa propia
+- THEN MUST poder indicar provincia principal, formación y experiencia
+- AND MUST adjuntar su currículum a una ruta privada
+- AND graduación de nivel superior MUST ser requisito mínimo
+- AND experiencia en gestión de procesos/documentos MAY sumar mérito, pero MUST
+  NOT ser requisito excluyente
+- AND la decisión de selección MUST ser manual y quedar auditada por admin AAL2
+- AND MUST permitirse recibir solicitudes aunque una provincia no tenga cupos,
+  conservándolas en lista de espera
+- AND el sistema MUST impedir de forma transaccional más de cuatro agentes
+  activos asignados a la misma provincia principal
+- AND una notificación por correo MUST enlazar el CV mediante URL privada de
+  corta duración; el CV MUST NOT quedar público ni aparecer en logs
+- AND MUST aceptar únicamente PDF, JPG o PNG de hasta 10 MB
+- AND MUST eliminar el archivo 30 días después de la decisión final
+- AND el correo receptor provisional MUST configurarse fuera del código y
+  MUST NOT recibir el CV como adjunto
+
+#### Scenario: Validar y retener un currículum
+- GIVEN una postulación nueva
+- WHEN se carga su CV
+- THEN el servidor MUST validar tipo real y tamaño máximo de 10 MB
+- AND MUST guardar el archivo en un bucket privado
+- AND MUST borrarlo 30 días después de aprobar o rechazar la solicitud
+- AND la notificación MUST usar una URL firmada de corta duración
+
+### Requisito: Planes de suscripción y prueba
+
+- GIVEN una cuenta nueva, natural o jurídica
+- WHEN inicia su acceso de suscripción
+- THEN MUST recibir 30 días de prueba gratis una sola vez por cuenta, sin
+  requerir un método de pago para iniciar
+- AND MUST ofrecer los precios confirmados en CUP:
+  natural 200 trimestral y 500 anual; jurídica 10 000 trimestral y 30 000 anual
+- AND el precio, período, tipo de cuenta y fecha de vigencia MUST persistir como
+  catálogo versionado
+- AND el navegador MUST NOT conceder acceso premium basándose solo en el
+  retorno visual del proveedor; la confirmación proviene del servidor
+- AND mientras la matriz gratis/de pago sea provisional, vencer el período de
+  prueba MUST NOT cobrar ni bloquear funciones automáticamente
+
+### Requisito: Atribución de nuevos registros
+
+- GIVEN una persona nueva que abre el registro desde el código de un agente
+- WHEN su cuenta se crea
+- THEN el servidor MUST resolver el código y asignar como máximo un agente a
+  esa cuenta dentro de la transacción/idempotencia del alta
+- AND MUST NOT aceptar un `agent_id` enviado por el navegador
+- AND MUST rechazar autorreferidos y atribución tardía a cuentas preexistentes
+- AND la atribución MUST ser inmutable salvo corrección administrativa
+  auditada
+- AND visitas o clics del cliente MUST NOT bastar para generar comisión
+
+### Requisito: Comisión por pagos de cuentas atribuidas
+
+- GIVEN una suscripción vinculada a una cuenta atribuida a un agente
+- WHEN un pago de renovación o plan se confirma en servidor
+- THEN MUST registrarse una comisión CUP de 20% por ese pago confirmado
+- AND MUST ajustarse el importe por reembolsos, sin borrar el evento original
+- AND cada evento de pago MUST producir como máximo un asiento de comisión
+- AND el agente MUST leer únicamente sus propios asientos
+- AND aprobación y liquidación MUST quedar auditadas detrás de AAL2
+- AND pagos/reembolsos MUST verificarse mediante el proveedor o conciliación
+  administrativa auditada, nunca por un resultado enviado por el navegador
+
+### Requisito: Consentimiento para contacto público del agente
+
+- GIVEN un agente abre la sección de contacto de Mi cuenta
+- WHEN activa o desactiva la opción de mostrar WhatsApp en su perfil público
+- THEN la aplicación MUST guardar la preferencia en su propio perfil
+- AND la RPC pública MUST devolver el teléfono solo si la preferencia está activa
+- AND el perfil público MUST indicar claramente cuando el agente no comparte WhatsApp
+- AND un perfil nuevo o migrado MUST mantener la preferencia desactivada
+- AND el Worker MUST aceptar esa única propiedad de consentimiento en un PATCH autenticado de `profiles`
+- AND MUST NOT permitir que este mecanismo cambie rol, estado KYC u otros campos protegidos
+
+### Requisito: Acceso al programa de agentes
+
+- GIVEN un usuario autenticado con KYC aprobado
+- WHEN activa el perfil profesional existente
+- THEN MUST conservarse el rol canónico en `profiles`
+- AND el panel MUST quedar disponible para agentes y administradores verificados
+- AND un administrador sin KYC verificado MUST permanecer bloqueado como agente
+- AND la interfaz MUST explicar el requisito de KYC cuando no se cumple
+- AND la interfaz MUST ofrecer navegación a Mi cuenta para revisar el estado de KYC
+- AND el panel MUST comprobar rol y KYC antes de consultar propiedades, métricas u oportunidades privadas del dashboard
+
+### Requisito: Privacidad de métricas de contacto del agente
+
+- GIVEN un agente verificado consulta métricas desde su panel
+- WHEN el cliente carga contactos por teléfono o WhatsApp
+- THEN MUST obtener esos contadores mediante `get_own_property_contact_metrics()`
+- AND la RPC MUST limitar cada fila a `auth.uid()` y exigir rol `agent` o `admin` con KYC `verified`
+- AND anon, `service_role` y `authenticated` MUST NOT leer las columnas de contadores directamente
+- AND un fallo de esta RPC MUST dejar visibles las propiedades y mostrar las métricas de contacto como no disponibles, sin presentarlas como cero
+
+### Requisito: Captación de propiedad
+
+- GIVEN un agente verificado en su panel
+- WHEN registra un inmueble que todavía no es una publicación de Cubitat
+- THEN MUST pedir título breve, ubicación pública y contacto autorizado del
+  interesado
+- AND MUST mantener contacto y notas en tablas privadas con RLS
+- AND MUST evitar tratar el prospecto como una propiedad pública/moderada
+- AND MAY asociar una publicación real después de su creación/moderación
+
+### Requisito: Límite contra abuso al crear oportunidades
+
+- GIVEN un agente verificado que llama `create_agent_lead()` directamente o
+  mediante el Worker
+- WHEN intenta crear más de 20 oportunidades dentro de una ventana móvil de 24
+  horas
+- THEN la base de datos MUST rechazar la creación adicional con un error de
+  límite identificable
+- AND el panel MUST explicar que se alcanzó el límite y cuándo podrá intentarse
+  nuevamente, sin exponer detalles internos de PostgreSQL
+- AND MUST serializar las creaciones concurrentes del mismo agente antes de
+  contar y escribir
+- AND MUST conservar autorización, consentimiento y evento inicial dentro de
+  la misma RPC transaccional
+- AND MUST aplicar el límite en base de datos para que no pueda omitirse al
+  evitar el Worker
+- AND MUST cap raw text bytes before trimming or regex validation, including
+  phone input, so direct Data API calls cannot force unbounded text processing
+- AND MUST NOT modificar Supabase DEV o producción sin una operación explícita
+  autorizada
+
+### Requisito: Cliente referido
+
+- GIVEN un agente verificado
+- WHEN registra un cliente que dio permiso para recibir seguimiento
+- THEN MUST guardar nombre, teléfono, interés y consentimiento confirmado
+- AND MUST permitir al agente seguir el estado de atención
+- AND MUST impedir que otros agentes o visitantes consulten esos datos
+
+### Requisito: Estado persistente de enlaces de referido
+
+- GIVEN un enlace de referido desactivado administrativamente
+- WHEN una sesión autenticada intenta recuperar/provisionar el enlace
+- THEN la RPC MUST rechazar la operación y conservar `active=false`
+- AND una colisión de unicidad MUST NOT cambiar `active` ni `updated_at`
+- AND un enlace activo existente MUST devolver el mismo código
+- AND un agente elegible sin enlace MUST recibir un código único activo e idempotente
+
+### Requisito: Seguimiento trazable
+
+- GIVEN una oportunidad de captación existente
+- WHEN su estado cambia
+- THEN MUST conservar evento inmutable con actor, estado anterior/nuevo,
+  motivo y timestamp
+- AND el servidor MUST validar transición y rol antes de guardar
+- AND un agente MUST NOT reabrir una oportunidad con estado `lost`
+- AND solo una sesión administrativa AAL2 MAY reabrirla como `contacted`, con
+  un motivo registrado en el evento
+
+### Requisito: Cálculo manual legado (no satisface la política nueva)
+
+- GIVEN una oportunidad convertida y una decisión de comisión registrada por
+  administración en AAL2
+- WHEN se especifican monto elegible, tasa y moneda
+- THEN MUST calcularse `round(monto_elegible * tasa / 100, 2)` en base de datos
+- AND este contrato manual ligado a `lead_id` MUST NOT usarse para calcular
+  comisiones de suscripción; el ledger nuevo se vincula a pagos confirmados
+- AND MUST conservar base, tasa, importe calculado, moneda, agente, creador y
+  estado de aprobación/pago
+- AND el agente MUST tener lectura únicamente de sus comisiones
+- AND un admin MUST anular un cálculo con motivo en vez de borrar/reescribir
+  silenciosamente el historial
+
+### Requisito: Dashboard de agente
+
+- GIVEN un agente verificado
+- WHEN abre `/panel-agente`
+- THEN MUST ver el registro y seguimiento de oportunidades
+- AND MUST ocultar el enlace de referido, métricas de atribución y comisiones
+  hasta que la atribución de registros y los pagos vinculados estén
+  implementados y revisados
+- AND MUST poder filtrar por tipo/estado
+- AND MUST conservar las métricas actuales de propiedades, vistas y contactos
+- AND MUST presentar carga, vacío, error y reintento
+- AND un fallo de lectura de un dominio MUST NOT ocultar los datos disponibles de los demás dominios
+- AND MUST identificar el estado de oportunidades sin presentar datos no cargados como una lista vacía
+- AND MUST mostrar el formulario y el listado dentro de secciones colapsables cerradas inicialmente
+
+### Requisito: Panel administrativo de agentes y liquidaciones
+
+- GIVEN una sesión admin elevada a AAL2
+- WHEN abre operaciones de agentes
+- THEN MUST consultar la cola de prospectos
+- AND MUST permitir revisar postulaciones, cupos provinciales y solicitudes
+  consentidas
+- AND MUST mantener ocultas las mutaciones y liquidaciones de comisión hasta
+  que exista ledger respaldado por pagos verificados
+- AND las RPC de mutación de comisiones MUST NOT estar en la allowlist del
+  Worker DEV durante la pausa
+- AND cambios de selección, asignación de cupo, corrección de atribución y
+  liquidación MUST conservar una bitácora inmutable
+- AND todas las mutaciones MUST ejecutarse mediante RPC con autorización
+  efectiva del servidor y auditoría transaccional
+
+### Requisito: Entorno local
+
+- GIVEN una compilación que no sea `development` con Supabase local
+- WHEN se carga la aplicación
+- THEN rutas y paneles exclusivos de Fase 3 MUST estar deshabilitados
+- AND ningún cambio de este alcance MUST aplicarse automáticamente a Supabase
+  DEV o producción
+

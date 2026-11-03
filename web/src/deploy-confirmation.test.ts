@@ -20,6 +20,14 @@ describe('manual deployment guard', () => {
     )
   })
 
+  it('requires a dynamic sitemap for the production build', () => {
+    const { scripts } = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+
+    expect(scripts['build:phase2-production']).toContain('node scripts/generate-sitemap.mjs --require-dynamic')
+  })
+
   it('blocks deployment from a non-interactive process', () => {
     const result = spawnSync(process.execPath, [confirmationScript, 'production'], {
       encoding: 'utf8',

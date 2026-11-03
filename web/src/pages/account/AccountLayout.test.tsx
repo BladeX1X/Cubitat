@@ -19,7 +19,7 @@ describe('AccountLayout agent navigation', () => {
     'hides the agent dashboard from a non-agent role (%s)',
     (userRole) => {
       render(
-        <AccountLayout {...navigationProps} userRole={userRole}>
+        <AccountLayout {...navigationProps} userRole={userRole} canAccessAgentDashboard={false}>
           Cuenta
         </AccountLayout>,
       )
@@ -30,11 +30,16 @@ describe('AccountLayout agent navigation', () => {
 
   it('shows the agent dashboard to an agent', () => {
     render(
-      <AccountLayout {...navigationProps} userRole="agent">
+      <AccountLayout {...navigationProps} userRole="agent" canAccessAgentDashboard>
         Cuenta
       </AccountLayout>,
     )
 
+    expect(screen.getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+  })
+
+  it('shows the dashboard to a verified admin as an agent too', () => {
+    render(<AccountLayout {...navigationProps} userRole="admin" canAccessAgentDashboard>Cuenta</AccountLayout>)
     expect(screen.getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
   })
 })

@@ -3,8 +3,14 @@ import { resolve } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 import { buildSitemapDocument } from './sitemap-document.mjs'
 import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
+import { resolveSitemapMode, shouldWriteSourceSitemap } from './sitemap-mode.mjs'
 
 const isPhase2Dev = process.argv.includes('--phase2-dev')
+const requestedSitemapMode = process.argv.includes('--require-dynamic')
+  ? 'dynamic'
+  : process.env.SITEMAP_MODE === 'static' || process.argv.includes('--static')
+    ? 'static'
+    : undefined
 const SITE_URL = isPhase2Dev
   ? 'https://cubitat1-phase2-dev.pochiprats18.workers.dev'
   : 'https://cubitathome.com'
@@ -68,18 +74,14 @@ function readEnv() {
   }
 }
 
-async function readPublishedProperties() {
-  if (process.env.SITEMAP_MODE === 'static') {
+async function readPublishedProperties(mode) {
+  if (mode === 'static') {
     return []
   }
 
   const env = readEnv()
   const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY for sitemap generation.')
-  }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey)
   const { data, error } = await supabase
@@ -108,7 +110,15 @@ function buildPropertyRoutes(properties) {
   })
 }
 
-const publishedProperties = await readPublishedProperties()
+const env = readEnv()
+const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
+const sitemapMode = resolveSitemapMode({
+  requestedMode: requestedSitemapMode,
+  supabaseUrl,
+  supabaseAnonKey,
+})
+const publishedProperties = await readPublishedProperties(sitemapMode)
 const routes = [
   ...staticRoutes,
   ...buildInventorySeoRoutes(publishedProperties, readMunicipalityDirectory()),
@@ -123,7 +133,7 @@ Allow: /
 Sitemap: ${SITE_URL}/sitemap.xml
 `
 
-if (!isPhase2Dev) {
+if (shouldWriteSourceSitemap({ mode: sitemapMode, phase2Dev: isPhase2Dev })) {
   writeFileSync(resolve('public/sitemap.xml'), sitemap)
   writeFileSync(resolve('public/robots.txt'), robots)
 }
@@ -133,4 +143,7 @@ if (existsSync(resolve('dist'))) {
   writeFileSync(resolve('dist/robots.txt'), robots)
 }
 
-console.log(`Generated ${routes.length} sitemap URLs for ${SITE_URL}`)
+if (sitemapMode === 'static' && !requestedSitemapMode) {
+  console.warn('[sitemap] Supabase public configuration absent; generated a static-only sitemap fallback.')
+}
+console.log(`Generated ${routes.length} sitemap URLs for ${SITE_URL} (${sitemapMode})`)
