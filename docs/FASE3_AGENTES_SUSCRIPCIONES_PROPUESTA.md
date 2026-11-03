@@ -15,6 +15,14 @@ programa la eliminación a 30 días. No existe aún purga automática, correo ni
 aprobación; la aprobación espera el control transaccional del cupo de cuatro
 agentes activos por provincia.
 
+La migración candidata `20261103140000_agent_application_email_outbox.sql`
+prepara un outbox privado, encolado en la transacción de intake. Un cron DEV
+condicionado por `PHASE3_ENABLED=true` reclama el outbox y envía por Resend un
+aviso a `AGENT_APPLICATION_EMAIL_TO`, configurable fuera del código. El correo
+lleva URLs privadas firmadas con vencimiento de 10 minutos y no adjunta los
+documentos. El envío permanece apagado: no se configuraron secretos ni se envió
+correo real; el contrato pgTAP nuevo aún espera la ejecución de CI.
+
 El candidato está verificado por lint, 11 pruebas focales, suite (179 archivos,
 792 aprobadas y 1 omitida), build productivo base, build DEV con UI F3 y
 Wrangler dry-run. La migración nueva **no** se validó en scratch: Docker rechazó

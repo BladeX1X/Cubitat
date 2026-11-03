@@ -38,3 +38,11 @@ verifica origen y bucket de ambas y devuelve `Cache-Control: no-store`. Nunca
 registra las rutas ni las URLs. La pestaña administrativa de DEV consume esta
 ruta dentro de `AdminMfaGate`; el RPC de revisión persiste transiciones
 permitidas y eventos inmutables. No se ha validado contra Supabase DEV.
+
+## Aviso administrativo por correo
+
+La migración candidata `20261103140000_agent_application_email_outbox.sql` crea una intención de correo en la misma transacción que cada postulación. El outbox no es legible por `anon` ni `authenticated`; el Worker reclama y actualiza entregas únicamente mediante RPC de `service_role`, con reintentos limitados a tres.
+
+El cron de Worker solo procesa correos cuando `PHASE3_ENABLED=true` y existen `RESEND_API_KEY`, `ALERT_EMAIL_FROM` y el secreto `AGENT_APPLICATION_EMAIL_TO`. El último valor debe configurarse fuera del repositorio (destinatario provisional actual: `pochiprats18@gmail.com`). El mensaje incluye enlaces firmados de Storage que caducan en 10 minutos y nunca adjunta los documentos. El código valida que los enlaces permanezcan en el proyecto Supabase configurado y no registra tokens, rutas ni contenido del mensaje.
+
+Los tests usan Resend y Storage simulados. No se ha enviado correo real ni se han configurado secretos; el flujo permanece apagado por `PHASE3_ENABLED=false`.

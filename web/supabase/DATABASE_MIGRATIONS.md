@@ -829,3 +829,10 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - 2026-11-03: aplicada correctamente en una instancia Supabase scratch temporal, junto con prerequisitos mínimos aislados. Test pgTAP de contrato **6/6 PASS** con `supabase test db --local`; se usó la red aislada con nombre estándar esperado por el runner. Se detuvo el stack y retiró su red; no se tocaron otros contenedores, ni Supabase local persistente, DEV o producción. La migración quedó validada en scratch, no aplicada remotamente. No considerar cerrados revisión AAL2, notificación, cupo provincial ni purga documental: todavía no están implementados.
 - `20261103130000_agent_application_review_actions.sql` añade cambios auditados AAL2 a `reviewing`, `waitlisted` y `rejected`; el rechazo exige motivo y programa la purga para 30 días. Aprobación queda expresamente fuera hasta tener asignación transaccional del cupo provincial.
 - La segunda migración solo existe en `feature/phase3-production-main`, PR borrador #186; su contrato pgTAP está en `supabase/tests/agent_application_review_local.sql`. No aplicar a local persistente, DEV ni producción hasta validar el historial de migraciones y el scratch completo.
+
+## F3 candidata — outbox de notificación por correo — no aplicado
+
+- `20261103140000_agent_application_email_outbox.sql` crea intención atómica de correo al recibir una postulación y expone RPC service-role para claim/complete/retry, con máximo 3 intentos.
+- `supabase/tests/agent_application_email_outbox_local.sql` comprueba permisos, RLS y trigger. GitHub Actions ejecutará el contrato después de reconstruir el esquema aislado.
+- Worker DEV envía por Resend solo con `PHASE3_ENABLED=true` y configuración completa. `AGENT_APPLICATION_EMAIL_TO` es un secreto externo; no se define aquí ni se envió correo. Enlaces firmados de CV/título: 10 min, sin adjuntos.
+- No aplicar a Supabase persistente, DEV o producción sin revisar el resultado de CI y reconciliar primero el ledger.

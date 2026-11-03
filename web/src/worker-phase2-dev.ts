@@ -13,6 +13,7 @@ import { logWorkerEvent } from './worker/logger';
 import { readBoundedJsonObject } from './worker/boundedJson.js';
 import { handleAgentApplicationSubmission } from './worker/agent-applications';
 import { handleAgentApplicationDocumentLinks } from './worker/agent-application-documents';
+import { dispatchPendingAgentApplicationEmails } from './worker/agent-application-email-dispatcher';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -24,6 +25,7 @@ export { RateLimiter } from './rate-limiter';
 
 interface PhaseTwoDevEnv extends Env {
   PHASE3_ENABLED?: string;
+  AGENT_APPLICATION_EMAIL_TO?: string;
   ALERT_EMAIL_PROVIDER_URL?: string;
   ALERT_EMAIL_FROM?: string;
   CONTACT_METRICS_SALT?: string;
@@ -50,12 +52,14 @@ export function runPhase2ScheduledTasks(
   env: PhaseTwoDevEnv,
   ctx: WorkerExecutionContext,
 ): void {
-  ctx.waitUntil(Promise.all([
+  const tasks: Promise<unknown>[] = [
     dispatchPendingAlertEmails(env),
     dispatchPendingPushNotifications(env),
     purgeApprovedKycEvidence(env),
     backfillPropertyImageDuplicates(env),
-  ]));
+  ];
+  if (env.PHASE3_ENABLED === 'true') tasks.push(dispatchPendingAgentApplicationEmails(env));
+  ctx.waitUntil(Promise.all(tasks));
 }
 
 export default {
