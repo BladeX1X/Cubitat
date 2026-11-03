@@ -821,3 +821,9 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - El workflow manual `.github/workflows/supabase-production-phash-migration.yml`
   ejecuta un dry-run y se detiene si encuentra cualquier migración pendiente
   adicional a `20261013110000`; después registra el historial remoto con la CLI.
+
+## Candidata de migración Fase 3 — no aplicada
+
+- `20261103120000_agent_application_intake.sql` crea intake privado de postulaciones, documentos en bucket privado y una RPC de inserción solo para `service_role`.
+- Está en la rama candidata `feature/phase3-production-main`, PR borrador #186. Se añadió un test de contrato `supabase/tests/agent_application_intake_local.sql`. No se aplicó a Supabase local persistente, DEV ni producción; tampoco se ejecutó `db push` o `migration repair`.
+- El SQL debe probarse en una base scratch aislada antes de reconciliar/registrar su versión remota. No considerar cerrados revisión AAL2, notificación, cupo provincial ni purga documental: todavía no están implementados.

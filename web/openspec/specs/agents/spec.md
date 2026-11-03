@@ -17,13 +17,15 @@
 
 ## Estado de implementación — 2026-11-03
 
-- Se añadió una utilidad aislada del Worker para inspeccionar por firma binaria
-  documentos PDF/JPG/PNG y aplicar un límite inclusivo de 10 MiB; sus pruebas
-  cubren formatos no admitidos, firmas truncadas y el límite de tamaño.
-- Esto es únicamente una pieza previa al flujo. No hay todavía formulario,
-  endpoint de carga, bucket privado de postulaciones, revisión AAL2, correo,
-  cuota provincial ni eliminación programada. La postulación sigue sin estar
-  disponible y no se debe presentar como completada.
+- El candidato incluye una ruta DEV apagada por defecto para enviar CV y título,
+  validación de firmas PDF/JPG/PNG y límite de 10 MiB, bucket privado, persistencia
+  reservada a service role, RLS de estado propio/AAL2 y límite de solicitudes.
+- El endpoint cuenta con pruebas Worker de autenticación/rate limit, validación,
+  carga privada y limpieza al fallar la persistencia.
+- La migración sigue sin validarse en scratch y no se aplicó. Faltan interfaz,
+  notificación con URL firmada, revisión/decisión AAL2, asignación de cupo
+  provincial transaccional y purga tras 30 días. El requisito de postulación
+  permanece abierto.
 
 Hasta implementar los contratos descritos en esta especificación, el panel
 MUST NOT aprovisionar códigos ni consultar repositorios de referidos, contactos

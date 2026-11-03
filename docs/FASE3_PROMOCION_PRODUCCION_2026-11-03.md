@@ -75,3 +75,11 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - Pruebas dirigidas: 4/4 PASS, incluidos encabezados truncados/no admitidos y límite exacto de 10 MiB frente a 10 MiB + 1 byte.
 - La utilidad aún no recibe solicitudes ni escribe archivos. No hay formulario, endpoint de carga, bucket privado, revisión AAL2, notificación, cuota provincial ni purga; la sección A de F3 continúa abierta.
 - Sin migración, cambios en DEV/producción, merge ni despliegue. Siguiente implementación: endpoint de postulación autenticado y almacenamiento privado con pruebas de autorización, límites y limpieza ante fallos.
+
+## Intake de postulación en candidato DEV — 2026-11-03
+
+- Se añadió `/api/phase3/agent-applications` solo al Worker de DEV. Requiere `PHASE3_ENABLED=true`; `wrangler.phase2-dev.jsonc` la deja apagada (`false`) hasta probar la migración y configurar el flujo completo.
+- El endpoint autentica con Supabase, aplica límite por cuenta, acota el multipart a 20 MiB + overhead, valida provincia/formación, requiere CV y título/diploma PDF/JPG/PNG hasta 10 MiB cada uno, sube a bucket privado usando service role y limpia objetos si falla la persistencia.
+- Migración candidata `20261103120000_agent_application_intake.sql`: estado propio bajo RLS, lectura AAL2 para administración, eventos append-only, bucket privado, RPC de inserción exclusiva de service role, una solicitud abierta por cuenta y máximo 3 solicitudes por 24 horas. Test SQL de contrato añadido para scratch.
+- Pruebas de Worker dirigidas: 11/11 PASS. Suite completa ejecutada durante el bloque: 175 archivos, 776 PASS y 1 omitida; build PASS y dry-run Wrangler DEV PASS.
+- **No se validó la migración en scratch**: no se aplicó a base local persistente, DEV ni producción. A permanece parcial: faltan formulario, correo con enlaces firmados, revisión/decisión AAL2, cupo provincial concurrente y purga a 30 días. No activar la bandera ni desplegar este slice todavía.

@@ -23,6 +23,9 @@ const EVENTS = new Set([
   'image_duplicate_decode_failed',
   'image_duplicate_request_failed',
   'image_duplicate_refresh_failed',
+  'agent_application_submission_failed',
+  'agent_application_upload_cleanup_failed',
+  'agent_application_submitted',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -63,6 +66,9 @@ export type WorkerLogEvent =
   | 'image_duplicate_decode_failed'
   | 'image_duplicate_request_failed'
   | 'image_duplicate_refresh_failed'
+  | 'agent_application_submission_failed'
+  | 'agent_application_upload_cleanup_failed'
+  | 'agent_application_submitted'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'
@@ -71,6 +77,7 @@ export interface WorkerLogFields {
   status?: number
   reason?: 'missing_configuration' | 'network_unavailable' | 'phase2_disabled'
     | 'fetch_http' | 'fetch_network' | 'invalid_webp' | 'decoder_init' | 'decode'
+  phase?: 'storage' | 'database'
 }
 
 export function logWorkerEvent(
@@ -102,6 +109,9 @@ export function logWorkerEvent(
   }
   if (typeof unsafeFields.reason === 'string' && REASONS.has(unsafeFields.reason as never)) {
     record.reason = unsafeFields.reason
+  }
+  if (unsafeFields.phase === 'storage' || unsafeFields.phase === 'database') {
+    record.phase = unsafeFields.phase
   }
 
   console[level](record)

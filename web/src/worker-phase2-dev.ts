@@ -11,6 +11,7 @@ import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 import { dispatchPendingPushNotifications } from './worker/push-notifications';
 import { logWorkerEvent } from './worker/logger';
 import { readBoundedJsonObject } from './worker/boundedJson.js';
+import { handleAgentApplicationSubmission } from './worker/agent-applications';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -21,6 +22,7 @@ import {
 export { RateLimiter } from './rate-limiter';
 
 interface PhaseTwoDevEnv extends Env {
+  PHASE3_ENABLED?: string;
   ALERT_EMAIL_PROVIDER_URL?: string;
   ALERT_EMAIL_FROM?: string;
   CONTACT_METRICS_SALT?: string;
@@ -58,6 +60,31 @@ export function runPhase2ScheduledTasks(
 export default {
   async fetch(request: Request, env: PhaseTwoDevEnv, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url)
+    if (url.pathname === '/api/phase3/agent-applications') {
+      const respond = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), {
+        status,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+        },
+      })
+      if (env.PHASE3_ENABLED !== 'true') return respond(404, { error: 'Not found' })
+      if (request.method !== 'POST') return respond(405, { error: 'Method not allowed' })
+      const userId = await authenticateImageHashRequest(request, env)
+      if (!userId) {
+        logWorkerEvent('warn', 'agent_application_submission_failed', { status: 401 })
+        return respond(401, { error: 'Unauthorized' })
+      }
+      const limit = await checkRateLimit(env, `user:${userId}:agent-application:v1`, 2, 24 * 60 * 60 * 1000)
+      if (!limit.allowed) {
+        logWorkerEvent('warn', 'agent_application_submission_failed', { status: 429 })
+        return rateLimitResponse(limit.resetAt)
+      }
+      return handleAgentApplicationSubmission(request, env, userId)
+    }
+
     if (url.pathname === '/api/phase2/property-image-duplicates') {
       const responseHeaders = {
         'Content-Type': 'application/json; charset=utf-8',

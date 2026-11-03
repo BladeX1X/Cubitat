@@ -4,6 +4,8 @@ const dispatchPendingAlertEmails = vi.fn().mockResolvedValue({ scanned: 0, sent:
 const dispatchPendingPushNotifications = vi.fn().mockResolvedValue({ scanned: 0, sent: 0, failed: 0 })
 const purgeApprovedKycEvidence = vi.fn().mockResolvedValue({ scanned: 0, deleted: 0, failed: 0 })
 const backfillPropertyImageDuplicates = vi.fn().mockResolvedValue(undefined)
+const authenticateImageHashRequest = vi.fn()
+const handleAgentApplicationSubmission = vi.fn().mockResolvedValue(new Response('{"id":"application-id","status":"submitted"}', { status: 201 }))
 
 vi.mock('./worker/alert-email-dispatcher', () => ({ dispatchPendingAlertEmails }))
 vi.mock('./worker/push-notifications', async () => {
@@ -12,11 +14,12 @@ vi.mock('./worker/push-notifications', async () => {
 })
 vi.mock('./worker/kyc-evidence-retention', () => ({ purgeApprovedKycEvidence }))
 vi.mock('./worker/image-phash', () => ({
-  authenticateImageHashRequest: vi.fn(),
+  authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
   loadOwnedPropertyForImageHashing: vi.fn(),
   refreshPropertyImageDuplicates: vi.fn(),
 }))
+vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission }))
 
 describe('Phase 2 DEV scheduled tasks', () => {
   beforeEach(() => {
@@ -71,5 +74,46 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(response.status).toBe(200)
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/rpc/get_verified_seller_ids')
+  })
+})
+
+describe('Phase 3 DEV agent application route', () => {
+  beforeEach(() => {
+    authenticateImageHashRequest.mockReset()
+    handleAgentApplicationSubmission.mockClear()
+  })
+
+  it('keeps the application endpoint closed unless explicitly enabled', async () => {
+    const { default: worker } = await import('./worker-phase2-dev')
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/phase3/agent-applications', { method: 'POST' }),
+      { PHASE3_ENABLED: 'false' } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(response.status).toBe(404)
+    expect(authenticateImageHashRequest).not.toHaveBeenCalled()
+  })
+
+  it('authenticates and rate limits an enabled application submission before handling the body', async () => {
+    authenticateImageHashRequest.mockResolvedValue('applicant-id')
+    const rateLimitFetch = vi.fn().mockResolvedValue(new Response('{"allowed":true,"remaining":1,"resetAt":0}'))
+    const { default: worker } = await import('./worker-phase2-dev')
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/phase3/agent-applications', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer user-jwt' },
+      }),
+      {
+        PHASE3_ENABLED: 'true',
+        RATE_LIMITER: { idFromName: vi.fn(() => 'global'), get: vi.fn(() => ({ fetch: rateLimitFetch })) },
+      } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(response.status).toBe(201)
+    expect(authenticateImageHashRequest).toHaveBeenCalledOnce()
+    expect(handleAgentApplicationSubmission).toHaveBeenCalledOnce()
+    expect(rateLimitFetch).toHaveBeenCalledOnce()
   })
 })
