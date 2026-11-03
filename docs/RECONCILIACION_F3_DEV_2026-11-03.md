@@ -63,3 +63,17 @@ La rama candidata ahora incluye el perfil de compilación F3 productivo y códig
 ## Resultado de integración en `main` — 2026-11-03
 
 PR #186 se fusionó como `99e315369c3d1f69f58a699a9d1a635971bbb4ef`; `quality` y `database-security` PASS en el candidato. El replay fue de CI aislado y no verifica equivalencia íntegra del catálogo alojado. La lectura DEV sigue en 11 versiones locales sin registro: cinco F2 y seis F3. Los objetos F3 siguen ausentes; pHash está presente y con ACL AAL2 observadas. No se ejecutó `db push`, reparación del ledger, DDL hosted ni despliegue. La bandera F3 permanece apagada. El siguiente paso es revisar las cinco migraciones F2 una a una y preparar un plan explícito para solo F3 en DEV sin saltarse dependencias.
+
+## Detalle de las cinco versiones F2 locales — DEV solo lectura — 2026-11-03
+
+El ledger remoto no registra ninguna de las cinco versiones. Las consultas fueron exclusivamente a catálogos/ACL, sin filas de negocio.
+
+| Versión | Estado de objetos en DEV |
+|---|---|
+| `20261010120000` | Tabla de auditoría, columnas esperadas, política AAL2, vista, captura desde solicitudes y trigger inmutable presentes; `get_verified_seller_ids()` ausente. Efecto parcial por la función faltante. |
+| `20261010130000` | Tres tablas pHash y cinco RPC presentes; RLS activo en fingerprints/flags. Las RPC de lectura deniegan anon y aplican AAL2 dentro de la función. |
+| `20261012170000` | Función `get_verified_seller_ids()` ausente; la extensión de insignia para admins no está presente. |
+| `20261013110000` | RPC de cobertura presente con AAL2 y filtro de imágenes propias del bucket privado; anon sin EXECUTE, authenticated/service_role con EXECUTE. |
+| `20261013180000` | Tabla de override MFA y función de vencimiento ausentes en DEV. No aplicar para reconciliar el ledger: crea una excepción temporal de acceso. Producción no fue consultada. |
+
+Interpretación: el esquema F2 está mezclado: objetos de auditoría y pHash instalados sin que sus versiones estén registradas; la función de insignia falta; MFA no existe en DEV. No ejecutar `db push` global ni `migration repair`. Requiere comparar definiciones y preparar cambios DEV puntuales, separados de las seis F3 pendientes.

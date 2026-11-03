@@ -4081,3 +4081,15 @@ La consulta actual a DEV encontró 11 versiones solo locales (5 de F2 y las 6 ca
 - El merge integra código y fuentes, pero no activa el Worker ni aplica migraciones hosted. `PHASE3_ENABLED=false`; producción/Supabase permanecieron intactos.
 - Reconciliación DEV en lectura: 11 versiones locales sin registro remoto (5 F2 y 6 F3). Objetos pHash están presentes con RLS y grants revisados; `get_verified_seller_ids()` y el override MFA temporal no existen. Esquema de solicitudes/outbox/cupos/atribución F3 ausente.
 - Siguiente paso: documentar/cotejar las cinco fuentes F2 locales sin aplicar, y definir una ejecución controlada en DEV para las seis F3, con fixtures QA y verificación posterior. No usar `db push` global ni `migration repair`.
+
+### F2 local-only migrations — read-only DEV object inventory — 2026-11-03
+
+A catalog-only query checked the five older local-only migrations; remote ledger rows remain zero. No table data was queried or changed.
+
+- `20261010120000`: `property_verification_audit`, expected columns, AAL2 read policy, audit view, capture trigger on `property_verification_requests`, and immutability trigger exist. `get_verified_seller_ids()` is absent, so the migration's full effect is not represented.
+- `20261010130000`: all three pHash tables and five RPCs exist; the two moderation read RPCs deny `anon`, require AAL2 internally, and have RLS enabled on fingerprint/duplicate tables. The catalog state is present despite missing history.
+- `20261012170000`: `get_verified_seller_ids()` remains absent; its admin-badge extension is not present in DEV.
+- `20261013110000`: `get_admin_property_image_hash_status(uuid[])` exists; its DEV definition enforces AAL2 and compares only eligible private-bucket WebP paths. `anon` is denied; `authenticated` and `service_role` can execute.
+- `20261013180000`: temporary MFA override table/function are absent in DEV. Do not apply it as a cleanup step; it creates a timed access exception.
+
+No migration was applied or repaired. Production was not queried. Next: compare the missing badge function against the intended migration and dependent UI, then decide a narrowly scoped DEV change separately from F3. Keep the five F2 ledger entries distinct from the six unapplied F3 migrations.

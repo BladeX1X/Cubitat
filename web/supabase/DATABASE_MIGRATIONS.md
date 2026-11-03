@@ -885,3 +885,7 @@ La lectura más reciente encontró 11 versiones locales sin marca remota y 58 ve
 ### Integración del candidato F3 en main — 2026-11-03
 
 PR #186 fusionada como `99e315369c3d1f69f58a699a9d1a635971bbb4ef`. Los contratos SQL y replay completo de CI pasan en entorno aislado. Esto valida la cadena versionada, no aplica ni reconcilia cambios en DEV/producción. El Worker conserva `PHASE3_ENABLED=false`. Ver `docs/RECONCILIACION_F3_DEV_2026-11-03.md`; no ejecutar `db push` global ni `migration repair` hasta cerrar dependencias.
+
+### Inventario F2 DEV sin registrar — lectura 2026-11-03
+
+Los cinco archivos F2 locales y sus estados de catálogo/ACL están detallados en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`. Dos cambios pHash están funcionalmente presentes sin fila de ledger; la tabla de auditoría también está presente pero falta `get_verified_seller_ids()`; el bypass temporal MFA no existe en DEV. No aplicar ni reparar versiones para cuadrar el listado. Producción no fue consultada.
