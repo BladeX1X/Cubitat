@@ -4093,3 +4093,10 @@ A catalog-only query checked the five older local-only migrations; remote ledger
 - `20261013180000`: temporary MFA override table/function are absent in DEV. Do not apply it as a cleanup step; it creates a timed access exception.
 
 No migration was applied or repaired. Production was not queried. Next: compare the missing badge function against the intended migration and dependent UI, then decide a narrowly scoped DEV change separately from F3. Keep the five F2 ledger entries distinct from the six unapplied F3 migrations.
+
+## Estado vigente F3 DEV — 2026-11-03
+
+- Desde `origin/main` `0d20e81` se aplicaron a DEV únicamente las seis migraciones F3 `20261103120000`–`20261103170000`, tras un dry-run de un workdir temporal que excluyó las cinco F2 pendientes y conservó la migración remota DEV-only `20261101185000` para reconciliar el historial. El historial confirmó las seis. Las cinco F2 siguen pendientes.
+- Worker DEV desplegado: `cubitat1-phase2-dev`, versión `26fa86b6-9b91-4c96-98f1-c39aedaf68de`; `PHASE3_ENABLED=true` se pasó como override solo a esa publicación; `wrangler.phase2-dev.jsonc` sigue con `false`. Se añadió `AGENT_APPLICATION_EMAIL_TO` como secreto de DEV con el correo provisional indicado; `RESEND_API_KEY` ya constaba como secreto, sin leer su valor.
+- Smoke HTTP seguro: endpoint de intake devuelve 405 a GET; endpoint privado de documentos devuelve 401 sin sesión. Gates local lint/build/suite y perfil F3 CI: PASS (181 archivos, 814 PASS, 1 omitida).
+- QA positivo sigue pendiente: la pestaña disponible no conserva sesión autenticada y Moderación requiere AAL2. No se creó solicitud ni se subieron documentos/envió correo. Producción intacta. No abrir uso público de F3 hasta completar QA autenticado; suscripciones/ledger de comisiones y atribución al registro continúan incompletos.
