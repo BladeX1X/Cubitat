@@ -56,6 +56,7 @@ const MyPropertiesPage = lazy(() =>
 )
 
 const PHASE_TWO_LAZY_UI_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
+const PHASE_THREE_UI_ENABLED = import.meta.env.VITE_PHASE3_UI_ENABLED === 'true'
 
 const AgentProfilePage = PHASE_TWO_LAZY_UI_ENABLED
   ? lazy(() =>
@@ -65,6 +66,11 @@ const AgentProfilePage = PHASE_TWO_LAZY_UI_ENABLED
 const AgentDashboardPage = PHASE_TWO_LAZY_UI_ENABLED
   ? lazy(() =>
       import('../pages/agents/AgentDashboardPage').then((module) => ({ default: module.AgentDashboardPage })),
+    )
+  : null
+const AgentApplicationPage = PHASE_THREE_UI_ENABLED
+  ? lazy(() =>
+      import('../pages/agents/AgentApplicationPage').then((module) => ({ default: module.AgentApplicationPage })),
     )
   : null
 const FavoritesPage = lazy(() =>
@@ -117,13 +123,16 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard' | 'agent-application'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
     return 'home'
   }
   const path = window.location.pathname
+  if (PHASE_THREE_UI_ENABLED && path === '/postular-agente') {
+    return 'agent-application'
+  }
   if (PHASE_TWO_ENABLED && path.startsWith('/panel-agente')) {
     return 'agent-dashboard'
   }
@@ -332,7 +341,7 @@ export function CubitatApp() {
 
   // Guard protected routes from unauthenticated direct access
   useEffect(() => {
-    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard']
+    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard', ...(PHASE_THREE_UI_ENABLED ? ['agent-application' as const] : [])]
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
       setPendingAuthPath(window.location.pathname + window.location.search + window.location.hash)
       openLogin()
@@ -737,6 +746,20 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
+  function navigateAgentApplication() {
+    if (!PHASE_THREE_UI_ENABLED) return
+    if (!user) {
+      setPendingAuthPath('/postular-agente')
+      openLogin()
+      return
+    }
+    window.history.pushState(null, '', '/postular-agente')
+    setPageMode('agent-application')
+    setSeoResultsRoute(null)
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
   async function handleSignOut() {
     try {
       await disablePushNotifications()
@@ -952,6 +975,7 @@ export function CubitatApp() {
           navigateModerar={navigateModerar}
           navigatePublish={navigatePublish}
           navigateResults={navigateResults}
+          navigateAgentApplication={PHASE_THREE_UI_ENABLED ? navigateAgentApplication : undefined}
           openLogin={openLogin}
           handleOperationNavigation={handleOperationNavigation}
           onSignOut={handleSignOut}
@@ -1100,6 +1124,10 @@ export function CubitatApp() {
             onEditProperty={navigateEditProperty}
             onSelectProperty={handleSelectProperty}
           />
+        )}
+
+        {PHASE_THREE_UI_ENABLED && AgentApplicationPage && pageMode === 'agent-application' && user && (
+          <AgentApplicationPage user={user} onBack={navigateHome} />
         )}
 
         {pageMode === 'favorites' && (

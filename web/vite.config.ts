@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => {
   delete process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
   const env = loadEnv(mode, __dirname, '')
   const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
+  const phase3UiEnabled = phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true'
   const phase2UiEnabled = phase2DevBuild || mode === 'phase2-production'
   const imageDuplicateModerationEnabled = phase2UiEnabled
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
@@ -77,6 +78,7 @@ export default defineConfig(({ mode }) => {
   return {
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE3_UI_ENABLED': JSON.stringify(phase3UiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED': JSON.stringify(propertyVerificationUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED': JSON.stringify(imageDuplicateModerationEnabled ? 'true' : 'false'),

@@ -15,10 +15,13 @@ tablas privadas de solicitudes/eventos, el bucket privado, lectura de estado por
 propietario y lectura administrativa AAL2; el RPC impone una solicitud abierta
 por cuenta y un límite diario para evitar bypass directo.
 
-Este bloque sigue parcial: la bandera está apagada; la migración solo existe en
-el candidato y no se aplicó; falta validar el SQL en un scratch limpio, interfaz
-de postulación, notificación con enlaces firmados, revisión/decisión AAL2,
-asignación transaccional de cuatro agentes por provincia y eliminación de
-documentos 30 días después de la decisión. Las pruebas Worker actuales cubren
-11 escenarios; `supabase/tests/agent_application_intake_local.sql` valida grants,
-RLS y privacidad del bucket cuando se ejecute tras aplicar la migración en scratch.
+Este bloque sigue parcial: la bandera está apagada y la migración solo existe en
+el candidato. La migración y `supabase/tests/agent_application_intake_local.sql`
+se validaron en un scratch aislado (6/6 checks pgTAP); no se aplicaron a DEV ni
+producción. Faltan notificación con enlaces firmados,
+revisión/decisión AAL2, asignación transaccional de cuatro agentes por provincia
+y eliminación de documentos 30 días después de la decisión. Las pruebas Worker
+actuales cubren 11 escenarios. El formulario cliente está documentado en
+`src/pages/agents/AgentApplicationPage.md` y solo se incluye con
+`VITE_PHASE3_UI_ENABLED=true` en build `phase2-dev`; correo y purga siguen
+pendientes.

@@ -17,13 +17,16 @@
 
 ## Estado de implementación — 2026-11-03
 
-- El candidato incluye una ruta DEV apagada por defecto para enviar CV y título,
+- El candidato incluye una ruta DEV apagada por defecto y un formulario solo
+  visible en el perfil `phase2-dev` con bandera explícita para enviar CV y título,
   validación de firmas PDF/JPG/PNG y límite de 10 MiB, bucket privado, persistencia
   reservada a service role, RLS de estado propio/AAL2 y límite de solicitudes.
 - El endpoint cuenta con pruebas Worker de autenticación/rate limit, validación,
   carga privada y limpieza al fallar la persistencia.
-- La migración sigue sin validarse en scratch y no se aplicó. Faltan interfaz,
-  notificación con URL firmada, revisión/decisión AAL2, asignación de cupo
+- La migración y test pgTAP pasaron en un scratch temporal (6/6); no se aplicaron
+  a DEV ni producción. La interfaz protegida está implementada y señala que el
+  flujo sigue en pruebas. Faltan notificación con URL firmada, revisión/decisión
+  AAL2, asignación de cupo
   provincial transaccional y purga tras 30 días. El requisito de postulación
   permanece abierto.
 
