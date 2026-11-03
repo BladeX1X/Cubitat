@@ -4037,5 +4037,13 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 - Registro por correo captura `?ref=AG-XXXXXXXX`, el trigger de Auth resuelve la elegibilidad, fuerza `buyer` y escribe ledger privado e inmutable. Panel de agente verificado ofrece aprovisionamiento explícito y copia del enlace.
 - Solo se restaura `ensure_agent_referral_link()` para `authenticated`; la función de historial conserva rechazo de enlaces inactivos. Visitas, contactos atribuidos, OAuth y comisiones permanecen apagados.
 - Gates locales: lint PASS; 181 archivos, 810 pruebas PASS y 1 SKIP; build PASS (sitemap estático de 2 URLs por falta de config Supabase pública en este entorno). Pruebas focales tras UI: 23/23 PASS.
-- Migración `20261103170000_agent_signup_referral_attribution.sql` y contrato pgTAP 11 casos están en CI; no se ejecutó contra Supabase persistente, DEV ni producción. Esperar `database-security`/quality verde antes de actualizar PR.
-- Próximo paso: push del candidato y validar CI. No fusionar/aplicar schema hasta reconciliar el ledger hosted; para release, comprobar configuración de build Phase 3 y QA autenticado DEV.
+- Migración `20261103170000_agent_signup_referral_attribution.sql` y contrato pgTAP 11 casos pasaron `database-security`/quality en CI. No se ejecutó contra Supabase persistente, DEV ni producción.
+- Próximo paso: reconciliar el ledger hosted antes de aplicar esquema; para release, comprobar build Phase 3 habilitado y QA autenticado DEV.
+
+## F3 — CI y lectura de DEV actualizados (2026-11-03)
+
+- Commit `b34a97e` ya está en `feature/phase3-production-main`, PR borrador #186. `quality` y `database-security` terminaron PASS; el contrato de atribución por registro se ejecutó en la base aislada de CI.
+- Gates locales: lint PASS; 181 archivos, 810 pruebas PASS/1 SKIP; build estándar PASS con sitemap estático fallback. No es el bundle de release Phase 3.
+- `supabase migration list --linked` confirma que el ledger vinculado a DEV sigue híbrido: seis migraciones F3 candidatas, de `20261103120000` a `20261103170000`, no están registradas remotamente, además de otras versiones remotas sin fuente local. No ejecutar `db push` ni `migration repair` hasta reconciliar.
+- Consulta SQL de solo lectura confirmó en DEV: `agent_referral_links` existe, `agent_signup_attributions` no existe y el permiso `EXECUTE` a `ensure_agent_referral_link()` está revocado para `authenticated` y `anon`. No se aplicó nada.
+- PR actualizado con ese estado. Siguiente paso técnico: reconciliar migraciones y planear el build/QA de release F3; mantener DEV/prod sin cambios hasta tener una ruta de esquema segura.
