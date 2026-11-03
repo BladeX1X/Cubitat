@@ -889,3 +889,9 @@ PR #186 fusionada como `99e315369c3d1f69f58a699a9d1a635971bbb4ef`. Los contratos
 ### Inventario F2 DEV sin registrar — lectura 2026-11-03
 
 Los cinco archivos F2 locales y sus estados de catálogo/ACL están detallados en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`. Dos cambios pHash están funcionalmente presentes sin fila de ledger; la tabla de auditoría también está presente pero falta `get_verified_seller_ids()`; el bypass temporal MFA no existe en DEV. No aplicar ni reparar versiones para cuadrar el listado. Producción no fue consultada.
+
+### Rectificación operativa F3 en DEV — 2026-11-03
+
+El estado anterior describe la revisión previa al despliegue controlado y queda supersedido para DEV. Se aplicaron las seis migraciones F3 `20261103120000`–`20261103170000` al proyecto DEV `bknwerqbbysveehcdmzr`, mediante un directorio temporal de migraciones que mostró solo esas seis en dry-run. La fuente remota DEV-only `20261101185000` se incluyó en dicho directorio para satisfacer la reconciliación del ledger. La lista remota confirmó después las seis versiones registradas. Las cinco migraciones F2 que continúan solo locales fueron excluidas y siguen sin aplicar; no se usó `migration repair`. Producción no fue objetivo del comando.
+
+El catálogo remoto confirmó las tablas de postulaciones, eventos, outbox y cupos, el bucket privado, y las RPC de intake, revisión, entrega y purga. Se desplegó a continuación Worker DEV `26fa86b6-9b91-4c96-98f1-c39aedaf68de` con la bandera de runtime habilitada por override de CLI; la configuración versionada conserva `PHASE3_ENABLED=false`. Sin sesión QA autenticada no se completó una postulación ni el ciclo de revisión. No se cargaron archivos ni se enviaron correos. Producción permanece intacta.
