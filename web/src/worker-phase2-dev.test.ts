@@ -6,6 +6,7 @@ const purgeApprovedKycEvidence = vi.fn().mockResolvedValue({ scanned: 0, deleted
 const backfillPropertyImageDuplicates = vi.fn().mockResolvedValue(undefined)
 const authenticateImageHashRequest = vi.fn()
 const handleAgentApplicationSubmission = vi.fn().mockResolvedValue(new Response('{"id":"application-id","status":"submitted"}', { status: 201 }))
+const handleAgentApplicationDocumentLinks = vi.fn().mockResolvedValue(new Response('{"cv_url":"signed"}', { status: 200 }))
 
 vi.mock('./worker/alert-email-dispatcher', () => ({ dispatchPendingAlertEmails }))
 vi.mock('./worker/push-notifications', async () => {
@@ -20,6 +21,7 @@ vi.mock('./worker/image-phash', () => ({
   refreshPropertyImageDuplicates: vi.fn(),
 }))
 vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission }))
+vi.mock('./worker/agent-application-documents', () => ({ handleAgentApplicationDocumentLinks }))
 
 describe('Phase 2 DEV scheduled tasks', () => {
   beforeEach(() => {
@@ -81,6 +83,7 @@ describe('Phase 3 DEV agent application route', () => {
   beforeEach(() => {
     authenticateImageHashRequest.mockReset()
     handleAgentApplicationSubmission.mockClear()
+    handleAgentApplicationDocumentLinks.mockClear()
   })
 
   it('keeps the application endpoint closed unless explicitly enabled', async () => {
@@ -115,5 +118,26 @@ describe('Phase 3 DEV agent application route', () => {
     expect(authenticateImageHashRequest).toHaveBeenCalledOnce()
     expect(handleAgentApplicationSubmission).toHaveBeenCalledOnce()
     expect(rateLimitFetch).toHaveBeenCalledOnce()
+  })
+
+  it('authenticates and rate limits document-link requests before passing them to the AAL2 verifier', async () => {
+    authenticateImageHashRequest.mockResolvedValue('admin-id')
+    const rateLimitFetch = vi.fn().mockResolvedValue(new Response('{"allowed":true,"remaining":9,"resetAt":0}'))
+    const { default: worker } = await import('./worker-phase2-dev')
+    const response = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/phase3/agent-applications/45c8e993-b64a-4d1c-9e58-20ad1a25eb6b/documents', {
+        headers: { Authorization: 'Bearer admin-jwt' },
+      }),
+      {
+        PHASE3_ENABLED: 'true',
+        RATE_LIMITER: { idFromName: vi.fn(() => 'global'), get: vi.fn(() => ({ fetch: rateLimitFetch })) },
+      } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(response.status).toBe(200)
+    expect(authenticateImageHashRequest).toHaveBeenCalledOnce()
+    expect(rateLimitFetch).toHaveBeenCalledOnce()
+    expect(handleAgentApplicationDocumentLinks).toHaveBeenCalledOnce()
   })
 })

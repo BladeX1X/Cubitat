@@ -25,3 +25,13 @@ actuales cubren 11 escenarios. El formulario cliente está documentado en
 `src/pages/agents/AgentApplicationPage.md` y solo se incluye con
 `VITE_PHASE3_UI_ENABLED=true` en build `phase2-dev`; correo y purga siguen
 pendientes.
+
+## Acceso administrativo temporal a documentos
+
+`GET /api/phase3/agent-applications/:id/documents` solo se monta en DEV y con
+`PHASE3_ENABLED=true`. El Worker valida la sesión, limita frecuencia y consulta
+`is_admin_aal2()` con el JWT del usuario antes de leer rutas usando service role.
+Luego pide a Storage URLs firmadas de dos minutos para el bucket esperado,
+verifica origen y bucket de ambas y devuelve `Cache-Control: no-store`. Nunca
+registra las rutas ni las URLs. El cliente todavía no tiene la pestaña de
+moderación que consume esta ruta; el correo y la decisión AAL2 aún no existen.

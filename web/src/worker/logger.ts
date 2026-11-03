@@ -26,6 +26,7 @@ const EVENTS = new Set([
   'agent_application_submission_failed',
   'agent_application_upload_cleanup_failed',
   'agent_application_submitted',
+  'agent_application_document_link_failed',
 ] as const)
 
 const ACTIONS = new Set(['login', 'token', 'signup', 'recover', 'resend', 'otp'] as const)
@@ -69,6 +70,7 @@ export type WorkerLogEvent =
   | 'agent_application_submission_failed'
   | 'agent_application_upload_cleanup_failed'
   | 'agent_application_submitted'
+  | 'agent_application_document_link_failed'
 
 export interface WorkerLogFields {
   action?: 'login' | 'token' | 'signup' | 'recover' | 'resend' | 'otp'

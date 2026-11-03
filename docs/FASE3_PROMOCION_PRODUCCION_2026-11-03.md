@@ -85,3 +85,10 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - **Validación de scratch (2026-11-03):** la migración se aplicó correctamente en un stack Supabase scratch temporal, con prerequisitos mínimos aislados; el test pgTAP pasó **6/6** mediante `supabase test db --local`. Se detuvo el stack y se retiró su red Docker dedicada; otros contenedores quedaron intactos. No se aplicó a Supabase local persistente, DEV ni producción.
 - **Interfaz candidata (2026-11-03):** `/postular-agente` y enlace en Header protegidos por sesión; el chunk requiere `VITE_PHASE3_UI_ENABLED=true` en build `phase2-dev`. El aviso explica que correo y purga no están activos; el formulario no se habilita en producción.
 - A permanece parcial: faltan notificación con enlaces firmados, revisión/decisión AAL2, cupo provincial concurrente y purga a 30 días. No activar la bandera del Worker ni desplegar este slice todavía.
+
+## Enlaces privados para revisar postulaciones — 2026-11-03
+
+- Se añadió al Worker DEV `GET /api/phase3/agent-applications/:id/documents`, detrás de `PHASE3_ENABLED=true`, sesión autenticada y límite de 10 solicitudes por usuario cada 10 minutos.
+- Antes de consultar documentos, el endpoint pregunta a Supabase `is_admin_aal2()` usando el JWT del administrador. Solo después consulta las rutas privadas y pide URLs firmadas de 120 segundos; valida que ambas URLs permanezcan en el origen y bucket esperados, y devuelve `Cache-Control: no-store`.
+- Pruebas dirigidas de Worker y router: 9/9 PASS. `npm run lint`, suite completa (177 archivos; 785 PASS, 1 omitida), `npm run build`, `build:phase2-dev` con `VITE_PHASE3_UI_ENABLED=true` y Wrangler DEV dry-run PASS. El build confirma que producción sigue excluyendo los módulos exclusivos de Fase 2/DEV; dry-run conserva `PHASE3_ENABLED=false`.
+- Esto no activa el flujo: falta una pestaña de moderación que consuma el endpoint, las decisiones AAL2 auditadas, asignación transaccional del cupo provincial, correo de aviso y purga a 30 días. Migraciones y banderas remotas permanecen intactas; no hubo despliegue.

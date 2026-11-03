@@ -12,6 +12,7 @@ import { dispatchPendingPushNotifications } from './worker/push-notifications';
 import { logWorkerEvent } from './worker/logger';
 import { readBoundedJsonObject } from './worker/boundedJson.js';
 import { handleAgentApplicationSubmission } from './worker/agent-applications';
+import { handleAgentApplicationDocumentLinks } from './worker/agent-application-documents';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -60,6 +61,26 @@ export function runPhase2ScheduledTasks(
 export default {
   async fetch(request: Request, env: PhaseTwoDevEnv, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url)
+    const agentApplicationDocumentsMatch = url.pathname.match(/^\/api\/phase3\/agent-applications\/([^/]+)\/documents$/)
+    if (agentApplicationDocumentsMatch) {
+      const respond = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), {
+        status,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+        },
+      })
+      if (env.PHASE3_ENABLED !== 'true') return respond(404, { error: 'Not found' })
+      if (request.method !== 'GET') return respond(405, { error: 'Method not allowed' })
+      const userId = await authenticateImageHashRequest(request, env)
+      if (!userId) return respond(401, { error: 'Unauthorized' })
+      const limit = await checkRateLimit(env, `user:${userId}:agent-application-documents:v1`, 10, 10 * 60 * 1000)
+      if (!limit.allowed) return rateLimitResponse(limit.resetAt)
+      return handleAgentApplicationDocumentLinks(request, agentApplicationDocumentsMatch[1]!, env)
+    }
+
     if (url.pathname === '/api/phase3/agent-applications') {
       const respond = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), {
         status,
