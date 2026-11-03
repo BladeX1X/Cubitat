@@ -24,8 +24,8 @@ plaza se asigna en transacción serializada por provincia, exige KYC verificado 
 deja en espera solicitudes cuando ya hay cuatro plazas ocupadas. Las decisiones
 finales programan eliminación de documentos a los 30 días; el cron de DEV
 reclama vencidos, limita los intentos a tres y limpia las rutas al confirmar el
-borrado del bucket privado. La purga está implementada en el candidato, pendiente
-de CI. El outbox está validado en CI con enlaces privados cortos, sin adjuntos;
+borrado del bucket privado. La migración y el contrato pgTAP de purga pasan CI
+aislado (10/10). El outbox está validado en CI con enlaces privados cortos, sin adjuntos;
 el envío sigue apagado. Los perfiles agent preexistentes deben
 reconciliarse con una provincia antes de validar cupos en un entorno hosted.
 El formulario cliente está documentado en
