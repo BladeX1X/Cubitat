@@ -15,7 +15,7 @@ The server remains responsible for eligibility, uniqueness, and persistence.
   agent dashboard queries.
 - The dashboard may compose this contract but must not call its RPC directly.
 
-While Fase 3 referral and commission rules are paused, database privileges revoke direct execution of link, visit-attribution, visit-count, and commission RPCs from API roles. Keep this repository as a prototype only; restore access with a reviewed migration after business approval.
+New-account signup attribution is approved. Database privileges permit only authenticated users to call the reviewed link provisioning RPC; it checks the caller's agent/admin role and verified KYC, and refuses an existing paused link. Visit-attribution, visit-count, contact-attribution, and commission RPCs remain revoked. The browser sends the public code only during email signup; Auth resolves it server-side.
 
 The `ensure_agent_referral_link()` migration also rejects an existing
 `active=false` link and never reactivates it with `ON CONFLICT`. Standard and

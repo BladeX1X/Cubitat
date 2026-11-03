@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { clearReferralId, getReferralId, isValidAgentReferralCode, trackReferral } from './tracker'
+import {
+  clearReferralId,
+  clearSignupReferralCode,
+  getReferralId,
+  getSignupReferralCode,
+  isValidAgentReferralCode,
+  trackReferral,
+} from './tracker'
 
 describe('agent referral tracker', () => {
   afterEach(() => {
@@ -13,22 +20,26 @@ describe('agent referral tracker', () => {
     expect(isValidAgentReferralCode('AG-12AB34C<script>')).toBe(false)
   })
 
-  it('strips a referral URL without storing or returning attribution while paused', () => {
+  it('stores a signup referral code, strips it from the URL, and preserves unrelated navigation state', () => {
     window.history.replaceState({}, '', '/propiedad/casa?ref=ag-12ab34cd&source=whatsapp#contactar-anunciante')
 
-    expect(trackReferral()).toBeNull()
+    expect(trackReferral()).toBe('AG-12AB34CD')
     expect(getReferralId()).toBeNull()
+    expect(getSignupReferralCode()).toBe('AG-12AB34CD')
     expect(sessionStorage.getItem('cubitat_referral_id')).toBeNull()
     expect(window.location.pathname + window.location.search + window.location.hash)
       .toBe('/propiedad/casa?source=whatsapp#contactar-anunciante')
   })
 
-  it('clears a legacy attribution when an invalid referral code arrives', () => {
+  it('clears signup attribution when an invalid referral code arrives', () => {
     sessionStorage.setItem('cubitat_referral_id', 'AG-12AB34CD')
+    sessionStorage.setItem('cubitat_signup_referral_code', 'AG-12AB34CD')
     window.history.replaceState({}, '', '/?ref=not-a-code')
 
     expect(trackReferral()).toBeNull()
+    expect(getSignupReferralCode()).toBeNull()
     expect(sessionStorage.getItem('cubitat_referral_id')).toBeNull()
+    expect(sessionStorage.getItem('cubitat_signup_referral_code')).toBeNull()
     expect(window.location.search).toBe('')
   })
 
@@ -48,5 +59,16 @@ describe('agent referral tracker', () => {
     expect(getReferralId()).toBeNull()
     expect(sessionStorage.getItem('cubitat_referral_id')).toBeNull()
     clearReferralId()
+  })
+
+  it('validates signup codes read from session storage and clears them after signup', () => {
+    sessionStorage.setItem('cubitat_signup_referral_code', 'bad-code')
+    expect(getSignupReferralCode()).toBeNull()
+    expect(sessionStorage.getItem('cubitat_signup_referral_code')).toBeNull()
+
+    sessionStorage.setItem('cubitat_signup_referral_code', 'ag-12ab34cd')
+    expect(getSignupReferralCode()).toBe('AG-12AB34CD')
+    clearSignupReferralCode()
+    expect(getSignupReferralCode()).toBeNull()
   })
 })

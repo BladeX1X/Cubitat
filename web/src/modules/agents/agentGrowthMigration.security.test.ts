@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import migrationSql from '../../../supabase/migrations/20261013130000_phase3_agent_growth.sql?raw'
 import pauseSql from '../../../supabase/migrations/20261025020000_pause_unvalidated_agent_growth_rpcs.sql?raw'
 import devPauseSql from '../../../supabase/dev-migrations/20261025020000_pause_unvalidated_agent_growth_rpcs.sql?raw'
+import signupAttributionSql from '../../../supabase/migrations/20261103170000_agent_signup_referral_attribution.sql?raw'
 
 describe('Phase 3 agent growth migration security contract', () => {
   it('keeps prospect, event, and commission data private to the owner or AAL2 admin', () => {
@@ -47,5 +48,11 @@ describe('Phase 3 agent growth migration security contract', () => {
     }
     expect(devPauseSql).toMatch(/REVOKE ALL ON FUNCTION public\.record_agent_referral_visit\(text, uuid\)[\s\S]*FROM PUBLIC, anon, authenticated, service_role/i)
     expect(devPauseSql).toMatch(/REVOKE ALL ON FUNCTION public\.get_agent_referral_visit_count\(\)[\s\S]*FROM PUBLIC, anon, authenticated, service_role/i)
+  })
+
+  it('re-enables only verified-account referral link provisioning for signup attribution', () => {
+    expect(signupAttributionSql).toContain('GRANT EXECUTE ON FUNCTION public.ensure_agent_referral_link() TO authenticated')
+    expect(signupAttributionSql).toMatch(/agent\.verification_status = 'verified'/i)
+    expect(signupAttributionSql).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.(record_agent_referral_visit|get_agent_referral_visit_count|submit_public_contact_trusted|record_agent_commission)/i)
   })
 })

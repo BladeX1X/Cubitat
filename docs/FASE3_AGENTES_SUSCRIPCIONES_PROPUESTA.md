@@ -1,8 +1,8 @@
 # Fase 3 — políticas de agentes, suscripciones y comisiones
 
 Fecha: 2026-11-03  
-Estado: reglas provisionales actualizadas; promoción productiva en preparación, no desplegada.  
-Entorno: producción inspeccionada en modo solo lectura; no se cambiaron datos ni esquema.
+Estado: candidato de Fase 3 en preparación para `main`; no desplegado.
+Entorno: producción inspeccionada en modo solo lectura; no se cambiaron datos ni esquema. La atribución de altas está solo en la rama candidata y su migración no está aplicada.
 
 ## Avance del candidato — 2026-11-03
 
@@ -31,12 +31,9 @@ KYC y lock por provincia. La UI refleja aprobación o espera. La migración
 en el commit siguiente, con pgTAP aún pendiente de CI; el worker borra a los 30
 días, tiene tres intentos y retira los paths de la tabla.
 
-El candidato está verificado por lint, 11 pruebas focales, suite (179 archivos,
-792 aprobadas y 1 omitida), build productivo base, build DEV con UI F3 y
-Wrangler dry-run. La migración nueva **no** se validó en scratch: Docker rechazó
-crear una red por agotamiento de los rangos de subred. No limpiar ni detener
-contenedores ajenos para resolverlo. No se aplicaron migraciones a Supabase
-persistente, DEV o producción, y no se desplegó ni fusionó el PR.
+La migración `20261103170000_agent_signup_referral_attribution.sql` añade atribución transaccional al registro por correo. Auth resuelve el código en el servidor, ignora roles enviados por el navegador y guarda una fila inmutable por cuenta. El dashboard permite al agente verificado generar su enlace bajo demanda. OAuth, visitas, contactos atribuidos y comisiones siguen desactivados. La migración de atribución de altas espera CI SQL aislado.
+
+La versión actual pasó lint, la suite completa (181 archivos, 810 pruebas aprobadas y 1 omitida) y build estándar con guards. El build produjo sitemap estático de 2 URLs porque esta máquina no tenía configuración pública de Supabase; no cuenta como build final del release. Las pruebas focales del flujo de referido/panel pasaron 23/23. La migración nueva espera CI SQL aislado. No se aplicaron migraciones a Supabase persistente, DEV o producción, y no se desplegó ni fusionó el PR.
 
 ## Decisiones comunicadas por el dueño
 

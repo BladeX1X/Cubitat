@@ -2,17 +2,21 @@
 
 ## Responsabilidad
 
-Compone dentro del dashboard existente la gestión de oportunidades (D). Los
-bloques de enlaces/atribución (B/C) y comisiones (E) permanecen ocultos en la
-interfaz hasta que el dueño defina sus reglas. Este componente solo presenta
-datos y coordina acciones; no accede a tablas.
+Compone dentro del dashboard existente la gestión de oportunidades (D) y el
+enlace para atribuir nuevas cuentas por registro de correo. Las visitas,
+contactos atribuidos y comisiones permanecen ocultos y desactivados. Este
+componente coordina acciones mediante repositorios; no accede a tablas.
 
 ## Reglas de datos
 
-- El panel no expone enlaces, visitas, contactos atribuidos ni comisiones
-  mientras esos módulos esperan definición de negocio.
-- El compositor del dashboard no consulta repositorios de referidos ni
-  comisiones durante esa pausa; no aprovisiona códigos como efecto secundario.
+- El agente verificado puede crear/recuperar explícitamente un código único y
+  copiar el enlace de registro; cargar el panel no aprovisiona códigos.
+- El enlace atribuye solo cuentas nuevas creadas por registro de correo. No
+  registra visitas, contactos atribuidos ni comisiones.
+- La RPC de aprovisionamiento solo está disponible a `authenticated`; el servidor
+  comprueba rol/KYC y rechaza enlaces pausados sin reactivarlos.
+- El compositor no consulta repositorios de visitas, contactos atribuidos ni
+  comisiones durante esa pausa.
 - Las oportunidades se cargan desde su repositorio; el compositor no contiene
   consultas Supabase.
 - Los formularios requieren confirmación de que el prospecto autorizó guardar

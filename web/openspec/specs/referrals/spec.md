@@ -1,29 +1,29 @@
 # Proceso de Referidos y Crecimiento — Fase 3
 
-> **Estado de producto (2026-10-16):** la política de enlaces, visitas y
-> atribución está pendiente de acordarse con el dueño. El código disponible en
-> DEV es un prototipo y no implica aprobación de sus reglas. Revisar los
-> requisitos y escenarios de esta especificación antes de continuar el módulo.
+> **Decisión del dueño (2026-11-03):** se aprobó atribuir nuevas cuentas a un
+> agente cuando se crean mediante un código activo. La atribución de cuenta se
+> implementa por separado; visitas, contactos atribuidos y comisiones siguen
+> pausados mientras se cierran sus controles y reglas económicas.
 
-## Restricción temporal de DEV
+## Capacidades activas y pausadas
 
-Hasta documentar la decisión comercial, referidos queda suspendido también en
-los efectos secundarios, no solo en la interfaz:
+La decisión del dueño autoriza la atribución de altas nuevas. Los efectos
+secundarios que no forman parte de esa decisión permanecen suspendidos:
 
-- El dashboard MUST NOT crear/recuperar códigos, consultar visitas, ni leer
-  contactos atribuidos o comisiones.
-- La aplicación MUST quitar `ref` de la URL, conservar los demás parámetros y
-  hash, borrar cualquier código legado de `sessionStorage` y no atribuir nuevos
-  contactos desde el navegador.
+- El dashboard MUST NOT consultar visitas, contactos atribuidos ni comisiones.
+- La aplicación MUST quitar `ref` de la URL conservando los demás parámetros y
+  hash. Puede conservar temporalmente un código validado en `sessionStorage`
+  solo para el registro por correo; MUST NOT enviarlo en formularios de contacto.
+- La atribución de altas MUST resolverse dentro del trigger de Auth con el
+  código, el estado activo del enlace y la elegibilidad KYC/rol del agente.
+  Metadata del navegador nunca identifica directamente al agente.
 - El Worker DEV MUST ignorar `referral_code` en solicitudes de contacto cuando
   `AGENT_REFERRALS_ENABLED=false`.
 - Un enlace existente marcado `active=false` MUST permanecer pausado; una
   operación de creación/recuperación MUST NOT reactivarlo como efecto lateral.
+- Las visitas y comisiones MUST NOT activarse por crear una atribución de alta.
 - No se borran códigos, contactos atribuidos, visitas, tablas ni migraciones ya
-  existentes. La producción conserva su configuración actual.
-
-Estos límites temporales prevalecen sobre los escenarios de activación que
-siguen, hasta que el dueño apruebe y se documente una política.
+  existentes ni se atribuyen cuentas existentes retroactivamente.
 
 ## Purpose
 Define los enlaces atribuibles de agentes, la conversión de contactos y el
@@ -50,8 +50,42 @@ El sistema MUST asignar un identificador de referido único a cada usuario verif
 
 ---
 
-### Requirement: Atribución de visitas (Tracking)
-El sistema MUST detectar y persistir la procedencia de una visita cuando se utiliza un enlace con tag de referido.
+### Requirement: Atribución inmutable al crear una cuenta
+
+- GIVEN una cuenta nueva creada desde el enlace de un agente
+- WHEN Supabase Auth inserta la cuenta
+- THEN el servidor MUST resolver el código activo a un agente elegible `agent`
+  o `admin` con KYC `verified`
+- AND MUST guardar como máximo una atribución inmutable para esa cuenta
+- AND MUST ignorar códigos inexistentes, pausados o de perfiles no verificados
+- AND MUST asignar siempre el rol `buyer` desde el trigger, ignorando cualquier
+  rol enviado en `user_metadata`
+- AND MUST NOT aceptar un `agent_id` del navegador
+- AND anónimos y usuarios autenticados MUST NOT leer ni mutar filas de atribución
+- AND el código MUST NOT asociarse a contactos ni generar una comisión
+
+#### Scenario: Registro por correo desde un enlace activo
+- GIVEN una persona nueva que llegó con `?ref=AG-XXXXXXXX`
+- WHEN confirma el formulario de registro por correo
+- THEN la app MUST conservar el código solo hasta enviar el registro
+- AND el trigger MUST crear la atribución y guardar el rol de perfil como `buyer`
+- AND la app MUST limpiar el código local después de que Auth acepte la solicitud
+
+#### Scenario: Código inválido o no elegible
+- GIVEN un código inválido, pausado o de un perfil sin KYC verificado
+- WHEN se crea una cuenta
+- THEN la cuenta MUST crearse sin atribución y sin bloquear el registro
+
+#### Scenario: Registro por proveedor OAuth
+- GIVEN una persona nueva que inicia OAuth desde una URL referida
+- WHEN Auth crea la cuenta sin transmitir metadata de signup confiable
+- THEN el sistema MUST NOT atribuirla mediante parámetros de retorno manipulables
+- AND OAuth attribution permanece pendiente de un intento firmado de corta duración
+
+---
+
+### Requirement: Atribución de visitas (Tracking) — pausada
+Esta capacidad permanece desactivada hasta aprobar consentimiento, límites de frecuencia, retención y controles de abuso. La implementación de atribución de altas no la reactiva.
 
 #### Scenario: Visitante entra mediante un enlace de referido
 - GIVEN una URL con el parámetro `ref=AG-XXXXXXXX`
@@ -70,8 +104,8 @@ El sistema MUST detectar y persistir la procedencia de una visita cuando se util
 
 ---
 
-### Requirement: Conversión de leads atribuidos
-El sistema MUST asociar los contactos generados por un visitante al referidor correspondiente si existe una atribución activa.
+### Requirement: Conversión de leads atribuidos — pausada
+Esta capacidad permanece desactivada mientras los RPC de contactos atribuidos y las reglas de comisiones sigan suspendidos. La implementación de atribución de altas no la reactiva.
 
 #### Scenario: Visitante atribuido envía un formulario de contacto
 - GIVEN un visitante con un código activo de agente (`AG-XXXXXXXX`) en su sesión
@@ -91,7 +125,7 @@ El sistema MUST asociar los contactos generados por un visitante al referidor co
 
 ---
 
-### Requirement: Registro de oportunidades del agente
+### Requirement: Registro de oportunidades del agente — fuera del alcance de esta migración
 
 #### Scenario: Agente registra una propiedad captada o un cliente referido
 - GIVEN un agente autenticado con KYC vigente
@@ -100,7 +134,7 @@ El sistema MUST asociar los contactos generados por un visitante al referidor co
 - AND MUST restringir la lectura al agente responsable y administración
 - AND MUST registrar los cambios de estado en una bitácora append-only
 
-### Requirement: Libro de comisiones
+### Requirement: Libro de comisiones — fuera del alcance de esta migración
 
 #### Scenario: Administración registra una comisión
 - GIVEN una oportunidad convertida y un administrador en AAL2

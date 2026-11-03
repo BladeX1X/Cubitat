@@ -49,6 +49,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
     `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
     `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.
 12. Al abrir un push, consume el identificador interno después de autenticar la sesión, marca la notificación como leída y limpia ese parámetro de la URL.
+13. Al iniciar la app, captura `?ref=AG-XXXXXXXX` para el registro por correo, valida el formato, lo conserva temporalmente en `sessionStorage` y elimina solo `ref` de la URL. La atribución real la resuelve el trigger de Auth; la app no decide ni envía un ID de agente.
 
 ## Decisiones de Implementacion
 

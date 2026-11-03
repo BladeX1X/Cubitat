@@ -28,6 +28,7 @@ import {
   getPushNotificationId,
   markNotificationAsRead,
 } from '../modules/notifications/notificationRead'
+import { trackReferral } from '../modules/referrals/utils/tracker'
 
 const fetchVerifiedAgentIdsInPhaseTwoDev = import.meta.env.DEV
   ? () => import('../modules/agents/agentRepository').then((module) => module.fetchVerifiedAgentIds())
@@ -245,6 +246,10 @@ export function CubitatApp() {
   useEffect(() => {
      initAnalytics()
    }, [])
+
+  useEffect(() => {
+    trackReferral()
+  }, [])
 
   useEffect(() => {
     if (!user) return

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Plus, RefreshCw, Users } from 'lucide-react'
+import { Copy, Link2, Plus, RefreshCw, Users } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import { Textarea } from '../../../shared/ui/textarea'
@@ -11,6 +11,7 @@ import {
   type AgentLeadKind,
   type AgentLeadStatus,
 } from '../agentGrowthRepository'
+import { ensureAgentReferralCode, getAgentReferralLink } from '../referrals/agentReferralRepository'
 
 const STATUS_LABELS: Record<AgentLeadStatus, string> = {
   new: 'Nuevo',
@@ -43,6 +44,9 @@ export function AgentGrowthPanel() {
   const [leadStatusFilter, setLeadStatusFilter] = useState<'all' | AgentLeadStatus>('all')
   const [isOpportunityFormOpen, setIsOpportunityFormOpen] = useState(false)
   const [isOpportunityListOpen, setIsOpportunityListOpen] = useState(false)
+  const [referralLink, setReferralLink] = useState<string | null>(null)
+  const [referralBusy, setReferralBusy] = useState(false)
+  const [referralMessage, setReferralMessage] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -107,6 +111,33 @@ export function AgentGrowthPanel() {
     }
   }
 
+  async function handleCreateReferralLink() {
+    if (referralBusy) return
+    setReferralBusy(true)
+    setReferralMessage(null)
+    try {
+      const code = await ensureAgentReferralCode()
+      const link = getAgentReferralLink(code)
+      if (!link) throw new Error('invalid_referral_link')
+      setReferralLink(link)
+      setReferralMessage('Tu enlace está listo para compartir.')
+    } catch {
+      setReferralMessage('No se pudo crear el enlace. Verifica que tu cuenta siga verificada e inténtalo de nuevo.')
+    } finally {
+      setReferralBusy(false)
+    }
+  }
+
+  async function handleCopyReferralLink() {
+    if (!referralLink) return
+    try {
+      await navigator.clipboard.writeText(referralLink)
+      setReferralMessage('Enlace copiado. Las cuentas nuevas que se registren desde él quedarán atribuidas a ti.')
+    } catch {
+      setReferralMessage('No se pudo copiar automáticamente. Selecciona y copia el enlace mostrado.')
+    }
+  }
+
   return (
     <section aria-labelledby="agent-growth-title" className="mt-8 space-y-5">
       <header>
@@ -134,6 +165,24 @@ export function AgentGrowthPanel() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <article className="rounded-xl border border-neutral-200 bg-white p-4"><p className="text-xs font-semibold text-neutral-500">Oportunidades</p><p className="mt-1 text-2xl font-black text-neutral-900">{data.failedModules.includes('leads') ? '—' : data.leads.length}</p></article>
         </div>
+
+        <section aria-labelledby="agent-signup-link-title" className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <Link2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#035f53]" />
+            <div className="min-w-0 flex-1">
+              <h3 id="agent-signup-link-title" className="font-bold text-neutral-900">Invita personas a crear su cuenta</h3>
+              <p className="mt-1 text-sm text-neutral-700">El enlace atribuye a tu cuenta los nuevos registros por correo. No registra visitas ni contactos.</p>
+              {referralLink ? <label className="mt-3 block text-xs font-semibold text-neutral-700">Tu enlace de registro<input readOnly value={referralLink} onFocus={(event) => event.currentTarget.select()} className="mt-1 min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm font-normal" /></label> : null}
+              {referralMessage ? <p role="status" className="mt-2 text-sm text-neutral-700">{referralMessage}</p> : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" onClick={() => void handleCreateReferralLink()} disabled={referralBusy} className="min-h-11 bg-[#035f53] text-white">
+                  <Link2 className="mr-2 h-4 w-4" />{referralBusy ? 'Preparando…' : referralLink ? 'Actualizar enlace' : 'Crear mi enlace'}
+                </Button>
+                {referralLink ? <Button type="button" variant="outline" onClick={() => void handleCopyReferralLink()} className="min-h-11"><Copy className="mr-2 h-4 w-4" />Copiar enlace</Button> : null}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="rounded-xl border border-neutral-200 bg-white">
           <button type="button" aria-expanded={isOpportunityFormOpen} aria-controls="agent-opportunity-form" onClick={() => setIsOpportunityFormOpen((open) => !open)} className="flex min-h-14 w-full items-center gap-2 rounded-xl p-4 text-left font-bold text-neutral-900 sm:px-5">

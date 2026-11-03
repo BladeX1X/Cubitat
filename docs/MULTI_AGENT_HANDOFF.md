@@ -4031,3 +4031,11 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 - Se actualizó el secreto del Worker compartido turnstile-siteverify-cubitat mediante Wrangler, conservando el widget cubitat-turnstile que también usa producción.
 - Un envío QA autorizado desde la ficha de contacto de DEV fue aceptado por Siteverify (HTTP 200, outcome ok, sin códigos de error) y la interfaz confirmó “¡Mensaje enviado!”.
 - Alcance: valida el proveedor real para contacto en DEV. No se envió formulario a un anunciante en producción ni se repitió registro/login/recuperación contra Supabase Auth. No se hizo cambio de código ni despliegue de la aplicación.
+# Fase 3 — atribución segura de altas (2026-11-03)
+
+- Trabajo en `D:\cubitat-phase3-release`, `feature/phase3-production-main`, PR borrador #186.
+- Registro por correo captura `?ref=AG-XXXXXXXX`, el trigger de Auth resuelve la elegibilidad, fuerza `buyer` y escribe ledger privado e inmutable. Panel de agente verificado ofrece aprovisionamiento explícito y copia del enlace.
+- Solo se restaura `ensure_agent_referral_link()` para `authenticated`; la función de historial conserva rechazo de enlaces inactivos. Visitas, contactos atribuidos, OAuth y comisiones permanecen apagados.
+- Gates locales: lint PASS; 181 archivos, 810 pruebas PASS y 1 SKIP; build PASS (sitemap estático de 2 URLs por falta de config Supabase pública en este entorno). Pruebas focales tras UI: 23/23 PASS.
+- Migración `20261103170000_agent_signup_referral_attribution.sql` y contrato pgTAP 11 casos están en CI; no se ejecutó contra Supabase persistente, DEV ni producción. Esperar `database-security`/quality verde antes de actualizar PR.
+- Próximo paso: push del candidato y validar CI. No fusionar/aplicar schema hasta reconciliar el ledger hosted; para release, comprobar configuración de build Phase 3 y QA autenticado DEV.

@@ -2,11 +2,17 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentGrowthPanel } from './AgentGrowthPanel'
 import { createAgentLead, loadAgentGrowthDashboard, updateAgentLeadStatus } from '../agentGrowthRepository'
+import { ensureAgentReferralCode } from '../referrals/agentReferralRepository'
 
 vi.mock('../agentGrowthRepository', () => ({
   createAgentLead: vi.fn(),
   loadAgentGrowthDashboard: vi.fn(),
   updateAgentLeadStatus: vi.fn(),
+}))
+
+vi.mock('../referrals/agentReferralRepository', () => ({
+  ensureAgentReferralCode: vi.fn(),
+  getAgentReferralLink: (code: string) => `https://cubitat.example/?ref=${code}`,
 }))
 
 describe('AgentGrowthPanel', () => {
@@ -17,6 +23,7 @@ describe('AgentGrowthPanel', () => {
     })
     vi.mocked(createAgentLead).mockResolvedValue(undefined)
     vi.mocked(updateAgentLeadStatus).mockResolvedValue(undefined)
+    vi.mocked(ensureAgentReferralCode).mockResolvedValue('AG-12AB34CD')
   })
 
   it('shows opportunity management while referral and commission policy is pending', async () => {
@@ -29,11 +36,20 @@ describe('AgentGrowthPanel', () => {
     expect(screen.queryByLabelText('Nombre de contacto')).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('Registrar una oportunidad'))
     expect(await screen.findByLabelText('Nombre de contacto')).toBeInTheDocument()
-    expect(screen.queryByText('Tu enlace de referido')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Invita personas a crear su cuenta' })).toBeInTheDocument()
     expect(screen.queryByText('Visitas a tu enlace')).not.toBeInTheDocument()
     expect(screen.queryByText('Comisiones')).not.toBeInTheDocument()
     fireEvent.click(leadsToggle)
     expect(screen.getByText('Aún no registras oportunidades.')).toBeInTheDocument()
+  })
+
+  it('creates a referral link only after the agent explicitly asks for it', async () => {
+    render(<AgentGrowthPanel />)
+    expect(await screen.findByRole('heading', { name: 'Oportunidades' })).toBeInTheDocument()
+    expect(ensureAgentReferralCode).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Crear mi enlace' }))
+    expect(await screen.findByLabelText('Tu enlace de registro')).toHaveValue('https://cubitat.example/?ref=AG-12AB34CD')
+    expect(ensureAgentReferralCode).toHaveBeenCalledTimes(1)
   })
 
   it('requires confirmation of prospect permission before creating a property lead', async () => {
@@ -106,7 +122,7 @@ describe('AgentGrowthPanel', () => {
 
     expect(await screen.findByText(/No se pudo cargar: Oportunidades/)).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('código PGRST116')
-    expect(screen.queryByText('Tu enlace de referido')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Invita personas a crear su cuenta' })).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 })

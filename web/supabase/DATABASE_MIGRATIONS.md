@@ -849,3 +849,10 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - `20261103160000_agent_application_evidence_retention.sql` limita la purga a solicitudes aprobadas/rechazadas con el plazo vencido, reclama con `SKIP LOCKED`, limita intentos a tres y limpia las rutas privadas tras borrar los objetos.
 - Revoca a `authenticated` las columnas de rutas documentales; los enlaces pasan por el Worker AAL2 con expiración corta.
 - `supabase/tests/agent_application_evidence_retention_local.sql` está añadido al job `database-security`. No aplicar a Supabase persistente o hosted antes de conciliar los perfiles agent y revisar CI.
+
+## F3 candidata — atribución de altas nuevas — no aplicada
+
+- `20261103170000_agent_signup_referral_attribution.sql` crea un ledger privado e inmutable con una fila por cuenta nueva y reemplaza el trigger `handle_new_user()` para resolver en el servidor códigos activos de agentes/admin verificados.
+- Solo el registro por correo transmite el código de referido; la metadata de rol del cliente se ignora y el perfil nace como `buyer`. OAuth, visitas, contactos y comisiones permanecen fuera de este cambio y pausados.
+- `supabase/tests/agent_signup_referral_attribution_local.sql` verifica elegibilidad, seguridad del ledger, inmutabilidad y protección contra elevación de rol. El contrato se añade al job `database-security`.
+- Candidata de `feature/phase3-production-main`, PR borrador #186. No aplicar a Supabase local persistente, DEV ni producción; reconciliar primero historial de migraciones y obtener CI verde.
