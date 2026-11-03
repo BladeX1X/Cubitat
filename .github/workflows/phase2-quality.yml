@@ -89,3 +89,5 @@ jobs:
           supabase start -x studio,edge-runtime,logflare,vector
           supabase db reset --local --no-seed --yes
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/temporary_admin_mfa_override.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_intake_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_review_local.sql
