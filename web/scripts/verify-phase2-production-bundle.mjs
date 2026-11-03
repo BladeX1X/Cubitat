@@ -14,6 +14,8 @@ const forbiddenAssetNames = [
   /^AccountPhaseTwoSections-.*\.js$/,
   /^KycModerationTab-.*\.js$/,
   /^PropertyVerificationModerationTab-.*\.js$/,
+  /^AgentApplicationsModerationTab-.*\.js$/,
+  /^AgentApplicationPage-.*\.js$/,
 ]
 
 const leakedAssetNames = javascriptAssets.filter((name) =>
@@ -29,6 +31,10 @@ const forbiddenContentMarkers = [
   'get_property_trust_score',
   'property_verification_requests',
   'increment_contact_clicks',
+  'agent_application_documents',
+  'submit_agent_application_trusted',
+  'agent_applications',
+  '/api/phase3/agent-applications',
 ]
 
 const leakedContent = []
@@ -47,7 +53,7 @@ if (leakedAssetNames.length > 0 || leakedContent.length > 0) {
     ...leakedContent.map((entry) => `contenido exclusivo: ${entry}`),
   ]
   throw new Error(
-    `El build productivo incluye módulos exclusivos de Fase 2:\n- ${details.join('\n- ')}`,
+    `El build base de producción incluye módulos exclusivos de Fase 2/3:\n- ${details.join('\n- ')}`,
   )
 }
 
@@ -56,4 +62,4 @@ if (relatedApp?.url !== 'https://cubitathome.com/manifest.webmanifest' || relate
   throw new Error('El manifest productivo no apunta a la PWA productiva')
 }
 
-console.log('Verified: production bundle excludes exclusive Phase 2 modules')
+console.log('Verified: base production bundle excludes exclusive Phase 2/3 modules')

@@ -31,6 +31,7 @@ const PHASE_TWO_ADMIN_UI_ENABLED = PHASE_TWO_ENABLED || PROPERTY_VERIFICATION_AD
 const KYC_ADMIN_UI_ENABLED = import.meta.env.DEV
   || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
   || import.meta.env.VITE_KYC_UI_ENABLED === 'true'
+const PHASE3_APPLICATIONS_ADMIN_UI_ENABLED = import.meta.env.VITE_PHASE3_UI_ENABLED === 'true'
 
 const KycModerationTab = KYC_ADMIN_UI_ENABLED
   ? lazy(() =>
@@ -48,6 +49,12 @@ const PropertyVerificationModerationTab = PROPERTY_VERIFICATION_ADMIN_UI_ENABLED
     )
   : null
 
+const AgentApplicationsModerationTab = PHASE3_APPLICATIONS_ADMIN_UI_ENABLED
+  ? lazy(() => import('../../modules/admin/agent-applications/AgentApplicationsModerationTab').then((module) => ({
+      default: module.AgentApplicationsModerationTab,
+    })))
+  : null
+
 export function AdminPage({
   userRole,
   onNavigateHome,
@@ -63,6 +70,7 @@ export function AdminPage({
     ...BASE_SECTIONS.slice(0, 2),
     ...(hasKycAdmin ? [{ id: 'kyc' as const, label: 'KYC' }] : []),
     ...(hasPropertyVerificationAdmin ? [{ id: 'property-verification' as const, label: 'Documentos' }] : []),
+    ...(AgentApplicationsModerationTab ? [{ id: 'agent-applications' as const, label: 'Postulaciones' }] : []),
     ...BASE_SECTIONS.slice(2),
   ]
 
@@ -137,6 +145,11 @@ export function AdminPage({
         {hasPropertyVerificationAdmin && activeSection === 'property-verification' && (
           <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}>
             <PropertyVerificationModerationTab />
+          </Suspense>
+        )}
+        {AgentApplicationsModerationTab && activeSection === 'agent-applications' && (
+          <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}>
+            <AgentApplicationsModerationTab />
           </Suspense>
         )}
         {activeSection === 'metrics' && <MetricsTab />}

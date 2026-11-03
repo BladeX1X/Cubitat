@@ -92,3 +92,12 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - Antes de consultar documentos, el endpoint pregunta a Supabase `is_admin_aal2()` usando el JWT del administrador. Solo después consulta las rutas privadas y pide URLs firmadas de 120 segundos; valida que ambas URLs permanezcan en el origen y bucket esperados, y devuelve `Cache-Control: no-store`.
 - Pruebas dirigidas de Worker y router: 9/9 PASS. `npm run lint`, suite completa (177 archivos; 785 PASS, 1 omitida), `npm run build`, `build:phase2-dev` con `VITE_PHASE3_UI_ENABLED=true` y Wrangler DEV dry-run PASS. El build confirma que producción sigue excluyendo los módulos exclusivos de Fase 2/DEV; dry-run conserva `PHASE3_ENABLED=false`.
 - Esto no activa el flujo: falta una pestaña de moderación que consuma el endpoint, las decisiones AAL2 auditadas, asignación transaccional del cupo provincial, correo de aviso y purga a 30 días. Migraciones y banderas remotas permanecen intactas; no hubo despliegue.
+
+## Cola administrativa de postulaciones — 2026-11-03
+
+- Se agregó `Postulaciones` al panel admin cuando el build DEV recibe `VITE_PHASE3_UI_ENABLED=true`; está dentro de `AdminMfaGate`.
+- La cola muestra 20 entradas por página y total exacto para que una lista grande no se trunque; los enlaces firmados se solicitan solo por acción explícita y se retiran de la UI tras dos minutos.
+- La consulta depende del RLS de la migración candidata; como todavía no se aplica a DEV, la interfaz no se puede validar contra solicitudes alojadas.
+- Faltan decisiones auditadas, asignación transaccional con máximo de cuatro agentes por provincia, notificación y purga. No se aplicó ninguna migración ni se desplegó el Worker.
+- Pruebas de la pestaña y repositorio: 5/5 PASS; suite completa: 179 archivos, 790 PASS y 1 omitida. Lint y build base PASS; build `phase2-dev` incluyó `AgentApplicationsModerationTab`, y Wrangler dry-run conservó `PHASE3_ENABLED=false`.
+- El verificador del build base ahora rechaza explícitamente chunks y marcadores F3 para prevenir una publicación accidental de esta interfaz.

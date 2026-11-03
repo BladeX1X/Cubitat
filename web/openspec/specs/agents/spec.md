@@ -24,9 +24,9 @@
 - El endpoint cuenta con pruebas Worker de autenticación/rate limit, validación,
   carga privada y limpieza al fallar la persistencia.
 - La migración y test pgTAP pasaron en un scratch temporal (6/6); no se aplicaron
-  a DEV ni producción. La interfaz protegida está implementada y señala que el
-  flujo sigue en pruebas. Faltan notificación con URL firmada, revisión/decisión
-  AAL2, asignación de cupo
+  a DEV ni producción. La interfaz protegida permite consultar la cola paginada
+  y abrir enlaces privados de dos minutos con comprobación AAL2 en Worker; aún
+  no toma decisiones. Faltan notificación, revisión/decisión AAL2, asignación de cupo
   provincial transaccional y purga tras 30 días. El requisito de postulación
   permanece abierto.
 
