@@ -60,3 +60,11 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - Commit candidato `900f261` publicado en `feature/phase3-production-main`; PR borrador: https://github.com/BladeX1X/Cubitat/pull/186.
 - Se mantiene como borrador y no debe fusionarse: el objetivo es revisar el trabajo existente mientras se completan las brechas de F3 y se reconcilia el ledger migratorio.
 - Se separó el perfil CI (`build:phase2-production:ci`, sitemap estático explícito) del comando de producción (`build:phase2-production`, sitemap dinámico obligatorio). Con la URL pública y una anon key ficticia, el perfil CI de producción pasó todos sus guards; el build real sigue requiriendo la anon key válida de producción.
+
+## Build dinámico de producción ejecutado por el usuario — 2026-11-03
+
+- El usuario ejecutó `npm.cmd run build:phase2-production` en `D:\cubitat-phase3-release\web` con la URL del proyecto productivo y una clave `sb_publishable_...` de Supabase.
+- Resultado informado en la terminal: build completo y guards de Fase 2 PASS; el generador consultó el catálogo publicado y creó un sitemap dinámico de 446 URLs.
+- Esto es una validación local con configuración pública de producción; no es un despliegue ni valida por sí sola flujos autenticados de F3.
+- El build regeneró `public/sitemap.xml` y `public/robots.txt`; se restauraron al estado versionado para no guardar artefactos generados. El resultado de build permanece en `dist/` ignorado por Git.
+- GitHub Actions para el commit `b23a3fe` completó los dos workflows duplicados (quality y database-security) en PASS.
