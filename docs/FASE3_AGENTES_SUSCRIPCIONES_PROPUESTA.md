@@ -13,7 +13,8 @@ acciones AAL2 permiten revisar, esperar, rechazar y aprobar con evento inmutable
 La aprobación exige KYC y asigna una de cuatro plazas dentro de un lock
 transaccional por provincia; cuando está llena, conserva la solicitud en espera.
 Las decisiones finales programan eliminación a 30 días. La purga automática
-sigue pendiente, y el cupo hosted requiere reconciliar las cuentas agent previas.
+está implementada en el candidato y el cupo hosted requiere reconciliar las
+cuentas agent previas.
 
 La migración candidata `20261103140000_agent_application_email_outbox.sql`
 prepara un outbox privado, encolado en la transacción de intake. Un cron DEV
@@ -22,6 +23,13 @@ aviso a `AGENT_APPLICATION_EMAIL_TO`, configurable fuera del código. El correo
 lleva URLs privadas firmadas con vencimiento de 10 minutos y no adjunta los
 documentos. CI validó outbox e intake/revisión en base aislada; el envío permanece
 apagado: no se configuraron secretos ni se envió correo real.
+
+La migración `20261103150000_agent_application_province_capacity.sql` pasó el
+job `database-security` en Supabase aislado; reserva una de cuatro plazas con
+KYC y lock por provincia. La UI refleja aprobación o espera. La migración
+`20261103160000_agent_application_evidence_retention.sql` y su worker cron están
+en el commit siguiente, con pgTAP aún pendiente de CI; el worker borra a los 30
+días, tiene tres intentos y retira los paths de la tabla.
 
 El candidato está verificado por lint, 11 pruebas focales, suite (179 archivos,
 792 aprobadas y 1 omitida), build productivo base, build DEV con UI F3 y

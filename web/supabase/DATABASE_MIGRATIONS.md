@@ -843,3 +843,9 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - La aprobación devuelve `approved` o `waitlisted`; el panel administrativo anuncia el resultado.
 - `supabase/tests/agent_application_province_capacity_local.sql` cubre contrato, permisos, índices y triggers; queda agregado al CI aislado.
 - No aplicar a Supabase persistente, DEV ni producción antes de reconciliar perfiles agent previos con una provincia principal.
+
+## F3 candidata — retención de documentos — no aplicada
+
+- `20261103160000_agent_application_evidence_retention.sql` limita la purga a solicitudes aprobadas/rechazadas con el plazo vencido, reclama con `SKIP LOCKED`, limita intentos a tres y limpia las rutas privadas tras borrar los objetos.
+- Revoca a `authenticated` las columnas de rutas documentales; los enlaces pasan por el Worker AAL2 con expiración corta.
+- `supabase/tests/agent_application_evidence_retention_local.sql` está añadido al job `database-security`. No aplicar a Supabase persistente o hosted antes de conciliar los perfiles agent y revisar CI.

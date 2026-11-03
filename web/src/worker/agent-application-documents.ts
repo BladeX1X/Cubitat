@@ -86,6 +86,9 @@ export async function handleAgentApplicationDocumentLinks(
     const rows = await appResponse.json() as Array<{ cv_path?: unknown; diploma_path?: unknown }>
     const row = rows[0]
     if (!row) return json(404, { error: 'Application not found' })
+    if (row.cv_path === null || row.diploma_path === null) {
+      return json(410, { error: 'Application documents have passed their retention period' })
+    }
     const ownedApplicationPath = new RegExp(`^[0-9a-f-]{36}/${applicationId}/(?:cv|diploma)-[0-9a-f-]{36}\\.(?:pdf|jpg|png)$`, 'i')
     if (typeof row.cv_path !== 'string' || typeof row.diploma_path !== 'string'
       || !ownedApplicationPath.test(row.cv_path) || !ownedApplicationPath.test(row.diploma_path)) {

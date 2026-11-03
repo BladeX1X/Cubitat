@@ -16,4 +16,5 @@ serializada por provincia consume una plaza entre cuatro o deja la solicitud en
 espera cuando no hay capacidad. El rechazo exige motivo y las decisiones finales
 programan la eliminación de documentos a los 30 días. Los perfiles agent
 preexistentes deben reconciliarse con una provincia antes de habilitar el flujo
-en un entorno hosted.
+en un entorno hosted. Cuando vence la retención, el endpoint responde 410 y la
+pestaña explica que los documentos ya fueron eliminados.

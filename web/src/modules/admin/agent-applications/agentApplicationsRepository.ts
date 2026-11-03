@@ -44,6 +44,7 @@ export async function fetchAgentApplicationDocumentLinks(applicationId: string):
   })
   if (!response.ok) {
     if (response.status === 403) throw new Error('Se requiere una sesión administrativa AAL2 para ver documentos.')
+    if (response.status === 410) throw new Error('El plazo de conservación terminó; los documentos ya fueron eliminados.')
     throw new Error('No se pudieron abrir los documentos de esta postulación.')
   }
   return await response.json() as AgentApplicationDocumentLinks

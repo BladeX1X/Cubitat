@@ -57,6 +57,17 @@ describe('agent application private document links', () => {
     expect(await response.json()).toMatchObject({ error: 'Could not create private document links' })
   })
 
+  it('returns gone after the retention job has removed document paths', async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response('true', { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ cv_path: null, diploma_path: null }]), { status: 200 }))
+
+    const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)
+    expect(response.status).toBe(410)
+    expect(await response.json()).toMatchObject({ error: 'Application documents have passed their retention period' })
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+  })
+
   it('validates the application id and bearer session before calling upstream', async () => {
     const fetchFn = vi.fn()
     const invalidId = await handleAgentApplicationDocumentLinks(request(), 'not-an-id', env, fetchFn)

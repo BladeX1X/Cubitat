@@ -328,3 +328,13 @@ El contrato pgTAP debe pasar en CI aislado antes de considerar la migración
 verificada. Este control cuenta asignaciones explícitas; antes de usarlo en DEV,
 reconciliar cada cuenta agent previa con su provincia principal. No desplegar
 hasta verificar esa reconciliación y la purga automática de documentos.
+
+## Implementación candidata — retención de evidencia (2026-11-03)
+
+La migración `20261103160000_agent_application_evidence_retention.sql` revoca
+la lectura directa de `cv_path`/`diploma_path` a usuarios autenticados y crea
+RPC de claim/complete/retry solo para `service_role`. El cron DEV, condicionado
+por `PHASE3_ENABLED=true`, borra el CV y título 30 días después de una decisión
+final, con tres intentos y limpieza de rutas cuando termina. Sus contratos pgTAP
+quedan agregados a CI; no habilitar hasta que pasen y reconciliar las cuentas
+agent legacy en DEV.

@@ -22,14 +22,16 @@ aislado (6/6 checks pgTAP); no se aplicaron a DEV ni producción. La RPC AAL2
 permite iniciar revisión, lista de espera, rechazo y aprobación auditados. Una
 plaza se asigna en transacción serializada por provincia, exige KYC verificado y
 deja en espera solicitudes cuando ya hay cuatro plazas ocupadas. Las decisiones
-finales programan eliminación de documentos a los 30 días; la purga automática
-sigue pendiente. El outbox está validado en CI con enlaces privados cortos, sin
-adjuntos; el envío sigue apagado. Los perfiles agent preexistentes deben
+finales programan eliminación de documentos a los 30 días; el cron de DEV
+reclama vencidos, limita los intentos a tres y limpia las rutas al confirmar el
+borrado del bucket privado. La purga está implementada en el candidato, pendiente
+de CI. El outbox está validado en CI con enlaces privados cortos, sin adjuntos;
+el envío sigue apagado. Los perfiles agent preexistentes deben
 reconciliarse con una provincia antes de validar cupos en un entorno hosted.
 El formulario cliente está documentado en
 `src/pages/agents/AgentApplicationPage.md` y solo se incluye con
 `VITE_PHASE3_UI_ENABLED=true` en build `phase2-dev`; correo y purga siguen
-pendientes.
+apagados hasta configurar el Worker DEV.
 
 ## Acceso administrativo temporal a documentos
 
@@ -60,3 +62,12 @@ llena. Índices parciales evitan que la misma persona o postulación ocupe dos
 plazas a la vez. Al salir del rol agent o perder KYC, el perfil libera la plaza.
 Las cuentas agent existentes deben reconciliarse a una provincia antes de
 considerar la capacidad validada en un ambiente persistente.
+
+## Retención de documentos
+
+La migración candidata `20261103160000_agent_application_evidence_retention.sql`
+revoca la lectura de rutas documentales a clientes y reserva claim/complete/retry
+al `service_role`. El cron elimina CV y título tras la decisión final y 30 días,
+limpia las rutas de la fila al completarse y conserva solo códigos de error
+acotados. No registra rutas ni nombres y permanece apagado salvo
+`PHASE3_ENABLED=true`.

@@ -8,6 +8,7 @@ const authenticateImageHashRequest = vi.fn()
 const handleAgentApplicationSubmission = vi.fn().mockResolvedValue(new Response('{"id":"application-id","status":"submitted"}', { status: 201 }))
 const handleAgentApplicationDocumentLinks = vi.fn().mockResolvedValue(new Response('{"cv_url":"signed"}', { status: 200 }))
 const dispatchPendingAgentApplicationEmails = vi.fn().mockResolvedValue({ claimed: 0, sent: 0, failed: 0 })
+const purgeFinalAgentApplicationEvidence = vi.fn().mockResolvedValue({ claimed: 0, purged: 0, failed: 0 })
 
 vi.mock('./worker/alert-email-dispatcher', () => ({ dispatchPendingAlertEmails }))
 vi.mock('./worker/push-notifications', async () => {
@@ -24,6 +25,7 @@ vi.mock('./worker/image-phash', () => ({
 vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission }))
 vi.mock('./worker/agent-application-documents', () => ({ handleAgentApplicationDocumentLinks }))
 vi.mock('./worker/agent-application-email-dispatcher', () => ({ dispatchPendingAgentApplicationEmails }))
+vi.mock('./worker/agent-application-evidence-retention', () => ({ purgeFinalAgentApplicationEvidence }))
 
 describe('Phase 2 DEV scheduled tasks', () => {
   beforeEach(() => {
@@ -32,6 +34,7 @@ describe('Phase 2 DEV scheduled tasks', () => {
     purgeApprovedKycEvidence.mockClear()
     backfillPropertyImageDuplicates.mockClear()
     dispatchPendingAgentApplicationEmails.mockClear()
+    purgeFinalAgentApplicationEvidence.mockClear()
   })
 
   it('dispatches push notifications alongside the other Phase 2 jobs', async () => {
@@ -46,6 +49,7 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(purgeApprovedKycEvidence).toHaveBeenCalledOnce()
     expect(backfillPropertyImageDuplicates).toHaveBeenCalledOnce()
     expect(dispatchPendingAgentApplicationEmails).not.toHaveBeenCalled()
+    expect(purgeFinalAgentApplicationEvidence).not.toHaveBeenCalled()
   })
 
   it('runs agent application email dispatch only while Phase 3 is explicitly enabled', async () => {
@@ -56,6 +60,7 @@ describe('Phase 2 DEV scheduled tasks', () => {
     await waitUntil.mock.calls[0]?.[0]
 
     expect(dispatchPendingAgentApplicationEmails).toHaveBeenCalledOnce()
+    expect(purgeFinalAgentApplicationEvidence).toHaveBeenCalledOnce()
   })
 
   it('proxies the public verified-seller identifiers RPC in DEV', async () => {

@@ -14,6 +14,7 @@ import { readBoundedJsonObject } from './worker/boundedJson.js';
 import { handleAgentApplicationSubmission } from './worker/agent-applications';
 import { handleAgentApplicationDocumentLinks } from './worker/agent-application-documents';
 import { dispatchPendingAgentApplicationEmails } from './worker/agent-application-email-dispatcher';
+import { purgeFinalAgentApplicationEvidence } from './worker/agent-application-evidence-retention';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -58,7 +59,10 @@ export function runPhase2ScheduledTasks(
     purgeApprovedKycEvidence(env),
     backfillPropertyImageDuplicates(env),
   ];
-  if (env.PHASE3_ENABLED === 'true') tasks.push(dispatchPendingAgentApplicationEmails(env));
+  if (env.PHASE3_ENABLED === 'true') {
+    tasks.push(dispatchPendingAgentApplicationEmails(env));
+    tasks.push(purgeFinalAgentApplicationEvidence(env));
+  }
   ctx.waitUntil(Promise.all(tasks));
 }
 
