@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Building2, Phone, Award } from 'lucide-react'
+import { ArrowLeft, Building2, Phone } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { VerificationBadge } from '../../modules/kyc/components/VerificationBadge'
 import { fetchAgentProfile, fetchAgentProperties } from '../../modules/agents/agentRepository'
 import type { AgentProfile, AgentPropertySummary } from '../../modules/agents/types'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { getPropertyCoverImage } from '../../modules/properties/utils/images'
 
 type AgentProfilePageProps = {
   agentId: string
@@ -128,13 +129,6 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                 </p>
               )}
 
-              {agent.license_number && (
-                <p className="flex items-center gap-1.5 text-neutral-400 text-xs font-medium mt-1">
-                  <Award className="w-3.5 h-3.5" />
-                  <span>Licencia / Registro: {agent.license_number}</span>
-                </p>
-              )}
-
               {agent.bio && (
                 <p className="text-neutral-600 text-sm mt-3 leading-relaxed max-w-2xl">
                   {agent.bio}
@@ -143,7 +137,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
             </div>
           </div>
 
-          {agent.phone && (
+          {agent.phone ? (
             <a
               href={`https://wa.me/${agent.phone.replace(/[^0-9]/g, '')}`}
               target="_blank"
@@ -153,6 +147,10 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
               <Phone className="w-4 h-4 fill-current" />
               <span>Contactar por WhatsApp</span>
             </a>
+          ) : (
+            <p className="text-sm text-neutral-500" role="status">
+              Este agente no comparte su WhatsApp públicamente.
+            </p>
           )}
         </section>
 
@@ -181,7 +179,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                   <div className="h-48 bg-neutral-100 relative overflow-hidden">
                     {prop.coverImage ? (
                       <img
-                        src={prop.coverImage}
+                      src={getPropertyCoverImage(prop.coverImage)}
                         alt={prop.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

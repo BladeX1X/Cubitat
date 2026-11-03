@@ -22,6 +22,10 @@ const requiredMarkers = [
   'get_admin_property_image_hash_status',
   'get_admin_property_image_duplicate_candidates',
   'contact-click',
+  '/api/phase3/agent-applications',
+  'agent_application_documents',
+  'dispatchPendingAgentApplicationEmails',
+  'purgeFinalAgentApplicationEvidence',
 ]
 const propertyVerificationRpcs = [
   'submit_property_verification',
@@ -32,6 +36,7 @@ const imageDuplicateRpcs = [
   'get_admin_property_image_hash_status',
   'get_admin_property_image_duplicate_candidates',
 ]
+const phase3AuthenticatedRpcs = ['ensure_agent_referral_link']
 const forbiddenMarkers = [
   'dispatchPendingAlertEmails',
   'cubitat1-phase2-dev',
@@ -46,13 +51,17 @@ try {
   const publiclyExposedRpcs = propertyVerificationRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
   const missingImageDuplicateRpcs = imageDuplicateRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
   const publiclyExposedImageDuplicateRpcs = imageDuplicateRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
+  const missingPhase3AuthenticatedRpcs = phase3AuthenticatedRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
+  const publiclyExposedPhase3Rpcs = phase3AuthenticatedRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
   const missingPublicSellerBadgeRpc = !publicRpcBlock.includes("'get_verified_seller_ids'")
-  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0 || missingImageDuplicateRpcs.length > 0 || publiclyExposedImageDuplicateRpcs.length > 0 || missingPublicSellerBadgeRpc) {
+  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0 || missingImageDuplicateRpcs.length > 0 || publiclyExposedImageDuplicateRpcs.length > 0 || missingPhase3AuthenticatedRpcs.length > 0 || publiclyExposedPhase3Rpcs.length > 0 || missingPublicSellerBadgeRpc) {
     throw new Error([
       ...missingAuthenticatedRpcs.map((rpc) => `RPC documental fuera de allowlist autenticada: ${rpc}`),
       ...publiclyExposedRpcs.map((rpc) => `RPC documental expuesta en allowlist pública: ${rpc}`),
       ...missingImageDuplicateRpcs.map((rpc) => `RPC pHash fuera de allowlist autenticada: ${rpc}`),
       ...publiclyExposedImageDuplicateRpcs.map((rpc) => `RPC pHash expuesta en allowlist pública: ${rpc}`),
+      ...missingPhase3AuthenticatedRpcs.map((rpc) => `RPC Fase 3 fuera de allowlist autenticada: ${rpc}`),
+      ...publiclyExposedPhase3Rpcs.map((rpc) => `RPC Fase 3 expuesta en allowlist pública: ${rpc}`),
       ...(missingPublicSellerBadgeRpc ? ['RPC de insignia de vendedor verificado fuera de allowlist pública'] : []),
     ].join('\n'))
   }

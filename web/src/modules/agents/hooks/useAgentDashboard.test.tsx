@@ -29,6 +29,7 @@ describe('useAgentDashboard', () => {
       role: 'agent',
       isVerifiedAgent: true,
       properties: [property],
+      contactMetricsAvailable: true,
     })
     vi.mocked(setOwnerPropertyVisibility).mockResolvedValue('owner_hidden')
     window.confirm = vi.fn().mockReturnValue(true)
@@ -91,5 +92,20 @@ describe('useAgentDashboard', () => {
 
     expect(result.current.loadError).toBe(true)
     expect(result.current.properties).toEqual([])
+  })
+
+  it('retries loading after a transient profile or dashboard error', async () => {
+    vi.mocked(loadAgentDashboard)
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValueOnce({ role: 'agent', isVerifiedAgent: true, properties: [property], contactMetricsAvailable: true })
+    const { result } = renderHook(() => useAgentDashboard('agent-1'))
+    await waitFor(() => expect(result.current.loadError).toBe(true))
+
+    await act(async () => result.current.retry())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.loadError).toBe(false)
+    expect(result.current.properties).toEqual([property])
+    expect(loadAgentDashboard).toHaveBeenCalledTimes(2)
   })
 })

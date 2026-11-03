@@ -18,7 +18,9 @@ export function useAgentDashboard(userId: string) {
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<string | undefined>()
   const [isVerifiedAgent, setIsVerifiedAgent] = useState(false)
+  const [contactMetricsAvailable, setContactMetricsAvailable] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [reloadSequence, setReloadSequence] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<AgentStatusFilter>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -35,6 +37,7 @@ export function useAgentDashboard(userId: string) {
         if (!active) return
         setUserRole(dashboard.role)
         setIsVerifiedAgent(dashboard.isVerifiedAgent)
+        setContactMetricsAvailable(dashboard.contactMetricsAvailable)
         setProperties(dashboard.properties)
       } catch (err) {
         logSafeEvent({
@@ -44,6 +47,7 @@ export function useAgentDashboard(userId: string) {
           code: sanitizeErrorReason(err),
         })
         if (active) setLoadError(true)
+        if (active) setContactMetricsAvailable(false)
       } finally {
         if (active) setLoading(false)
       }
@@ -53,7 +57,7 @@ export function useAgentDashboard(userId: string) {
     return () => {
       active = false
     }
-  }, [userId])
+  }, [userId, reloadSequence])
 
   const activePropertiesCount = useMemo(
     () => properties.filter((property) => property.status === 'published').length,
@@ -128,8 +132,10 @@ export function useAgentDashboard(userId: string) {
     filteredProperties,
     loading,
     loadError,
+    retry: () => setReloadSequence((current) => current + 1),
     userRole,
     isVerifiedAgent,
+    contactMetricsAvailable,
     searchQuery,
     setSearchQuery,
     statusFilter,

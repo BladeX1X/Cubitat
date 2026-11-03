@@ -1,4 +1,5 @@
 import { supabase } from '../../shared/lib/supabaseClient'
+import { clearSignupReferralCode, getSignupReferralCode } from '../referrals/utils/tracker'
 
 type SignUpWithCaptchaInput = {
   email: string
@@ -21,6 +22,7 @@ export function signUpWithCaptcha({
   captchaToken,
   emailRedirectTo,
 }: SignUpWithCaptchaInput) {
+  const referralCode = getSignupReferralCode()
   return supabase.auth.signUp({
     email,
     password,
@@ -30,8 +32,12 @@ export function signUpWithCaptcha({
       data: {
         full_name: fullName,
         role: 'buyer',
+        ...(referralCode ? { referral_code: referralCode } : {}),
       },
     },
+  }).then((result) => {
+    if (!result.error && result.data.user) clearSignupReferralCode()
+    return result
   })
 }
 

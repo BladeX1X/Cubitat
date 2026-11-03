@@ -44,10 +44,12 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 7. El boton `Ingresar` abre `LoginModal`.
 8. Cuando hay sesion activa, el Header muestra campanita de notificaciones y `UserMenu`.
 9. `UserMenu` permite navegar a `Mi cuenta`, `Favoritos`, `Ver mis contenidos` y ejecutar `Cerrar sesion`.
-10. Si Supabase invalida la sesión durante el desafío MFA administrativo,
+10. La postulación `/postular-agente` es protegida y DEV-only: el login devuelve a la ruta y el CTA de Header solo aparece con `VITE_PHASE3_UI_ENABLED=true` en el perfil `phase2-dev`.
+11. Si Supabase invalida la sesión durante el desafío MFA administrativo,
     `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
     `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.
-11. Al abrir un push, consume el identificador interno después de autenticar la sesión, marca la notificación como leída y limpia ese parámetro de la URL.
+12. Al abrir un push, consume el identificador interno después de autenticar la sesión, marca la notificación como leída y limpia ese parámetro de la URL.
+13. Al iniciar la app, captura `?ref=AG-XXXXXXXX` para el registro por correo, valida el formato, lo conserva temporalmente en `sessionStorage` y elimina solo `ref` de la URL. La atribución real la resuelve el trigger de Auth; la app no decide ni envía un ID de agente.
 
 ## Decisiones de Implementacion
 
@@ -65,6 +67,9 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
   `AdminPage` no cierra sesiones ni consulta Auth; únicamente propaga el
   callback hasta el guard. El cierre limpia la caché offline y el borrador
   legado antes de volver a abrir el login.
+- El formulario de postulación envía los documentos al Worker autenticado, no
+  sube desde el cliente a Storage; muestra claramente que correo y purga
+  automatizada siguen pendientes.
 
 ## Pendientes
 

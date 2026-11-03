@@ -12,6 +12,7 @@ type AccountLayoutProps = {
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
   onNavigateAgentDashboard?: () => void
+  canAccessAgentDashboard?: boolean
 }
 
 export function AccountLayout({
@@ -22,6 +23,7 @@ export function AccountLayout({
   onNavigateFavorites,
   onNavigateMyProperties,
   onNavigateAgentDashboard,
+  canAccessAgentDashboard = false,
 }: AccountLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
@@ -50,7 +52,7 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
-              {PHASE_TWO_ENABLED && userRole === 'agent' && onNavigateAgentDashboard && (
+              {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
                 <SideItem
                   active={active === 'agent-dashboard'}
                   icon={<BarChart3 size={20} />}

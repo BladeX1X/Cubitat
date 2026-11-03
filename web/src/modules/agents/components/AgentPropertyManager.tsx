@@ -4,6 +4,7 @@ import { Button } from '../../../shared/ui/button'
 import { Input } from '../../../shared/ui/input'
 import type { AgentDashboardProperty } from '../agentDashboardRepository'
 import type { AgentStatusFilter } from '../hooks/useAgentDashboard'
+import { getPropertyCoverImage } from '../../properties/utils/images'
 
 interface AgentPropertyManagerProps {
   properties: AgentDashboardProperty[]
@@ -19,10 +20,6 @@ interface AgentPropertyManagerProps {
   onEditProperty?: (propertyId: string) => void
   onSelectProperty?: (propertyId: string) => void
 }
-
-const PLACEHOLDER_IMAGE =
-  'data:image/svg+xml;base64,' +
-  btoa('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="#f5f5f5"/><text x="200" y="125" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#a3a3a3">Sin imagen</text></svg>')
 
 function formatPrice(value: number): string {
   return value.toLocaleString('en-US', {
@@ -98,12 +95,12 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
                 const isUpdating = props.updatingId === property.id
                 const isPublished = property.status === 'published'
                 const canToggle = isPublished || property.status === 'owner_hidden'
-                const totalPhone = property.phone_clicks_count ?? 0
-                const totalWhatsApp = property.whatsapp_clicks_count ?? 0
+                const totalPhone = property.phone_clicks_count ?? '—'
+                const totalWhatsApp = property.whatsapp_clicks_count ?? '—'
                 return (
                   <tr key={property.id} className="grid grid-cols-2 gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:bg-neutral-50/70 lg:table-row lg:rounded-none lg:border-0 lg:p-0 lg:shadow-none">
                     <td className="col-span-2 block p-0 lg:table-cell lg:px-4 lg:py-4"><div className="flex items-center gap-3">
-                      <img src={property.cover_image || PLACEHOLDER_IMAGE} alt={property.title} className="h-16 w-20 shrink-0 rounded-lg border border-neutral-200/60 bg-neutral-100 object-cover lg:h-12 lg:w-16" />
+                      <img src={getPropertyCoverImage(property.cover_image)} alt={property.title} className="h-16 w-20 shrink-0 rounded-lg border border-neutral-200/60 bg-neutral-100 object-cover lg:h-12 lg:w-16" />
                       <div className="min-w-0"><p className="font-bold text-neutral-900 line-clamp-1">{property.title}</p>
                         <p className="flex items-center gap-1 text-xs text-neutral-500 mt-0.5"><MapPin size={12} className="shrink-0 text-neutral-400" /><span className="truncate">{property.location}</span></p>
                       </div></div></td>

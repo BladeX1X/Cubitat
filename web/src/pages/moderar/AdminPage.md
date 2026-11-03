@@ -119,3 +119,13 @@ comprueba el perfil documental separado y su destino de Supabase productivo.
 `AdminMfaGate.test.tsx` cubre también que una sesión expirada oculte el
 formulario, ejecute el callback de recuperación y mantenga el guard bloqueado
 si ese cierre falla.
+
+## Moderación de postulaciones Fase 3
+
+La sección `Postulaciones` se habilita solo en un build DEV explícito con
+`VITE_PHASE3_UI_ENABLED=true`. Dentro de `AdminMfaGate`, consulta una cola
+paginada de solicitudes abiertas con RLS y cuenta total. Los enlaces del CV y
+título se solicitan bajo demanda al Worker; no se guardan y se retiran de la
+vista a los dos minutos. La pantalla actual es de consulta, sin aprobar,
+rechazar ni asignar agentes. La migración debe estar instalada en DEV para que
+la lista pueda cargar.

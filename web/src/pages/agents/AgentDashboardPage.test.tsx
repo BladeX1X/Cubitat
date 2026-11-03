@@ -7,6 +7,7 @@ vi.mock('../../modules/agents/agentDashboardRepository', () => ({
   loadAgentDashboard: vi.fn(),
   setOwnerPropertyVisibility: vi.fn(),
 }))
+vi.mock('../../shared/config/features', () => ({ PHASE_TWO_ENABLED: true }))
 
 const properties = [
   { id: 'prop-1', title: 'Apartamento de Lujo en El Vedado', location: 'Vedado, La Habana', price_usd: 120000, cover_image: null, status: 'published', created_at: '2026-07-21', user_id: 'agent-123', view_count: 350, phone_clicks_count: 2, whatsapp_clicks_count: 4 },
@@ -19,7 +20,7 @@ const mockUser = { id: 'agent-123', email: 'agente@cubitat.cu', app_metadata: {}
 describe('AgentDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: true, properties: [...properties] })
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: true, properties: [...properties], contactMetricsAvailable: true })
     vi.mocked(setOwnerPropertyVisibility).mockResolvedValue('owner_hidden')
     window.confirm = vi.fn().mockReturnValue(true)
   })
@@ -32,18 +33,44 @@ describe('AgentDashboardPage', () => {
     expect(screen.queryByText(/5% conv/i)).not.toBeInTheDocument()
   })
 
-  it('denies the dashboard to a user without verified agent status', async () => {
-    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: false, properties: [] })
+  it('keeps listings visible and marks contact metrics unavailable when their RPC fails', async () => {
+    vi.mocked(loadAgentDashboard).mockResolvedValue({
+      role: 'agent', isVerifiedAgent: true, contactMetricsAvailable: false,
+      properties: [{ ...properties[0], phone_clicks_count: undefined, whatsapp_clicks_count: undefined }],
+    })
     render(<AgentDashboardPage user={mockUser} />)
-    expect(await screen.findByRole('alert')).toHaveTextContent('únicamente para agentes verificados')
+
+    expect(await screen.findByText('Apartamento de Lujo en El Vedado')).toBeInTheDocument()
+    expect(screen.getByTestId('metric-contact-clicks')).toHaveTextContent('—')
+    expect(screen.getByTestId('metric-contact-clicks').nextElementSibling).toHaveTextContent('Métricas de contacto no disponibles')
   })
 
-  it('shows a safe load error', async () => {
+  it('renders the panel navigation for a verified administrator acting as agent', async () => {
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'admin', isVerifiedAgent: true, properties: [], contactMetricsAvailable: true })
+    render(<AgentDashboardPage user={mockUser} />)
+
+    expect(await screen.findByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Métricas y Rendimiento' })).toBeInTheDocument()
+  })
+
+  it('denies the dashboard to a user without verified agent status', async () => {
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'user', isVerifiedAgent: false, properties: [], contactMetricsAvailable: false })
+    const onNavigateAccount = vi.fn()
+    render(<AgentDashboardPage user={mockUser} onNavigateAccount={onNavigateAccount} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('verificación KYC aprobada')
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar mi cuenta' }))
+    expect(onNavigateAccount).toHaveBeenCalledOnce()
+  })
+
+  it('shows a safe load error and retries the profile/dashboard request', async () => {
     vi.mocked(loadAgentDashboard).mockRejectedValue(new Error('private backend details'))
     render(<AgentDashboardPage user={mockUser} />)
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No se pudo cargar')
     expect(alert).not.toHaveTextContent('private backend details')
+    vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'agent', isVerifiedAgent: true, properties: [], contactMetricsAvailable: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByRole('heading', { name: 'Métricas y Rendimiento' })).toBeInTheDocument()
   })
 
   it('filters properties by search and status', async () => {

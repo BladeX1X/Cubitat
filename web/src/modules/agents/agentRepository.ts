@@ -2,9 +2,8 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import type { AgentProfile, AgentPropertySummary } from './types'
 
-type PublicAgentProfileRow = Omit<AgentProfile, 'active_properties_count' | 'reports_count'> & {
+type PublicAgentProfileRow = Omit<AgentProfile, 'active_properties_count'> & {
   active_properties_count: number | string
-  reports_count: number | string
 }
 
 type AgentPropertyRow = {
@@ -70,7 +69,6 @@ export async function fetchAgentProfile(agentId: string): Promise<AgentProfile |
       full_name: row.full_name || 'Anunciante Cubitat',
       verification_status: row.verification_status || 'unverified',
       active_properties_count: Number(row.active_properties_count) || 0,
-      reports_count: Number(row.reports_count) || 0,
     }
   } catch (err) {
     logSafeEvent({

@@ -5,8 +5,12 @@ const mocks = vi.hoisted(() => ({
   backfillPropertyImageDuplicates: vi.fn().mockResolvedValue(undefined),
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
   dispatchPendingPushNotifications: vi.fn().mockResolvedValue({ scanned: 0, sent: 0, failed: 0 }),
+  dispatchPendingAgentApplicationEmails: vi.fn().mockResolvedValue({ claimed: 0, sent: 0, failed: 0 }),
+  handleAgentApplicationSubmission: vi.fn().mockResolvedValue(new Response('{"id":"application-id"}', { status: 201 })),
+  handleAgentApplicationDocumentLinks: vi.fn().mockResolvedValue(new Response('{"cv_url":"signed"}', { status: 200 })),
   loadOwnedPropertyForImageHashing: vi.fn(),
   purgeApprovedKycEvidence: vi.fn().mockResolvedValue({ scanned: 0, deleted: 0, failed: 0 }),
+  purgeFinalAgentApplicationEvidence: vi.fn().mockResolvedValue({ claimed: 0, purged: 0, failed: 0 }),
   refreshPropertyImageDuplicates: vi.fn().mockResolvedValue(undefined),
 }))
 
@@ -15,6 +19,10 @@ vi.mock('./worker', () => ({
   createWorker: vi.fn(() => ({ fetch: vi.fn() })),
 }))
 vi.mock('./worker/push-notifications', () => ({ dispatchPendingPushNotifications: mocks.dispatchPendingPushNotifications }))
+vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission: mocks.handleAgentApplicationSubmission }))
+vi.mock('./worker/agent-application-documents', () => ({ handleAgentApplicationDocumentLinks: mocks.handleAgentApplicationDocumentLinks }))
+vi.mock('./worker/agent-application-email-dispatcher', () => ({ dispatchPendingAgentApplicationEmails: mocks.dispatchPendingAgentApplicationEmails }))
+vi.mock('./worker/agent-application-evidence-retention', () => ({ purgeFinalAgentApplicationEvidence: mocks.purgeFinalAgentApplicationEvidence }))
 vi.mock('./worker/kyc-evidence-retention', () => ({ purgeApprovedKycEvidence: mocks.purgeApprovedKycEvidence }))
 vi.mock('./worker/logger', () => ({ logWorkerEvent: vi.fn() }))
 vi.mock('./worker/image-phash', () => ({
@@ -35,6 +43,75 @@ describe('Phase 2 production Worker', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.checkRateLimit.mockResolvedValue({ allowed: true })
+    mocks.authenticateImageHashRequest.mockReset()
+    mocks.handleAgentApplicationSubmission.mockClear()
+    mocks.handleAgentApplicationDocumentLinks.mockClear()
+    mocks.dispatchPendingAgentApplicationEmails.mockClear()
+    mocks.purgeFinalAgentApplicationEvidence.mockClear()
+  })
+
+  it('keeps Phase 3 application endpoints disabled in production by default', async () => {
+    const { default: worker } = await import('./worker-phase2-production')
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/phase3/agent-applications', { method: 'POST' }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.authenticateImageHashRequest).not.toHaveBeenCalled()
+  })
+
+  it('authenticates and rate limits production application submissions when enabled', async () => {
+    mocks.authenticateImageHashRequest.mockResolvedValue('applicant-id')
+    const { default: worker } = await import('./worker-phase2-production')
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/phase3/agent-applications', {
+        method: 'POST', headers: { authorization: 'Bearer user-session' },
+      }),
+      { ...env, PHASE3_ENABLED: 'true' } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    expect(response.status).toBe(201)
+    expect(mocks.checkRateLimit).toHaveBeenCalledOnce()
+    expect(mocks.handleAgentApplicationSubmission).toHaveBeenCalledOnce()
+  })
+
+  it('serves private application document links only when enabled and rate limited', async () => {
+    const { default: worker } = await import('./worker-phase2-production')
+    const request = new Request('https://cubitathome.com/api/phase3/agent-applications/application-id/documents', {
+      method: 'GET', headers: { authorization: 'Bearer admin-session' },
+    })
+    const disabled = await worker.fetch(request, env as never, { waitUntil: vi.fn() } as never)
+    expect(disabled.status).toBe(404)
+
+    mocks.authenticateImageHashRequest.mockResolvedValue('admin-id')
+    const enabled = await worker.fetch(
+      request,
+      { ...env, PHASE3_ENABLED: 'true' } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    expect(enabled.status).toBe(200)
+    expect(mocks.checkRateLimit).toHaveBeenCalledWith(
+      { ...env, PHASE3_ENABLED: 'true' },
+      'user:admin-id:agent-application-documents:v1',
+      10,
+      10 * 60 * 1000,
+    )
+    expect(mocks.handleAgentApplicationDocumentLinks).toHaveBeenCalledOnce()
+  })
+
+  it('does not schedule Phase 3 email or purge work unless explicitly enabled', async () => {
+    const { runProductionScheduledTasks } = await import('./worker-phase2-production')
+    const waitUntil = vi.fn((task: Promise<unknown>) => task)
+    runProductionScheduledTasks(env as never, { waitUntil } as never)
+    await Promise.all(waitUntil.mock.calls.map(([task]) => task))
+    expect(mocks.dispatchPendingAgentApplicationEmails).not.toHaveBeenCalled()
+    expect(mocks.purgeFinalAgentApplicationEvidence).not.toHaveBeenCalled()
+
+    runProductionScheduledTasks({ ...env, PHASE3_ENABLED: 'true' } as never, { waitUntil } as never)
+    await Promise.all(waitUntil.mock.calls.slice(1).map(([task]) => task))
+    expect(mocks.dispatchPendingAgentApplicationEmails).toHaveBeenCalledOnce()
+    expect(mocks.purgeFinalAgentApplicationEvidence).toHaveBeenCalledOnce()
   })
 
   it('keeps image hashing disabled unless the production flag is explicitly enabled', async () => {

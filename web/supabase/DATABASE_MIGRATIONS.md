@@ -88,6 +88,21 @@ exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
 
+### Reconciliación DEV — fuentes encontradas en checkout de auditoría (2026-11-03)
+
+- Se localizaron 56 fuentes correspondientes a versiones del ledger DEV en
+  `D:\cubitat\web\supabase\migrations`; copias aisladas en esta rama tienen
+  SHA-256 idéntico. Como el checkout de origen las tenía sin registrar en Git,
+  trátalas como candidatas hasta pasar replay y cotejo de catálogo; no implica
+  que estén aplicadas a DEV ni autoriza reparar su ledger.
+- `20261101185000_phase4_listing_ai_moderation_claims_reconciled.sql` se encontró
+  bajo `D:\cubitat\web\supabase\dev-migrations` y se conserva en
+  `web/supabase/dev-migrations/`. Es DEV-only; no mover a `migrations/` ni
+  incluir en una promoción productiva.
+- Ningún `db push`, `migration repair`, DDL hosted o cambio de producción se
+  ejecutó. Consultar `docs/RECONCILIACION_F3_DEV_2026-11-03.md` para los
+  hallazgos de esquema F3 y el orden restante.
+
 ### Endurecimiento de permisos de Fase 2 en producción — 2026-10-10
 
 - `20261010110000_harden_production_phase2_privileges.sql`: migración agregada por PR #120, fusionada en `main` como `2cd21a0c210b7e6f402eeed9add67bb06075bf55` y aplicada en Supabase producción tras autorización expresa el 2026-10-10. Historial y permisos efectivos verificados después.
@@ -821,3 +836,48 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - El workflow manual `.github/workflows/supabase-production-phash-migration.yml`
   ejecuta un dry-run y se detiene si encuentra cualquier migración pendiente
   adicional a `20261013110000`; después registra el historial remoto con la CLI.
+
+## Candidata de migración Fase 3 — no aplicada
+
+- `20261103120000_agent_application_intake.sql` crea intake privado de postulaciones, documentos en bucket privado y una RPC de inserción solo para `service_role`.
+- Está en la rama candidata `feature/phase3-production-main`, PR borrador #186. Se añadió un test de contrato `supabase/tests/agent_application_intake_local.sql`. No se aplicó a Supabase local persistente, DEV ni producción; tampoco se ejecutó `db push` o `migration repair`.
+- 2026-11-03: aplicada correctamente en una instancia Supabase scratch temporal, junto con prerequisitos mínimos aislados. Test pgTAP de contrato **6/6 PASS** con `supabase test db --local`; se usó la red aislada con nombre estándar esperado por el runner. Se detuvo el stack y retiró su red; no se tocaron otros contenedores, ni Supabase local persistente, DEV o producción. La migración quedó validada en scratch, no aplicada remotamente. No considerar cerrados revisión AAL2, notificación, cupo provincial ni purga documental: todavía no están implementados.
+- `20261103130000_agent_application_review_actions.sql` añade cambios auditados AAL2 a `reviewing`, `waitlisted` y `rejected`; el rechazo exige motivo y programa la purga para 30 días. Aprobación queda expresamente fuera hasta tener asignación transaccional del cupo provincial.
+- La segunda migración solo existe en `feature/phase3-production-main`, PR borrador #186; su contrato pgTAP está en `supabase/tests/agent_application_review_local.sql`. No aplicar a local persistente, DEV ni producción hasta validar el historial de migraciones y el scratch completo.
+
+## F3 candidata — outbox de notificación por correo — no aplicado
+
+- `20261103140000_agent_application_email_outbox.sql` crea intención atómica de correo al recibir una postulación y expone RPC service-role para claim/complete/retry, con máximo 3 intentos.
+- `supabase/tests/agent_application_email_outbox_local.sql` comprueba permisos, RLS y trigger. GitHub Actions ejecutará el contrato después de reconstruir el esquema aislado.
+- Worker DEV envía por Resend solo con `PHASE3_ENABLED=true` y configuración completa. `AGENT_APPLICATION_EMAIL_TO` es un secreto externo; no se define aquí ni se envió correo. Enlaces firmados de CV/título: 10 min, sin adjuntos.
+- No aplicar a Supabase persistente, DEV o producción sin revisar el resultado de CI y reconciliar primero el ledger.
+
+## F3 candidata — cupo provincial — no aplicado
+
+- `20261103150000_agent_application_province_capacity.sql` guarda asignaciones activas e históricas, limita a cuatro por provincia bajo lock transaccional, exige KYC y libera la plaza al dejar de ser agente verificado.
+- La aprobación devuelve `approved` o `waitlisted`; el panel administrativo anuncia el resultado.
+- `supabase/tests/agent_application_province_capacity_local.sql` cubre contrato, permisos, índices y triggers; queda agregado al CI aislado.
+- No aplicar a Supabase persistente, DEV ni producción antes de reconciliar perfiles agent previos con una provincia principal.
+
+## F3 candidata — retención de documentos — no aplicada
+
+- `20261103160000_agent_application_evidence_retention.sql` limita la purga a solicitudes aprobadas/rechazadas con el plazo vencido, reclama con `SKIP LOCKED`, limita intentos a tres y limpia las rutas privadas tras borrar los objetos.
+- Revoca a `authenticated` las columnas de rutas documentales; los enlaces pasan por el Worker AAL2 con expiración corta.
+- `supabase/tests/agent_application_evidence_retention_local.sql` está añadido al job `database-security`. No aplicar a Supabase persistente o hosted antes de conciliar los perfiles agent y revisar CI.
+
+## F3 candidata — atribución de altas nuevas — no aplicada
+
+- `20261103170000_agent_signup_referral_attribution.sql` crea un ledger privado e inmutable con una fila por cuenta nueva y reemplaza el trigger `handle_new_user()` para resolver en el servidor códigos activos de agentes/admin verificados.
+- Solo el registro por correo transmite el código de referido; la metadata de rol del cliente se ignora y el perfil nace como `buyer`. OAuth, visitas, contactos y comisiones permanecen fuera de este cambio y pausados.
+- `supabase/tests/agent_signup_referral_attribution_local.sql` verifica elegibilidad, seguridad del ledger, inmutabilidad y protección contra elevación de rol. El contrato se añade al job `database-security`.
+- Candidata de `feature/phase3-production-main`, PR borrador #186. No aplicar a Supabase local persistente, DEV ni producción; reconciliar primero historial de migraciones y obtener CI verde.
+
+## Perfil Worker F3 preparado — no activado (2026-11-03)
+
+- El Worker productivo incluye rutas de postulación/documentos y tareas programadas de correo/purga detrás de `PHASE3_ENABLED`.
+- `web/wrangler.jsonc` fija `PHASE3_ENABLED=false`; esto no sustituye ni crea objetos SQL/Storage.
+- `ensure_agent_referral_link()` solo se añadió a la allowlist autenticada. La migración de atribución sigue candidata y el esquema hosted DEV permanece pendiente de reconciliación; no habilitar el Worker ni desplegar el bundle F3 antes de confirmar el esquema y permisos reales.
+
+## Actualización de lectura hosted DEV — 2026-11-03
+
+La lectura más reciente encontró 11 versiones locales sin marca remota y 58 versiones remotas sin fuente en este checkout. No asumir que el diff del listado significa que cada migración local carece de esquema: el detalle de los seis objetos F3 comprobados y la secuencia segura de reconciliación está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`. No usar `db push` ni `migration repair` aún.

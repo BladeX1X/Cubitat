@@ -67,7 +67,14 @@ jobs:
           SITEMAP_MODE: static
           VITE_SUPABASE_URL: https://tohjzoncoosvjbjcakdl.supabase.co
           VITE_SUPABASE_ANON_KEY: phase2-ci-placeholder-not-a-credential
-        run: npm run build:phase2-production
+        run: npm run build:phase2-production:ci
+
+      - name: Full Phase 3 production profile and isolation checks
+        env:
+          SITEMAP_MODE: static
+          VITE_SUPABASE_URL: https://tohjzoncoosvjbjcakdl.supabase.co
+          VITE_SUPABASE_ANON_KEY: phase3-ci-placeholder-not-a-credential
+        run: npm run build:phase3-production:ci
 
   database-security:
     runs-on: ubuntu-latest
@@ -89,3 +96,9 @@ jobs:
           supabase start -x studio,edge-runtime,logflare,vector
           supabase db reset --local --no-seed --yes
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/temporary_admin_mfa_override.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_intake_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_review_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_email_outbox_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_province_capacity_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_evidence_retention_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_signup_referral_attribution_local.sql

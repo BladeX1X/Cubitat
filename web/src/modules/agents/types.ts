@@ -9,11 +9,9 @@ export type AgentProfile = {
   agency_name?: string | null
   agency_logo?: string | null
   bio?: string | null
-  license_number?: string | null
   verification_status: VerificationStatus
   created_at: string
   active_properties_count: number
-  reports_count: number
 }
 
 export type AgentPropertySummary = {

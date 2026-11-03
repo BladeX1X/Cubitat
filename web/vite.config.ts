@@ -39,7 +39,9 @@ export default defineConfig(({ mode }) => {
   delete process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
   const env = loadEnv(mode, __dirname, '')
   const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
-  const phase2UiEnabled = phase2DevBuild || mode === 'phase2-production'
+  const productionBuild = mode === 'phase2-production' || mode === 'phase3-production'
+  const phase3UiEnabled = mode === 'phase3-production' || (phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true')
+  const phase2UiEnabled = phase2DevBuild || productionBuild
   const imageDuplicateModerationEnabled = phase2UiEnabled
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
@@ -64,19 +66,20 @@ export default defineConfig(({ mode }) => {
     }
   }
 
-  if (mode === 'phase2-production') {
+  if (productionBuild) {
     const productionSupabaseUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'
     if (publicSupabaseUrl !== productionSupabaseUrl) {
-      throw new Error(`El perfil phase2-production requiere VITE_SUPABASE_URL=${productionSupabaseUrl}`)
+      throw new Error(`El perfil ${mode} requiere VITE_SUPABASE_URL=${productionSupabaseUrl}`)
     }
     if (!supabaseAnonKey) {
-      throw new Error('El perfil phase2-production requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.')
+      throw new Error(`El perfil ${mode} requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.`)
     }
   }
 
   return {
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE3_UI_ENABLED': JSON.stringify(phase3UiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED': JSON.stringify(propertyVerificationUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED': JSON.stringify(imageDuplicateModerationEnabled ? 'true' : 'false'),

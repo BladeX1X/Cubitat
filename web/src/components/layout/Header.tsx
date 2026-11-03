@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeftRight, Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
+import { ArrowLeftRight, BriefcaseBusiness, Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
@@ -16,6 +16,7 @@ interface HeaderProps {
   navigateModerar: () => void
   navigatePublish: () => void
   navigateResults: () => void
+  navigateAgentApplication?: () => void
   openLogin: () => void
   handleOperationNavigation: (op: 'venta' | 'alquiler' | 'permuta') => void
   onSignOut: () => void
@@ -31,6 +32,7 @@ export function Header({
   navigateModerar,
   navigatePublish,
   navigateResults,
+  navigateAgentApplication,
   openLogin,
   handleOperationNavigation,
   onSignOut,
@@ -104,6 +106,11 @@ export function Header({
           >
             Permutar
           </a>
+          {navigateAgentApplication && (
+            <a href="/postular-agente" onClick={(event) => { event.preventDefault(); handleNavigation(navigateAgentApplication) }}>
+              Ser agente
+            </a>
+          )}
         </nav>
         <button
           type="button"
@@ -218,6 +225,9 @@ export function Header({
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('alquiler'))}><Building2 size={18} />Rentar</button>
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('permuta'))}><ArrowLeftRight size={18} />Permutar</button>
+            {navigateAgentApplication && (
+              <button type="button" onClick={() => handleNavigation(navigateAgentApplication)}><BriefcaseBusiness size={18} />Ser agente</button>
+            )}
           </nav>
         </aside>
       )}

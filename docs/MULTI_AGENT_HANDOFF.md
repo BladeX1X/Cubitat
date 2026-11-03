@@ -4031,3 +4031,46 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 - Se actualizó el secreto del Worker compartido turnstile-siteverify-cubitat mediante Wrangler, conservando el widget cubitat-turnstile que también usa producción.
 - Un envío QA autorizado desde la ficha de contacto de DEV fue aceptado por Siteverify (HTTP 200, outcome ok, sin códigos de error) y la interfaz confirmó “¡Mensaje enviado!”.
 - Alcance: valida el proveedor real para contacto en DEV. No se envió formulario a un anunciante en producción ni se repitió registro/login/recuperación contra Supabase Auth. No se hizo cambio de código ni despliegue de la aplicación.
+# Fase 3 — atribución segura de altas (2026-11-03)
+
+- Trabajo en `D:\cubitat-phase3-release`, `feature/phase3-production-main`, PR borrador #186.
+- Registro por correo captura `?ref=AG-XXXXXXXX`, el trigger de Auth resuelve la elegibilidad, fuerza `buyer` y escribe ledger privado e inmutable. Panel de agente verificado ofrece aprovisionamiento explícito y copia del enlace.
+- Solo se restaura `ensure_agent_referral_link()` para `authenticated`; la función de historial conserva rechazo de enlaces inactivos. Visitas, contactos atribuidos, OAuth y comisiones permanecen apagados.
+- Gates locales: lint PASS; 181 archivos, 810 pruebas PASS y 1 SKIP; build PASS (sitemap estático de 2 URLs por falta de config Supabase pública en este entorno). Pruebas focales tras UI: 23/23 PASS.
+- Migración `20261103170000_agent_signup_referral_attribution.sql` y contrato pgTAP 11 casos pasaron `database-security`/quality en CI. No se ejecutó contra Supabase persistente, DEV ni producción.
+- Próximo paso: reconciliar el ledger hosted antes de aplicar esquema; para release, comprobar build Phase 3 habilitado y QA autenticado DEV.
+
+## F3 — CI y lectura de DEV actualizados (2026-11-03)
+
+- Commit `b34a97e` ya está en `feature/phase3-production-main`, PR borrador #186. `quality` y `database-security` terminaron PASS; el contrato de atribución por registro se ejecutó en la base aislada de CI.
+- Gates locales: lint PASS; 181 archivos, 810 pruebas PASS/1 SKIP; build estándar PASS con sitemap estático fallback. No es el bundle de release Phase 3.
+- `supabase migration list --linked` confirma que el ledger vinculado a DEV sigue híbrido: seis migraciones F3 candidatas, de `20261103120000` a `20261103170000`, no están registradas remotamente, además de otras versiones remotas sin fuente local. No ejecutar `db push` ni `migration repair` hasta reconciliar.
+- Consulta SQL de solo lectura confirmó en DEV: `agent_referral_links` existe, `agent_signup_attributions` no existe y el permiso `EXECUTE` a `ensure_agent_referral_link()` está revocado para `authenticated` y `anon`. No se aplicó nada.
+- PR actualizado con ese estado. Siguiente paso técnico: reconciliar migraciones y planear el build/QA de release F3; mantener DEV/prod sin cambios hasta tener una ruta de esquema segura.
+
+## F3 — perfil productivo de código preparado (2026-11-03)
+
+- La rama añade `phase3-production` y comandos normal/CI; incluye el formulario, panel de crecimiento y moderación F3. El verificador comprueba marcadores F3 y que no aparezca el proyecto DEV.
+- El Worker productivo contempla envío de postulaciones y enlaces privados, rate limiting y tareas programadas de outbox/purga. `PHASE3_ENABLED=false` permanece en `web/wrangler.jsonc`; las rutas responden 404 y las tareas no corren por defecto.
+- `ensure_agent_referral_link()` está en la allowlist autenticada del Worker; no se exponen RPC de visitas, comisiones u OAuth.
+- Gates locales tras este cambio: lint PASS; 181 archivos, 814 PASS/1 SKIP; build base PASS; `build:phase3-production:ci` PASS. No hubo deploy, merge ni cambios en Supabase.
+- Sigue bloqueado habilitar o desplegar F3 hasta reconciliar ledger/esquema DEV, verificar QA autenticado persistente y configurar secretos requeridos. Producción continúa intacta.
+
+## Reconciliación F3 DEV — actualización de solo lectura (2026-11-03)
+
+La consulta actual a DEV encontró 11 versiones solo locales (5 de F2 y las 6 candidatas F3) y 58 versiones solo remotas sin fuente en esta rama. Los objetos principales de las seis migraciones F3 están ausentes; `agent_referral_links`/`ensure_agent_referral_link()` sí existen pero el EXECUTE está revocado para authenticated/anon. No se aplicó SQL ni se reparó el ledger. Esta lectura más reciente reemplaza como snapshot operativo a las cifras anteriores; el detalle está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`.
+
+### F3 — Recuperación de fuentes de migración DEV — 2026-11-03
+
+- Se localizaron 56 archivos fuente estándar en `D:\cubitat\web\supabase\migrations`; copiados únicamente al worktree aislado `D:\cubitat-phase3-release`, con SHA-256 igual entre origen y destino. En origen estaban sin registrar en Git, así que aún son fuentes candidatas hasta validar el replay y comparar el catálogo.
+- La versión `20261101185000_phase4_listing_ai_moderation_claims_reconciled.sql` se localizó en `dev-migrations`; está clasificada DEV-only y no se añadió a `migrations/`.
+- `supabase migration list --linked` fue de solo lectura: 11 versiones siguen locales sin marca remota (5 F2 + 6 F3); las 56 estándar ya coinciden con remoto. El ledger deja la DEV-only fuera de la lista estándar, como corresponde.
+- CI previo PASS; el replay con estas fuentes nuevas está pendiente. No `db push`, no `migration repair`, no DDL ni cambios a datos; Producción intacta.
+- Próximo: lint, suite, build y CI de replay aislado; comparar catálogo y documentar divergencias. No habilitar F3 ni desplegar hasta completar eso y QA autenticado.
+
+### Resultado de gates para replay de fuentes — 2026-11-03
+
+- `npm run lint`: PASS.
+- `npm run test:run -- --maxWorkers=2`: 181 archivos, 814 PASS, 1 SKIP. La suite emitió avisos de conexiones de prueba a localhost:3000/Turnstile, pero terminó con exit code 0.
+- `npm run build`: PASS con sitemap estático de fallback. `npm run build:phase3-production:ci`: PASS con los placeholders públicos definidos por el workflow; no usa credenciales ni verifica despliegue.
+- Falta que GitHub Actions ejecute `database-security` sobre las 56 fuentes recuperadas; después revisar cualquier divergencia del replay.

@@ -17,6 +17,7 @@
     "VITE_SUPABASE_URL": "https://tohjzoncoosvjbjcakdl.supabase.co",
     "PHASE2_AGENTS_ENABLED": "true",
     "PHASE2_IMAGE_DUPLICATES_ENABLED": "true",
+    "PHASE3_ENABLED": "false",
     "PUBLIC_SITE_URL": "https://cubitathome.com",
     "ALERT_EMAIL_FROM": "Cubitat <notificaciones@cubitathome.com>",
     "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev",

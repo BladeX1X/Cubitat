@@ -5,6 +5,7 @@ interface AgentDashboardSummaryProps {
   activePropertiesCount: number
   totalAccumulatedViews: number
   totalContactClicks: number
+  contactMetricsAvailable: boolean
 }
 
 export function AgentDashboardSummary({
@@ -12,6 +13,7 @@ export function AgentDashboardSummary({
   activePropertiesCount,
   totalAccumulatedViews,
   totalContactClicks,
+  contactMetricsAvailable,
 }: AgentDashboardSummaryProps) {
   const metrics = [
     {
@@ -32,8 +34,8 @@ export function AgentDashboardSummary({
     },
     {
       label: 'Contactos registrados',
-      value: loading ? '-' : totalContactClicks.toLocaleString('es-CU'),
-      detail: 'Clics reales en teléfono y WhatsApp',
+      value: loading || !contactMetricsAvailable ? '—' : totalContactClicks.toLocaleString('es-CU'),
+      detail: contactMetricsAvailable ? 'Clics reales en teléfono y WhatsApp' : 'Métricas de contacto no disponibles',
       icon: <TrendingUp size={20} />,
       iconClass: 'bg-amber-50 text-amber-700',
       testId: 'metric-contact-clicks',
