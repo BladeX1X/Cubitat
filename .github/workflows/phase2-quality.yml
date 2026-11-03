@@ -67,7 +67,7 @@ jobs:
           SITEMAP_MODE: static
           VITE_SUPABASE_URL: https://tohjzoncoosvjbjcakdl.supabase.co
           VITE_SUPABASE_ANON_KEY: phase2-ci-placeholder-not-a-credential
-        run: npm run build:phase2-production
+        run: npm run build:phase2-production:ci
 
   database-security:
     runs-on: ubuntu-latest

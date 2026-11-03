@@ -10,6 +10,7 @@
     "build:phase2-kyc": "tsc -b && vite build --mode phase2-kyc && node scripts/generate-sitemap.mjs && node scripts/verify-kyc-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-documents": "tsc -b && vite build --mode phase2-documents && node scripts/generate-sitemap.mjs && node scripts/verify-property-documents-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-production": "tsc -b && vite build --mode phase2-production && node scripts/generate-sitemap.mjs --require-dynamic && node scripts/verify-phase2-full-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
+    "build:phase2-production:ci": "tsc -b && vite build --mode phase2-production && node scripts/generate-sitemap.mjs --static && node scripts/verify-phase2-full-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-agents": "tsc -b && vite build --mode phase2-agents && node scripts/generate-sitemap.mjs && node scripts/verify-private-secret-bundle.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

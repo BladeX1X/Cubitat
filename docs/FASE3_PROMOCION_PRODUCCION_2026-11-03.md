@@ -59,3 +59,4 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 
 - Commit candidato `900f261` publicado en `feature/phase3-production-main`; PR borrador: https://github.com/BladeX1X/Cubitat/pull/186.
 - Se mantiene como borrador y no debe fusionarse: el objetivo es revisar el trabajo existente mientras se completan las brechas de F3 y se reconcilia el ledger migratorio.
+- Se separó el perfil CI (`build:phase2-production:ci`, sitemap estático explícito) del comando de producción (`build:phase2-production`, sitemap dinámico obligatorio). Con la URL pública y una anon key ficticia, el perfil CI de producción pasó todos sus guards; el build real sigue requiriendo la anon key válida de producción.
