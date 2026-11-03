@@ -54,3 +54,8 @@ Para postulaciones, el correo receptor `pochiprats18@gmail.com` es provisional. 
 - `npm run build`: PASS en local. Como no hay configuración pública de Supabase en este entorno, genera explícitamente un sitemap local estático con solo `/` y `/resultados`; no modifica los archivos fuente `public/sitemap.xml` ni `public/robots.txt`.
 - El build de producción ahora invoca `generate-sitemap.mjs --require-dynamic`. Se comprobó que sin la URL pública exacta de Supabase producción se detiene antes de empaquetar/desplegar; no se usó ni se buscó una credencial.
 - Esta protección no cierra F3: el candidato sigue sin los flujos de postulaciones/CV, atribución confiable, suscripciones y ledger recurrente descritos arriba. No se hizo merge a `main`, despliegue ni cambios en Supabase producción.
+
+## Integración revisable — 2026-11-03
+
+- Commit candidato `900f261` publicado en `feature/phase3-production-main`; PR borrador: https://github.com/BladeX1X/Cubitat/pull/186.
+- Se mantiene como borrador y no debe fusionarse: el objetivo es revisar el trabajo existente mientras se completan las brechas de F3 y se reconcilia el ledger migratorio.
