@@ -4055,3 +4055,7 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 - `ensure_agent_referral_link()` está en la allowlist autenticada del Worker; no se exponen RPC de visitas, comisiones u OAuth.
 - Gates locales tras este cambio: lint PASS; 181 archivos, 814 PASS/1 SKIP; build base PASS; `build:phase3-production:ci` PASS. No hubo deploy, merge ni cambios en Supabase.
 - Sigue bloqueado habilitar o desplegar F3 hasta reconciliar ledger/esquema DEV, verificar QA autenticado persistente y configurar secretos requeridos. Producción continúa intacta.
+
+## Reconciliación F3 DEV — actualización de solo lectura (2026-11-03)
+
+La consulta actual a DEV encontró 11 versiones solo locales (5 de F2 y las 6 candidatas F3) y 58 versiones solo remotas sin fuente en esta rama. Los objetos principales de las seis migraciones F3 están ausentes; `agent_referral_links`/`ensure_agent_referral_link()` sí existen pero el EXECUTE está revocado para authenticated/anon. No se aplicó SQL ni se reparó el ledger. Esta lectura más reciente reemplaza como snapshot operativo a las cifras anteriores; el detalle está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`.

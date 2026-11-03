@@ -862,3 +862,7 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - El Worker productivo incluye rutas de postulación/documentos y tareas programadas de correo/purga detrás de `PHASE3_ENABLED`.
 - `web/wrangler.jsonc` fija `PHASE3_ENABLED=false`; esto no sustituye ni crea objetos SQL/Storage.
 - `ensure_agent_referral_link()` solo se añadió a la allowlist autenticada. La migración de atribución sigue candidata y el esquema hosted DEV permanece pendiente de reconciliación; no habilitar el Worker ni desplegar el bundle F3 antes de confirmar el esquema y permisos reales.
+
+## Actualización de lectura hosted DEV — 2026-11-03
+
+La lectura más reciente encontró 11 versiones locales sin marca remota y 58 versiones remotas sin fuente en este checkout. No asumir que el diff del listado significa que cada migración local carece de esquema: el detalle de los seis objetos F3 comprobados y la secuencia segura de reconciliación está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`. No usar `db push` ni `migration repair` aún.
