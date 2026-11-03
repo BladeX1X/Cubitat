@@ -11,13 +11,13 @@ envía documentos a Supabase desde el navegador.
 
 - La ruta `/postular-agente` requiere sesión; el login devuelve a la ruta
   pendiente después de autenticarse.
-- La navegación y el chunk solo se habilitan cuando el build `phase2-dev`
-  define `VITE_PHASE3_UI_ENABLED=true`.
+- La navegación y el chunk solo se habilitan en DEV cuando
+  `VITE_PHASE3_UI_ENABLED=true`, o en el perfil explícito `phase3-production`.
 - El Worker valida la identidad, limita frecuencia/tamaño, inspecciona firmas
   reales, sube al bucket privado y persiste con una RPC reservada al service role.
-- Esta pantalla es solo de pruebas mientras no estén activos la revisión AAL2,
-  la notificación de correo y la purga 30 días después de la decisión. El aviso
-  visible impide presentar esos controles como ya disponibles.
+- El perfil de producción solo prepara esta pantalla: el Worker permanece
+  desactivado (`PHASE3_ENABLED=false`) hasta reconciliar y verificar el esquema
+  hosted y configurar sus secretos. No desplegar antes de esa validación.
 
 ## Accesibilidad y estados
 

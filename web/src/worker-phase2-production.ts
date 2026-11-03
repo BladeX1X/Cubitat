@@ -10,6 +10,10 @@ import { dispatchPendingPushNotifications } from './worker/push-notifications';
 import { purgeApprovedKycEvidence } from './worker/kyc-evidence-retention';
 import { logWorkerEvent } from './worker/logger';
 import { readBoundedJsonObject } from './worker/boundedJson.js';
+import { handleAgentApplicationSubmission } from './worker/agent-applications';
+import { handleAgentApplicationDocumentLinks } from './worker/agent-application-documents';
+import { dispatchPendingAgentApplicationEmails } from './worker/agent-application-email-dispatcher';
+import { purgeFinalAgentApplicationEvidence } from './worker/agent-application-evidence-retention';
 import {
   authenticateImageHashRequest,
   backfillPropertyImageDuplicates,
@@ -22,6 +26,7 @@ export { RateLimiter } from './rate-limiter';
 interface ProductionPhaseTwoEnv extends Env {
   CONTACT_METRICS_SALT?: string;
   PHASE2_IMAGE_DUPLICATES_ENABLED?: string;
+  PHASE3_ENABLED?: string;
 }
 
 const worker = createWorker({
@@ -38,6 +43,7 @@ const worker = createWorker({
     'get_property_trust_score',
     'get_admin_property_image_hash_status',
     'get_admin_property_image_duplicate_candidates',
+    'ensure_agent_referral_link',
   ],
 });
 
@@ -49,12 +55,50 @@ export function runProductionScheduledTasks(
   if (env.PHASE2_IMAGE_DUPLICATES_ENABLED === 'true') {
     tasks.push(backfillPropertyImageDuplicates(env));
   }
+  if (env.PHASE3_ENABLED === 'true') {
+    tasks.push(dispatchPendingAgentApplicationEmails(env));
+    tasks.push(purgeFinalAgentApplicationEvidence(env));
+  }
   ctx.waitUntil(Promise.all(tasks));
 }
 
 export default {
   async fetch(request: Request, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const agentApplicationDocumentsMatch = url.pathname.match(/^\/api\/phase3\/agent-applications\/([^/]+)\/documents$/);
+    const respondPhase3 = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), {
+      status,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+      },
+    });
+    if (agentApplicationDocumentsMatch) {
+      if (env.PHASE3_ENABLED !== 'true') return respondPhase3(404, { error: 'Not found' });
+      if (request.method !== 'GET') return respondPhase3(405, { error: 'Method not allowed' });
+      const userId = await authenticateImageHashRequest(request, env);
+      if (!userId) return respondPhase3(401, { error: 'Unauthorized' });
+      const limit = await checkRateLimit(env, `user:${userId}:agent-application-documents:v1`, 10, 10 * 60 * 1000);
+      if (!limit.allowed) return rateLimitResponse(limit.resetAt);
+      return handleAgentApplicationDocumentLinks(request, agentApplicationDocumentsMatch[1]!, env);
+    }
+    if (url.pathname === '/api/phase3/agent-applications') {
+      if (env.PHASE3_ENABLED !== 'true') return respondPhase3(404, { error: 'Not found' });
+      if (request.method !== 'POST') return respondPhase3(405, { error: 'Method not allowed' });
+      const userId = await authenticateImageHashRequest(request, env);
+      if (!userId) {
+        logWorkerEvent('warn', 'agent_application_submission_failed', { status: 401 });
+        return respondPhase3(401, { error: 'Unauthorized' });
+      }
+      const limit = await checkRateLimit(env, `user:${userId}:agent-application:v1`, 2, 24 * 60 * 60 * 1000);
+      if (!limit.allowed) {
+        logWorkerEvent('warn', 'agent_application_submission_failed', { status: 429 });
+        return rateLimitResponse(limit.resetAt);
+      }
+      return handleAgentApplicationSubmission(request, env, userId);
+    }
     if (url.pathname === '/api/phase2/property-image-duplicates') {
       const headers = {
         'Content-Type': 'application/json; charset=utf-8',

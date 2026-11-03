@@ -1035,3 +1035,12 @@ web/supabase/config.toml
 web/supabase/migrations/
 web/.env.example
 ```
+
+## Preparación de código para Fase 3
+
+El perfil candidato `phase3-production` genera la aplicación con módulos F3 y requiere la configuración pública de Supabase productivo. Comandos:
+
+- `npm run build:phase3-production` genera sitemap dinámico y verifica los bundles; requiere `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de producción.
+- `npm run build:phase3-production:ci` usa sitemap estático para CI.
+
+No desplegar todavía: `PHASE3_ENABLED` sigue en `false`; primero reconciliar y verificar migraciones y objetos hosted, completar QA autenticado y configurar secretos del Worker. La configuración pública de Supabase no reemplaza los secretos privados.

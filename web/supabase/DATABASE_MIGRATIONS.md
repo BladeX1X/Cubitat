@@ -856,3 +856,9 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - Solo el registro por correo transmite el código de referido; la metadata de rol del cliente se ignora y el perfil nace como `buyer`. OAuth, visitas, contactos y comisiones permanecen fuera de este cambio y pausados.
 - `supabase/tests/agent_signup_referral_attribution_local.sql` verifica elegibilidad, seguridad del ledger, inmutabilidad y protección contra elevación de rol. El contrato se añade al job `database-security`.
 - Candidata de `feature/phase3-production-main`, PR borrador #186. No aplicar a Supabase local persistente, DEV ni producción; reconciliar primero historial de migraciones y obtener CI verde.
+
+## Perfil Worker F3 preparado — no activado (2026-11-03)
+
+- El Worker productivo incluye rutas de postulación/documentos y tareas programadas de correo/purga detrás de `PHASE3_ENABLED`.
+- `web/wrangler.jsonc` fija `PHASE3_ENABLED=false`; esto no sustituye ni crea objetos SQL/Storage.
+- `ensure_agent_referral_link()` solo se añadió a la allowlist autenticada. La migración de atribución sigue candidata y el esquema hosted DEV permanece pendiente de reconciliación; no habilitar el Worker ni desplegar el bundle F3 antes de confirmar el esquema y permisos reales.

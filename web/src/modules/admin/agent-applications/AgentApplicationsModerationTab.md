@@ -2,7 +2,8 @@
 
 `AgentApplicationsModerationTab` es la vista administrativa de la cola abierta
 de solicitudes. Solo se incluye en el bundle de DEV cuando se activa
-`VITE_PHASE3_UI_ENABLED`; la pantalla sigue dentro de `AdminMfaGate`.
+`VITE_PHASE3_UI_ENABLED` o el perfil `phase3-production`; la pantalla sigue
+dentro de `AdminMfaGate`.
 RLS determina qué filas puede cargar la sesión y el Worker vuelve a comprobar
 `is_admin_aal2()` antes de emitir enlaces del CV y el título.
 

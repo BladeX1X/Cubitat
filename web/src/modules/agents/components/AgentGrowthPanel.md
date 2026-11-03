@@ -23,7 +23,8 @@ componente coordina acciones mediante repositorios; no accede a tablas.
   sus datos y recibir seguimiento.
 - Los cambios de estado usan `update_agent_lead_status`; los estados
   `converted` y `lost`, y las comisiones, son decisiones administrativas.
-- Los datos quedan dentro del entorno local hasta una promoción revisada.
+- El perfil `phase3-production` incluye el panel pero no activa las rutas del
+  Worker ni sustituye la instalación/verificación de migraciones hosted.
 
 ## Interfaz
 

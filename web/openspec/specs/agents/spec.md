@@ -338,3 +338,19 @@ por `PHASE3_ENABLED=true`, borra el CV y título 30 días después de una decisi
 final, con tres intentos y limpieza de rutas cuando termina. Sus contratos pgTAP
 quedan agregados a CI; no habilitar hasta que pasen y reconciliar las cuentas
 agent legacy en DEV.
+
+## Perfil productivo preparado (2026-11-03)
+
+La rama candidata añade el perfil `phase3-production`, que requiere la URL y
+clave pública de Supabase de producción, incluye las vistas F3 y pasa los
+verificadores de bundle F2/F3. El Worker productivo contiene rutas autenticadas
+para postulaciones y enlaces privados de documentos, limitadas por usuario, y
+trabajos programados de correo/purga. `PHASE3_ENABLED` permanece explícitamente
+en `false` en `wrangler.jsonc`, por lo que esas operaciones responden 404 y los
+trabajos F3 no se ejecutan.
+
+Esto prepara código y CI; no acredita el esquema hosted. Las seis migraciones
+F3 candidatas y sus objetos/bucket continúan pendientes de reconciliación en
+DEV conforme al handoff, y la base de producción no se modificó. No habilitar
+la bandera ni desplegar el perfil hasta confirmar el esquema, permisos, bucket,
+secretos y una prueba de extremo a extremo en un entorno persistente autorizado.

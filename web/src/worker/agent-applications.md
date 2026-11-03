@@ -3,9 +3,8 @@
 `agent-applications.ts` valida y recibe el envío de postulación en el Worker.
 Deriva PDF, JPEG o PNG a partir de los bytes y no confía en el nombre ni el MIME
 que envía el navegador. El tamaño máximo es inclusivo: 10 MiB exactos se aceptan
-y cualquier byte adicional se rechaza. La ruta se monta únicamente en el Worker
-DEV y requiere `PHASE3_ENABLED=true`; el valor del perfil DEV se conserva en
-`false` por defecto.
+y cualquier byte adicional se rechaza. La ruta requiere `PHASE3_ENABLED=true`;
+el valor se conserva en `false` por defecto tanto en DEV como en producción.
 
 El Worker limita el cuerpo antes de analizar multipart, exige sesión autenticada,
 valida campos/provincia y requiere CV y título/diploma. Sube con el secreto de
@@ -35,7 +34,7 @@ apagados hasta configurar el Worker DEV.
 
 ## Acceso administrativo temporal a documentos
 
-`GET /api/phase3/agent-applications/:id/documents` solo se monta en DEV y con
+`GET /api/phase3/agent-applications/:id/documents` solo se monta con
 `PHASE3_ENABLED=true`. El Worker valida la sesión, limita frecuencia y consulta
 `is_admin_aal2()` con el JWT del usuario antes de leer rutas usando service role.
 Luego pide a Storage URLs firmadas de dos minutos para el bucket esperado,

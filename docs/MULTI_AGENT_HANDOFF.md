@@ -4047,3 +4047,11 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 - `supabase migration list --linked` confirma que el ledger vinculado a DEV sigue híbrido: seis migraciones F3 candidatas, de `20261103120000` a `20261103170000`, no están registradas remotamente, además de otras versiones remotas sin fuente local. No ejecutar `db push` ni `migration repair` hasta reconciliar.
 - Consulta SQL de solo lectura confirmó en DEV: `agent_referral_links` existe, `agent_signup_attributions` no existe y el permiso `EXECUTE` a `ensure_agent_referral_link()` está revocado para `authenticated` y `anon`. No se aplicó nada.
 - PR actualizado con ese estado. Siguiente paso técnico: reconciliar migraciones y planear el build/QA de release F3; mantener DEV/prod sin cambios hasta tener una ruta de esquema segura.
+
+## F3 — perfil productivo de código preparado (2026-11-03)
+
+- La rama añade `phase3-production` y comandos normal/CI; incluye el formulario, panel de crecimiento y moderación F3. El verificador comprueba marcadores F3 y que no aparezca el proyecto DEV.
+- El Worker productivo contempla envío de postulaciones y enlaces privados, rate limiting y tareas programadas de outbox/purga. `PHASE3_ENABLED=false` permanece en `web/wrangler.jsonc`; las rutas responden 404 y las tareas no corren por defecto.
+- `ensure_agent_referral_link()` está en la allowlist autenticada del Worker; no se exponen RPC de visitas, comisiones u OAuth.
+- Gates locales tras este cambio: lint PASS; 181 archivos, 814 PASS/1 SKIP; build base PASS; `build:phase3-production:ci` PASS. No hubo deploy, merge ni cambios en Supabase.
+- Sigue bloqueado habilitar o desplegar F3 hasta reconciliar ledger/esquema DEV, verificar QA autenticado persistente y configurar secretos requeridos. Producción continúa intacta.
