@@ -4059,3 +4059,18 @@ El usuario confirmó que los 8 anuncios sin hash procesable son anuncios de prue
 ## Reconciliación F3 DEV — actualización de solo lectura (2026-11-03)
 
 La consulta actual a DEV encontró 11 versiones solo locales (5 de F2 y las 6 candidatas F3) y 58 versiones solo remotas sin fuente en esta rama. Los objetos principales de las seis migraciones F3 están ausentes; `agent_referral_links`/`ensure_agent_referral_link()` sí existen pero el EXECUTE está revocado para authenticated/anon. No se aplicó SQL ni se reparó el ledger. Esta lectura más reciente reemplaza como snapshot operativo a las cifras anteriores; el detalle está en `docs/RECONCILIACION_F3_DEV_2026-11-03.md`.
+
+### F3 — Recuperación de fuentes de migración DEV — 2026-11-03
+
+- Se localizaron 56 archivos fuente estándar en `D:\cubitat\web\supabase\migrations`; copiados únicamente al worktree aislado `D:\cubitat-phase3-release`, con SHA-256 igual entre origen y destino. En origen estaban sin registrar en Git, así que aún son fuentes candidatas hasta validar el replay y comparar el catálogo.
+- La versión `20261101185000_phase4_listing_ai_moderation_claims_reconciled.sql` se localizó en `dev-migrations`; está clasificada DEV-only y no se añadió a `migrations/`.
+- `supabase migration list --linked` fue de solo lectura: 11 versiones siguen locales sin marca remota (5 F2 + 6 F3); las 56 estándar ya coinciden con remoto. El ledger deja la DEV-only fuera de la lista estándar, como corresponde.
+- CI previo PASS; el replay con estas fuentes nuevas está pendiente. No `db push`, no `migration repair`, no DDL ni cambios a datos; Producción intacta.
+- Próximo: lint, suite, build y CI de replay aislado; comparar catálogo y documentar divergencias. No habilitar F3 ni desplegar hasta completar eso y QA autenticado.
+
+### Resultado de gates para replay de fuentes — 2026-11-03
+
+- `npm run lint`: PASS.
+- `npm run test:run -- --maxWorkers=2`: 181 archivos, 814 PASS, 1 SKIP. La suite emitió avisos de conexiones de prueba a localhost:3000/Turnstile, pero terminó con exit code 0.
+- `npm run build`: PASS con sitemap estático de fallback. `npm run build:phase3-production:ci`: PASS con los placeholders públicos definidos por el workflow; no usa credenciales ni verifica despliegue.
+- Falta que GitHub Actions ejecute `database-security` sobre las 56 fuentes recuperadas; después revisar cualquier divergencia del replay.

@@ -88,6 +88,21 @@ exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
 
+### Reconciliación DEV — fuentes encontradas en checkout de auditoría (2026-11-03)
+
+- Se localizaron 56 fuentes correspondientes a versiones del ledger DEV en
+  `D:\cubitat\web\supabase\migrations`; copias aisladas en esta rama tienen
+  SHA-256 idéntico. Como el checkout de origen las tenía sin registrar en Git,
+  trátalas como candidatas hasta pasar replay y cotejo de catálogo; no implica
+  que estén aplicadas a DEV ni autoriza reparar su ledger.
+- `20261101185000_phase4_listing_ai_moderation_claims_reconciled.sql` se encontró
+  bajo `D:\cubitat\web\supabase\dev-migrations` y se conserva en
+  `web/supabase/dev-migrations/`. Es DEV-only; no mover a `migrations/` ni
+  incluir en una promoción productiva.
+- Ningún `db push`, `migration repair`, DDL hosted o cambio de producción se
+  ejecutó. Consultar `docs/RECONCILIACION_F3_DEV_2026-11-03.md` para los
+  hallazgos de esquema F3 y el orden restante.
+
 ### Endurecimiento de permisos de Fase 2 en producción — 2026-10-10
 
 - `20261010110000_harden_production_phase2_privileges.sql`: migración agregada por PR #120, fusionada en `main` como `2cd21a0c210b7e6f402eeed9add67bb06075bf55` y aplicada en Supabase producción tras autorización expresa el 2026-10-10. Historial y permisos efectivos verificados después.
