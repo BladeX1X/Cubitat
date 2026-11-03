@@ -3,9 +3,11 @@ import { ExternalLink, FileText, RefreshCw, ShieldCheck } from 'lucide-react'
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from '../components/AdminStates'
 import { AdminPagination } from '../components/AdminPagination'
 import { Button } from '../../../shared/ui/button'
+import { Textarea } from '../../../shared/ui/textarea'
 import {
   fetchAgentApplicationDocumentLinks,
   fetchPendingAgentApplications,
+  reviewAgentApplication,
   AGENT_APPLICATIONS_PAGE_SIZE,
   type AgentApplicationDocumentLinks,
   type PendingAgentApplication,
@@ -26,6 +28,10 @@ export function AgentApplicationsModerationTab() {
   const [error, setError] = useState<string | null>(null)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [loadingDocumentsId, setLoadingDocumentsId] = useState<string | null>(null)
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   const load = useCallback(async (targetPage: number) => {
     setLoading(true)
@@ -64,6 +70,21 @@ export function AgentApplicationsModerationTab() {
     }
   }
 
+  async function saveReviewAction(application: PendingAgentApplication, status: 'reviewing' | 'waitlisted' | 'rejected', reason?: string) {
+    setActionLoadingId(application.id)
+    setActionError(null)
+    try {
+      await reviewAgentApplication(application.id, status, reason)
+      setRejectingApplicationId(null)
+      setRejectionReason('')
+      await load(page)
+    } catch (cause: unknown) {
+      setActionError(cause instanceof Error ? cause.message : 'No se pudo guardar la acción administrativa.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
   if (loading) return <AdminLoadingState message="Cargando postulaciones de agentes..." />
   if (error) return <AdminErrorState message={error} onRetry={() => void load(page)} />
   if (total === 0) {
@@ -82,6 +103,7 @@ export function AgentApplicationsModerationTab() {
       </header>
 
       {documentError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{documentError}</p>}
+      {actionError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
       <div className="space-y-3">
         {applications.map((application) => {
           const links = linksByApplication[application.id]
@@ -103,6 +125,21 @@ export function AgentApplicationsModerationTab() {
                 <a className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm font-semibold text-[#035f53] hover:bg-neutral-50" href={links.diploma_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" />Abrir título</a>
                 <span className="self-center text-xs text-neutral-500">Enlaces temporales; vuelve a solicitarlos si expiran.</span>
               </div>}
+              <div className="mt-4 flex flex-col gap-2 border-t border-neutral-100 pt-3 sm:flex-row sm:flex-wrap">
+                {application.status !== 'reviewing' && <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => void saveReviewAction(application, 'reviewing')}>Iniciar revisión</Button>}
+                {application.status !== 'waitlisted' && <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => void saveReviewAction(application, 'waitlisted')}>Enviar a lista de espera</Button>}
+                {rejectingApplicationId === application.id ? (
+                  <div className="w-full space-y-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                    <label htmlFor={`rejection-reason-${application.id}`} className="block text-sm font-semibold text-neutral-800">Motivo del rechazo</label>
+                    <Textarea id={`rejection-reason-${application.id}`} value={rejectionReason} maxLength={500} onChange={(event) => setRejectionReason(event.target.value)} placeholder="Explica brevemente por qué no se acepta la postulación." />
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button type="button" variant="outline" className="border-red-600 text-red-700 hover:bg-red-50" disabled={actionLoadingId === application.id || rejectionReason.trim().length < 3} onClick={() => void saveReviewAction(application, 'rejected', rejectionReason)}>Confirmar rechazo</Button>
+                      <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => { setRejectingApplicationId(null); setRejectionReason('') }}>Cancelar</Button>
+                    </div>
+                    <p className="text-xs text-neutral-600">Al confirmar, la decisión queda registrada y los documentos se programan para eliminación en 30 días.</p>
+                  </div>
+                ) : <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => { setRejectingApplicationId(application.id); setRejectionReason('') }}>Rechazar</Button>}
+              </div>
             </article>
           )
         })}

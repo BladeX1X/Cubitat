@@ -27,8 +27,13 @@
   a DEV ni producción. La interfaz protegida permite consultar la cola paginada
   y abrir enlaces privados de dos minutos con comprobación AAL2 en Worker; aún
   no toma decisiones. Faltan notificación, revisión/decisión AAL2, asignación de cupo
-  provincial transaccional y purga tras 30 días. El requisito de postulación
-  permanece abierto.
+  provincial transaccional y purga tras 30 días. La rama candidata agrega una
+  RPC con acciones AAL2 auditadas para iniciar revisión, lista de espera y
+  rechazo con motivo; la aprobación permanece bloqueada hasta que exista una
+  asignación de cupo provincial transaccional. El rechazo programa eliminación
+  a los 30 días, pero el proceso automático de purga aún no está desplegado.
+  El requisito de postulación permanece parcialmente implementado y no debe
+  considerarse cerrado.
 
 Hasta implementar los contratos descritos en esta especificación, el panel
 MUST NOT aprovisionar códigos ni consultar repositorios de referidos, contactos

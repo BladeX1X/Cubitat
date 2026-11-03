@@ -5,6 +5,7 @@ import { AgentApplicationsModerationTab } from './AgentApplicationsModerationTab
 const repository = vi.hoisted(() => ({
   fetchPendingAgentApplications: vi.fn(),
   fetchAgentApplicationDocumentLinks: vi.fn(),
+  reviewAgentApplication: vi.fn(),
 }))
 
 vi.mock('./agentApplicationsRepository', () => ({ ...repository, AGENT_APPLICATIONS_PAGE_SIZE: 20 }))
@@ -28,6 +29,7 @@ describe('AgentApplicationsModerationTab', () => {
       diploma_url: 'https://supabase.example/diploma?token=short',
       expires_in: 120,
     })
+    repository.reviewAgentApplication.mockResolvedValue(undefined)
   })
 
   it('lists application details and requests private links only after the moderator opens documents', async () => {
@@ -56,5 +58,29 @@ describe('AgentApplicationsModerationTab', () => {
     render(<AgentApplicationsModerationTab />)
 
     await waitFor(() => expect(screen.getByText('No hay postulaciones pendientes')).toBeInTheDocument())
+  })
+
+  it('starts review through the AAL2-protected RPC repository action', async () => {
+    render(<AgentApplicationsModerationTab />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Iniciar revisión' }))
+    await waitFor(() => expect(repository.reviewAgentApplication).toHaveBeenCalledWith(application.id, 'reviewing', undefined))
+    expect(repository.fetchPendingAgentApplications).toHaveBeenCalledTimes(2)
+  })
+
+  it('requires a reason before making a final rejection decision', async () => {
+    render(<AgentApplicationsModerationTab />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Rechazar' }))
+
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar rechazo' })
+    expect(confirmButton).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Motivo del rechazo'), { target: { value: 'No cumple el requisito de formación.' } })
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => expect(repository.reviewAgentApplication).toHaveBeenCalledWith(
+      application.id,
+      'rejected',
+      'No cumple el requisito de formación.',
+    ))
   })
 })

@@ -48,3 +48,16 @@ export async function fetchAgentApplicationDocumentLinks(applicationId: string):
   }
   return await response.json() as AgentApplicationDocumentLinks
 }
+
+export async function reviewAgentApplication(
+  applicationId: string,
+  status: 'reviewing' | 'waitlisted' | 'rejected',
+  reason?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('review_agent_application', {
+    p_application_id: applicationId,
+    p_status: status,
+    p_reason: reason?.trim() || null,
+  })
+  if (error) throw new Error('No se pudo guardar la decisión administrativa.')
+}

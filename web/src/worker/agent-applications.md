@@ -15,13 +15,15 @@ tablas privadas de solicitudes/eventos, el bucket privado, lectura de estado por
 propietario y lectura administrativa AAL2; el RPC impone una solicitud abierta
 por cuenta y un límite diario para evitar bypass directo.
 
-Este bloque sigue parcial: la bandera está apagada y la migración solo existe en
-el candidato. La migración y `supabase/tests/agent_application_intake_local.sql`
-se validaron en un scratch aislado (6/6 checks pgTAP); no se aplicaron a DEV ni
-producción. Faltan notificación con enlaces firmados,
-revisión/decisión AAL2, asignación transaccional de cuatro agentes por provincia
-y eliminación de documentos 30 días después de la decisión. Las pruebas Worker
-actuales cubren 11 escenarios. El formulario cliente está documentado en
+Este bloque sigue parcial: la bandera está apagada y las migraciones solo existen
+en el candidato. La migración de intake y
+`supabase/tests/agent_application_intake_local.sql` se validaron en un scratch
+aislado (6/6 checks pgTAP); no se aplicaron a DEV ni producción. Se está
+incorporando una RPC AAL2 para iniciar revisión, lista de espera y rechazo
+auditados; aprobación queda bloqueada hasta implementar la asignación
+transaccional de cuatro agentes por provincia. Faltan notificación con enlaces
+firmados y purga automática a los 30 días. Las pruebas Worker actuales cubren 11
+escenarios. El formulario cliente está documentado en
 `src/pages/agents/AgentApplicationPage.md` y solo se incluye con
 `VITE_PHASE3_UI_ENABLED=true` en build `phase2-dev`; correo y purga siguen
 pendientes.
@@ -33,5 +35,6 @@ pendientes.
 `is_admin_aal2()` con el JWT del usuario antes de leer rutas usando service role.
 Luego pide a Storage URLs firmadas de dos minutos para el bucket esperado,
 verifica origen y bucket de ambas y devuelve `Cache-Control: no-store`. Nunca
-registra las rutas ni las URLs. El cliente todavía no tiene la pestaña de
-moderación que consume esta ruta; el correo y la decisión AAL2 aún no existen.
+registra las rutas ni las URLs. La pestaña administrativa de DEV consume esta
+ruta dentro de `AdminMfaGate`; el RPC de revisión persiste transiciones
+permitidas y eventos inmutables. No se ha validado contra Supabase DEV.

@@ -4,6 +4,24 @@ Fecha: 2026-11-03
 Estado: reglas provisionales actualizadas; promoción productiva en preparación, no desplegada.  
 Entorno: producción inspeccionada en modo solo lectura; no se cambiaron datos ni esquema.
 
+## Avance del candidato — 2026-11-03
+
+La rama `feature/phase3-production-main` y el PR borrador #186 incorporan
+intake autenticado DEV, carga privada CV/título, acceso administrativo de corta
+duración a documentos y cola de moderación paginada bajo `AdminMfaGate`. Se
+añadió una RPC para iniciar revisión, enviar a lista de espera y rechazar con
+motivo, exigiendo AAL2 en PostgreSQL y registrando eventos inmutables. El rechazo
+programa la eliminación a 30 días. No existe aún purga automática, correo ni
+aprobación; la aprobación espera el control transaccional del cupo de cuatro
+agentes activos por provincia.
+
+El candidato está verificado por lint, 11 pruebas focales, suite (179 archivos,
+792 aprobadas y 1 omitida), build productivo base, build DEV con UI F3 y
+Wrangler dry-run. La migración nueva **no** se validó en scratch: Docker rechazó
+crear una red por agotamiento de los rangos de subred. No limpiar ni detener
+contenedores ajenos para resolverlo. No se aplicaron migraciones a Supabase
+persistente, DEV o producción, y no se desplegó ni fusionó el PR.
+
 ## Decisiones comunicadas por el dueño
 
 - La postulación de agentes queda abierta; el dueño podrá seleccionar personas
