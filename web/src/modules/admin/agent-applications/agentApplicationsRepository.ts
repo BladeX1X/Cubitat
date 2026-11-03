@@ -51,13 +51,17 @@ export async function fetchAgentApplicationDocumentLinks(applicationId: string):
 
 export async function reviewAgentApplication(
   applicationId: string,
-  status: 'reviewing' | 'waitlisted' | 'rejected',
+  status: 'reviewing' | 'waitlisted' | 'rejected' | 'approved',
   reason?: string,
-): Promise<void> {
-  const { error } = await supabase.rpc('review_agent_application', {
+): Promise<'reviewing' | 'waitlisted' | 'rejected' | 'approved'> {
+  const { data, error } = await supabase.rpc('review_agent_application', {
     p_application_id: applicationId,
     p_status: status,
     p_reason: reason?.trim() || null,
   })
   if (error) throw new Error('No se pudo guardar la decisión administrativa.')
+  if (data !== 'reviewing' && data !== 'waitlisted' && data !== 'rejected' && data !== 'approved') {
+    throw new Error('El servidor devolvió un estado de postulación inesperado.')
+  }
+  return data
 }

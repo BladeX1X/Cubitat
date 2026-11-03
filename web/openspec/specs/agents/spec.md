@@ -314,3 +314,17 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND ningún cambio de este alcance MUST aplicarse automáticamente a Supabase
   DEV o producción
 
+
+## Implementación candidata — capacidad provincial (2026-11-03)
+
+La migración `20261103150000_agent_application_province_capacity.sql` agrega
+asignaciones privadas e historial. `review_agent_application(..., 'approved')`
+requiere AAL2 y KYC verificado, obtiene lock transaccional por provincia y asigna
+una de cuatro plazas; si la capacidad está completa devuelve `waitlisted`. La
+UI administrativa muestra ambos resultados. Cambiar el perfil al rol agent sin
+asignación está bloqueado y dejar de ser agente verificado libera la plaza.
+
+El contrato pgTAP debe pasar en CI aislado antes de considerar la migración
+verificada. Este control cuenta asignaciones explícitas; antes de usarlo en DEV,
+reconciliar cada cuenta agent previa con su provincia principal. No desplegar
+hasta verificar esa reconciliación y la purga automática de documentos.

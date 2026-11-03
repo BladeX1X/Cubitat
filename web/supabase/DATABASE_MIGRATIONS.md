@@ -836,3 +836,10 @@ Cadena productiva aplicada al proyecto `tohjzoncoosvjbjcakdl`. Estas migraciones
 - `supabase/tests/agent_application_email_outbox_local.sql` comprueba permisos, RLS y trigger. GitHub Actions ejecutará el contrato después de reconstruir el esquema aislado.
 - Worker DEV envía por Resend solo con `PHASE3_ENABLED=true` y configuración completa. `AGENT_APPLICATION_EMAIL_TO` es un secreto externo; no se define aquí ni se envió correo. Enlaces firmados de CV/título: 10 min, sin adjuntos.
 - No aplicar a Supabase persistente, DEV o producción sin revisar el resultado de CI y reconciliar primero el ledger.
+
+## F3 candidata — cupo provincial — no aplicado
+
+- `20261103150000_agent_application_province_capacity.sql` guarda asignaciones activas e históricas, limita a cuatro por provincia bajo lock transaccional, exige KYC y libera la plaza al dejar de ser agente verificado.
+- La aprobación devuelve `approved` o `waitlisted`; el panel administrativo anuncia el resultado.
+- `supabase/tests/agent_application_province_capacity_local.sql` cubre contrato, permisos, índices y triggers; queda agregado al CI aislado.
+- No aplicar a Supabase persistente, DEV ni producción antes de reconciliar perfiles agent previos con una provincia principal.

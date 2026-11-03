@@ -34,8 +34,8 @@ SELECT ok(
   'rejection schedules evidence deletion 30 days after the final decision'
 );
 SELECT ok(
-  pg_get_functiondef('public.review_agent_application(uuid,text,text)'::regprocedure) NOT ILIKE '%approved%',
-  'approval is blocked until province capacity can be assigned transactionally'
+  pg_get_functiondef('public.review_agent_application(uuid,text,text)'::regprocedure) ILIKE '%agent_province_assignments%',
+  'approval uses the provincial assignment ledger'
 );
 SELECT ok(
   EXISTS (

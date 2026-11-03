@@ -8,20 +8,20 @@ Entorno: producción inspeccionada en modo solo lectura; no se cambiaron datos n
 
 La rama `feature/phase3-production-main` y el PR borrador #186 incorporan
 intake autenticado DEV, carga privada CV/título, acceso administrativo de corta
-duración a documentos y cola de moderación paginada bajo `AdminMfaGate`. Se
-añadió una RPC para iniciar revisión, enviar a lista de espera y rechazar con
-motivo, exigiendo AAL2 en PostgreSQL y registrando eventos inmutables. El rechazo
-programa la eliminación a 30 días. No existe aún purga automática, correo ni
-aprobación; la aprobación espera el control transaccional del cupo de cuatro
-agentes activos por provincia.
+duración a documentos y cola de moderación paginada bajo `AdminMfaGate`. Las
+acciones AAL2 permiten revisar, esperar, rechazar y aprobar con evento inmutable.
+La aprobación exige KYC y asigna una de cuatro plazas dentro de un lock
+transaccional por provincia; cuando está llena, conserva la solicitud en espera.
+Las decisiones finales programan eliminación a 30 días. La purga automática
+sigue pendiente, y el cupo hosted requiere reconciliar las cuentas agent previas.
 
 La migración candidata `20261103140000_agent_application_email_outbox.sql`
 prepara un outbox privado, encolado en la transacción de intake. Un cron DEV
 condicionado por `PHASE3_ENABLED=true` reclama el outbox y envía por Resend un
 aviso a `AGENT_APPLICATION_EMAIL_TO`, configurable fuera del código. El correo
 lleva URLs privadas firmadas con vencimiento de 10 minutos y no adjunta los
-documentos. El envío permanece apagado: no se configuraron secretos ni se envió
-correo real; el contrato pgTAP nuevo aún espera la ejecución de CI.
+documentos. CI validó outbox e intake/revisión en base aislada; el envío permanece
+apagado: no se configuraron secretos ni se envió correo real.
 
 El candidato está verificado por lint, 11 pruebas focales, suite (179 archivos,
 792 aprobadas y 1 omitida), build productivo base, build DEV con UI F3 y

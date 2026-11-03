@@ -92,3 +92,4 @@ jobs:
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_intake_local.sql
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_review_local.sql
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_email_outbox_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_province_capacity_local.sql

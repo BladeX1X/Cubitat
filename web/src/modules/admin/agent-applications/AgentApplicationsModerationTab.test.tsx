@@ -68,6 +68,23 @@ describe('AgentApplicationsModerationTab', () => {
     expect(repository.fetchPendingAgentApplications).toHaveBeenCalledTimes(2)
   })
 
+  it('shows when an approval receives a province place', async () => {
+    repository.reviewAgentApplication.mockResolvedValueOnce('approved')
+    render(<AgentApplicationsModerationTab />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprobar y asignar plaza' }))
+    expect(await screen.findByRole('status')).toHaveTextContent(/plaza provincial asignada/i)
+    expect(repository.reviewAgentApplication).toHaveBeenCalledWith(application.id, 'approved', undefined)
+  })
+
+  it('explains that a full province keeps an approved candidate waitlisted', async () => {
+    repository.reviewAgentApplication.mockResolvedValueOnce('waitlisted')
+    render(<AgentApplicationsModerationTab />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprobar y asignar plaza' }))
+    expect(await screen.findByRole('status')).toHaveTextContent(/cuatro agentes activos.*lista de espera/i)
+  })
+
   it('requires a reason before making a final rejection decision', async () => {
     render(<AgentApplicationsModerationTab />)
     fireEvent.click(await screen.findByRole('button', { name: 'Rechazar' }))

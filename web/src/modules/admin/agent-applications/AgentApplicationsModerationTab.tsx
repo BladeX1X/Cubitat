@@ -30,6 +30,7 @@ export function AgentApplicationsModerationTab() {
   const [loadingDocumentsId, setLoadingDocumentsId] = useState<string | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
 
@@ -70,11 +71,17 @@ export function AgentApplicationsModerationTab() {
     }
   }
 
-  async function saveReviewAction(application: PendingAgentApplication, status: 'reviewing' | 'waitlisted' | 'rejected', reason?: string) {
+  async function saveReviewAction(application: PendingAgentApplication, status: 'reviewing' | 'waitlisted' | 'rejected' | 'approved', reason?: string) {
     setActionLoadingId(application.id)
     setActionError(null)
+    setActionMessage(null)
     try {
-      await reviewAgentApplication(application.id, status, reason)
+      const result = await reviewAgentApplication(application.id, status, reason)
+      if (status === 'approved') {
+        setActionMessage(result === 'approved'
+          ? 'Postulación aprobada y plaza provincial asignada. El perfil tenía KYC aprobado.'
+          : 'La provincia ya tiene cuatro agentes activos. La postulación quedó en lista de espera.')
+      }
       setRejectingApplicationId(null)
       setRejectionReason('')
       await load(page)
@@ -88,7 +95,7 @@ export function AgentApplicationsModerationTab() {
   if (loading) return <AdminLoadingState message="Cargando postulaciones de agentes..." />
   if (error) return <AdminErrorState message={error} onRetry={() => void load(page)} />
   if (total === 0) {
-    return <AdminEmptyState title="No hay postulaciones pendientes" message="Las nuevas solicitudes aparecerán aquí para revisión administrativa." />
+    return <div className="space-y-3">{actionMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{actionMessage}</p>}<AdminEmptyState title="No hay postulaciones pendientes" message="Las nuevas solicitudes aparecerán aquí para revisión administrativa." /></div>
   }
 
   return (
@@ -104,6 +111,7 @@ export function AgentApplicationsModerationTab() {
 
       {documentError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{documentError}</p>}
       {actionError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
+      {actionMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{actionMessage}</p>}
       <div className="space-y-3">
         {applications.map((application) => {
           const links = linksByApplication[application.id]
@@ -126,6 +134,8 @@ export function AgentApplicationsModerationTab() {
                 <span className="self-center text-xs text-neutral-500">Enlaces temporales; vuelve a solicitarlos si expiran.</span>
               </div>}
               <div className="mt-4 flex flex-col gap-2 border-t border-neutral-100 pt-3 sm:flex-row sm:flex-wrap">
+                <p className="w-full text-xs text-neutral-600">Al aprobar, el servidor confirma el KYC y asigna una plaza solo si quedan menos de cuatro agentes activos en esta provincia; de lo contrario, conserva la solicitud en espera.</p>
+                <Button type="button" disabled={actionLoadingId === application.id} onClick={() => void saveReviewAction(application, 'approved')}>{actionLoadingId === application.id ? 'Guardando...' : 'Aprobar y asignar plaza'}</Button>
                 {application.status !== 'reviewing' && <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => void saveReviewAction(application, 'reviewing')}>Iniciar revisión</Button>}
                 {application.status !== 'waitlisted' && <Button type="button" variant="outline" disabled={actionLoadingId === application.id} onClick={() => void saveReviewAction(application, 'waitlisted')}>Enviar a lista de espera</Button>}
                 {rejectingApplicationId === application.id ? (
