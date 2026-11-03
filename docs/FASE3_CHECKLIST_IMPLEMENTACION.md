@@ -59,7 +59,7 @@ Esta lista convierte las decisiones del dueño y la propuesta técnica en tareas
 ## 3. I. Catálogo, prueba y permisos de suscripción
 
 - [ ] Acordar entitlement/matriz de funciones gratis y de pago.
-- [ ] Crear catálogo de planes versionado (tipo, período, precio CUP, fechas de vigencia); cambios futuros no alteran historial.
+- [ ] Crear catálogo de planes versionado (tipo, período, precio CUP, fechas de vigencia); cambios futuros no alteran historial. Implementación SQL candidata en `20261103180000_add_billing_plan_catalog.sql`; falta validar en Supabase aislado/CI y DEV.
 - [ ] Modelar cuenta facturable, suscripción, estado/período, prueba única y registro idempotente de eventos; la suscripción empresarial aplica a todos los miembros, y los miembros retirados conservan acceso hasta el final del período pagado.
 - [ ] Implementar regla servidor para otorgar una prueba de 30 días sin tarjeta al activar perfil/empresa y evitar repetición por cuenta.
 - [ ] Implementar suscripción/trial solo como estado informativo mientras rija la matriz provisional; vencer trial MUST NOT retirar funciones ni activar cobros.

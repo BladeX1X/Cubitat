@@ -88,6 +88,17 @@ exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
 
+### Catálogo informativo Fase 3 — candidato local (2026-11-03)
+
+- `20261103180000_add_billing_plan_catalog.sql` crea versiones inmutables del
+  catálogo CUP aprobado y `get_active_billing_plans()` de solo lectura. No crea
+  cuentas de facturación, pruebas, suscripciones, pagos ni permisos de acceso.
+- La prueba `supabase/tests/billing_plan_catalog_local.sql` se añadió al job
+  `database-security`. Su ejecución local en un proyecto Supabase efímero no
+  pudo iniciar porque Docker agotó los rangos de subred predefinidos. La
+  migración queda como candidata hasta que pase el replay aislado de CI; no se
+  aplicó a DEV ni producción.
+
 ### Reconciliación DEV — fuentes encontradas en checkout de auditoría (2026-11-03)
 
 - Se localizaron 56 fuentes correspondientes a versiones del ledger DEV en
