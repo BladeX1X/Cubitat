@@ -22,10 +22,11 @@ automáticamente al vencer la prueba. La matriz gratuita/de pago final sigue
 pendiente; esta regla solo permite preparar una primera salida segura sin
 monetización.
 
-El catálogo informativo de precios es el siguiente tramo de implementación:
-la migración candidata `20261103180000_add_billing_plan_catalog.sql` conserva
-versiones CUP inmutables y ofrece una RPC de lectura. No inicia pruebas ni pagos
-y todavía requiere replay SQL aislado y verificación en DEV.
+El catálogo informativo de precios ya está implementado en `main` y verificado
+en DEV (`20261103180000_add_billing_plan_catalog.sql`): conserva versiones CUP
+inmutables y ofrece una RPC de lectura. No inicia pruebas ni pagos. Cuentas de
+facturación, trial, suscripción, conciliación y ledger recurrente siguen
+pendientes.
 
 Para postulaciones, el correo receptor es provisional
 (`pochiprats18@gmail.com`); se aceptan PDF/JPG/PNG de hasta 10 MB y se borran 30

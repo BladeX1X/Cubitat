@@ -88,16 +88,20 @@ exactamente el orden cronológico de los archivos.
 
 ## Inventario activo
 
-### Catálogo informativo Fase 3 — candidato local (2026-11-03)
+### Catálogo informativo Fase 3 — DEV (2026-11-03)
 
 - `20261103180000_add_billing_plan_catalog.sql` crea versiones inmutables del
   catálogo CUP aprobado y `get_active_billing_plans()` de solo lectura. No crea
   cuentas de facturación, pruebas, suscripciones, pagos ni permisos de acceso.
 - La prueba `supabase/tests/billing_plan_catalog_local.sql` se añadió al job
-  `database-security`. Su ejecución local en un proyecto Supabase efímero no
-  pudo iniciar porque Docker agotó los rangos de subred predefinidos. La
-  migración queda como candidata hasta que pase el replay aislado de CI; no se
-  aplicó a DEV ni producción.
+  `database-security`; PR #190 pasó `quality` y `database-security` y se fusionó
+  en `main` como `652b090`. Docker local no pudo asignar otra subred; el replay
+  aislado de CI y pgTAP pasaron.
+- Aplicada únicamente a DEV después de un dry-run que enumeró esta migración y
+  excluyó las cinco F2 pendientes. El historial registra `20261103180000` y
+  una consulta de solo lectura devuelve los cuatro precios CUP y confirma que
+  `anon`, `authenticated` y `service_role` no tienen privilegios directos sobre
+  la tabla. Producción intacta.
 
 ### Reconciliación DEV — fuentes encontradas en checkout de auditoría (2026-11-03)
 
