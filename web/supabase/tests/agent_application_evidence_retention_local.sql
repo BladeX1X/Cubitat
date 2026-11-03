@@ -5,7 +5,13 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(10);
 
 SELECT ok(
-  has_column('public', 'agent_applications', 'evidence_purge_last_error_code'),
+  EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'agent_applications'
+      AND column_name = 'evidence_purge_last_error_code'
+  ),
   'the document purge retains a bounded safe error code'
 );
 SELECT ok(
