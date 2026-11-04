@@ -499,7 +499,12 @@ export function LoginModal({ onClose }: LoginModalProps) {
             <TurnstileWidget
               key={turnstileKey}
               action={turnstileAction}
-              onVerify={(token) => setTurnstileToken(token)}
+              onVerify={(token) => {
+                setTurnstileToken(token)
+                setErrorMsg((current) => current && /captcha|turnstile|verificación de seguridad/i.test(current)
+                  ? null
+                  : current)
+              }}
               onExpire={() => setTurnstileToken(null)}
               onError={() => {
                 setTurnstileToken(null)

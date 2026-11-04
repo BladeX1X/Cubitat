@@ -80,6 +80,11 @@ El diseño se adapta automáticamente:
   Auth. El navegador no lo consume antes mediante `siteverify`; Supabase valida
   el token y el widget se renueva despues de cualquier fallo para impedir su
   reutilizacion.
+- **Errores Turnstile diferenciados:** Un error de carga del widget explica que
+  no pudo cargarse el desafío y sugiere revisar la conexión. Un rechazo devuelto
+  por Supabase indica que el servidor no pudo validar el token; completar un
+  desafío nuevo limpia el aviso anterior. No se atribuyen rechazos del servidor
+  a permisos del navegador.
 - **Reenvio de confirmacion:** La accion pide un token Turnstile fresco con
   `resend-confirmation`. El Worker aplica cuotas por IP y por SHA-256 del correo;
   para cuentas pendientes pasa el token a Supabase Auth y para cuentas ya

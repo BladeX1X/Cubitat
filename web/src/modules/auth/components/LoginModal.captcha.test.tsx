@@ -30,17 +30,24 @@ vi.mock('../../../shared/ui/TurnstileWidget', () => ({
   TurnstileWidget: ({
     action,
     onVerify,
+    onError,
   }: {
     action: string
     onVerify: (token: string) => void
+    onError?: (errorCode?: string) => void
   }) => (
-    <button
-      type="button"
-      data-testid={`turnstile-${action}`}
-      onClick={() => onVerify(`token-${action}`)}
-    >
-      Completar Turnstile
-    </button>
+    <>
+      <button
+        type="button"
+        data-testid={`turnstile-${action}`}
+        onClick={() => onVerify(`token-${action}`)}
+      >
+        Completar Turnstile
+      </button>
+      <button type="button" data-testid={`turnstile-error-${action}`} onClick={() => onError?.('SCRIPT_LOAD_ERROR')}>
+        Simular error de carga
+      </button>
+    </>
   ),
 }))
 
@@ -103,6 +110,34 @@ describe('LoginModal CAPTCHA', () => {
 
     expect(await screen.findByText('Por favor, completa la verificación de seguridad.')).toBeInTheDocument()
     expect(signInWithPasswordMock).not.toHaveBeenCalled()
+  })
+
+  it('clears a stale widget-load warning after Turnstile completes successfully', async () => {
+    render(<LoginModal />)
+
+    fireEvent.click(screen.getByTestId('turnstile-error-login-password'))
+    expect(await screen.findByText('No se pudo cargar la verificación de seguridad. Revisa tu conexión y vuelve a intentarlo.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('turnstile-login-password'))
+    await waitFor(() => {
+      expect(screen.queryByText('No se pudo cargar la verificación de seguridad. Revisa tu conexión y vuelve a intentarlo.')).not.toBeInTheDocument()
+    })
+  })
+
+  it('reports server-side CAPTCHA rejection accurately and clears it on a fresh challenge', async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({ error: { code: 'captcha_failed', message: 'captcha verification failed' } })
+    render(<LoginModal />)
+
+    fireEvent.change(screen.getByPlaceholderText('tucorreo@ejemplo.com'), { target: { value: 'QA@Example.com' } })
+    fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'Secure1!' } })
+    fireEvent.click(screen.getByTestId('turnstile-login-password'))
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesion' }))
+
+    const serverError = 'Supabase no pudo validar la verificación de seguridad. Completa un nuevo desafío e inténtalo otra vez.'
+    expect(await screen.findByText(serverError)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('turnstile-login-password'))
+    await waitFor(() => expect(screen.queryByText(serverError)).not.toBeInTheDocument())
   })
 
   it('sends the widget token through the protected recovery adapter', async () => {
