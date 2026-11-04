@@ -46,6 +46,7 @@ const worker = createWorker({
     'review_kyc_request',
     'submit_property_verification',
     'review_property_verification',
+    'review_agent_application',
   ],
 });
 

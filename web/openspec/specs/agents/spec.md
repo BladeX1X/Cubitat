@@ -359,6 +359,13 @@ final, con tres intentos y limpieza de rutas cuando termina. Sus contratos pgTAP
 quedan agregados a CI; no habilitar hasta que pasen y reconciliar las cuentas
 agent legacy en DEV.
 
+## Proxy autenticado de revisión en DEV (2026-11-04)
+
+El Worker DEV permite reenviar `review_agent_application` únicamente con una
+sesión autenticada. El proxy no sustituye la autorización de PostgreSQL: la RPC
+continúa exigiendo AAL2 y validando las transiciones y precondiciones definidas
+por la migración. Las solicitudes anónimas siguen bloqueadas en el borde.
+
 ## Perfil productivo preparado (2026-11-03)
 
 La rama candidata añade el perfil `phase3-production`, que requiere la URL y
