@@ -317,6 +317,15 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND todas las mutaciones MUST ejecutarse mediante RPC con autorización
   efectiva del servidor y auditoría transaccional
 
+### Requisito: Diagnóstico de postulaciones y documentos privados
+
+- GIVEN una solicitud administrativa de documentos o una decisión de postulación
+- WHEN el Worker, Storage, PostgREST o la RPC rechazan o no pueden completar la operación
+- THEN MUST distinguir denegación AAL2, límite temporal, solicitud ausente,
+  consulta de datos, firma de Storage y precondiciones de KYC/estado
+- AND MUST NOT devolver rutas, tokens, URLs firmadas ni mensajes brutos de infraestructura
+- AND MUST limitar los logs a etapa, estado HTTP y causa enumerada, sin ID de postulación
+
 ### Requisito: Entorno local
 
 - GIVEN una compilación que no sea `development` con Supabase local
@@ -349,6 +358,13 @@ por `PHASE3_ENABLED=true`, borra el CV y título 30 días después de una decisi
 final, con tres intentos y limpieza de rutas cuando termina. Sus contratos pgTAP
 quedan agregados a CI; no habilitar hasta que pasen y reconciliar las cuentas
 agent legacy en DEV.
+
+## Proxy autenticado de revisión en DEV (2026-11-04)
+
+El Worker DEV permite reenviar `review_agent_application` únicamente con una
+sesión autenticada. El proxy no sustituye la autorización de PostgreSQL: la RPC
+continúa exigiendo AAL2 y validando las transiciones y precondiciones definidas
+por la migración. Las solicitudes anónimas siguen bloqueadas en el borde.
 
 ## Perfil productivo preparado (2026-11-03)
 

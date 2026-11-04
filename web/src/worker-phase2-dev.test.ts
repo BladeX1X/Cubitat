@@ -96,6 +96,48 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/rpc/get_verified_seller_ids')
   })
+
+  it('proxies agent application review only with an authenticated session', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"status":"reviewing"}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { default: worker } = await import('./worker-phase2-dev')
+    const env = {
+      PHASE2_ENABLED: 'true',
+      VITE_SUPABASE_URL: 'https://project.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'anon-key',
+      RATE_LIMITER: {
+        idFromName: vi.fn(() => 'global'),
+        get: vi.fn(() => ({ fetch: vi.fn().mockResolvedValue(new Response('{"allowed":true}', { status: 200 })) })),
+      },
+    }
+
+    const authenticatedResponse = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/rpc/review_agent_application', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer admin-jwt', apikey: 'anon-key', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_application_id: 'application-id', p_action: 'start_review' }),
+      }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    const anonymousResponse = await worker.fetch(
+      new Request('https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/rpc/review_agent_application', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer dummy-key-safe-from-browsers', apikey: 'anon-key', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_application_id: 'application-id', p_action: 'start_review' }),
+      }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(authenticatedResponse.status).toBe(200)
+    await expect(authenticatedResponse.json()).resolves.toEqual({ status: 'reviewing' })
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/rpc/review_agent_application')
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('Authorization')).toBe('Bearer admin-jwt')
+    expect(anonymousResponse.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
 })
 
 describe('Phase 3 DEV agent application route', () => {

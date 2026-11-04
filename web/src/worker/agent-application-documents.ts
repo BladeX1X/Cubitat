@@ -22,6 +22,10 @@ function json(status: number, body: Record<string, unknown>): Response {
   })
 }
 
+function documentError(status: number, code: string): Response {
+  return json(status, { error: code })
+}
+
 function serviceHeaders(key: string): HeadersInit {
   return { apikey: key, Authorization: `Bearer ${key}` }
 }
@@ -61,10 +65,13 @@ export async function handleAgentApplicationDocumentLinks(
 ): Promise<Response> {
   if (request.method !== 'GET') return json(405, { error: 'Method not allowed' })
   if (!UUID_PATTERN.test(applicationId)) return json(400, { error: 'Invalid application id' })
-  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.VITE_SUPABASE_ANON_KEY) return json(503, { error: 'Application service unavailable' })
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.VITE_SUPABASE_ANON_KEY) {
+    logWorkerEvent('error', 'agent_application_document_link_failed', { status: 503, reason: 'missing_configuration' })
+    return documentError(503, 'document_service_unavailable')
+  }
 
   const authorization = request.headers.get('Authorization')
-  if (!authorization?.startsWith('Bearer ') || authorization.length > 4096) return json(401, { error: 'Unauthorized' })
+  if (!authorization?.startsWith('Bearer ') || authorization.length > 4096) return documentError(401, 'session_required')
 
   try {
     const aalResponse = await fetchFn(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/is_admin_aal2`, {
@@ -76,33 +83,64 @@ export async function handleAgentApplicationDocumentLinks(
       },
       body: '{}',
     })
-    if (!aalResponse.ok || await aalResponse.json() !== true) return json(403, { error: 'Admin AAL2 required' })
+    if (!aalResponse.ok) {
+      logWorkerEvent('warn', 'agent_application_document_link_failed', {
+        status: aalResponse.status,
+        phase: 'database',
+        reason: 'upstream_http',
+      })
+      return documentError(503, 'admin_access_check_unavailable')
+    }
+    if (await aalResponse.json() !== true) return documentError(403, 'admin_aal2_required')
 
     const appResponse = await fetchFn(
       `${env.VITE_SUPABASE_URL}/rest/v1/agent_applications?select=cv_path,diploma_path&id=eq.${encodeURIComponent(applicationId)}&limit=1`,
       { headers: serviceHeaders(env.SUPABASE_SERVICE_ROLE_KEY) },
     )
-    if (!appResponse.ok) throw new Error('application_lookup_failed')
+    if (!appResponse.ok) {
+      logWorkerEvent('warn', 'agent_application_document_link_failed', {
+        status: appResponse.status,
+        phase: 'database',
+        reason: 'upstream_http',
+      })
+      return documentError(503, 'application_lookup_unavailable')
+    }
     const rows = await appResponse.json() as Array<{ cv_path?: unknown; diploma_path?: unknown }>
     const row = rows[0]
-    if (!row) return json(404, { error: 'Application not found' })
+    if (!row) return documentError(404, 'application_not_found')
     if (row.cv_path === null || row.diploma_path === null) {
-      return json(410, { error: 'Application documents have passed their retention period' })
+      return documentError(410, 'documents_expired')
     }
     const ownedApplicationPath = new RegExp(`^[0-9a-f-]{36}/${applicationId}/(?:cv|diploma)-[0-9a-f-]{36}\\.(?:pdf|jpg|png)$`, 'i')
     if (typeof row.cv_path !== 'string' || typeof row.diploma_path !== 'string'
       || !ownedApplicationPath.test(row.cv_path) || !ownedApplicationPath.test(row.diploma_path)) {
-      throw new Error('invalid_application_document_path')
+      logWorkerEvent('error', 'agent_application_document_link_failed', {
+        status: 500,
+        phase: 'database',
+        reason: 'invalid_response',
+      })
+      return documentError(500, 'application_documents_invalid')
     }
 
     const [cv, diploma] = await Promise.all([
       signDocument(row.cv_path, env, fetchFn),
       signDocument(row.diploma_path, env, fetchFn),
     ])
-    if (!cv || !diploma) throw new Error('document_signing_failed')
+    if (!cv || !diploma) {
+      logWorkerEvent('warn', 'agent_application_document_link_failed', {
+        status: 502,
+        phase: 'storage',
+        reason: 'upstream_http',
+      })
+      return documentError(502, 'document_signing_failed')
+    }
     return json(200, { cv_url: cv, diploma_url: diploma, expires_in: SIGNED_URL_TTL_SECONDS })
   } catch {
-    logWorkerEvent('warn', 'agent_application_document_link_failed')
-    return json(503, { error: 'Could not create private document links' })
+    logWorkerEvent('error', 'agent_application_document_link_failed', {
+      status: 503,
+      phase: 'storage',
+      reason: 'network_unavailable',
+    })
+    return documentError(503, 'document_service_unavailable')
   }
 }
