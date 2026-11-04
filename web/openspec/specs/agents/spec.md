@@ -23,6 +23,15 @@
   reservada a service role, RLS de estado propio/AAL2 y límite de solicitudes.
 - El endpoint cuenta con pruebas Worker de autenticación/rate limit, validación,
   carga privada y limpieza al fallar la persistencia.
+- `Mi cuenta` incluye un consentimiento explícito para que agentes publiquen su
+  WhatsApp, limitado al perfil de Fase 3 y oculto para otros roles. Por defecto
+  permanece desactivado; quitar el teléfono también retira el consentimiento.
+  Su comportamiento tiene pruebas de activación/desactivación y de visibilidad
+  por rol. El Worker solo admite `true`/`false` para ese campo en PATCH autenticado
+  y continúa rechazando columnas protegidas. La API pública sigue omitiendo el
+  número cuando el consentimiento no está activo. Gates locales 2026-11-03:
+  lint, suite (820 PASS/1 omitida), build estándar y perfil F3 producción CI PASS.
+  Pendiente integrar este ajuste a `main` y verificar persistencia con agente en DEV.
 - La migración y test pgTAP pasaron en un scratch temporal (6/6); no se aplicaron
   a DEV ni producción. La interfaz protegida permite consultar la cola paginada
   y abrir enlaces privados de dos minutos con comprobación AAL2 en Worker; aún

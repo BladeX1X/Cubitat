@@ -1262,6 +1262,40 @@ describe('Cloudflare Worker security contract', () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/rest/v1/profiles?id=eq.user-1')
   })
 
+  it('allows only a boolean WhatsApp consent on authenticated profile updates', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const allowedResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ public_whatsapp_enabled: true }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+    const invalidResponse = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/rest/v1/profiles?id=eq.user-1', {
+        method: 'PATCH',
+        headers: {
+          Authorization: 'Bearer authenticated-user-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ public_whatsapp_enabled: 'true' }),
+      }),
+      createEnv(),
+      createContext(),
+    )
+
+    expect(allowedResponse.status).toBe(204)
+    expect(invalidResponse.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('marks non-canonical environments as non-indexable', async () => {
     const response = await worker.fetch(
       new Request('https://preview.cubitat.workers.dev/resultados'),
