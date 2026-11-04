@@ -1086,7 +1086,7 @@ export function createWorker(options: WorkerOptions = {}) {
       const allowedAuthenticatedProfilePatch = method === 'PATCH'
         && authenticated
         && tableName === 'profiles';
-      const allowedProfilePatchFields = ['full_name', 'phone', 'avatar_url'];
+      const allowedProfilePatchFields = ['full_name', 'phone', 'avatar_url', 'public_whatsapp_enabled'];
       const isAllowedAuthenticatedMfaDelete = method === 'DELETE'
         && authenticated
         && /^\/auth\/v1\/factors\/[^/?]+$/.test(subPath);
@@ -1170,6 +1170,8 @@ export function createWorker(options: WorkerOptions = {}) {
           || Array.isArray(profilePatchBody)
           || typeof profilePatchBody !== 'object'
           || Object.keys(profilePatchBody).some((field) => !allowedProfilePatchFields.includes(field))
+          || ('public_whatsapp_enabled' in profilePatchBody
+            && typeof profilePatchBody.public_whatsapp_enabled !== 'boolean')
         ) {
           return jsonResponse({ error: 'Operación no permitida.' }, 403);
         }

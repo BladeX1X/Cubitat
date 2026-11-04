@@ -305,6 +305,7 @@ describe('AccountPage - Role Selector', () => {
 
     expect(await screen.findByText('Ingresa tu numero de celular')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /verificar por whatsapp/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: /mostrar mi whatsapp en mi perfil público/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Modificar' }).at(-1)!)
     const phoneInput = screen.getByPlaceholderText('Ej: +52 55 1234 5678')
@@ -330,6 +331,78 @@ describe('AccountPage - Role Selector', () => {
       expect(screen.getByText('Numero de celular actualizado.')).toBeInTheDocument()
     })
     expect(screen.getByText('+525512345678')).toBeInTheDocument()
+
+    fromSpy.mockRestore()
+  })
+
+  it('requiere consentimiento explícito para mostrar el WhatsApp del agente en su perfil público', async () => {
+    const updateEq = vi.fn().mockResolvedValue({ error: null })
+    const updateProfile = vi.fn().mockReturnValue({ eq: updateEq })
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: {
+                  role: 'agent',
+                  full_name: 'Agente QA',
+                  phone: '+5355551234',
+                  avatar_url: '',
+                  public_whatsapp_enabled: false,
+                },
+                error: null,
+              }),
+            }),
+          }),
+          update: updateProfile,
+        } as any
+      }
+      if (table === 'search_alerts') {
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) } as any
+      }
+      return {} as any
+    })
+
+    render(
+      <AccountPage
+        user={mockUser}
+        userRole="agent"
+        onBack={vi.fn()}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+      />
+    )
+
+    const consent = await screen.findByRole('checkbox', { name: /mostrar mi whatsapp en mi perfil público/i })
+    expect(consent).not.toBeChecked()
+
+    fireEvent.click(consent)
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenCalledWith({ public_whatsapp_enabled: true })
+      expect(updateEq).toHaveBeenCalledWith('id', mockUser.id)
+      expect(screen.getByText('Tu WhatsApp aparecerá en tu perfil público.')).toBeInTheDocument()
+    })
+
+    fireEvent.click(consent)
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenLastCalledWith({ public_whatsapp_enabled: false })
+      expect(consent).not.toBeChecked()
+      expect(screen.getByText('Tu WhatsApp dejó de aparecer en tu perfil público.')).toBeInTheDocument()
+    })
+
+    fireEvent.click(consent)
+    await waitFor(() => expect(updateProfile).toHaveBeenLastCalledWith({ public_whatsapp_enabled: true }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modificar' }).at(-1)!)
+    fireEvent.change(screen.getByPlaceholderText('Ej: +52 55 1234 5678'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenLastCalledWith({ phone: null, public_whatsapp_enabled: false })
+      expect(consent).not.toBeChecked()
+      expect(screen.getByText('Numero de celular eliminado.')).toBeInTheDocument()
+    })
 
     fromSpy.mockRestore()
   })

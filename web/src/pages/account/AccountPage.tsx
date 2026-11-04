@@ -41,6 +41,9 @@ const AccountKycSection = import.meta.env.VITE_KYC_UI_ENABLED === 'true'
     })))
   : null
 
+const agentWhatsappConsentEnabled = import.meta.env.DEV
+  || import.meta.env.VITE_PHASE3_UI_ENABLED === 'true'
+
 type AccountPageProps = {
   user: User
   userRole?: string
@@ -50,6 +53,14 @@ type AccountPageProps = {
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
   onNavigateAgentDashboard?: () => void
+}
+
+type AccountProfile = {
+  role: string | null
+  full_name: string | null
+  phone: string | null
+  avatar_url: string | null
+  public_whatsapp_enabled?: boolean | null
 }
 
 export function AccountPage({
@@ -74,6 +85,9 @@ export function AccountPage({
   const [draftName, setDraftName] = useState(initialName)
   const [phone, setPhone] = useState('')
   const [draftPhone, setDraftPhone] = useState('')
+  const [publicWhatsappEnabled, setPublicWhatsappEnabled] = useState(false)
+  const [isSavingPublicWhatsapp, setIsSavingPublicWhatsapp] = useState(false)
+  const [publicWhatsappMessage, setPublicWhatsappMessage] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string>(initialAvatarUrl)
   const [isEditingName, setIsEditingName] = useState(false)
   const [isEditingPhone, setIsEditingPhone] = useState(false)
@@ -111,6 +125,8 @@ export function AccountPage({
     setDraftName(initialName)
     setPhone('')
     setDraftPhone('')
+    setPublicWhatsappEnabled(false)
+    setPublicWhatsappMessage(null)
     setAvatarUrl(initialAvatarUrl)
     setUserRole(initialUserRole)
     setIsEditingName(false)
@@ -122,21 +138,31 @@ export function AccountPage({
 
     async function loadProfile() {
       if (!requestedUserId) return
-      const { data } = await supabase
-        .from('profiles')
-        .select('role, full_name, phone, avatar_url')
-        .eq('id', requestedUserId)
-        .maybeSingle()
+      const query = supabase.from('profiles')
+      const { data } = agentWhatsappConsentEnabled
+        ? await query
+          .select('role, full_name, phone, avatar_url, public_whatsapp_enabled')
+          .eq('id', requestedUserId)
+          .maybeSingle()
+        : await query
+          .select('role, full_name, phone, avatar_url')
+          .eq('id', requestedUserId)
+          .maybeSingle()
 
       if (!active || !data) return
 
-      const resolvedName = data.full_name || initialName
-      setUserRole(data.role || initialUserRole)
+      // The phase-3 column is introduced by the consent migration and is not
+      // present in older generated PostgREST schema metadata.
+      const profile = data as unknown as AccountProfile
+
+      const resolvedName = profile.full_name || initialName
+      setUserRole(profile.role || initialUserRole)
       setFullName(resolvedName)
       setDraftName(resolvedName)
-      setPhone(data.phone || '')
-      setDraftPhone(data.phone || '')
-      setAvatarUrl(data.avatar_url || initialAvatarUrl)
+      setPhone(profile.phone || '')
+      setDraftPhone(profile.phone || '')
+      setPublicWhatsappEnabled(profile.public_whatsapp_enabled === true)
+      setAvatarUrl(profile.avatar_url || initialAvatarUrl)
     }
 
     void loadProfile()
@@ -206,7 +232,12 @@ export function AccountPage({
 
     const { error } = await supabase
       .from('profiles')
-      .update({ phone: normalizedPhone || null })
+      .update({
+        phone: normalizedPhone || null,
+        ...(agentWhatsappConsentEnabled && !normalizedPhone
+          ? { public_whatsapp_enabled: false }
+          : {}),
+      })
       .eq('id', userId)
 
     setIsSavingPhone(false)
@@ -218,8 +249,31 @@ export function AccountPage({
 
     setPhone(normalizedPhone)
     setDraftPhone(normalizedPhone)
+    if (agentWhatsappConsentEnabled && !normalizedPhone) setPublicWhatsappEnabled(false)
     setIsEditingPhone(false)
     setPhoneMessage(normalizedPhone ? 'Numero de celular actualizado.' : 'Numero de celular eliminado.')
+  }
+
+  async function handlePublicWhatsappChange(enabled: boolean) {
+    if (!agentWhatsappConsentEnabled || !userId || isSavingPublicWhatsapp) return
+
+    setIsSavingPublicWhatsapp(true)
+    setPublicWhatsappMessage(null)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ public_whatsapp_enabled: enabled })
+      .eq('id', userId)
+
+    setIsSavingPublicWhatsapp(false)
+    if (error) {
+      setPublicWhatsappMessage('No se pudo guardar la preferencia. Inténtalo nuevamente.')
+      return
+    }
+
+    setPublicWhatsappEnabled(enabled)
+    setPublicWhatsappMessage(enabled
+      ? 'Tu WhatsApp aparecerá en tu perfil público.'
+      : 'Tu WhatsApp dejó de aparecer en tu perfil público.')
   }
 
   async function handleAvatarFile(file: File | undefined) {
@@ -456,6 +510,29 @@ export function AccountPage({
                     }}
                     onSave={handleSavePhone}
                   />
+                  {agentWhatsappConsentEnabled && userRole === 'agent' ? (
+                    <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                      <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm font-semibold text-neutral-800">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-5 w-5 accent-[#008f79]"
+                          checked={publicWhatsappEnabled}
+                          disabled={isSavingPublicWhatsapp || (!phone.trim() && !publicWhatsappEnabled)}
+                          onChange={(event) => void handlePublicWhatsappChange(event.target.checked)}
+                          aria-describedby="public-whatsapp-help"
+                        />
+                        <span>Mostrar mi WhatsApp en mi perfil público</span>
+                      </label>
+                      <p id="public-whatsapp-help" className="mt-1 pl-8 text-xs leading-relaxed text-neutral-600">
+                        Si lo activas, cualquier visitante podrá ver y usar el número guardado en tu cuenta. Puedes desactivarlo cuando quieras.
+                      </p>
+                      {publicWhatsappMessage ? (
+                        <p className="mt-2 pl-8 text-xs font-medium text-[#035f53]" role="status">
+                          {publicWhatsappMessage}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </AccountSection>
 
                 <div className="flex justify-end">
