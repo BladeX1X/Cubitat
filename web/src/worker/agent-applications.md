@@ -77,3 +77,7 @@ al `service_role`. El cron elimina CV y título tras la decisión final y 30 dí
 limpia las rutas de la fila al completarse y conserva solo códigos de error
 acotados. No registra rutas ni nombres y permanece apagado salvo
 `PHASE3_ENABLED=true`.
+
+## Estado de Fase 3 productiva — 2026-11-04
+
+Rectificación de los estados previos que indicaban que el flujo productivo permanecía apagado: Fase 3 se desplegó a `cubitat1` con `PHASE3_ENABLED=true`, versión `6fc63a25-e5df-4cbe-b6d9-5375342bd3cf` al 100%. PR #197 está integrada en `main`; el propietario verificó en el dashboard las migraciones y objetos hosted. El destinatario provisional de alertas está configurado como secreto `AGENT_APPLICATION_EMAIL_TO`. Smoke sin sesión confirma que intake no acepta GET (405) y que los documentos continúan protegidos (401). QA positivo autenticado, entrega real de correo y observación de purga quedan pendientes; no afirmar cierre funcional hasta verificar esos casos.

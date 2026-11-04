@@ -1054,3 +1054,11 @@ consentimiento de WhatsApp en `Mi cuenta`; mantiene `VITE_PHASE3_UI_ENABLED` y
 registradas en producción. Después del build, el check
 `verify-phase2-agent-consent-bundle.mjs` confirma que el paquete no incluye el
 resto de la interfaz Fase 3.
+
+## Despliegue Fase 3 en producción — 2026-11-04 (rectificación)
+
+El estado anterior de esta guía indicaba que F3 seguía apagada; esa descripción era vigente antes de la promoción y queda supersedida por este registro. PR #197 se integró en `main` como `521c02ba929c33be48eee50297f845265be29e75`. La configuración productiva fija `PHASE3_ENABLED=true` y el Worker `cubitat1` está en versión `6fc63a25-e5df-4cbe-b6d9-5375342bd3cf` al 100%. El propietario confirmó visualmente en Supabase productivo las seis migraciones F3, tablas, RPC y bucket requeridos; el deploy no ejecutó DDL ni cambios de datos.
+
+Preflight: gates locales lint, 829 pruebas/1 omitida, build estándar y `build:phase3-production` PASS; quality/database-security PASS en GitHub; builds generaron sitemap dinámico de 446 URLs. Se configuró `AGENT_APPLICATION_EMAIL_TO` como secreto Worker usando el correo provisional acordado, sin guardar su valor en Git.
+
+Smoke HTTP productivo: home 200, sitemap 200, intake sin sesión 405 y endpoint privado de documentos sin sesión 401. El cron productivo de correo/purga está activo cada minuto. No se enviaron postulaciones ni correos de prueba. La fase está desplegada, pero no se marca funcionalmente cerrada hasta completar QA autenticado de postulación, apertura AAL2, decisión administrativa y observación de correo/retención.
