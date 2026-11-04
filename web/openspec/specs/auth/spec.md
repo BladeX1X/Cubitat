@@ -5,6 +5,25 @@ Provee mecanismos de seguridad e inicio de sesión para los usuarios.
 
 ## Requirements
 
+### Requirement: Rotacion coordinada del secreto Turnstile
+La operacion de rotacion MUST sincronizar el secreto nuevo del widget compartido
+con el Worker verificador y con Auth de Supabase DEV y produccion.
+
+#### Scenario: Rotar el secreto compartido
+- GIVEN una persona operadora ya autenticada en Wrangler y con un token Supabase
+  autorizado para actualizar Auth en ambos proyectos
+- WHEN ejecuta el script de rotacion e introduce el secreto nuevo en el prompt
+  oculto
+- THEN MUST actualizar `TURNSTILE_SECRET_KEY` en `turnstile-siteverify-cubitat`
+- AND MUST establecer CAPTCHA habilitado, proveedor `turnstile` y el secreto
+  nuevo en Auth de DEV `bknwerqbbysveehcdmzr` y produccion
+  `tohjzoncoosvjbjcakdl`
+- AND MUST NOT aceptar el secreto como argumento, registrarlo o persistirlo en
+  archivos
+- AND MUST informar por destino si la sincronizacion fue parcial sin revelar
+  credenciales ni cuerpos de respuesta del proveedor
+- AND una ejecucion parcial MUST poder reintentarse con el mismo secreto nuevo
+
 ### Requirement: Registro de Usuario con Confirmación de Correo Obligatoria
 El sistema MUST requerir verificación por correo electrónico para habilitar la cuenta del usuario antes de que este pueda interactuar plenamente (por ejemplo, publicar propiedades).
 
