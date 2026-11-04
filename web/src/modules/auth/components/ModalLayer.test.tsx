@@ -88,7 +88,7 @@ describe('capas de autenticacion', () => {
       'fallback',
     )
 
-    expect(message).toMatch(/verificación de seguridad no está disponible/i)
+    expect(message).toMatch(/Supabase no pudo validar la verificación de seguridad/i)
     expect(message).not.toMatch(/missing secret/i)
   })
 })

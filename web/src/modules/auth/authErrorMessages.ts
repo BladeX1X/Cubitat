@@ -16,7 +16,7 @@ export function getAuthErrorMessage(error: unknown, fallback: string): string {
     return 'El inicio con Google no está disponible temporalmente. Usa correo y contraseña.'
   }
   if (/captcha|turnstile|security verification/.test(normalized)) {
-    return 'La verificación de seguridad no está disponible. Revisa que Chrome tenga permiso para ejecutarla e inténtalo de nuevo.'
+    return 'Supabase no pudo validar la verificación de seguridad. Completa un nuevo desafío e inténtalo otra vez.'
   }
   if (message.includes('User already registered')) {
     return 'Este correo ya está registrado.'
