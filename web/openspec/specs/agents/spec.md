@@ -317,6 +317,15 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND todas las mutaciones MUST ejecutarse mediante RPC con autorización
   efectiva del servidor y auditoría transaccional
 
+### Requisito: Diagnóstico de postulaciones y documentos privados
+
+- GIVEN una solicitud administrativa de documentos o una decisión de postulación
+- WHEN el Worker, Storage, PostgREST o la RPC rechazan o no pueden completar la operación
+- THEN MUST distinguir denegación AAL2, límite temporal, solicitud ausente,
+  consulta de datos, firma de Storage y precondiciones de KYC/estado
+- AND MUST NOT devolver rutas, tokens, URLs firmadas ni mensajes brutos de infraestructura
+- AND MUST limitar los logs a etapa, estado HTTP y causa enumerada, sin ID de postulación
+
 ### Requisito: Entorno local
 
 - GIVEN una compilación que no sea `development` con Supabase local

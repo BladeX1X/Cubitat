@@ -49,6 +49,7 @@ const SOURCES = new Set([
 const REASONS = new Set([
   'missing_configuration', 'network_unavailable', 'phase2_disabled',
   'fetch_http', 'fetch_network', 'invalid_webp', 'decoder_init', 'decode',
+  'upstream_http', 'invalid_response',
 ] as const)
 
 export type WorkerLogEvent =
@@ -93,6 +94,7 @@ export interface WorkerLogFields {
   status?: number
   reason?: 'missing_configuration' | 'network_unavailable' | 'phase2_disabled'
     | 'fetch_http' | 'fetch_network' | 'invalid_webp' | 'decoder_init' | 'decode'
+    | 'upstream_http' | 'invalid_response'
   phase?: 'storage' | 'database'
 }
 

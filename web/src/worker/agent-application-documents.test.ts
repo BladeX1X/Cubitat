@@ -24,6 +24,15 @@ describe('agent application private document links', () => {
     expect(String(fetchFn.mock.calls[0]?.[0])).toContain('/rpc/is_admin_aal2')
   })
 
+  it('distinguishes an unavailable database access check from a denied AAL2 session', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('unavailable', { status: 500 }))
+    const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'admin_access_check_unavailable' })
+    expect(fetchFn).toHaveBeenCalledOnce()
+  })
+
   it('returns only same-origin signed URLs with a two-minute expiry after AAL2 succeeds', async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response('true', { status: 200 }))
@@ -53,8 +62,21 @@ describe('agent application private document links', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: `/storage/v1/object/sign/agent_application_documents/${diplomaPath}?token=y` }), { status: 200 }))
 
     const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)
-    expect(response.status).toBe(503)
-    expect(await response.json()).toMatchObject({ error: 'Could not create private document links' })
+    expect(response.status).toBe(502)
+    expect(await response.json()).toMatchObject({ error: 'document_signing_failed' })
+  })
+
+  it('reports a storage signing failure without exposing document paths or URLs', async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response('true', { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ cv_path: cvPath, diploma_path: diplomaPath }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response('storage unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('storage unavailable', { status: 503 }))
+
+    const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)
+
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({ error: 'document_signing_failed' })
   })
 
   it('returns gone after the retention job has removed document paths', async () => {
@@ -64,7 +86,7 @@ describe('agent application private document links', () => {
 
     const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)
     expect(response.status).toBe(410)
-    expect(await response.json()).toMatchObject({ error: 'Application documents have passed their retention period' })
+    expect(await response.json()).toMatchObject({ error: 'documents_expired' })
     expect(fetchFn).toHaveBeenCalledTimes(2)
   })
 

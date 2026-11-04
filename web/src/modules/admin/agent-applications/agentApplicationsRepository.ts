@@ -20,6 +20,27 @@ export type AgentApplicationDocumentLinks = {
 
 export const AGENT_APPLICATIONS_PAGE_SIZE = 20
 
+async function readDocumentError(response: Response): Promise<string> {
+  let code = ''
+  try {
+    const body = await response.json() as { error?: unknown }
+    if (typeof body.error === 'string') code = body.error
+  } catch {
+    // Fall back to the HTTP status when the Worker does not return JSON.
+  }
+
+  if (response.status === 401 || code === 'session_required') return 'La sesión expiró. Inicia sesión otra vez.'
+  if (response.status === 403 || code === 'admin_aal2_required') return 'Tu sesión administrativa necesita una nueva verificación de seguridad para abrir documentos.'
+  if (response.status === 404 || code === 'application_not_found') return 'La postulación ya no está disponible en la cola. Actualiza la lista.'
+  if (response.status === 410 || code === 'documents_expired') return 'El plazo de conservación terminó; los documentos ya fueron eliminados.'
+  if (response.status === 429) return 'Se alcanzó el límite temporal para abrir documentos. Espera unos minutos e inténtalo de nuevo.'
+  if (code === 'admin_access_check_unavailable') return 'No se pudo comprobar el permiso administrativo. Inténtalo de nuevo más tarde.'
+  if (code === 'application_lookup_unavailable') return 'No se pudo consultar la postulación en la base de datos.'
+  if (code === 'document_signing_failed') return 'Supabase Storage no pudo generar los enlaces privados de los documentos.'
+  if (code === 'application_documents_invalid') return 'La postulación tiene rutas de documentos incompletas o inválidas; requiere revisión técnica.'
+  return `No se pudieron abrir los documentos (HTTP ${response.status}). Inténtalo de nuevo o comparte este código con soporte.`
+}
+
 export async function fetchPendingAgentApplications(page: number): Promise<{ items: PendingAgentApplication[]; total: number }> {
   const from = page * AGENT_APPLICATIONS_PAGE_SIZE
   const to = from + AGENT_APPLICATIONS_PAGE_SIZE - 1
@@ -43,9 +64,7 @@ export async function fetchAgentApplicationDocumentLinks(applicationId: string):
     cache: 'no-store',
   })
   if (!response.ok) {
-    if (response.status === 403) throw new Error('Se requiere una sesión administrativa AAL2 para ver documentos.')
-    if (response.status === 410) throw new Error('El plazo de conservación terminó; los documentos ya fueron eliminados.')
-    throw new Error('No se pudieron abrir los documentos de esta postulación.')
+    throw new Error(await readDocumentError(response))
   }
   return await response.json() as AgentApplicationDocumentLinks
 }
@@ -60,7 +79,15 @@ export async function reviewAgentApplication(
     p_status: status,
     p_reason: reason?.trim() || null,
   })
-  if (error) throw new Error('No se pudo guardar la decisión administrativa.')
+  if (error) {
+    const code = typeof error.code === 'string' ? error.code : ''
+    if (code === '42501') throw new Error('Tu sesión administrativa necesita una nueva verificación de seguridad para guardar la decisión.')
+    if (code === 'P0002') throw new Error('La postulación ya no existe. Actualiza la lista.')
+    if (code === '22023') throw new Error('No se pudo aplicar la decisión. Comprueba el estado de la postulación y que el perfil cumpla los requisitos de KYC.')
+    if (code === '23505') throw new Error('El perfil o la postulación ya ocupa una plaza de agente. Actualiza la lista para ver el estado actual.')
+    if (code === 'PGRST202' || code === 'PGRST203') throw new Error('La base de datos aún no reconoce la función de revisión. Requiere actualizar la caché del esquema.')
+    throw new Error(`No se pudo guardar la decisión administrativa (código ${code || 'desconocido'}).`)
+  }
   if (data !== 'reviewing' && data !== 'waitlisted' && data !== 'rejected' && data !== 'approved') {
     throw new Error('El servidor devolvió un estado de postulación inesperado.')
   }
