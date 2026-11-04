@@ -20,6 +20,42 @@ export type AgentApplicationDocumentLinks = {
 
 export const AGENT_APPLICATIONS_PAGE_SIZE = 20
 
+function getSafeRpcError(error: unknown): { code: string; name: string; status: number | null; message: string; keys: string[] } {
+  if (!error || typeof error !== 'object') {
+    return { code: '', name: typeof error, status: null, message: '', keys: [] }
+  }
+
+  const value = error as Record<string, unknown>
+  const code = typeof value.code === 'string' ? value.code : ''
+  const name = typeof value.name === 'string' ? value.name : 'Object'
+  const status = typeof value.status === 'number' && Number.isInteger(value.status) ? value.status : null
+  const message = typeof value.message === 'string' ? value.message.toLowerCase().slice(0, 300) : ''
+  const keys = Object.keys(value).filter((key) => /^[a-z][a-z0-9_]{0,30}$/i.test(key)).slice(0, 8)
+  return { code, name, status, message, keys }
+}
+
+function getReviewRpcErrorMessage(error: unknown): string {
+  const diagnostic = getSafeRpcError(error)
+  const { code, status, name, message, keys } = diagnostic
+  if (code === '42501' || status === 403 || /admin aal2 required|permission denied/i.test(message)) {
+    return 'Tu sesión administrativa necesita una nueva verificación de seguridad para guardar la decisión.'
+  }
+  if (code === 'P0002') return 'La postulación ya no existe. Actualiza la lista.'
+  if (code === '22023' || /kyc|verificaci[oó]n|estado cannot transition/i.test(message)) {
+    return 'No se pudo aplicar la decisión. Comprueba el estado de la postulación y que el perfil cumpla los requisitos de KYC.'
+  }
+  if (code === '23505') return 'El perfil o la postulación ya ocupa una plaza de agente. Actualiza la lista para ver el estado actual.'
+  if (code === 'PGRST202' || code === 'PGRST203' || /schema cache|function .* does not exist/i.test(message)) {
+    return 'La base de datos aún no reconoce la función de revisión. Requiere actualizar la caché del esquema.'
+  }
+  if (name === 'TypeError' || /failed to fetch|networkerror|network request failed|fetch failed|timed? ?out/i.test(message)) {
+    return 'No se pudo establecer conexión con Supabase para guardar la decisión. Comprueba la conexión e inténtalo de nuevo.'
+  }
+
+  const detail = code || (status !== null ? `HTTP ${status}` : `tipo ${name}; campos: ${keys.join(', ') || 'ninguno'}`)
+  return `No se pudo guardar la decisión administrativa (diagnóstico: ${detail}).`
+}
+
 async function readDocumentError(response: Response): Promise<string> {
   let code = ''
   try {
@@ -80,13 +116,7 @@ export async function reviewAgentApplication(
     p_reason: reason?.trim() || null,
   })
   if (error) {
-    const code = typeof error.code === 'string' ? error.code : ''
-    if (code === '42501') throw new Error('Tu sesión administrativa necesita una nueva verificación de seguridad para guardar la decisión.')
-    if (code === 'P0002') throw new Error('La postulación ya no existe. Actualiza la lista.')
-    if (code === '22023') throw new Error('No se pudo aplicar la decisión. Comprueba el estado de la postulación y que el perfil cumpla los requisitos de KYC.')
-    if (code === '23505') throw new Error('El perfil o la postulación ya ocupa una plaza de agente. Actualiza la lista para ver el estado actual.')
-    if (code === 'PGRST202' || code === 'PGRST203') throw new Error('La base de datos aún no reconoce la función de revisión. Requiere actualizar la caché del esquema.')
-    throw new Error(`No se pudo guardar la decisión administrativa (código ${code || 'desconocido'}).`)
+    throw new Error(getReviewRpcErrorMessage(error))
   }
   if (data !== 'reviewing' && data !== 'waitlisted' && data !== 'rejected' && data !== 'approved') {
     throw new Error('El servidor devolvió un estado de postulación inesperado.')

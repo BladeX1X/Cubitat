@@ -67,4 +67,16 @@ describe('agentApplicationsRepository', () => {
 
     await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/caché del esquema/i)
   })
+
+  it('identifies transport failures when the SDK error has no SQLSTATE code', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: { name: 'TypeError', message: 'Failed to fetch' } })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/conexión con Supabase/i)
+  })
+
+  it('shows safe status and field names for an unrecognized error object', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: { name: 'SupabaseError', status: 502, message: 'Gateway detail must not be exposed' } })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/HTTP 502/i)
+  })
 })

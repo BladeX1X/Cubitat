@@ -29,3 +29,7 @@ rutas, URLs firmadas ni contenido documental. La RPC administrativa traduce
 SQLSTATE conocidos a instrucciones accionables: AAL2, requisito/estado (incluye
 KYC), plaza duplicada o caché PostgREST pendiente. Los errores desconocidos
 solo muestran su código SQLSTATE, no el mensaje bruto del servidor.
+
+Si el SDK no devuelve SQLSTATE, la UI diferencia fallos de conexión y usa el
+estado HTTP o el tipo/los nombres de campos permitidos como diagnóstico. La UI
+nunca muestra el mensaje bruto del servidor ni el ID de solicitud.
