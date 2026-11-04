@@ -1044,3 +1044,13 @@ El perfil candidato `phase3-production` genera la aplicación con módulos F3 y 
 - `npm run build:phase3-production:ci` usa sitemap estático para CI.
 
 No desplegar todavía: `PHASE3_ENABLED` sigue en `false`; primero reconciliar y verificar migraciones y objetos hosted, completar QA autenticado y configurar secretos del Worker. La configuración pública de Supabase no reemplaza los secretos privados.
+
+### Consentimiento público de WhatsApp sin activar el resto de Fase 3
+
+El perfil `phase2-agent-consent-production` habilita solo el control de
+consentimiento de WhatsApp en `Mi cuenta`; mantiene `VITE_PHASE3_UI_ENABLED` y
+`PHASE3_ENABLED` apagados. Su despliegue requiere que las migraciones
+`20261025210000`, `20261025220000`, `20261025240000` y `20261026200000` estén
+registradas en producción. Después del build, el check
+`verify-phase2-agent-consent-bundle.mjs` confirma que el paquete no incluye el
+resto de la interfaz Fase 3.

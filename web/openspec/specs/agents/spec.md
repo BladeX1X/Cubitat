@@ -29,9 +29,11 @@
   Su comportamiento tiene pruebas de activación/desactivación y de visibilidad
   por rol. El Worker solo admite `true`/`false` para ese campo en PATCH autenticado
   y continúa rechazando columnas protegidas. La API pública sigue omitiendo el
-  número cuando el consentimiento no está activo. Gates locales 2026-11-03:
-  lint, suite (820 PASS/1 omitida), build estándar y perfil F3 producción CI PASS.
-  Pendiente integrar este ajuste a `main` y verificar persistencia con agente en DEV.
+  número cuando el consentimiento no está activo. El perfil dedicado
+  `phase2-agent-consent-production` habilita solo este control dentro del build
+  productivo de Fase 2 y excluye las demás pantallas/endpoints de Fase 3. La
+  primera verificación de build del perfil está pendiente; el despliegue real
+  debe verificarse con una sesión de agente.
 - La migración y test pgTAP pasaron en un scratch temporal (6/6); no se aplicaron
   a DEV ni producción. La interfaz protegida permite consultar la cola paginada
   y abrir enlaces privados de dos minutos con comprobación AAL2 en Worker; aún

@@ -42,7 +42,7 @@ const AccountKycSection = import.meta.env.VITE_KYC_UI_ENABLED === 'true'
   : null
 
 const agentWhatsappConsentEnabled = import.meta.env.DEV
-  || import.meta.env.VITE_PHASE3_UI_ENABLED === 'true'
+  || import.meta.env.VITE_AGENT_WHATSAPP_CONSENT_UI_ENABLED === 'true'
 
 type AccountPageProps = {
   user: User
