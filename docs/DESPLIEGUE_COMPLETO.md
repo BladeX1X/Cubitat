@@ -569,7 +569,7 @@ Desde `web/`:
 npm run deploy
 ```
 
-Este comando ejecuta lint, pruebas, el build integral de Fase 2, solicita la
+Este comando ejecuta lint, pruebas, el build integral de Fase 4, solicita la
 frase `DEPLOY PRODUCTION` en una terminal interactiva y solo entonces ejecuta
 Wrangler con la configuración de producción. Para DEV, usa
 `npm run deploy:phase2-dev` y escribe `DEPLOY DEV` cuando se solicite.
@@ -581,7 +581,7 @@ En Cloudflare conectar:
 ```txt
 Repository: BladeX1X/Cubitat
 Root directory: web
-Build command: npm run build:phase2-production
+Build command: npm run build:phase4-production
 Deploy command: npx wrangler deploy
 ```
 
@@ -1072,3 +1072,12 @@ La promoción F4 quedó aplicada en `main` y producción:
 - Smoke HTTP de rutas no sustituye pruebas autenticadas. Pagos/suscripciones de beneficios siguen sin activarse.
 
 Registro: [[Cubitat - Despliegue Fase 4 Produccion 2026-11-05]].
+
+### Perfil de despliegue requerido — rectificación 2026-11-05
+
+El Worker activo posterior al despliegue inicial devolvía la portada al abrir
+`/valorar`, porque el perfil `phase2-production` desactiva los flags visuales
+F4. El perfil de producción para cualquier build o publicación automática debe
+ser `phase4-production`. `npm run deploy` y Cloudflare Workers Builds deben usar
+`npm run build:phase4-production`; solo CI usa `npm run build:phase4-production:ci`.
+Un `200` de una ruta SPA no demuestra que esa ruta funcional esté habilitada.

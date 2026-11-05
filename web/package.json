@@ -33,7 +33,7 @@
     "verify:phase2-worker-bundle": "node scripts/verify-phase2-worker-bundle.mjs",
     "verify:private-secret-bundle": "node scripts/verify-private-secret-bundle.mjs",
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
-    "deploy": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-production && node scripts/confirm-deploy.mjs production && wrangler deploy --config wrangler.jsonc",
+    "deploy": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase4-production && node scripts/confirm-deploy.mjs production && wrangler deploy --config wrangler.jsonc",
     "cf:deploy": "npm run deploy",
     "deploy:phase2-dev": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-dev && node scripts/confirm-deploy.mjs phase2-dev && wrangler deploy --config wrangler.phase2-dev.jsonc"
   },

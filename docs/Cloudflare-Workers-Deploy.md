@@ -16,7 +16,7 @@ Root directory / Path:
 web
 
 Build command:
-npm run build:phase2-production
+npm run build:phase4-production
 
 Deploy command:
 npx wrangler deploy
@@ -66,12 +66,12 @@ www.cubitathome.com
 
 Como el dominio fue comprado en Cloudflare, el DNS debería poder configurarse desde el mismo panel.
 
-## Perfil integral de Fase 2 en producción
+## Perfil integral de Fase 4 en producción
 
 El Worker productivo `cubitat1` debe compilarse con:
 
 ```txt
-Build command: npm run build:phase2-production
+Build command: npm run build:phase4-production
 Deploy command: npx wrangler deploy
 Root directory: /web
 Production branch: main
@@ -81,6 +81,6 @@ La configuración remota de Cloudflare no se modifica con estos scripts. El
 guard aplica a las publicaciones manuales mediante npm; en Cloudflare Builds,
 mantén el Build command del perfil integral seguido por el Deploy command.
 
-`npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fase 2. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. La configuración vigente fue comprobada en Cloudflare el 2026-10-11 y persistió tras recargar el panel. Ver matriz y evidencia en `docs/FASE2_ESTADO.md`.
+`npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fases 2, 3 y 4. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. Comprueba en el Dashboard que su Build command sea `npm run build:phase4-production`; si usa un perfil anterior, cada push puede volver a ocultar módulos F4. El build de CI debe mantenerse en `npm run build:phase4-production:ci` y nunca ser el comando de despliegue.
 
 Verificación posterior: el merge de PR #130 (`3e46bec`) disparó el build `6086639e-5c26-4b49-876a-b6d1045d2067`; build y deploy terminaron en verde usando el comando anterior, y la versión `98c825b6-a653-48b1-9c60-6ea76bf40e06` quedó activa al 100%. El smoke autenticado volvió a mostrar los módulos KYC, Documentos y Coincidencias pHash.
