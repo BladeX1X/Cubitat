@@ -19,6 +19,15 @@ Estado: F4-SVC desplegado en DEV; implementación modular en curso
 Fuente de alcance: `Propuesta_Cubitat_completa_cliente_actualizada.pdf` (junio de 2026)
 Fecha de elaboración: 2026-10-13
 
+### Intento de preflight productivo — 2026-11-05
+
+PR #202 se integró en `main` (`abb693f1`). El primer workflow de migración
+terminó en fallo antes de la fase de dry-run/aplicación: el workdir temporal
+incluía migraciones locales históricas además de F4 y el guard detectó la
+diferencia. Por diseño, no aplicó migraciones ni reparó el ledger. Se ajusta el
+workdir a solo las ocho versiones F4 y se repetirá primero el dry-run; el estado
+de producción sigue sin cambios por ese intento.
+
 ## Objetivo
 
 Ampliar Cubitat desde el portal inmobiliario y la red de agentes hacia un

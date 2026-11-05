@@ -30,13 +30,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/cubitat-production/supabase"
+          migration_dir="$RUNNER_TEMP/cubitat-production/supabase/migrations"
+          mkdir -p "$migration_dir"
           cp web/supabase/config.toml "$RUNNER_TEMP/cubitat-production/supabase/config.toml"
-          cp -R web/supabase/migrations "$RUNNER_TEMP/cubitat-production/supabase/migrations"
-          # This versioned CUP price catalogue is DEV-only and has no production consumers.
-          rm "$RUNNER_TEMP/cubitat-production/supabase/migrations/20261103180000_add_billing_plan_catalog.sql"
+          # Stage only the reviewed F4 set. Other local migrations include
+          # historic DEV-only or intentionally unreconciled versions; staging
+          # them here could apply unrelated changes or demand history repair.
+          shopt -s nullglob
+          for version in \
+            20261105120000 20261105121000 20261105130000 20261105140000 \
+            20261105150000 20261105160000 20261105170000 20261105180000; do
+            matches=(web/supabase/migrations/"$version"_*.sql)
+            if [[ ${#matches[@]} -ne 1 ]]; then
+              echo "Expected exactly one canonical migration file for $version."
+              exit 1
+            fi
+            cp "${matches[0]}" "$migration_dir/"
+          done
           echo "Production migration versions staged:"
-          find "$RUNNER_TEMP/cubitat-production/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort | sed -E 's/^([0-9]+)_.*/\1/' | tail -n 12
+          find "$migration_dir" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort | sed -E 's/^([0-9]+)_.*/\1/'
 
       - name: Confirm exact production target and pristine F4 schema
         shell: bash
