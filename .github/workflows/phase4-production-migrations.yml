@@ -131,8 +131,18 @@ jobs:
         run: |
           set -euo pipefail
           set +x
+          set +e
           dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-production" --db-url "$SUPABASE_DB_URL" --dry-run --yes 2>&1)
-          printf '%s\n' "$dry_run"
+          dry_run_status=$?
+          set -e
+          # Redact URI credentials before emitting any CLI diagnostics.
+          safe_dry_run=$(printf '%s\n' "$dry_run" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          if [[ "$dry_run_status" -ne 0 ]]; then
+            printf '%s\n' "$safe_dry_run"
+            echo "Stopped: Supabase CLI dry-run failed (exit $dry_run_status); production migrations were not applied."
+            exit 1
+          fi
+          printf '%s\n' "$safe_dry_run"
           for version in 20261105120000 20261105121000 20261105130000 20261105140000 20261105150000 20261105160000 20261105170000 20261105180000; do
             if ! grep -Fq "$version" <<<"$dry_run"; then
               echo "Stopped: CLI dry-run did not enumerate expected migration $version."
