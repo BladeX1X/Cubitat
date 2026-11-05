@@ -126,3 +126,9 @@ npm run lint
 
 - El hero usa variantes responsive más ligeras de 480, 768 y 1200 px y conserva `fetchPriority="high"` como único recurso visual prioritario de la portada.
 - Las 16 tarjetas de provincias usan `loading="lazy"`, prioridad baja y variantes Unsplash de 420 px con calidad 45.
+
+## Navegación en ventanas medianas — 2026-11-04
+
+- Entre 621 y 1180 px, la marca y las acciones de cuenta/publicación quedan en la fila superior y los enlaces principales se muestran en una fila propia debajo. La fila permite desplazamiento horizontal si hace falta.
+- Hasta 620 px se mantiene el menú compacto con hamburguesa.
+- Ver el detalle del componente en `src/components/layout/Header.md`.
