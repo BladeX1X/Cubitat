@@ -27,6 +27,13 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN el sistema MUST abrir resultados con la operacion venta, alquiler o permuta correspondiente
 - AND la accion separada `Publicar gratis` MUST continuar disponible para crear anuncios
 
+#### Scenario: Navegacion en ventanas medianas
+- GIVEN el viewport tiene entre 621 y 1180 px de ancho
+- WHEN el encabezado cambia a su distribucion compacta
+- THEN MUST mantener visibles y utilizables los enlaces principales en una fila propia
+- AND MUST permitir desplazamiento horizontal de esa fila si no caben todas las opciones
+- AND MUST conservar la marca y las acciones de cuenta y publicacion en la fila superior
+
 #### Scenario: Descubrir la instalacion de la PWA
 - GIVEN un usuario navega Cubitat desde el navegador del telefono
 - WHEN abre el menu movil y selecciona `Instalar Cubitat`
