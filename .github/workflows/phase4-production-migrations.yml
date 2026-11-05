@@ -76,12 +76,33 @@ jobs:
             exit 1
           fi
 
-          baseline=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103170000' || true)
           dev_only=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103180000' || true)
-          printf 'Production ledger F3 release marker 20261103170000: %s\n' "$([[ -n "$baseline" ]] && echo present || echo absent)"
           printf 'DEV-only billing catalog marker 20261103180000: %s\n' "$([[ -n "$dev_only" ]] && echo present || echo absent)"
-          if [[ -z "$baseline" || -n "$dev_only" ]]; then
-            echo "Stopped before migration: production ledger differs from the expected F3 baseline; no repair or migration was attempted."
+          if [[ -n "$dev_only" ]]; then
+            echo "Stopped before migration: DEV-only billing catalog is registered in production."
+            exit 1
+          fi
+
+          core_schema=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT CASE WHEN
+            to_regprocedure('public.is_admin_aal2()') IS NOT NULL
+            AND to_regclass('public.profiles') IS NOT NULL
+            AND to_regclass('public.properties') IS NOT NULL
+            AND NOT EXISTS (
+              SELECT required.column_name
+              FROM (VALUES ('id'), ('property_type'), ('operation'), ('area_m2'),
+                ('created_at'), ('status'), ('price_usd'), ('location')) AS required(column_name)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='properties'
+                  AND column_name=required.column_name
+              )
+            ) THEN 'compatible' ELSE 'missing-required-platform-schema' END;
+          SQL
+          )
+          echo "Required pre-F4 platform schema: $core_schema"
+          if [[ "$core_schema" != 'compatible' ]]; then
+            echo "Stopped before migration: required admin or property schema is missing."
             exit 1
           fi
 

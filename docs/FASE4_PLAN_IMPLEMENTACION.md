@@ -29,10 +29,12 @@ workdir a solo las ocho versiones F4 y se repetirá primero el dry-run; el estad
 de producción sigue sin cambios por ese intento.
 
 El segundo preflight usó solo esos ocho archivos y pasó la comparación del
-conjunto F4 pendiente, pero se detuvo porque no encontró la marca esperada del
-baseline F3 (`20261103170000`) o detectó la marca DEV-only (`20261103180000`).
-No llegó al dry-run ni modificó la base. Se añadirá evidencia explícita de cuál
-de las dos condiciones se cumple; no se reparará el historial a ciegas.
+conjunto F4 pendiente. Se detuvo porque el registro no contiene la marca F3
+`20261103170000`; la marca DEV-only `20261103180000` tampoco está presente. No
+llegó al dry-run ni modificó la base. El guard ahora valida los objetos base
+que F4 realmente requiere (helper AAL2 y columnas de `properties`) en vez de
+inferir el estado del esquema a partir de una marca de historial ausente. No
+se reparará el ledger automáticamente.
 
 ## Objetivo
 
