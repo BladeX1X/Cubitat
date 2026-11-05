@@ -4,7 +4,30 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-10-13.
+Última revisión documental: 2026-11-05.
+
+## Preparación de Fase 4 para producción — 2026-11-05
+
+Se prepararon ocho migraciones productivas separadas, en orden:
+
+1. `20261105120000_phase4_home_services.sql`
+2. `20261105121000_phase4_services_moderation_lint.sql`
+3. `20261105130000_phase4_service_reviews.sql`
+4. `20261105140000_phase4_materials_marketplace.sql`
+5. `20261105150000_phase4_materials_private_storage.sql`
+6. `20261105160000_phase4_business_benefits.sql`
+7. `20261105170000_phase4_private_marketplace_contact.sql`
+8. `20261105180000_phase4_valuation.sql`
+
+El workflow manual `.github/workflows/phase4-production-migrations.yml` prepara
+una carpeta temporal con el historial productivo y excluye
+`20261103180000_add_billing_plan_catalog.sql`, catálogo informativo DEV sin
+consumidores de producción. Antes de aplicar, exige que todos los pendientes
+locales sean exactamente las ocho versiones anteriores, que la producción esté
+en el baseline F3 `20261103170000`, que el catálogo DEV no esté aplicado, y que
+no haya objetos F4 parciales. Después verifica esquema, Storage y grants de
+privacidad. El workflow todavía no se ha ejecutado; el esquema productivo no se
+marca como desplegado hasta que exista evidencia remota de éxito.
 
 ## Excepción temporal de MFA administrativo en producción — 2026-10-13
 

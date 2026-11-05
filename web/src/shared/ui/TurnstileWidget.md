@@ -11,7 +11,8 @@ cliente.
 
 ## Contrato
 
-- `action`: identifica el flujo protegido, por ejemplo `contact-owner`.
+- `action`: identifica el flujo protegido, por ejemplo `contact-owner`,
+  `report-property` o `marketplace-contact`.
 - `onVerify`: recibe el token cuando Cloudflare completa el desafio.
 - `onExpire`: invalida el token cuando expira.
 - `onError`: permite limpiar el token y mostrar un error recuperable.
@@ -35,6 +36,9 @@ script externo.
 - El Worker exige que `success`, `hostname` y `action` coincidan con la
   solicitud antes de llamar al RPC exclusivo de `service_role`.
 - Cada integracion conserva un `action` explicito para trazabilidad.
+- En servicios y materiales, el navegador solo recibe teléfonos después de que
+  `/api/public/marketplace-contact` valida el action `marketplace-contact`; el
+  RPC de contacto solo es ejecutable con `service_role`.
 - Registro y recuperacion entregan el token directamente como `captchaToken` a
   Supabase Auth, que realiza la validacion dentro de la propia operacion.
 

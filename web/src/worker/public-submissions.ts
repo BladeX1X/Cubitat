@@ -1,5 +1,5 @@
 import { normalizePhoneForStorage, validatePhone } from '../shared/lib/phone'
-import { readBoundedJsonObject } from './boundedJson.js'
+import { readBoundedJsonObject, readBoundedStreamBytes } from './boundedJson.js'
 
 const DEFAULT_TURNSTILE_VERIFY_URL = 'https://turnstile-siteverify-cubitat.pochiprats18.workers.dev'
 const MAX_REQUEST_BYTES = 16 * 1024
@@ -14,7 +14,7 @@ export interface PublicSubmissionEnv {
   }
 }
 
-type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation'
+type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation' | 'marketplace-contact'
 
 type TurnstileResult = {
   success?: boolean
@@ -36,6 +36,18 @@ type ReportPayload = {
   property_id?: unknown
   reason?: unknown
   description?: unknown
+}
+
+type MarketplaceContactPayload = {
+  turnstile_token?: unknown
+  listing_type?: unknown
+  listing_id?: unknown
+}
+
+type MarketplaceContactTarget = 'service' | 'material'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function json(body: unknown, status: number): Response {
@@ -151,6 +163,36 @@ async function callTrustedRpc(env: PublicSubmissionEnv, rpcName: string, body: u
   return true
 }
 
+async function callTrustedRpcForJson(env: PublicSubmissionEnv, rpcName: string, body: unknown): Promise<unknown | null> {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return null
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 6000)
+  try {
+    const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!response.ok) {
+      if (response.body) void response.body.cancel().catch(() => undefined)
+      return null
+    }
+    const bytes = await readBoundedStreamBytes(response.body, response.headers.get('content-length'), 4096, 6000)
+    if (!bytes.ok) return null
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.value)) as unknown
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 function turnstileFailure(result: 'invalid' | 'unavailable'): Response {
   return result === 'invalid'
     ? json({ error: 'La verificacion de seguridad no es valida.' }, 400)
@@ -245,4 +287,37 @@ export async function handlePublicReportSubmission(
   return inserted
     ? json({ ok: true }, 201)
     : json({ error: 'No fue posible registrar el reporte.' }, 503)
+}
+
+export async function handlePublicMarketplaceContact(
+  request: Request,
+  env: PublicSubmissionEnv,
+): Promise<Response> {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'El contacto no esta disponible.' }, 503)
+  const parsed = await readBoundedJsonObject<MarketplaceContactPayload>(request, 4096, 6000)
+  if (!parsed.ok) {
+    const status = parsed.status
+    return json({ error: status === 413 ? 'Solicitud demasiado grande.' : 'Solicitud no valida.' }, status)
+  }
+  const body = parsed.value
+  const token = normalizedString(body.turnstile_token)
+  const listingType = body.listing_type
+  const listingId = normalizedString(body.listing_id)
+  if ((listingType !== 'service' && listingType !== 'material') || !UUID_PATTERN.test(listingId)) {
+    return json({ error: 'Los datos del contacto no son validos.' }, 400)
+  }
+
+  const verification = await verifyTurnstile(request, env, token, 'marketplace-contact')
+  if (verification !== 'valid') return turnstileFailure(verification)
+
+  const result = await callTrustedRpcForJson(env, 'get_public_marketplace_contact', {
+    p_listing_type: listingType as MarketplaceContactTarget,
+    p_listing_id: listingId,
+  })
+  const row = Array.isArray(result) ? result[0] : null
+  if (!isRecord(row)) return json({ error: 'No se encontro un contacto publico para este anuncio.' }, 404)
+  const phone = typeof row.phone === 'string' && validatePhone(row.phone) ? normalizePhoneForStorage(row.phone) : null
+  const whatsapp = typeof row.whatsapp === 'string' && validatePhone(row.whatsapp) ? normalizePhoneForStorage(row.whatsapp) : null
+  if (!phone && !whatsapp) return json({ error: 'No se encontro un contacto publico para este anuncio.' }, 404)
+  return json({ phone, whatsapp }, 200)
 }

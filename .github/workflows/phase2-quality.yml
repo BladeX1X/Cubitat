@@ -76,6 +76,13 @@ jobs:
           VITE_SUPABASE_ANON_KEY: phase3-ci-placeholder-not-a-credential
         run: npm run build:phase3-production:ci
 
+      - name: Full Phase 4 production profile and isolation checks
+        env:
+          SITEMAP_MODE: static
+          VITE_SUPABASE_URL: https://tohjzoncoosvjbjcakdl.supabase.co
+          VITE_SUPABASE_ANON_KEY: phase4-ci-placeholder-not-a-credential
+        run: npm run build:phase4-production:ci
+
   database-security:
     runs-on: ubuntu-latest
     defaults:
@@ -103,3 +110,4 @@ jobs:
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_application_evidence_retention_local.sql
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/agent_signup_referral_attribution_local.sql
           docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/billing_plan_catalog_local.sql
+          docker exec -i supabase_db_web psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/phase4_production_contracts_local.sql

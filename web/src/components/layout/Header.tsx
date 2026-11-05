@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeftRight, BriefcaseBusiness, Building2, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
+import { ArrowLeftRight, Boxes, BriefcaseBusiness, Building2, Calculator, Download, Heart, Home, LogOut, Menu, Search, ShieldCheck, UserCircle, X } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { UserMenu, NotificationsMenu } from '../UserMenu'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
@@ -17,6 +17,9 @@ interface HeaderProps {
   navigatePublish: () => void
   navigateResults: () => void
   navigateAgentApplication?: () => void
+  navigateServices?: () => void
+  navigateMaterials?: () => void
+  navigateValuation?: () => void
   openLogin: () => void
   handleOperationNavigation: (op: 'venta' | 'alquiler' | 'permuta') => void
   onSignOut: () => void
@@ -33,6 +36,9 @@ export function Header({
   navigatePublish,
   navigateResults,
   navigateAgentApplication,
+  navigateServices,
+  navigateMaterials,
+  navigateValuation,
   openLogin,
   handleOperationNavigation,
   onSignOut,
@@ -111,6 +117,9 @@ export function Header({
               Ser agente
             </a>
           )}
+          {navigateServices && <a href="/servicios" onClick={(event) => { event.preventDefault(); handleNavigation(navigateServices) }}>Servicios</a>}
+          {navigateMaterials && <a href="/materiales" onClick={(event) => { event.preventDefault(); handleNavigation(navigateMaterials) }}>Materiales</a>}
+          {navigateValuation && <a href="/valorar" onClick={(event) => { event.preventDefault(); handleNavigation(navigateValuation) }}>Valorar</a>}
         </nav>
         <button
           type="button"
@@ -228,6 +237,10 @@ export function Header({
             {navigateAgentApplication && (
               <button type="button" onClick={() => handleNavigation(navigateAgentApplication)}><BriefcaseBusiness size={18} />Ser agente</button>
             )}
+            {(navigateServices || navigateMaterials || navigateValuation) && <p className="mobile-menu-section-title">Servicios para vivienda</p>}
+            {navigateServices && <button type="button" onClick={() => handleNavigation(navigateServices)}><BriefcaseBusiness size={18} />Profesionales del hogar</button>}
+            {navigateMaterials && <button type="button" onClick={() => handleNavigation(navigateMaterials)}><Boxes size={18} />Materiales</button>}
+            {navigateValuation && <button type="button" onClick={() => handleNavigation(navigateValuation)}><Calculator size={18} />Valoración orientativa</button>}
           </nav>
         </aside>
       )}

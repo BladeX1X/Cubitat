@@ -26,6 +26,21 @@ describe('logger.ts - Safe Frontend Logging', () => {
     expect(sanitizeErrorReason({ status: 403, message: 'private detail' })).toBe('HTTP_STATUS_403');
   });
 
+  it('accepts the closed set of Phase 4 module names', () => {
+    for (const module of ['home_services', 'materials', 'service_reviews', 'business_benefits', 'valuation'] as const) {
+      logSafeEvent({ module, action: 'load_catalog', level: 'warn' });
+    }
+
+    expect(console.warn).toHaveBeenCalledTimes(5);
+    expect(vi.mocked(console.warn).mock.calls.map(([message]) => message)).toEqual([
+      '[HOME_SERVICES:load_catalog] WARN',
+      '[MATERIALS:load_catalog] WARN',
+      '[SERVICE_REVIEWS:load_catalog] WARN',
+      '[BUSINESS_BENEFITS:load_catalog] WARN',
+      '[VALUATION:load_catalog] WARN',
+    ]);
+  });
+
   it('redacts sensitive string patterns such as email, phone numbers, and URLs', () => {
     const rawError = 'Error at https://api.example.com/v1?token=123 for user@test.com phone 5351234567';
     const sanitized = sanitizeErrorReason(rawError);

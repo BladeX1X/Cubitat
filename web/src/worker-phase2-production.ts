@@ -12,6 +12,7 @@ import { logWorkerEvent } from './worker/logger';
 import { readBoundedJsonObject } from './worker/boundedJson.js';
 import { handleAgentApplicationSubmission } from './worker/agent-applications';
 import { handleAgentApplicationDocumentLinks } from './worker/agent-application-documents';
+import { handlePublicMarketplaceContact } from './worker/public-submissions';
 import { dispatchPendingAgentApplicationEmails } from './worker/agent-application-email-dispatcher';
 import { purgeFinalAgentApplicationEvidence } from './worker/agent-application-evidence-retention';
 import {
@@ -30,12 +31,38 @@ interface ProductionPhaseTwoEnv extends Env {
 }
 
 const worker = createWorker({
+  additionalAuthenticatedWriteTables: [
+    'home_service_providers',
+    'home_service_inquiries',
+    'material_listings',
+    'material_inquiries',
+  ],
   additionalPublicRpcs: [
+    'get_active_business_benefits',
     'get_public_agent_profile',
     'get_verified_agent_ids',
     'get_verified_seller_ids',
   ],
   additionalAuthenticatedRpcs: [
+    'get_my_home_service_providers',
+    'update_home_service_provider',
+    'moderate_home_service_provider',
+    'submit_home_service_review',
+    'get_my_home_service_review',
+    'get_admin_home_service_review_queue',
+    'get_admin_home_service_review_flags',
+    'moderate_home_service_review',
+    'report_home_service_review',
+    'request_home_service_review_removal',
+    'resolve_home_service_review_flag',
+    'get_my_material_listings',
+    'update_material_listing',
+    'moderate_material_listing',
+    'get_admin_material_moderation_queue',
+    'get_admin_business_benefits',
+    'grant_business_benefit',
+    'revoke_business_benefit',
+    'get_property_value_comparables',
     'submit_kyc_request',
     'review_kyc_request',
     'submit_property_verification',
@@ -65,6 +92,22 @@ export function runProductionScheduledTasks(
 export default {
   async fetch(request: Request, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/api/public/marketplace-contact') {
+      const headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+      };
+      const respond = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), { status, headers });
+      if (request.method !== 'POST') return respond(405, { error: 'Method not allowed' });
+      const clientIp = request.headers.get('cf-connecting-ip')
+        || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || '127.0.0.1';
+      const limit = await checkRateLimit(env, `${clientIp}:public-marketplace-contact:v1`, 10, 10 * 60 * 1000);
+      if (!limit.allowed) return rateLimitResponse(limit.resetAt);
+      return handlePublicMarketplaceContact(request, env);
+    }
     const agentApplicationDocumentsMatch = url.pathname.match(/^\/api\/phase3\/agent-applications\/([^/]+)\/documents$/);
     const respondPhase3 = (status: number, body: Record<string, string>) => new Response(JSON.stringify(body), {
       status,
