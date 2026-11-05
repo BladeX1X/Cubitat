@@ -11,19 +11,20 @@ envía documentos a Supabase desde el navegador.
 
 - La ruta `/postular-agente` requiere sesión; el login devuelve a la ruta
   pendiente después de autenticarse.
-- La navegación y el chunk solo se habilitan en DEV cuando
+- La navegación y el chunk se habilitan en DEV cuando
   `VITE_PHASE3_UI_ENABLED=true`, o en el perfil explícito `phase3-production`.
 - El Worker valida la identidad, limita frecuencia/tamaño, inspecciona firmas
   reales, sube al bucket privado y persiste con una RPC reservada al service role.
-- El perfil de producción solo prepara esta pantalla: el Worker permanece
-  desactivado (`PHASE3_ENABLED=false`) hasta reconciliar y verificar el esquema
-  hosted y configurar sus secretos. No desplegar antes de esa validación.
+- Producción ya tiene la pantalla y el endpoint desplegados con
+  `PHASE3_ENABLED=true`; el QA autenticado positivo de envío todavía está
+  pendiente. Por eso el formulario solicita usar documentos sintéticos.
 
 ## Accesibilidad y estados
 
 Los campos tienen etiquetas explícitas; tamaño, campos faltantes y errores del
-servidor presentan mensajes claros sin mostrar detalles internos. El éxito
-confirma recepción en estado pendiente, pero aclara que aún no se envía correo.
+servidor presentan mensajes claros sin mostrar detalles internos. Un conflicto
+por solicitud abierta se muestra como tal. El éxito confirma recepción en estado
+pendiente, no aprobación ni entrega efectiva del correo.
 La página adapta el formulario a una columna en móvil.
 
 ## Verificación

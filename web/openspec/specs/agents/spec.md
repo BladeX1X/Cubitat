@@ -326,6 +326,18 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND MUST NOT devolver rutas, tokens, URLs firmadas ni mensajes brutos de infraestructura
 - AND MUST limitar los logs a etapa, estado HTTP y causa enumerada, sin ID de postulación
 
+#### Observación de producción — envío de postulación (2026-11-05)
+
+La interfaz mostró un fallo genérico al enviar una postulación; la captura no
+incluye el estado HTTP y por sí sola no identifica si falló Storage o PostgREST.
+La corrección candidata conserva HTTP 409 de PostgREST para que la interfaz
+explique una solicitud abierta existente y registra únicamente la etapa y el
+estado HTTP de fallos de carga/persistencia. El estado de red se registra como
+`network_unavailable`. No se registran datos del formulario, nombres/rutas de
+archivo, contenido documental ni ID de solicitud. Esto mejora el diagnóstico,
+pero no demuestra que el fallo productivo original esté resuelto hasta promover
+la corrección y verificar un envío sintético autorizado.
+
 ### Requisito: Entorno local
 
 - GIVEN una compilación que no sea `development` con Supabase local
