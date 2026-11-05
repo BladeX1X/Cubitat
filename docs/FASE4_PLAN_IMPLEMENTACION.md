@@ -28,6 +28,12 @@ diferencia. Por diseño, no aplicó migraciones ni reparó el ledger. Se ajusta 
 workdir a solo las ocho versiones F4 y se repetirá primero el dry-run; el estado
 de producción sigue sin cambios por ese intento.
 
+El segundo preflight usó solo esos ocho archivos y pasó la comparación del
+conjunto F4 pendiente, pero se detuvo porque no encontró la marca esperada del
+baseline F3 (`20261103170000`) o detectó la marca DEV-only (`20261103180000`).
+No llegó al dry-run ni modificó la base. Se añadirá evidencia explícita de cuál
+de las dos condiciones se cumple; no se reparará el historial a ciegas.
+
 ## Objetivo
 
 Ampliar Cubitat desde el portal inmobiliario y la red de agentes hacia un
