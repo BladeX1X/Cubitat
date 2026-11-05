@@ -78,8 +78,10 @@ jobs:
 
           baseline=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103170000' || true)
           dev_only=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103180000' || true)
+          printf 'Production ledger F3 release marker 20261103170000: %s\n' "$([[ -n "$baseline" ]] && echo present || echo absent)"
+          printf 'DEV-only billing catalog marker 20261103180000: %s\n' "$([[ -n "$dev_only" ]] && echo present || echo absent)"
           if [[ -z "$baseline" || -n "$dev_only" ]]; then
-            echo "Stopped: production migration history differs from the verified F3 baseline."
+            echo "Stopped before migration: production ledger differs from the expected F3 baseline; no repair or migration was attempted."
             exit 1
           fi
 
