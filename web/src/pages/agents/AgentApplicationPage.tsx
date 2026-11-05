@@ -106,7 +106,7 @@ export function AgentApplicationPage({ user, onBack }: AgentApplicationPageProps
             <FileText aria-hidden="true" />
           </div>
           <h1 id="application-success-title" className="text-2xl font-bold text-neutral-950">Recibimos tu postulación</h1>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">La solicitud quedó registrada como pendiente de revisión. La confirmación por correo todavía no está habilitada en esta versión de pruebas.</p>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">La solicitud quedó registrada como pendiente de revisión. La selección requiere una revisión administrativa; recibir esta confirmación no significa que haya sido aprobada.</p>
           <Button className="mt-6" type="button" variant="outline" onClick={onBack}>Volver al inicio</Button>
         </section>
       </main>
@@ -172,7 +172,7 @@ export function AgentApplicationPage({ user, onBack }: AgentApplicationPageProps
           <FileField id="agent-application-diploma" label="Título o comprobante de graduación" file={diploma} onChange={setDiploma} />
 
           <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">
-            Los documentos se guardan en almacenamiento privado y solo se usan para evaluar la solicitud. El correo receptor es provisional; la notificación automatizada y la eliminación programada 30 días después de la decisión todavía no están activas. No envíes documentos reales mientras esta función siga en pruebas.
+            Esta función sigue en pruebas: adjunta únicamente documentos sintéticos. Los archivos se guardan en almacenamiento privado. El envío no confirma que el correo de aviso haya llegado ni que la solicitud ya esté siendo revisada.
           </div>
 
           {errorMessage && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{errorMessage}</p>}

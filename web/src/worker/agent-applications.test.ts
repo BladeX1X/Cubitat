@@ -101,4 +101,23 @@ describe('agent application submission endpoint', () => {
     expect(String(fetchFn.mock.calls[3]![0])).toContain('/storage/v1/object/agent_application_documents')
     expect((fetchFn.mock.calls[3]![1] as RequestInit).method).toBe('DELETE')
   })
+
+  it('reports an existing open application as a conflict and removes the new uploads', async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"code":"23505"}', { status: 409 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    const request = new Request('https://dev.example/api/phase3/agent-applications', {
+      method: 'POST',
+      body: applicationForm(),
+    })
+
+    const response = await handleAgentApplicationSubmission(request, baseEnv, 'applicant-id', fetchFn)
+
+    expect(response.status).toBe(409)
+    expect(fetchFn).toHaveBeenCalledTimes(4)
+    expect(String(fetchFn.mock.calls[3]![0])).toContain('/storage/v1/object/agent_application_documents')
+    expect((fetchFn.mock.calls[3]![1] as RequestInit).method).toBe('DELETE')
+  })
 })

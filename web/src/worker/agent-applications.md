@@ -4,8 +4,7 @@
 Deriva PDF, JPEG o PNG a partir de los bytes y no confía en el nombre ni el MIME
 que envía el navegador. El tamaño máximo es inclusivo: 10 MiB exactos se aceptan
 y cualquier byte adicional se rechaza. La ruta requiere `PHASE3_ENABLED=true`;
-la configuración base lo conserva en `false`, mientras DEV tiene un override
-hosted que la activa. Producción permanece apagada.
+la bandera está activa en los Workers DEV y producción desplegados.
 
 El Worker limita el cuerpo antes de analizar multipart, exige sesión autenticada,
 valida campos/provincia y requiere CV y título/diploma. Sube con el secreto de
@@ -13,10 +12,14 @@ service role a `agent_application_documents`, invoca una RPC reservada a
 `service_role` y borra los objetos si falla la persistencia. La migración crea
 tablas privadas de solicitudes/eventos, el bucket privado, lectura de estado por
 propietario y lectura administrativa AAL2; el RPC impone una solicitud abierta
-por cuenta y un límite diario para evitar bypass directo.
+por cuenta y un límite diario para evitar bypass directo. Los errores del Worker
+registran solo la etapa y el estado HTTP, nunca campos del formulario, nombres
+de archivos, rutas de Storage o contenido documental. Un conflicto HTTP 409 se
+conserva para mostrar que ya existe una solicitud abierta.
 
 DEV registra las seis migraciones F3 `20261103120000`–`20261103170000` y el
-Worker tiene `PHASE3_ENABLED=true`; producción conserva el flujo apagado. La
+Worker tiene `PHASE3_ENABLED=true`; producción también tiene el flujo activo.
+El QA autenticado positivo de envío en producción sigue pendiente. La
 RPC AAL2 permite iniciar revisión, lista de espera, rechazo y aprobación
 auditados. Una plaza se asigna en transacción serializada por provincia, exige
 KYC verificado y deja en espera solicitudes cuando ya hay cuatro plazas

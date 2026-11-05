@@ -178,6 +178,7 @@ export async function handleAgentApplicationSubmission(
     { path: cvPath, document: cv },
     { path: diplomaPath, document: diploma },
   ]) {
+    let uploadStatus: number | undefined
     try {
       const uploaded = await fetchFn(
         `${env.VITE_SUPABASE_URL}/storage/v1/object/${APPLICATION_BUCKET}/${item.path}`,
@@ -191,7 +192,10 @@ export async function handleAgentApplicationSubmission(
           body: asArrayBuffer(item.document.bytes),
         },
       )
-      if (!uploaded.ok) throw new Error('Storage upload failed')
+      if (!uploaded.ok) {
+        uploadStatus = uploaded.status
+        throw new Error('Storage upload failed')
+      }
       paths.push(item.path)
     } catch {
       try {
@@ -200,11 +204,15 @@ export async function handleAgentApplicationSubmission(
       } catch {
         logWorkerEvent('error', 'agent_application_upload_cleanup_failed')
       }
-      logWorkerEvent('warn', 'agent_application_submission_failed', { phase: 'storage' })
+      logWorkerEvent('warn', 'agent_application_submission_failed', {
+        phase: 'storage',
+        ...(uploadStatus === undefined ? {} : { status: uploadStatus }),
+      })
       return response(503, 'Could not store application documents')
     }
   }
 
+  let persistenceStatus: number | undefined
   try {
     const saved = await fetchFn(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/submit_agent_application_trusted`, {
       method: 'POST',
@@ -219,6 +227,7 @@ export async function handleAgentApplicationSubmission(
         p_diploma_path: diplomaPath,
       }),
     })
+    persistenceStatus = saved.status
     if (!saved.ok) throw new Error('Application persistence failed')
   } catch {
     try {
@@ -227,8 +236,13 @@ export async function handleAgentApplicationSubmission(
     } catch {
       logWorkerEvent('error', 'agent_application_upload_cleanup_failed')
     }
-    logWorkerEvent('warn', 'agent_application_submission_failed', { phase: 'database' })
-    return response(503, 'Could not submit application')
+    logWorkerEvent('warn', 'agent_application_submission_failed', {
+      phase: 'database',
+      ...(persistenceStatus === undefined ? { reason: 'network_unavailable' } : { status: persistenceStatus }),
+    })
+    // PostgREST reports unique-constraint conflicts as HTTP 409. Preserve that
+    // safe status so the UI can explain that an open application already exists.
+    return response(persistenceStatus === 409 ? 409 : 503, 'Could not submit application')
   }
 
   logWorkerEvent('info', 'agent_application_submitted')
