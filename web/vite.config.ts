@@ -40,15 +40,24 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
   const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
   const phase2AgentConsentProduction = mode === 'phase2-agent-consent-production'
+  const phase4Production = mode === 'phase4-production'
   const productionBuild = mode === 'phase2-production'
     || phase2AgentConsentProduction
     || mode === 'phase3-production'
-  const phase3UiEnabled = mode === 'phase3-production' || (phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true')
+    || phase4Production
+  const phase3UiEnabled = mode === 'phase3-production' || phase4Production || (phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true')
   const phase2UiEnabled = phase2DevBuild || productionBuild
   const agentWhatsappConsentUiEnabled = phase2AgentConsentProduction
     || phase3UiEnabled
     || (phase2DevBuild && env.VITE_AGENT_WHATSAPP_CONSENT_UI_ENABLED === 'true')
   const imageDuplicateModerationEnabled = phase2UiEnabled
+  const phase4Flags = {
+    svc: phase4Production || (phase2DevBuild && env.VITE_PHASE4_SVC_ENABLED === 'true'),
+    rev: phase4Production || (phase2DevBuild && env.VITE_PHASE4_REV_ENABLED === 'true'),
+    mat: phase4Production || (phase2DevBuild && env.VITE_PHASE4_MAT_ENABLED === 'true'),
+    biz: phase4Production || (phase2DevBuild && env.VITE_PHASE4_BIZ_ENABLED === 'true'),
+    val: phase4Production || (phase2DevBuild && env.VITE_PHASE4_VAL_ENABLED === 'true'),
+  }
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
   const phase2SupabaseUrl = phase2DevBuild
@@ -90,6 +99,11 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_KYC_UI_ENABLED': JSON.stringify(kycUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_PROPERTY_VERIFICATION_UI_ENABLED': JSON.stringify(propertyVerificationUiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_IMAGE_DUPLICATE_MODERATION_ENABLED': JSON.stringify(imageDuplicateModerationEnabled ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE4_SVC_ENABLED': JSON.stringify(phase4Flags.svc ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE4_REV_ENABLED': JSON.stringify(phase4Flags.rev ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE4_MAT_ENABLED': JSON.stringify(phase4Flags.mat ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE4_BIZ_ENABLED': JSON.stringify(phase4Flags.biz ? 'true' : 'false'),
+      'import.meta.env.VITE_PHASE4_VAL_ENABLED': JSON.stringify(phase4Flags.val ? 'true' : 'false'),
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(publicSupabaseUrl),
     },
     plugins: [

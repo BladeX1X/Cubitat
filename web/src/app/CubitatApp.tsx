@@ -19,7 +19,7 @@ import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
-import { PHASE_TWO_ENABLED } from '../shared/config/features'
+import { PHASE_FOUR_MAT_ENABLED, PHASE_FOUR_REV_ENABLED, PHASE_FOUR_SVC_ENABLED, PHASE_FOUR_VAL_ENABLED, PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
 import { approximatePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
 import { disablePushNotifications, reconcilePushSession } from '../modules/notifications/push/pushService'
@@ -74,6 +74,27 @@ const AgentApplicationPage = PHASE_THREE_UI_ENABLED
       import('../pages/agents/AgentApplicationPage').then((module) => ({ default: module.AgentApplicationPage })),
     )
   : null
+const ServiceDirectoryPage = PHASE_FOUR_SVC_ENABLED
+  ? lazy(() => import('../pages/services/ServiceDirectoryPage').then((module) => ({ default: module.ServiceDirectoryPage })))
+  : null
+const MaterialsMarketplacePage = PHASE_FOUR_MAT_ENABLED
+  ? lazy(() => import('../pages/materials/MaterialsMarketplacePage').then((module) => ({ default: module.MaterialsMarketplacePage })))
+  : null
+const ServiceProviderSubmissionPage = PHASE_FOUR_SVC_ENABLED
+  ? lazy(() => import('../pages/services/ServiceProviderSubmissionPage').then((module) => ({ default: module.ServiceProviderSubmissionPage })))
+  : null
+const MaterialListingSubmissionPage = PHASE_FOUR_MAT_ENABLED
+  ? lazy(() => import('../pages/materials/MaterialListingSubmissionPage').then((module) => ({ default: module.MaterialListingSubmissionPage })))
+  : null
+const MyServiceProfilesPage = PHASE_FOUR_SVC_ENABLED
+  ? lazy(() => import('../pages/services/MyServiceProfilesPage').then((module) => ({ default: module.MyServiceProfilesPage })))
+  : null
+const MyMaterialListingsPage = PHASE_FOUR_MAT_ENABLED
+  ? lazy(() => import('../pages/materials/MyMaterialListingsPage').then((module) => ({ default: module.MyMaterialListingsPage })))
+  : null
+const PropertyValuationPage = PHASE_FOUR_VAL_ENABLED
+  ? lazy(() => import('../pages/valuation/PropertyValuationPage').then((module) => ({ default: module.PropertyValuationPage })))
+  : null
 const FavoritesPage = lazy(() =>
   import('../pages/favorites/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -124,13 +145,20 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard' | 'agent-application'
+type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard' | 'agent-application' | 'services' | 'materials' | 'service-submit' | 'material-submit' | 'my-services' | 'my-materials' | 'valuation'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
     return 'home'
   }
   const path = window.location.pathname
+  if (PHASE_FOUR_VAL_ENABLED && path === '/valorar') return 'valuation'
+  if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/publicar-servicio')) return 'service-submit'
+  if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/mis-servicios')) return 'my-services'
+  if (PHASE_FOUR_MAT_ENABLED && path.startsWith('/publicar-material')) return 'material-submit'
+  if (PHASE_FOUR_MAT_ENABLED && path.startsWith('/mis-materiales')) return 'my-materials'
+  if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/servicios')) return 'services'
+  if (PHASE_FOUR_MAT_ENABLED && path.startsWith('/materiales')) return 'materials'
   if (PHASE_THREE_UI_ENABLED && path === '/postular-agente') {
     return 'agent-application'
   }
@@ -346,7 +374,7 @@ export function CubitatApp() {
 
   // Guard protected routes from unauthenticated direct access
   useEffect(() => {
-    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard', ...(PHASE_THREE_UI_ENABLED ? ['agent-application' as const] : [])]
+    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard', 'service-submit', 'material-submit', 'my-services', 'my-materials', ...(PHASE_THREE_UI_ENABLED ? ['agent-application' as const] : [])]
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
       setPendingAuthPath(window.location.pathname + window.location.search + window.location.hash)
       openLogin()
@@ -765,6 +793,74 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
+  function navigateServices() {
+    if (!PHASE_FOUR_SVC_ENABLED) return
+    window.history.pushState(null, '', '/servicios')
+    setPageMode('services')
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigateMaterials() {
+    if (!PHASE_FOUR_MAT_ENABLED) return
+    window.history.pushState(null, '', '/materiales')
+    setPageMode('materials')
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigateValuation() {
+    if (!PHASE_FOUR_VAL_ENABLED) return
+    window.history.pushState(null, '', '/valorar')
+    setPageMode('valuation')
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigateServiceSubmission() {
+    const path = '/publicar-servicio'
+    if (!user) { setPendingAuthPath(path); openLogin(); return }
+    window.history.pushState(null, '', path)
+    setPageMode('service-submit')
+    window.scrollTo(0, 0)
+  }
+
+  function navigateMyServiceProfiles() {
+    const path = '/mis-servicios'
+    if (!user) { setPendingAuthPath(path); openLogin(); return }
+    window.history.pushState(null, '', path)
+    setPageMode('my-services')
+    window.scrollTo(0, 0)
+  }
+
+  function navigateEditServiceProfile(profileId: string) {
+    window.history.pushState(null, '', `/publicar-servicio?edit=${encodeURIComponent(profileId)}`)
+    setPageMode('service-submit')
+    window.scrollTo(0, 0)
+  }
+
+  function navigateMaterialSubmission() {
+    const path = '/publicar-material'
+    if (!user) { setPendingAuthPath(path); openLogin(); return }
+    window.history.pushState(null, '', path)
+    setPageMode('material-submit')
+    window.scrollTo(0, 0)
+  }
+
+  function navigateMyMaterialListings() {
+    const path = '/mis-materiales'
+    if (!user) { setPendingAuthPath(path); openLogin(); return }
+    window.history.pushState(null, '', path)
+    setPageMode('my-materials')
+    window.scrollTo(0, 0)
+  }
+
+  function navigateEditMaterialListing(listingId: string) {
+    window.history.pushState(null, '', `/publicar-material?edit=${encodeURIComponent(listingId)}`)
+    setPageMode('material-submit')
+    window.scrollTo(0, 0)
+  }
+
   async function handleSignOut() {
     try {
       await disablePushNotifications()
@@ -981,6 +1077,9 @@ export function CubitatApp() {
           navigatePublish={navigatePublish}
           navigateResults={navigateResults}
           navigateAgentApplication={PHASE_THREE_UI_ENABLED ? navigateAgentApplication : undefined}
+          navigateServices={PHASE_FOUR_SVC_ENABLED ? navigateServices : undefined}
+          navigateMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMaterials : undefined}
+          navigateValuation={PHASE_FOUR_VAL_ENABLED ? navigateValuation : undefined}
           openLogin={openLogin}
           handleOperationNavigation={handleOperationNavigation}
           onSignOut={handleSignOut}
@@ -1133,6 +1232,28 @@ export function CubitatApp() {
 
         {PHASE_THREE_UI_ENABLED && AgentApplicationPage && pageMode === 'agent-application' && user && (
           <AgentApplicationPage user={user} onBack={navigateHome} />
+        )}
+
+        {PHASE_FOUR_SVC_ENABLED && ServiceDirectoryPage && pageMode === 'services' && (
+          <ServiceDirectoryPage onRequireLogin={openLogin} onCreateProfile={navigateServiceSubmission} onManageProfiles={navigateMyServiceProfiles} reviewsEnabled={PHASE_FOUR_REV_ENABLED} userId={user?.id ?? null} />
+        )}
+        {PHASE_FOUR_SVC_ENABLED && MyServiceProfilesPage && pageMode === 'my-services' && user && (
+          <MyServiceProfilesPage onBack={navigateServices} onCreate={navigateServiceSubmission} onEdit={navigateEditServiceProfile} />
+        )}
+        {PHASE_FOUR_MAT_ENABLED && MaterialsMarketplacePage && pageMode === 'materials' && (
+          <MaterialsMarketplacePage onRequireLogin={openLogin} onCreateListing={navigateMaterialSubmission} onManageListings={navigateMyMaterialListings} />
+        )}
+        {PHASE_FOUR_SVC_ENABLED && ServiceProviderSubmissionPage && pageMode === 'service-submit' && user && (
+          <ServiceProviderSubmissionPage onBack={navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+        )}
+        {PHASE_FOUR_MAT_ENABLED && MaterialListingSubmissionPage && pageMode === 'material-submit' && user && (
+          <MaterialListingSubmissionPage onBack={navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+        )}
+        {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
+          <MyMaterialListingsPage onBack={navigateMaterials} onCreate={navigateMaterialSubmission} onEdit={navigateEditMaterialListing} />
+        )}
+        {PHASE_FOUR_VAL_ENABLED && PropertyValuationPage && pageMode === 'valuation' && (
+          <PropertyValuationPage authenticated={Boolean(user)} onRequireLogin={openLogin} />
         )}
 
         {pageMode === 'favorites' && (

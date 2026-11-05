@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  handlePublicMarketplaceContact,
   handlePublicContactSubmission,
   handlePublicReportSubmission,
   type PublicSubmissionEnv,
@@ -131,6 +132,48 @@ describe('public submission handlers', () => {
 
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toEqual({ error: 'No fue posible registrar la consulta.' })
+  })
+
+  it('reveals marketplace contact only after a matching Turnstile action and trusted RPC', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        success: true,
+        action: 'marketplace-contact',
+        hostname: 'cubitathome.com',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ phone: '+5351234567', whatsapp: null }]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicMarketplaceContact(new Request('https://cubitathome.com/api/public/marketplace-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnstile_token: 'valid-token', listing_type: 'service', listing_id: propertyId }),
+    }), createEnv())
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ phone: '+5351234567', whatsapp: null })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]?.[0]).toContain('/rpc/get_public_marketplace_contact')
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ apikey: 'server-only-key' })
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it('does not call the trusted RPC when the marketplace Turnstile action mismatches', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      success: true,
+      action: 'contact-owner',
+      hostname: 'cubitathome.com',
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicMarketplaceContact(new Request('https://cubitathome.com/api/public/marketplace-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnstile_token: 'valid-token', listing_type: 'material', listing_id: propertyId }),
+    }), createEnv())
+
+    expect(response.status).toBe(400)
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('requires an authenticated reporter only at the Worker boundary, not in the trusted payload builder', async () => {

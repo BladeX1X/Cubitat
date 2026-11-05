@@ -1,0 +1,161 @@
+name: Apply Cubitat Phase 4 production migrations
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-phase4-production-database
+  cancel-in-progress: false
+
+jobs:
+  apply-phase4:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.108.0
+
+      - name: Install PostgreSQL client for production preflight
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Prepare production migration set
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cubitat-production/supabase"
+          cp web/supabase/config.toml "$RUNNER_TEMP/cubitat-production/supabase/config.toml"
+          cp -R web/supabase/migrations "$RUNNER_TEMP/cubitat-production/supabase/migrations"
+          # This versioned CUP price catalogue is DEV-only and has no production consumers.
+          rm "$RUNNER_TEMP/cubitat-production/supabase/migrations/20261103180000_add_billing_plan_catalog.sql"
+          echo "Production migration versions staged:"
+          find "$RUNNER_TEMP/cubitat-production/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort | sed -E 's/^([0-9]+)_.*/\1/' | tail -n 12
+
+      - name: Confirm exact production target and pristine F4 schema
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *tohjzoncoosvjbjcakdl* ]]; then
+            echo "SUPABASE_DB_URL is absent or does not identify Cubitat production."
+            exit 1
+          fi
+
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c "select version from supabase_migrations.schema_migrations order by version")
+          local_versions=$(find "$RUNNER_TEMP/cubitat-production/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          pending_versions=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
+          expected_versions=$(printf '%s\n' \
+            20261105120000 20261105121000 20261105130000 20261105140000 \
+            20261105150000 20261105160000 20261105170000 20261105180000)
+          if [[ "$pending_versions" != "$expected_versions" ]]; then
+            echo "Stopped: pending production migrations do not exactly match the eight reviewed F4 versions."
+            printf 'Pending versions:\n%s\n' "$pending_versions"
+            exit 1
+          fi
+
+          baseline=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103170000' || true)
+          dev_only=$(printf '%s\n' "$remote_versions" | grep -Fx '20261103180000' || true)
+          if [[ -z "$baseline" || -n "$dev_only" ]]; then
+            echo "Stopped: production migration history differs from the verified F3 baseline."
+            exit 1
+          fi
+
+          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT CASE
+            WHEN NOT EXISTS (
+              SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m')
+                AND (c.relname LIKE 'home_service_%' OR c.relname LIKE 'material_%'
+                  OR c.relname IN ('business_benefits','business_benefit_audit'))
+            )
+            AND to_regclass('public.properties_public_valuation_idx') IS NULL
+            AND NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'material-listings')
+            THEN 'f4-pristine' ELSE 'f4-partial-or-existing' END;
+          SQL
+          )
+          if [[ "$schema_state" != 'f4-pristine' ]]; then
+            echo "Stopped: production already contains part of the F4 schema; manual reconciliation is required."
+            exit 1
+          fi
+
+      - name: Verify dry-run contains only reviewed F4 migrations
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-production" --db-url "$SUPABASE_DB_URL" --dry-run --yes 2>&1)
+          printf '%s\n' "$dry_run"
+          for version in 20261105120000 20261105121000 20261105130000 20261105140000 20261105150000 20261105160000 20261105170000 20261105180000; do
+            if ! grep -Fq "$version" <<<"$dry_run"; then
+              echo "Stopped: CLI dry-run did not enumerate expected migration $version."
+              exit 1
+            fi
+          done
+          if grep -Eq '20261103180000|202610[0-9]{8}' <<<"$dry_run"; then
+            echo "Stopped: CLI dry-run includes a DEV-only or unexpected earlier migration."
+            exit 1
+          fi
+
+      - name: Apply the exact F4 migration set
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$RUNNER_TEMP/cubitat-production" --db-url "$SUPABASE_DB_URL" --yes
+
+      - name: Verify production schema, history and privacy grants
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF (SELECT count(*) FROM supabase_migrations.schema_migrations
+                WHERE version IN ('20261105120000','20261105121000','20261105130000','20261105140000',
+                  '20261105150000','20261105160000','20261105170000','20261105180000')) <> 8 THEN
+              RAISE EXCEPTION 'phase4_migration_history_incomplete';
+            END IF;
+            IF to_regclass('public.home_service_providers') IS NULL
+              OR to_regclass('public.home_service_reviews') IS NULL
+              OR to_regclass('public.material_listings') IS NULL
+              OR to_regclass('public.business_benefits') IS NULL
+              OR to_regprocedure('public.get_public_marketplace_contact(text,uuid)') IS NULL
+              OR to_regprocedure('public.get_property_value_comparables(text,text,text,numeric)') IS NULL THEN
+              RAISE EXCEPTION 'phase4_schema_incomplete';
+            END IF;
+            IF has_column_privilege('anon','public.home_service_providers','phone','SELECT')
+              OR has_column_privilege('authenticated','public.home_service_providers','whatsapp','SELECT')
+              OR has_column_privilege('anon','public.material_listings','phone','SELECT')
+              OR has_column_privilege('authenticated','public.material_listings','whatsapp','SELECT')
+              OR has_function_privilege('anon','public.get_public_marketplace_contact(text,uuid)','EXECUTE')
+              OR has_function_privilege('authenticated','public.get_public_marketplace_contact(text,uuid)','EXECUTE')
+              OR NOT has_function_privilege('service_role','public.get_public_marketplace_contact(text,uuid)','EXECUTE')
+              OR has_function_privilege('anon','public.get_property_value_comparables(text,text,text,numeric)','EXECUTE')
+              OR NOT has_function_privilege('authenticated','public.get_property_value_comparables(text,text,text,numeric)','EXECUTE') THEN
+              RAISE EXCEPTION 'phase4_privilege_contract_failed';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id='material-listings' AND public=false) THEN
+              RAISE EXCEPTION 'phase4_private_material_bucket_missing';
+            END IF;
+          END;
+          $$;
+          SELECT 'Cubitat production Fase 4 schema and grants verified';
+          SQL

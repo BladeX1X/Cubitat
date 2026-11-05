@@ -26,6 +26,13 @@ const requiredMarkers = [
   'agent_application_documents',
   'dispatchPendingAgentApplicationEmails',
   'purgeFinalAgentApplicationEvidence',
+  '/api/public/marketplace-contact',
+  'get_public_marketplace_contact',
+  'get_property_value_comparables',
+  'get_active_business_benefits',
+  'get_admin_business_benefits',
+  'grant_business_benefit',
+  'revoke_business_benefit',
 ]
 const propertyVerificationRpcs = [
   'submit_property_verification',
@@ -37,6 +44,15 @@ const imageDuplicateRpcs = [
   'get_admin_property_image_duplicate_candidates',
 ]
 const phase3AuthenticatedRpcs = ['ensure_agent_referral_link']
+const phase4AuthenticatedRpcs = [
+  'get_my_home_service_providers', 'update_home_service_provider', 'moderate_home_service_provider',
+  'submit_home_service_review', 'get_my_home_service_review', 'get_admin_home_service_review_queue',
+  'get_admin_home_service_review_flags', 'moderate_home_service_review', 'report_home_service_review',
+  'request_home_service_review_removal', 'resolve_home_service_review_flag', 'get_my_material_listings',
+  'update_material_listing', 'moderate_material_listing', 'get_admin_material_moderation_queue',
+  'get_admin_business_benefits', 'grant_business_benefit', 'revoke_business_benefit',
+  'get_property_value_comparables',
+]
 const forbiddenMarkers = [
   'dispatchPendingAlertEmails',
   'cubitat1-phase2-dev',
@@ -53,8 +69,13 @@ try {
   const publiclyExposedImageDuplicateRpcs = imageDuplicateRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
   const missingPhase3AuthenticatedRpcs = phase3AuthenticatedRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
   const publiclyExposedPhase3Rpcs = phase3AuthenticatedRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
+  const missingPhase4AuthenticatedRpcs = phase4AuthenticatedRpcs.filter((rpc) => !authenticatedRpcBlock.includes(`'${rpc}'`))
+  const publiclyExposedPhase4Rpcs = phase4AuthenticatedRpcs.filter((rpc) => publicRpcBlock.includes(`'${rpc}'`))
   const missingPublicSellerBadgeRpc = !publicRpcBlock.includes("'get_verified_seller_ids'")
-  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0 || missingImageDuplicateRpcs.length > 0 || publiclyExposedImageDuplicateRpcs.length > 0 || missingPhase3AuthenticatedRpcs.length > 0 || publiclyExposedPhase3Rpcs.length > 0 || missingPublicSellerBadgeRpc) {
+  const missingPublicPhase4Rpcs = !publicRpcBlock.includes("'get_active_business_benefits'")
+  const improperlyExposedMarketplaceContact = authenticatedRpcBlock.includes("'get_public_marketplace_contact'")
+    || publicRpcBlock.includes("'get_public_marketplace_contact'")
+  if (missingAuthenticatedRpcs.length > 0 || publiclyExposedRpcs.length > 0 || missingImageDuplicateRpcs.length > 0 || publiclyExposedImageDuplicateRpcs.length > 0 || missingPhase3AuthenticatedRpcs.length > 0 || publiclyExposedPhase3Rpcs.length > 0 || missingPhase4AuthenticatedRpcs.length > 0 || publiclyExposedPhase4Rpcs.length > 0 || missingPublicSellerBadgeRpc || missingPublicPhase4Rpcs || improperlyExposedMarketplaceContact) {
     throw new Error([
       ...missingAuthenticatedRpcs.map((rpc) => `RPC documental fuera de allowlist autenticada: ${rpc}`),
       ...publiclyExposedRpcs.map((rpc) => `RPC documental expuesta en allowlist pública: ${rpc}`),
@@ -62,7 +83,11 @@ try {
       ...publiclyExposedImageDuplicateRpcs.map((rpc) => `RPC pHash expuesta en allowlist pública: ${rpc}`),
       ...missingPhase3AuthenticatedRpcs.map((rpc) => `RPC Fase 3 fuera de allowlist autenticada: ${rpc}`),
       ...publiclyExposedPhase3Rpcs.map((rpc) => `RPC Fase 3 expuesta en allowlist pública: ${rpc}`),
+      ...missingPhase4AuthenticatedRpcs.map((rpc) => `RPC Fase 4 fuera de allowlist autenticada: ${rpc}`),
+      ...publiclyExposedPhase4Rpcs.map((rpc) => `RPC Fase 4 expuesta en allowlist pública: ${rpc}`),
       ...(missingPublicSellerBadgeRpc ? ['RPC de insignia de vendedor verificado fuera de allowlist pública'] : []),
+      ...(missingPublicPhase4Rpcs ? ['RPC de lectura de beneficios activos fuera de allowlist pública'] : []),
+      ...(improperlyExposedMarketplaceContact ? ['RPC de contacto protegido no debe exponerse a través del proxy PostgREST'] : []),
     ].join('\n'))
   }
 
@@ -90,7 +115,7 @@ try {
     throw new Error(`El Worker productivo incluye módulos diferidos o exclusivos de DEV: ${leakedMarkers.join(', ')}`)
   }
 
-  console.log('Verified: production Worker bundle contains required KYC modules and excludes deferred email/DEV modules')
+  console.log('Verified: production Worker contains Phase 2/3/4 handlers, allowlists are scoped, and deferred email/DEV modules are excluded')
 } finally {
   await rm(outputDirectory, { recursive: true, force: true })
 }

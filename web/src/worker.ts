@@ -1,6 +1,7 @@
 import { RateLimiter } from './rate-limiter';
 import {
   handlePublicContactSubmission,
+  handlePublicMarketplaceContact,
   handlePublicReportSubmission,
   verifyTurnstile,
   type PublicSubmissionEnv,
@@ -727,6 +728,7 @@ async function resendSignupConfirmation(
 export interface WorkerOptions {
   additionalPublicRpcs?: readonly string[];
   additionalAuthenticatedRpcs?: readonly string[];
+  additionalAuthenticatedWriteTables?: readonly string[];
 }
 
 export function createWorker(options: WorkerOptions = {}) {
@@ -806,6 +808,14 @@ export function createWorker(options: WorkerOptions = {}) {
 
     if ((path === '/api/public/contact' || path === '/api/public/report') && request.method !== 'POST') {
       return jsonResponse({ error: 'Method not allowed' }, 405);
+    }
+
+    if (path === '/api/public/marketplace-contact') {
+      if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const contactRateLimit = await checkRateLimit(env, `${clientIp}:public-marketplace-contact:v1`, 10, 10 * 60 * 1000);
+      if (!contactRateLimit.allowed) return rateLimitResponse(contactRateLimit.resetAt);
+      return withSecurityHeaders(await handlePublicMarketplaceContact(request, env), url);
     }
 
     // Endpoint interno para moderación con IA
@@ -1068,7 +1078,10 @@ export function createWorker(options: WorkerOptions = {}) {
       const authHeader = request.headers.get('Authorization') || '';
       const authenticated = authHeader.startsWith('Bearer ') && authHeader !== 'Bearer dummy-key-safe-from-browsers';
 
-      const allowedWriteTables = ['properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts'];
+      const allowedWriteTables = [
+        'properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts',
+        ...(options.additionalAuthenticatedWriteTables ?? []),
+      ];
       const allowedPublicRpcs = [
         'increment_property_view_count',
         ...(options.additionalPublicRpcs ?? []),

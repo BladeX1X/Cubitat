@@ -55,6 +55,23 @@ const AgentApplicationsModerationTab = PHASE3_APPLICATIONS_ADMIN_UI_ENABLED
     })))
   : null
 
+const PHASE4_SVC_ENABLED = import.meta.env.VITE_PHASE4_SVC_ENABLED === 'true'
+const PHASE4_REV_ENABLED = import.meta.env.VITE_PHASE4_REV_ENABLED === 'true'
+const PHASE4_MAT_ENABLED = import.meta.env.VITE_PHASE4_MAT_ENABLED === 'true'
+const PHASE4_BIZ_ENABLED = import.meta.env.VITE_PHASE4_BIZ_ENABLED === 'true'
+const ServiceProviderModerationTab = PHASE4_SVC_ENABLED
+  ? lazy(() => import('../../modules/admin/home-services/ServiceProviderModerationTab').then((module) => ({ default: module.ServiceProviderModerationTab })))
+  : null
+const ServiceReviewModerationTab = PHASE4_REV_ENABLED
+  ? lazy(() => import('../../modules/admin/service-reviews/ServiceReviewModerationTab').then((module) => ({ default: module.ServiceReviewModerationTab })))
+  : null
+const MaterialModerationTab = PHASE4_MAT_ENABLED
+  ? lazy(() => import('../../modules/admin/materials/MaterialModerationTab').then((module) => ({ default: module.MaterialModerationTab })))
+  : null
+const BusinessBenefitsTab = PHASE4_BIZ_ENABLED
+  ? lazy(() => import('../../modules/admin/business-benefits/BusinessBenefitsTab').then((module) => ({ default: module.BusinessBenefitsTab })))
+  : null
+
 export function AdminPage({
   userRole,
   onNavigateHome,
@@ -71,6 +88,10 @@ export function AdminPage({
     ...(hasKycAdmin ? [{ id: 'kyc' as const, label: 'KYC' }] : []),
     ...(hasPropertyVerificationAdmin ? [{ id: 'property-verification' as const, label: 'Documentos' }] : []),
     ...(AgentApplicationsModerationTab ? [{ id: 'agent-applications' as const, label: 'Postulaciones' }] : []),
+    ...(ServiceProviderModerationTab ? [{ id: 'home-services' as const, label: 'Servicios' }] : []),
+    ...(ServiceReviewModerationTab ? [{ id: 'service-reviews' as const, label: 'Reseñas' }] : []),
+    ...(MaterialModerationTab ? [{ id: 'materials' as const, label: 'Materiales' }] : []),
+    ...(BusinessBenefitsTab ? [{ id: 'business-benefits' as const, label: 'Beneficios' }] : []),
     ...BASE_SECTIONS.slice(2),
   ]
 
@@ -152,6 +173,10 @@ export function AdminPage({
             <AgentApplicationsModerationTab />
           </Suspense>
         )}
+        {ServiceProviderModerationTab && activeSection === 'home-services' && <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}><ServiceProviderModerationTab /></Suspense>}
+        {ServiceReviewModerationTab && activeSection === 'service-reviews' && <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}><ServiceReviewModerationTab /></Suspense>}
+        {MaterialModerationTab && activeSection === 'materials' && <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}><MaterialModerationTab /></Suspense>}
+        {BusinessBenefitsTab && activeSection === 'business-benefits' && <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-[#035f53]" />}><BusinessBenefitsTab /></Suspense>}
         {activeSection === 'metrics' && <MetricsTab />}
         {activeSection === 'audit' && <AuditLogTab />}
       </div>

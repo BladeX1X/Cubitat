@@ -34,12 +34,38 @@ interface PhaseTwoDevEnv extends Env {
 }
 
 const worker = createWorker({
+  additionalAuthenticatedWriteTables: [
+    'home_service_providers',
+    'home_service_inquiries',
+    'material_listings',
+    'material_inquiries',
+  ],
   additionalPublicRpcs: [
+    'get_active_business_benefits',
     'get_public_agent_profile',
     'get_verified_agent_ids',
     'get_verified_seller_ids',
   ],
   additionalAuthenticatedRpcs: [
+    'get_my_home_service_providers',
+    'update_home_service_provider',
+    'moderate_home_service_provider',
+    'submit_home_service_review',
+    'get_my_home_service_review',
+    'get_admin_home_service_review_queue',
+    'get_admin_home_service_review_flags',
+    'moderate_home_service_review',
+    'report_home_service_review',
+    'request_home_service_review_removal',
+    'resolve_home_service_review_flag',
+    'get_my_material_listings',
+    'update_material_listing',
+    'moderate_material_listing',
+    'get_admin_material_moderation_queue',
+    'get_admin_business_benefits',
+    'grant_business_benefit',
+    'revoke_business_benefit',
+    'get_property_value_comparables',
     'get_admin_property_image_hash_status',
     'get_admin_property_image_duplicate_candidates',
     'submit_kyc_request',
