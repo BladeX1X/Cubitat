@@ -20,14 +20,19 @@ Se prepararon ocho migraciones productivas separadas, en orden:
 8. `20261105180000_phase4_valuation.sql`
 
 El workflow manual `.github/workflows/phase4-production-migrations.yml` prepara
-una carpeta temporal con el historial productivo y excluye
+una carpeta aislada con las ocho migraciones pendientes y únicamente los
+archivos fuente canónicos correspondientes a versiones que ya constan en el
+ledger productivo. Esto permite que Supabase CLI valide el historial sin
+repararlo ni cargar migraciones locales ajenas a producción. Si falta una fuente
+local de cualquier versión remota, se detiene. Se excluye
 `20261103180000_add_billing_plan_catalog.sql`, catálogo informativo DEV sin
-consumidores de producción. Antes de aplicar, exige que todos los pendientes
-locales sean exactamente las ocho versiones anteriores, que la producción esté
-en el baseline F3 `20261103170000`, que el catálogo DEV no esté aplicado, y que
-no haya objetos F4 parciales. Después verifica esquema, Storage y grants de
-privacidad. El workflow todavía no se ha ejecutado; el esquema productivo no se
-marca como desplegado hasta que exista evidencia remota de éxito.
+consumidores productivos. Antes de aplicar, exige que los pendientes sean
+exactamente las ocho versiones anteriores, valida el esquema base requerido,
+la ausencia del catálogo DEV y que no haya objetos F4 parciales. Ejecuta un
+dry-run que debe enumerar solo F4; después verifica ledger, esquema, Storage y
+grants de privacidad. Los intentos detenidos durante el diagnóstico no aplicaron
+migraciones; no marcar producción como desplegada hasta confirmar el workflow
+completo.
 
 ## Excepción temporal de MFA administrativo en producción — 2026-10-13
 
