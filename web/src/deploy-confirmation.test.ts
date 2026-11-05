@@ -11,7 +11,7 @@ describe('manual deployment guard', () => {
       scripts: Record<string, string>
     }
     const expectedProduction =
-      'npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-production && node scripts/confirm-deploy.mjs production && wrangler deploy --config wrangler.jsonc'
+      'npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase4-production && node scripts/confirm-deploy.mjs production && wrangler deploy --config wrangler.jsonc'
 
     expect(scripts.deploy).toBe(expectedProduction)
     expect(scripts['cf:deploy']).toBe('npm run deploy')
@@ -25,8 +25,8 @@ describe('manual deployment guard', () => {
       scripts: Record<string, string>
     }
 
-    expect(scripts['build:phase2-production']).toContain('node scripts/generate-sitemap.mjs --require-dynamic')
-    expect(scripts['build:phase2-production:ci']).toContain('node scripts/generate-sitemap.mjs --static')
+    expect(scripts['build:phase4-production']).toContain('node scripts/generate-sitemap.mjs --require-dynamic')
+    expect(scripts['build:phase4-production:ci']).toContain('node scripts/generate-sitemap.mjs --static')
 
     const qualityWorkflow = readFileSync(resolve(process.cwd(), '..', '.github/workflows/phase2-quality.yml'), 'utf8')
     expect(qualityWorkflow).toContain('run: npm run build:phase2-production:ci')
