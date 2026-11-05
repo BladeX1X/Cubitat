@@ -4100,3 +4100,11 @@ No migration was applied or repaired. Production was not queried. Next: compare 
 - Worker DEV desplegado: `cubitat1-phase2-dev`, versión `26fa86b6-9b91-4c96-98f1-c39aedaf68de`; `PHASE3_ENABLED=true` se pasó como override solo a esa publicación; `wrangler.phase2-dev.jsonc` sigue con `false`. Se añadió `AGENT_APPLICATION_EMAIL_TO` como secreto de DEV con el correo provisional indicado; `RESEND_API_KEY` ya constaba como secreto, sin leer su valor.
 - Smoke HTTP seguro: endpoint de intake devuelve 405 a GET; endpoint privado de documentos devuelve 401 sin sesión. Gates local lint/build/suite y perfil F3 CI: PASS (181 archivos, 814 PASS, 1 omitida).
 - QA positivo sigue pendiente: la pestaña disponible no conserva sesión autenticada y Moderación requiere AAL2. No se creó solicitud ni se subieron documentos/envió correo. Producción intacta. No abrir uso público de F3 hasta completar QA autenticado; suscripciones/ledger de comisiones y atribución al registro continúan incompletos.
+
+## Despliegue Fase 4 en producción — 2026-11-05
+
+- PR #202 integró código y migraciones F4; workflow hardening de ledger quedó en PR #209. `main` al desplegar: `aed12b5c21328e8b53ba83898ab767dfe475ebd8`.
+- Supabase producción `tohjzoncoosvjbjcakdl`: workflow `42009714135` PASS; dry-run limitado exactamente a `20261105120000`–`20261105180000`; las ocho migraciones se aplicaron y se verificaron ledger, tablas/RPC, Storage privado y grants. Se copiaron temporalmente fuentes canónicas de versiones ya registradas para resolver las exigencias del CLI; no se ejecutó `migration repair` ni se incluyó la migración DEV-only `20261103180000`.
+- Worker `cubitat1` F4 publicado a las rutas productivas, versión `8f8731c7-9384-4490-83d6-e5a5218b43e2`. Build dinámico generó 446 URLs. Smoke de páginas F4 200 y endpoint público de contacto: GET 405 JSON.
+- Pendiente QA autenticado de publicación/moderación, reseñas, contacto y valoración. Beneficios no procesa pagos ni aplica bloqueos de suscripción. El smoke HTTP no se toma como prueba de transacciones de usuario.
+- Evidencia detallada en `Cubitat - Despliegue Fase 4 Produccion 2026-11-05.md` dentro del vault y en `web/supabase/DATABASE_MIGRATIONS.md`.

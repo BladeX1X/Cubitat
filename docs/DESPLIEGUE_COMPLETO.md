@@ -1062,3 +1062,13 @@ El estado anterior de esta guía indicaba que F3 seguía apagada; esa descripci�
 Preflight: gates locales lint, 829 pruebas/1 omitida, build estándar y `build:phase3-production` PASS; quality/database-security PASS en GitHub; builds generaron sitemap dinámico de 446 URLs. Se configuró `AGENT_APPLICATION_EMAIL_TO` como secreto Worker usando el correo provisional acordado, sin guardar su valor en Git.
 
 Smoke HTTP productivo: home 200, sitemap 200, intake sin sesión 405 y endpoint privado de documentos sin sesión 401. El cron productivo de correo/purga está activo cada minuto. No se enviaron postulaciones ni correos de prueba. La fase está desplegada, pero no se marca funcionalmente cerrada hasta completar QA autenticado de postulación, apertura AAL2, decisión administrativa y observación de correo/retención.
+## 9. Fase 4 — despliegue productivo (2026-11-05)
+
+La promoción F4 quedó aplicada en `main` y producción:
+
+- Migraciones F4: usar el workflow manual `.github/workflows/phase4-production-migrations.yml`; no ejecutar `db push` global ni reparar historial. El workflow valida el proyecto, reúne fuentes locales para migraciones ya registradas, limita los pendientes a las ocho versiones F4, corre dry-run y verifica Storage/grants tras aplicar.
+- Frontend/Worker: construir `npm run build:phase4-production` con configuración pública Supabase de producción y sitemap dinámico. Publicar `wrangler deploy --config wrangler.jsonc` después del guard interactivo `node scripts/confirm-deploy.mjs production`.
+- Despliegue observado: `cubitat1` v`8f8731c7-9384-4490-83d6-e5a5218b43e2`; 446 URLs en sitemap. Workflow DB: https://github.com/BladeX1X/Cubitat/actions/runs/42009714135.
+- Smoke HTTP de rutas no sustituye pruebas autenticadas. Pagos/suscripciones de beneficios siguen sin activarse.
+
+Registro: [[Cubitat - Despliegue Fase 4 Produccion 2026-11-05]].
