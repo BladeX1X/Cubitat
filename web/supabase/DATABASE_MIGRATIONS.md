@@ -30,9 +30,10 @@ consumidores productivos. Antes de aplicar, exige que los pendientes sean
 exactamente las ocho versiones anteriores, valida el esquema base requerido,
 la ausencia del catálogo DEV y que no haya objetos F4 parciales. Ejecuta un
 dry-run que debe enumerar solo F4; después verifica ledger, esquema, Storage y
-grants de privacidad. Los intentos detenidos durante el diagnóstico no aplicaron
-migraciones; no marcar producción como desplegada hasta confirmar el workflow
-completo.
+grants de privacidad. El workflow `42009714135` terminó correctamente el
+2026-11-05: aplicó las ocho versiones y confirmó las verificaciones posteriores.
+Los intentos anteriores se detuvieron antes de DDL y no modificaron producción.
+Evidencia: https://github.com/BladeX1X/Cubitat/actions/runs/42009714135.
 
 ## Excepción temporal de MFA administrativo en producción — 2026-10-13
 
