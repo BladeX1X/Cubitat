@@ -35,13 +35,12 @@ jobs:
           cp web/supabase/config.toml "$RUNNER_TEMP/cubitat-production/supabase/config.toml"
           # The Supabase CLI validates configured Auth email template paths
           # even during db push --dry-run, so stage the referenced files too.
-          mkdir -p "$RUNNER_TEMP/cubitat-production/supabase/templates" \
-            "$RUNNER_TEMP/cubitat-production/templates"
+          mkdir -p "$RUNNER_TEMP/cubitat-production/supabase/templates"
           cp web/supabase/templates/confirmation.html \
             web/supabase/templates/recovery.html \
             "$RUNNER_TEMP/cubitat-production/supabase/templates/"
           cp web/supabase/templates/password_changed_notification.html \
-            "$RUNNER_TEMP/cubitat-production/templates/"
+            "$RUNNER_TEMP/cubitat-production/supabase/templates/"
           # Stage only the reviewed F4 set. Other local migrations include
           # historic DEV-only or intentionally unreconciled versions; staging
           # them here could apply unrelated changes or demand history repair.
