@@ -41,9 +41,9 @@ jobs:
             "$RUNNER_TEMP/cubitat-production/supabase/templates/"
           cp web/supabase/templates/password_changed_notification.html \
             "$RUNNER_TEMP/cubitat-production/supabase/templates/"
-          # Stage only the reviewed F4 set. Other local migrations include
-          # historic DEV-only or intentionally unreconciled versions; staging
-          # them here could apply unrelated changes or demand history repair.
+          # Stage the reviewed pending F4 set first. Recorded production history
+          # is added only after querying the target ledger below, so unrelated
+          # local-only/DEV migrations can never enter the CLI workdir.
           shopt -s nullglob
           for version in \
             20261105120000 20261105121000 20261105130000 20261105140000 \
@@ -72,6 +72,37 @@ jobs:
 
           remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
             -c "select version from supabase_migrations.schema_migrations order by version")
+
+          # Supabase CLI requires local source files for every version already
+          # recorded remotely, even though it will not reapply those versions.
+          # Copy only exact matches from the canonical production migrations
+          # tree. Abort if the remote ledger cannot be represented locally;
+          # never repair or rewrite migration history automatically.
+          shopt -s nullglob
+          recorded_count=0
+          while IFS= read -r version; do
+            [[ -z "$version" ]] && continue
+            if [[ ! "$version" =~ ^[0-9]{14}$ ]]; then
+              echo "Stopped: production ledger contains a non-canonical version identifier."
+              exit 1
+            fi
+            case "$version" in
+              20261105120000|20261105121000|20261105130000|20261105140000|\
+              20261105150000|20261105160000|20261105170000|20261105180000)
+                echo "Stopped: an F4 candidate unexpectedly already appears in the production ledger."
+                exit 1
+                ;;
+            esac
+            matches=(web/supabase/migrations/"${version}"_*.sql)
+            if [[ ${#matches[@]} -ne 1 ]]; then
+              echo "Stopped: expected one canonical source for recorded production migration $version."
+              exit 1
+            fi
+            cp "${matches[0]}" "$RUNNER_TEMP/cubitat-production/supabase/migrations/"
+            ((recorded_count += 1))
+          done <<< "$remote_versions"
+          echo "Recorded production migration sources staged: $recorded_count"
+
           local_versions=$(find "$RUNNER_TEMP/cubitat-production/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
             | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
           pending_versions=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
