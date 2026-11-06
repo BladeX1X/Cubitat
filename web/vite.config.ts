@@ -12,6 +12,7 @@ import {
 } from './src/shared/pwa/developmentServiceWorkerCleanup.js'
 import { handleContactMetric } from './src/worker/contact-metrics.js'
 import { getDevServerAllowedHosts } from './src/devServerHosts.js'
+import { resolvePhase4Flags } from './scripts/phase4-profile.mjs'
 
 let cachedLocalServiceRoleKey: string | undefined
 const localContactMetricsSalt = randomBytes(32).toString('hex')
@@ -51,13 +52,7 @@ export default defineConfig(({ mode }) => {
     || phase3UiEnabled
     || (phase2DevBuild && env.VITE_AGENT_WHATSAPP_CONSENT_UI_ENABLED === 'true')
   const imageDuplicateModerationEnabled = phase2UiEnabled
-  const phase4Flags = {
-    svc: phase4Production || (phase2DevBuild && env.VITE_PHASE4_SVC_ENABLED === 'true'),
-    rev: phase4Production || (phase2DevBuild && env.VITE_PHASE4_REV_ENABLED === 'true'),
-    mat: phase4Production || (phase2DevBuild && env.VITE_PHASE4_MAT_ENABLED === 'true'),
-    biz: phase4Production || (phase2DevBuild && env.VITE_PHASE4_BIZ_ENABLED === 'true'),
-    val: phase4Production || (phase2DevBuild && env.VITE_PHASE4_VAL_ENABLED === 'true'),
-  }
+  const phase4Flags = resolvePhase4Flags({ phase4Production, phase2DevBuild, env })
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
   const phase2SupabaseUrl = phase2DevBuild
@@ -92,6 +87,11 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    resolve: {
+      alias: phase4Production
+        ? [{ find: '../pages/valuation/PropertyValuationPage', replacement: resolve(__dirname, 'src/pages/valuation/valuationDisabled.tsx') }]
+        : [],
+    },
     define: {
       'import.meta.env.VITE_PHASE2_UI_ENABLED': JSON.stringify(phase2UiEnabled ? 'true' : 'false'),
       'import.meta.env.VITE_PHASE3_UI_ENABLED': JSON.stringify(phase3UiEnabled ? 'true' : 'false'),

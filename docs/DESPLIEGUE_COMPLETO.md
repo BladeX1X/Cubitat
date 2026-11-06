@@ -1081,3 +1081,12 @@ F4. El perfil de producción para cualquier build o publicación automática deb
 ser `phase4-production`. `npm run deploy` y Cloudflare Workers Builds deben usar
 `npm run build:phase4-production`; solo CI usa `npm run build:phase4-production:ci`.
 Un `200` de una ruta SPA no demuestra que esa ruta funcional esté habilitada.
+
+### Valoración aplazada — rectificación 2026-11-05
+
+La decisión de producto es mantener la valoración orientativa para el futuro.
+Aunque el perfil `phase4-production` habilita Servicios, Reseñas, Materiales y
+Beneficios, debe mantener `VITE_PHASE4_VAL_ENABLED=false`; la ruta y el enlace
+`/valorar` no deben formar parte del bundle productivo. La guía anterior sobre
+usar el perfil F4 no autorizaba activar Valoración. Solo DEV puede habilitarla
+con `VITE_PHASE4_VAL_ENABLED=true` para pruebas.

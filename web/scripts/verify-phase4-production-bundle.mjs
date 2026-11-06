@@ -13,15 +13,13 @@ const requiredMarkers = [
   'Comparte tu experiencia',
   'Materiales disponibles',
   'Beneficios comerciales',
-  'Valoración orientativa',
-  'get_property_value_comparables',
   'marketplace-contact',
-  'Comparamos anuncios publicados de inmuebles similares',
   'https://tohjzoncoosvjbjcakdl.supabase.co',
 ]
 const forbiddenMarkers = [
   'https://bknwerqbbysveehcdmzr.supabase.co',
   'cubitat1-phase2-dev',
+  'get_property_value_comparables',
 ]
 const missing = requiredMarkers.filter((marker) => !sources.some((source) => source.includes(marker)))
 const leaked = forbiddenMarkers.filter((marker) => sources.some((source) => source.includes(marker)))
@@ -37,4 +35,4 @@ if (missing.length || leaked.length) {
   ].join('\n'))
 }
 
-console.log('Verified: Fase 4 production UI, private contact and valuation are present; DEV origins are absent')
+console.log('Verified: Fase 4 production UI and private contact are present; valuation and DEV origins are absent')
