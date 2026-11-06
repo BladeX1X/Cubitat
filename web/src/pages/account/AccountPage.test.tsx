@@ -488,6 +488,48 @@ describe('AccountPage - Role Selector', () => {
 })
 
 describe('AccountPage agent application shortcut', () => {
+  it('keeps account contact details within the mobile content width', async () => {
+    const longEmail = 'agente.pruebas.responsive@example.test'
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: { role: 'buyer', full_name: 'Usuario Test', phone: '', avatar_url: '' },
+                error: null,
+              }),
+            }),
+          }),
+        } as any
+      }
+      if (table === 'search_alerts') {
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) } as any
+      }
+      return {} as any
+    })
+
+    render(
+      <AccountPage
+        user={{ ...mockUser, email: longEmail }}
+        userRole="buyer"
+        onBack={vi.fn()}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+      />,
+    )
+
+    const emails = await screen.findAllByText(longEmail)
+    expect(emails).toHaveLength(2)
+    expect(emails[0].closest('main')?.querySelector('section.grid')).toHaveClass('min-w-0', 'grid-cols-1')
+    for (const email of emails) {
+      expect(email).toHaveClass('break-all')
+      expect(email.closest('section')).toHaveClass('min-w-0')
+    }
+    fromSpy.mockRestore()
+  })
+
   it('shows a Ser agente action in the account profile when Phase 3 is enabled', async () => {
     const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
       if (table === 'profiles') {

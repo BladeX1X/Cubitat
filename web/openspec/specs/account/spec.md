@@ -65,6 +65,7 @@ El sistema MUST permitir revisar y mantener datos basicos del perfil.
 - THEN el sistema MUST mostrar nombre completo y email de acceso
 - AND el email de acceso MUST mostrarse como identificador no editable desde esta pantalla
 - AND el sistema MUST indicar si cada dato esta verificado
+- AND los emails largos MUST ajustarse al ancho disponible en móvil sin desplazar la página horizontalmente
 
 ### Requirement: Tipo de cuenta
 El sistema MUST permitir que un perfil existente alterne entre anunciante particular y agente sin recargar la aplicacion.

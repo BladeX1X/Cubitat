@@ -45,3 +45,9 @@ Supabase/Worker DEV y no modifican producción.
 Las pruebas de la página conservan la gestión actual de propiedades. Las
 pruebas de `AgentGrowthPanel` cubren consentimiento explícito, estados vacíos,
 error/reintento y envío del prospecto.
+
+## Diseño responsive
+
+La cabecera de `AgentPropertyManager` mantiene título y controles apilados hasta
+el breakpoint `xl`. Así, el buscador y los tres filtros caben entre 1024 y 1279
+píxeles; en pantallas más anchas se muestran en una fila.
