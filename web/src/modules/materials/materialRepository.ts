@@ -81,21 +81,28 @@ async function signMaterialPhotos(listings: MaterialListing[], coverOnly = false
 export async function fetchMaterialListings(filters: {
   category?: MaterialCategory
   province?: string
-} = {}): Promise<MaterialListing[]> {
+  availability?: Exclude<MaterialListing['availability'], 'out_of_stock'>
+  search?: string
+  offset?: number
+  pageSize?: number
+} = {}): Promise<{ items: MaterialListing[]; total: number }> {
   try {
     let query = supabase
       .from('material_listings')
-      .select('id, slug, title, category, description, price, currency, province, availability, photo_urls, updated_at')
+      .select('id, slug, title, category, description, price, currency, province, availability, photo_urls, updated_at', { count: 'exact' })
       .eq('status', 'published')
       .neq('availability', 'out_of_stock')
       .order('updated_at', { ascending: false })
-      .limit(60)
+      .range(Math.max(0, filters.offset ?? 0), Math.max(0, filters.offset ?? 0) + Math.min(60, Math.max(1, filters.pageSize ?? 24)) - 1)
     if (filters.category) query = query.eq('category', filters.category)
     if (filters.province) query = query.eq('province', filters.province)
-    const { data, error } = await query
+    if (filters.availability) query = query.eq('availability', filters.availability)
+    const search = filters.search?.trim().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ')
+    if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+    const { data, error, count } = await query
     if (error) return throwLoadError('fetch_material_list', error)
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return await signMaterialPhotos(listings, true)
+    return { items: await signMaterialPhotos(listings, true), total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
   }

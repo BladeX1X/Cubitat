@@ -3,12 +3,20 @@
 ## Responsabilidad
 
 Presenta anuncios publicados de materiales de construcción con filtros por
-categoría/provincia, detalle, precio declarado, disponibilidad, consulta
-privada para el vendedor y acceso a solicitud de publicación.
+texto del título, categoría, provincia y disponibilidad, detalle, precio
+declarado, consulta privada para el vendedor y acceso a solicitud de publicación.
+El catálogo pagina desde Supabase, muestra el total exacto de coincidencias y
+permite cargar más resultados sin limitar la búsqueda al primer bloque.
 
 ## Reglas
 
 - Solo anuncios `published` y no agotados aparecen en el catálogo.
+- La opción pública de disponibilidad excluye anuncios agotados; no los revela
+  ni presenta un conteo de cero como si fueran resultados disponibles.
+- La ubicación municipal se mantiene pendiente: `material_listings` en la cadena
+  productiva actual no tiene columna `municipality`. No se simula el filtro en
+  el navegador ni se afirma cobertura municipal para materiales hasta preparar
+  y reconciliar una migración de base de datos.
 - La disponibilidad y el precio son declaraciones del vendedor, no garantía,
   reserva ni oferta contractual.
 - Las consultas requieren cuenta autenticada y no crean órdenes ni pagos.
