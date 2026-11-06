@@ -486,3 +486,47 @@ describe('AccountPage - Role Selector', () => {
     fromSpy.mockRestore()
   })
 })
+
+describe('AccountPage agent application shortcut', () => {
+  it('shows a Ser agente action in the account profile when Phase 3 is enabled', async () => {
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: { role: 'buyer', full_name: 'Usuario Test', phone: '', avatar_url: '' },
+                error: null,
+              }),
+              single: () => Promise.resolve({
+                data: { role: 'buyer', verification_status: 'unverified' },
+                error: null,
+              }),
+            }),
+          }),
+        } as any
+      }
+      if (table === 'search_alerts') {
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) } as any
+      }
+      return {} as any
+    })
+    const navigateAgentApplication = vi.fn()
+
+    render(
+      <AccountPage
+        user={mockUser}
+        userRole="buyer"
+        onBack={vi.fn()}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+        onNavigateAgentApplication={navigateAgentApplication}
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ser agente' }))
+    expect(navigateAgentApplication).toHaveBeenCalledOnce()
+    fromSpy.mockRestore()
+  })
+})

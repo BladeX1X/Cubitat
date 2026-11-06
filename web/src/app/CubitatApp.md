@@ -44,7 +44,10 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 7. El boton `Ingresar` abre `LoginModal`.
 8. Cuando hay sesion activa, el Header muestra campanita de notificaciones y `UserMenu`.
 9. `UserMenu` permite navegar a `Mi cuenta`, `Favoritos`, `Ver mis contenidos` y ejecutar `Cerrar sesion`.
-10. La postulación `/postular-agente` es protegida y DEV-only: el login devuelve a la ruta y el CTA de Header solo aparece con `VITE_PHASE3_UI_ENABLED=true` en el perfil `phase2-dev`.
+10. La postulación `/postular-agente` requiere sesión. El CTA del Header y la
+    acción «Ser agente» de Mi cuenta solo se muestran cuando Fase 3 está
+    habilitada; ambos conservan la ruta al abrir el login. Los perfiles agente
+    reciben acceso al panel en Mi cuenta en lugar de una nueva acción de postulación.
 11. Si Supabase invalida la sesión durante el desafío MFA administrativo,
     `AdminMfaGate` solicita recuperación y `CubitatApp` reutiliza
     `handleSignOut`, vuelve a `/` y abre el login en el siguiente ciclo de UI.

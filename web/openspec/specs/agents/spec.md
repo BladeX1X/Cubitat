@@ -17,6 +17,13 @@
 
 ## Estado de implementación — 2026-11-03
 
+### Acceso desde Mi cuenta
+
+Cuando la Fase 3 está habilitada, Mi cuenta ofrece una acción «Ser agente» que
+abre la ruta autenticada `/postular-agente`. La acción se oculta para perfiles
+con rol `agent`, que ya cuentan con acceso a su panel. No cambia el rol del
+perfil ni el estado de KYC; la postulación sigue sujeta a revisión.
+
 - El candidato incluye una ruta DEV apagada por defecto y un formulario solo
   visible en el perfil `phase2-dev` con bandera explícita para enviar CV y título,
   validación de firmas PDF/JPG/PNG y límite de 10 MiB, bucket privado, persistencia

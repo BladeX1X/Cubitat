@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import {
   Camera,
   Bell,
+  BriefcaseBusiness,
   Check,
   Edit3,
   Loader2,
@@ -53,6 +54,7 @@ type AccountPageProps = {
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
   onNavigateAgentDashboard?: () => void
+  onNavigateAgentApplication?: () => void
 }
 
 type AccountProfile = {
@@ -72,6 +74,7 @@ export function AccountPage({
   onNavigateFavorites,
   onNavigateMyProperties,
   onNavigateAgentDashboard,
+  onNavigateAgentApplication,
 }: AccountPageProps) {
   useSEO({
     title: 'Mi Cuenta',
@@ -373,6 +376,23 @@ export function AccountPage({
                 </div>
               </div>
             </section>
+
+            {onNavigateAgentApplication && userRole !== 'agent' ? (
+              <section className="mt-4 flex flex-col items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#035f53] text-white">
+                    <BriefcaseBusiness size={18} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-bold text-neutral-900">¿Quieres ser agente de Cubitat?</h2>
+                    <p className="text-xs text-neutral-600">Consulta los requisitos y envía tu postulación desde tu cuenta.</p>
+                  </div>
+                </div>
+                <Button type="button" className="min-h-11 shrink-0 rounded-full bg-[#035f53] px-5 text-sm font-bold text-white hover:bg-[#024a41]" onClick={onNavigateAgentApplication}>
+                  Ser agente
+                </Button>
+              </section>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-1 gap-5 items-start xl:mt-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
               <section className="flex items-center justify-center gap-4 xl:flex-col">

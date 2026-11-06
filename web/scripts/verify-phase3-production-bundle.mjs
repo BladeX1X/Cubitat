@@ -9,6 +9,7 @@ const sources = await Promise.all((await readdir(assetsPath))
   .map((name) => readFile(join(assetsPath, name), 'utf8')))
 
 const requiredMarkers = [
+  '¿Quieres ser agente de Cubitat?',
   'Postúlate como agente',
   'Postulaciones de agentes',
   'Crear mi enlace',
