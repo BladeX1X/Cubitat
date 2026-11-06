@@ -65,20 +65,27 @@ function logLoadFailure(action: string, error: unknown): never {
 export async function fetchHomeServiceProviders(filters: {
   category?: HomeServiceCategory
   province?: string
-} = {}): Promise<HomeServiceProvider[]> {
+  municipality?: string
+  search?: string
+  offset?: number
+  pageSize?: number
+} = {}): Promise<{ items: HomeServiceProvider[]; total: number }> {
   try {
     let query = supabase
       .from('home_service_providers')
-      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at')
+      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at', { count: 'exact' })
       .eq('status', 'published')
       .order('updated_at', { ascending: false })
-      .limit(60)
+      .range(Math.max(0, filters.offset ?? 0), Math.max(0, filters.offset ?? 0) + Math.min(60, Math.max(1, filters.pageSize ?? 24)) - 1)
     if (filters.category) query = query.eq('category', filters.category)
     if (filters.province) query = query.eq('province', filters.province)
+    if (filters.municipality) query = query.contains('municipalities', [filters.municipality])
+    const search = filters.search?.trim().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ')
+    if (search) query = query.or(`display_name.ilike.%${search}%,description.ilike.%${search}%`)
 
-    const { data, error } = await query
+    const { data, error, count } = await query
     if (error) return logLoadFailure('fetch_provider_list', error)
-    return (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
+    return { items: (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null), total: count ?? 0 }
   } catch (error) {
     return logLoadFailure('fetch_provider_list_exception', error)
   }

@@ -11,8 +11,11 @@ calidad del trabajo.
 
 ### Listado y detalle públicos
 
-- **WHEN** un visitante abre el directorio o filtra por categoría/provincia
+- **WHEN** un visitante abre el directorio o filtra por texto,
+  categoría/provincia/municipio
 - **THEN** solo ve perfiles con estado `published`
+- **AND** el filtrado y la paginación se ejecutan en la base de datos y el total
+  mostrado representa todas las coincidencias
 - **AND** la respuesta pública no incluye datos privados de cuenta ni estados
   internos de moderación
 - **AND** la ficha muestra categoría, descripción, zonas de cobertura, galería,

@@ -8,7 +8,8 @@ módulo `service-reviews`.
 ## Responsabilidad
 
 Presenta el directorio público de profesionales del hogar y el detalle de cada
-perfil publicado. Permite filtrar por categoría/provincia, enviar una consulta
+perfil publicado. Permite filtrar en servidor por texto, categoría, provincia
+y municipio, cargar resultados por páginas con total exacto, enviar una consulta
 privada, proponer una reseña pendiente de moderación y navegar a la solicitud de
 publicación de un perfil. La acción “Mis perfiles” abre una gestión privada;
 solo perfiles no publicados se editan y los publicados no exponen edición hasta

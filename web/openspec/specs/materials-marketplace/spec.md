@@ -9,8 +9,11 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 
 ### Catálogo
 
-- **WHEN** un visitante explora o filtra por categoría/provincia
+- **WHEN** un visitante explora o filtra por texto, categoría, provincia o
+  disponibilidad
 - **THEN** ve solamente anuncios `published` con disponibilidad activa
+- **AND** los resultados se cargan por páginas desde la base de datos y el total
+  refleja todas las coincidencias, no solo la página descargada
 - **AND** cada ficha indica vendedor, descripción, precio/moneda declarados,
   zona y última actualización
 - **AND** no se presenta el precio ni el inventario como garantía contractual
@@ -39,6 +42,11 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - El catálogo no incluye carrito, checkout, cobros, escrow, logística ni órdenes.
 - No se publican datos de contacto personales salvo que el vendedor los exponga
   voluntariamente en su anuncio.
+- El catálogo filtra únicamente disponibilidad activa (`available`, `limited`,
+  `made_to_order`); anuncios agotados no forman parte de resultados públicos.
+- El filtro municipal requiere primero una migración reconciliada que añada la
+  ubicación a `material_listings` y a sus flujos de alta/edición. Hasta entonces,
+  el catálogo no debe ofrecer un filtro municipal de materiales.
 
 ## Contrato de imágenes
 
