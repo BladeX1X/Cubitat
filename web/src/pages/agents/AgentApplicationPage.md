@@ -11,6 +11,9 @@ envía documentos a Supabase desde el navegador.
 
 - La ruta `/postular-agente` requiere sesión; el login devuelve a la ruta
   pendiente después de autenticarse.
+- La acción «Ser agente» de Mi cuenta navega a esta ruta solo cuando Fase 3 está
+  habilitada; los perfiles que ya tienen rol de agente conservan el acceso al
+  panel y no ven la acción de postulación.
 - La navegación y el chunk se habilitan en DEV cuando
   `VITE_PHASE3_UI_ENABLED=true`, o en el perfil explícito `phase3-production`.
 - El Worker valida la identidad, limita frecuencia/tamaño, inspecciona firmas

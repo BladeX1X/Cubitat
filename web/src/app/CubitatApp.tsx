@@ -1215,6 +1215,7 @@ export function CubitatApp() {
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
+            onNavigateAgentApplication={PHASE_THREE_UI_ENABLED ? navigateAgentApplication : undefined}
           />
         )}
 
