@@ -57,6 +57,9 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - La portada se extrajo a `src/pages/home/HomePage.tsx` para que la pagina principal evolucione sin hacer crecer `CubitatApp`.
 - La portada se renderiza aunque Supabase este cargando o devuelva error. Esto protege la experiencia PWA/mobile-first: el usuario siempre debe poder abrir `/` y usar el buscador inicial.
 - El filtrado se deriva con `useMemo`.
+- La ruta y el enlace `/valorar` dependen de `VITE_PHASE4_VAL_ENABLED`. La
+  valoración se mantiene como función futura: el perfil productivo F4 debe
+  excluir su vista, enlace y RPC cliente; DEV puede probarla con opt-in explícito.
 - El laboratorio de tarjetas se elimino despues de elegir la variante oficial.
 - La vista de resultados toma como referencia portales inmobiliarios de alto volumen: filtros compactos, contador, ordenamiento y grid de tarjetas.
 - El mapa queda desacoplado como modulo reemplazable para reincorporarlo en una vista dedicada o en un modo mapa/lista.

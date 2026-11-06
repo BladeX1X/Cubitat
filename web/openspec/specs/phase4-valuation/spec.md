@@ -5,6 +5,12 @@
 Ofrecer una estimación informativa opcional basada en comparables publicados,
 sin presentarla como avalúo profesional, asesoría financiera ni oferta.
 
+## Estado de lanzamiento
+
+La valoración es una función futura y permanece deshabilitada en producción.
+Solo puede habilitarse en DEV mediante `VITE_PHASE4_VAL_ENABLED=true`; una
+publicación del perfil F4 no debe activarla por incluir otros módulos F4.
+
 ## Requisitos vigentes
 
 ### Estimación y muestra

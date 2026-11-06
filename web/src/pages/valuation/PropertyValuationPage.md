@@ -24,5 +24,6 @@ método y límites de interpretación.
 
 `modules/valuation/valuation.test.ts` comprueba mínimo de muestra y normalización
 por m². El contrato SQL verifica permisos autenticados y proyección minimizada.
-Antes de activar producción, revisar respuesta SQL, estados sin muestra y
-layout móvil en DEV.
+La función permanece deshabilitada en producción por decisión de producto. Una
+eventual activación requiere revisar respuesta SQL, estados sin muestra y layout
+móvil en DEV, además de autorización explícita.
