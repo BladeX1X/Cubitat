@@ -39,6 +39,8 @@ describe('AgentPropertyManager', () => {
     )
 
     expect(screen.getByRole('table')).toHaveClass('block', 'lg:table')
+    expect(screen.getByRole('heading', { name: 'Publicaciones del Agente' }).parentElement?.parentElement)
+      .toHaveClass('xl:flex-row')
     expect(screen.getByText(property.title).closest('tr')).toHaveClass('grid', 'lg:table-row')
     expect(screen.getByPlaceholderText('Buscar por título o zona...')).toHaveClass('h-11')
     expect(screen.getByRole('button', { name: 'Todas (1)' })).toHaveClass('min-h-11')

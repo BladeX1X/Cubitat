@@ -436,7 +436,7 @@ export function AccountPage({
                 ) : null}
               </section>
 
-              <section className="grid gap-5 sm:gap-8">
+              <section className="grid min-w-0 grid-cols-1 gap-5 sm:gap-8">
                 {AccountPhaseTwoSections ? (
                   <Suspense fallback={null}>
                     <AccountPhaseTwoSections
@@ -907,9 +907,9 @@ function AccountSection({
   children: ReactNode
 }) {
   return (
-    <section>
+    <section className="min-w-0">
       <h2 className="mb-3 text-lg font-black text-neutral-900">{title}</h2>
-      <div className="rounded-xl border border-neutral-200 bg-white px-6 shadow-sm">
+      <div className="w-full min-w-0 rounded-xl border border-neutral-200 bg-white px-6 shadow-sm">
         {children}
       </div>
     </section>
@@ -933,13 +933,13 @@ function AccountRow({
 }) {
   return (
     <div className="grid gap-4 border-b border-neutral-100 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-      <div>
+      <div className="min-w-0">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
           {icon}
           {label}
         </div>
         <p
-          className={`text-sm font-bold ${
+          className={`break-all text-sm font-bold ${
             status === 'missing' ? 'text-red-500' : 'text-neutral-800'
           }`}
         >

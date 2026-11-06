@@ -307,6 +307,7 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND un fallo de lectura de un dominio MUST NOT ocultar los datos disponibles de los demás dominios
 - AND MUST identificar el estado de oportunidades sin presentar datos no cargados como una lista vacía
 - AND MUST mostrar el formulario y el listado dentro de secciones colapsables cerradas inicialmente
+- AND los controles del encabezado MUST permanecer dentro del panel entre 1024 y 1279 píxeles, apilándose antes de usar el diseño en dos columnas
 
 ### Requisito: Panel administrativo de agentes y liquidaciones
 
