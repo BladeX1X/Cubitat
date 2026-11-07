@@ -75,19 +75,20 @@ jobs:
             fi
             cp "${matches[0]}" "$RUNNER_TEMP/cubitat-agent-revocation/supabase/migrations/"
           done <<<"$remote_versions"
-          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
-          SELECT CASE WHEN
-            to_regclass('public.profiles') IS NOT NULL
-            AND to_regclass('public.agent_province_assignments') IS NOT NULL
-            AND to_regprocedure('public.is_admin_aal2()') IS NOT NULL
-            AND to_regclass('public.agent_role_moderation_events') IS NULL
-            AND to_regprocedure('public.list_active_agents_for_moderation()') IS NULL
-            AND to_regprocedure('public.revoke_agent_access(uuid,text)') IS NULL
-            THEN 'ready' ELSE 'unexpected-or-partial-state' END;
+          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT
+            (to_regclass('public.profiles') IS NOT NULL)::text,
+            (to_regclass('public.agent_province_assignments') IS NOT NULL)::text,
+            (to_regprocedure('public.is_admin_aal2()') IS NOT NULL)::text,
+            (to_regclass('public.agent_role_moderation_events') IS NOT NULL)::text,
+            (to_regprocedure('public.list_active_agents_for_moderation()') IS NOT NULL)::text,
+            (to_regprocedure('public.revoke_agent_access(uuid,text)') IS NOT NULL)::text,
+            (EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'agent_role_moderation_events_immutable' AND NOT tgisinternal))::text;
           SQL
           )
-          if [[ "$schema_state" != 'ready' ]]; then
-            echo "Production schema is not in the reviewed pre-migration state; stopping."
+          echo "Production catalog flags (profiles|assignments|AAL2|audit-table|list-RPC|revoke-RPC|immutable-trigger): $schema_state"
+          if [[ "$schema_state" != 'true|true|true|false|false|false|false' ]]; then
+            echo "Production schema is not pristine for this migration. No SQL was applied; reconcile the exact existing objects before retrying."
             exit 1
           fi
           local_versions=$(find "$RUNNER_TEMP/cubitat-agent-revocation/supabase/migrations" -maxdepth 1 -type f -name '*.sql' \
