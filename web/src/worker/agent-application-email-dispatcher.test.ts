@@ -33,8 +33,8 @@ describe('dispatchPendingAgentApplicationEmails', () => {
   it('sends no attachments and mails short-lived same-project signed links idempotently', async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([application]), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/storage/v1/object/sign/agent_application_documents/cv?token=cv-token' }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/storage/v1/object/sign/agent_application_documents/diploma?token=diploma-token' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/object/sign/agent_application_documents/cv?token=cv-token' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/object/sign/agent_application_documents/diploma?token=diploma-token' }), { status: 200 }))
       .mockResolvedValueOnce(new Response('{"id":"resend-id"}', { status: 200 }))
       .mockResolvedValueOnce(new Response('true', { status: 200 }))
 
@@ -65,7 +65,7 @@ describe('dispatchPendingAgentApplicationEmails', () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([application]), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: 'https://attacker.example/storage/v1/object/sign/agent_application_documents/cv?token=x' }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/storage/v1/object/sign/agent_application_documents/diploma?token=y' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: '/object/sign/agent_application_documents/diploma?token=y' }), { status: 200 }))
       .mockResolvedValueOnce(new Response('true', { status: 200 }))
 
     await expect(dispatchPendingAgentApplicationEmails(env, fetchFn)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 })

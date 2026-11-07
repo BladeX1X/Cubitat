@@ -12,11 +12,15 @@ const mocks = vi.hoisted(() => ({
   purgeApprovedKycEvidence: vi.fn().mockResolvedValue({ scanned: 0, deleted: 0, failed: 0 }),
   purgeFinalAgentApplicationEvidence: vi.fn().mockResolvedValue({ claimed: 0, purged: 0, failed: 0 }),
   refreshPropertyImageDuplicates: vi.fn().mockResolvedValue(undefined),
+  createWorkerOptions: vi.fn(),
 }))
 
 vi.mock('./worker', () => ({
   checkRateLimit: mocks.checkRateLimit,
-  createWorker: vi.fn(() => ({ fetch: vi.fn() })),
+  createWorker: vi.fn((options) => {
+    mocks.createWorkerOptions(options)
+    return { fetch: vi.fn() }
+  }),
 }))
 vi.mock('./worker/push-notifications', () => ({ dispatchPendingPushNotifications: mocks.dispatchPendingPushNotifications }))
 vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission: mocks.handleAgentApplicationSubmission }))
@@ -48,6 +52,15 @@ describe('Phase 2 production Worker', () => {
     mocks.handleAgentApplicationDocumentLinks.mockClear()
     mocks.dispatchPendingAgentApplicationEmails.mockClear()
     mocks.purgeFinalAgentApplicationEvidence.mockClear()
+  })
+
+  it('allows the audited agent moderation RPCs through the authenticated proxy', async () => {
+    await import('./worker-phase2-production')
+    const options = mocks.createWorkerOptions.mock.calls.at(-1)?.[0] as {
+      additionalAuthenticatedRpcs: string[]
+    }
+    expect(options.additionalAuthenticatedRpcs).toContain('list_active_agents_for_moderation')
+    expect(options.additionalAuthenticatedRpcs).toContain('revoke_agent_access')
   })
 
   it('keeps Phase 3 application endpoints disabled in production by default', async () => {

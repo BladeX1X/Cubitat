@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentDashboardPage } from './AgentDashboardPage'
 import { loadAgentDashboard, setOwnerPropertyVisibility } from '../../modules/agents/agentDashboardRepository'
@@ -49,7 +49,7 @@ describe('AgentDashboardPage', () => {
     vi.mocked(loadAgentDashboard).mockResolvedValue({ role: 'admin', isVerifiedAgent: true, properties: [], contactMetricsAvailable: true })
     render(<AgentDashboardPage user={mockUser} />)
 
-    expect(await screen.findByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+    expect(within(await screen.findByRole('navigation', { name: 'Navegación de cuenta móvil' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Métricas y Rendimiento' })).toBeInTheDocument()
   })
 

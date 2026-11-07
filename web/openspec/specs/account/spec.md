@@ -31,6 +31,13 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - AND MUST mantener datos de usuario disponibles
 - AND MUST proteger cada destino si la sesion expira
 
+#### Scenario: Navegación visible en ventanas estrechas
+- GIVEN un usuario autenticado abre el área privada en una ventana estrecha o con zoom
+- WHEN el ancho disponible no permite mostrar la barra lateral
+- THEN el sistema MUST ofrecer una navegación horizontal compacta con los destinos disponibles
+- AND MUST mantener visible la navegación lateral desde el breakpoint md
+- AND MUST permitir alcanzar los destinos sin desplazamiento horizontal de toda la página
+
 #### Scenario: Mostrar acceso al panel de agente
 - GIVEN un usuario autenticado está en el área privada
 - WHEN su rol canónico en `profiles` es `agent`

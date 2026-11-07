@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AccountLayout } from './AccountLayout'
 
@@ -35,11 +35,20 @@ describe('AccountLayout agent navigation', () => {
       </AccountLayout>,
     )
 
-    expect(screen.getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+      expect(within(screen.getByRole('navigation', { name: 'Navegacion de cuenta' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
   })
 
   it('shows the dashboard to a verified admin as an agent too', () => {
     render(<AccountLayout {...navigationProps} userRole="admin" canAccessAgentDashboard>Cuenta</AccountLayout>)
-    expect(screen.getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Navegacion de cuenta' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+  })
+
+  it('keeps account destinations available from the compact mobile navigation', () => {
+    render(<AccountLayout {...navigationProps} userRole="buyer">Cuenta</AccountLayout>)
+
+    const mobileNavigation = screen.getByRole('navigation', { name: 'Navegación de cuenta móvil' })
+    expect(within(mobileNavigation).getByRole('button', { name: 'Mi cuenta' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(within(mobileNavigation).getByRole('button', { name: 'Favoritos' }))
+    expect(navigationProps.onNavigateFavorites).toHaveBeenCalledOnce()
   })
 })

@@ -28,8 +28,20 @@ export function AccountLayout({
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
-          <aside className="hidden border-r border-neutral-100 pr-0 lg:block lg:pr-6">
+        <nav
+          className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 md:hidden"
+          aria-label="Navegación de cuenta móvil"
+        >
+          <MobileNavItem active={active === 'account'} icon={<UserIcon size={17} />} label="Mi cuenta" onClick={onNavigateAccount} />
+          <MobileNavItem active={active === 'favorites'} icon={<Heart size={17} />} label="Favoritos" onClick={onNavigateFavorites} />
+          <MobileNavItem active={active === 'contents'} icon={<Home size={17} />} label="Mis publicaciones" onClick={onNavigateMyProperties} />
+          {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
+            <MobileNavItem active={active === 'agent-dashboard'} icon={<BarChart3 size={17} />} label="Panel de Agente" onClick={onNavigateAgentDashboard} />
+          )}
+        </nav>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[210px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+          <aside className="hidden border-r border-neutral-100 pr-0 md:block lg:pr-6">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-4">
               Navegacion
             </p>
@@ -67,6 +79,34 @@ export function AccountLayout({
         </div>
       </div>
     </div>
+  )
+}
+
+function MobileNavItem({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean
+  icon: ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-current={active ? 'page' : undefined}
+      onClick={onClick}
+      className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
+        active
+          ? 'border-[#035f53] bg-[#035f53] text-white'
+          : 'border-neutral-200 bg-white text-neutral-700 hover:border-[#035f53] hover:text-[#035f53]'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }
 

@@ -1,0 +1,163 @@
+name: Apply Cubitat production agent revocation migration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-production-database
+  cancel-in-progress: false
+
+jobs:
+  apply-agent-revocation:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Prepare exact migration workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir="$RUNNER_TEMP/cubitat-agent-revocation"
+          mkdir -p "$workdir/supabase/migrations" "$workdir/supabase/templates"
+          cp web/supabase/config.toml "$workdir/supabase/config.toml"
+          cp web/supabase/templates/confirmation.html \
+            web/supabase/templates/recovery.html \
+            web/supabase/templates/password_changed_notification.html \
+            "$workdir/supabase/templates/"
+          matches=(web/supabase/migrations/20261106100000_agent_access_revocation.sql)
+          if [[ ${#matches[@]} -ne 1 ]]; then
+            echo "Expected exactly one reviewed agent-revocation migration."
+            exit 1
+          fi
+          cp "${matches[0]}" "$workdir/supabase/migrations/"
+
+      - name: Verify target, existing state, and exact pending migration
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *"postgres.tohjzoncoosvjbjcakdl"* ]]; then
+            echo "SUPABASE_DB_URL is absent or does not identify Cubitat production."
+            exit 1
+          fi
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c "select version from supabase_migrations.schema_migrations order by version")
+          if grep -Fxq '20261106100000' <<<"$remote_versions"; then
+            echo "Migration is already registered in production; stopping without changes."
+            exit 1
+          fi
+          shopt -s nullglob
+          while IFS= read -r version; do
+            [[ -z "$version" ]] && continue
+            if [[ ! "$version" =~ ^[0-9]{14}$ ]]; then
+              echo "Production ledger contains a non-canonical version identifier."
+              exit 1
+            fi
+            matches=(web/supabase/migrations/"${version}"_*.sql)
+            if [[ ${#matches[@]} -ne 1 ]]; then
+              echo "No unique canonical migration source for a version recorded in production."
+              exit 1
+            fi
+            cp "${matches[0]}" "$RUNNER_TEMP/cubitat-agent-revocation/supabase/migrations/"
+          done <<<"$remote_versions"
+          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT CASE WHEN
+            to_regclass('public.profiles') IS NOT NULL
+            AND to_regclass('public.agent_province_assignments') IS NOT NULL
+            AND to_regprocedure('public.is_admin_aal2()') IS NOT NULL
+            AND to_regclass('public.agent_role_moderation_events') IS NULL
+            AND to_regprocedure('public.list_active_agents_for_moderation()') IS NULL
+            AND to_regprocedure('public.revoke_agent_access(uuid,text)') IS NULL
+            THEN 'ready' ELSE 'unexpected-or-partial-state' END;
+          SQL
+          )
+          if [[ "$schema_state" != 'ready' ]]; then
+            echo "Production schema is not in the reviewed pre-migration state; stopping."
+            exit 1
+          fi
+          local_versions=$(find "$RUNNER_TEMP/cubitat-agent-revocation/supabase/migrations" -maxdepth 1 -type f -name '*.sql' \
+            -printf '%f\n' | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          pending_versions=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
+          if [[ "$pending_versions" != '20261106100000' ]]; then
+            echo "Pending versions are not exactly 20261106100000; stopping."
+            printf 'Pending versions: %s\n' "$pending_versions"
+            exit 1
+          fi
+
+      - name: Dry-run exact production migration
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-agent-revocation" --db-url "$SUPABASE_DB_URL" --dry-run --yes 2>&1)
+          safe_output=$(printf '%s\n' "$dry_run" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          printf '%s\n' "$safe_output"
+          if ! grep -Fq '20261106100000' <<<"$dry_run"; then
+            echo "Dry-run did not enumerate the reviewed migration."
+            exit 1
+          fi
+          if grep -Eq '202610[0-9]{8}|2026110[0-9]{7}' <<<"$dry_run"; then
+            unexpected=$(grep -Eo '202[0-9]{11,13}' <<<"$dry_run" | sort -u | grep -v '^20261106100000$' || true)
+            if [[ -n "$unexpected" ]]; then
+              echo "Dry-run contains an unreviewed migration; stopping."
+              exit 1
+            fi
+          fi
+
+      - name: Apply reviewed migration
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$RUNNER_TEMP/cubitat-agent-revocation" --db-url "$SUPABASE_DB_URL" --yes
+
+      - name: Verify production schema and permissions
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version = '20261106100000')
+              OR to_regclass('public.agent_role_moderation_events') IS NULL
+              OR to_regprocedure('public.list_active_agents_for_moderation()') IS NULL
+              OR to_regprocedure('public.revoke_agent_access(uuid,text)') IS NULL THEN
+              RAISE EXCEPTION 'agent_revocation_migration_incomplete';
+            END IF;
+            IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.agent_role_moderation_events'::regclass)
+              OR has_table_privilege('anon','public.agent_role_moderation_events','SELECT')
+              OR has_table_privilege('service_role','public.agent_role_moderation_events','SELECT')
+              OR NOT has_function_privilege('authenticated','public.list_active_agents_for_moderation()','EXECUTE')
+              OR has_function_privilege('anon','public.list_active_agents_for_moderation()','EXECUTE')
+              OR has_function_privilege('service_role','public.list_active_agents_for_moderation()','EXECUTE')
+              OR NOT has_function_privilege('authenticated','public.revoke_agent_access(uuid,text)','EXECUTE')
+              OR has_function_privilege('anon','public.revoke_agent_access(uuid,text)','EXECUTE')
+              OR has_function_privilege('service_role','public.revoke_agent_access(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'agent_revocation_permissions_invalid';
+            END IF;
+          END;
+          $$;
+          SELECT 'Cubitat production agent revocation migration verified';
+          SQL

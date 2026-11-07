@@ -21,7 +21,9 @@ permite cargar más resultados sin limitar la búsqueda al primer bloque.
   reserva ni oferta contractual.
 - Las consultas requieren cuenta autenticada y no crean órdenes ni pagos.
 - Las imágenes se cargan bajo demanda y los estados de carga/error/vacío son
-  visibles y accesibles.
+  visibles y accesibles. Si Storage no puede firmar una o más fotos privadas,
+  el anuncio permanece disponible y muestra un aviso accesible de fotos no
+  disponibles temporalmente; no se confunde con un anuncio sin imágenes.
 - Los teléfonos no se consultan desde el navegador; Turnstile y Worker revelan
   contacto únicamente para anuncios publicados y disponibles.
 - Los objetos privados se muestran mediante URL firmada temporal solo tras la

@@ -20,6 +20,18 @@ preexistentes deben reconciliarse con una provincia antes de habilitar el flujo
 en un entorno hosted. Cuando vence la retención, el endpoint responde 410 y la
 pestaña explica que los documentos ya fueron eliminados.
 
+La sección **Agentes activos** usa RPCs autenticadas permitidas explícitamente
+por el Worker DEV, que conserva el JWT de la sesión; PostgreSQL exige admin
+AAL2 para ambas operaciones. Para retirar el
+acceso, el moderador debe indicar un motivo de 3–500 caracteres. La operación
+registra un evento inmutable, libera la plaza provincial si existe y cambia el rol a
+`buyer` dentro de la misma transacción; conserva la cuenta, anuncios e historial.
+También lista agentes heredados que no tengan plaza asignada para que puedan
+retirarse; los perfiles `admin` no aparecen ni pueden ser objetivo del RPC.
+La migración `20261106100000_agent_access_revocation.sql` contiene estas RPC y
+el evento inmutable; su presencia remota debe confirmarse por entorno antes de
+desplegar la interfaz.
+
 ## Diagnóstico de fallos
 
 Los errores de documentos se diferencian por permiso AAL2, límite temporal,
@@ -33,3 +45,14 @@ solo muestran su código SQLSTATE, no el mensaje bruto del servidor.
 Si el SDK no devuelve SQLSTATE, la UI diferencia fallos de conexión y usa el
 estado HTTP o el tipo/los nombres de campos permitidos como diagnóstico. La UI
 nunca muestra el mensaje bruto del servidor ni el ID de solicitud.
+
+### Lista de agentes en el Worker DEV — 2026-11-07
+
+La sección se renderizaba, pero el Worker devolvía 403 antes de enviar
+`list_active_agents_for_moderation` a PostgREST: faltaba incluir la RPC en la
+lista permitida de operaciones autenticadas. La misma omisión afectaba
+`revoke_agent_access`. La corrección local añade ambas RPC a la lista; la base
+de datos conserva la autorización AAL2. En el estado observado, la interfaz
+todavía no está reparada en DEV: el bundle activo contiene 29 módulos con hashes
+distintos del build local, así que hay que recuperar el árbol de release
+correspondiente antes de desplegar este arreglo.

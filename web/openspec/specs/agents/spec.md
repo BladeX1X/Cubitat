@@ -24,6 +24,14 @@ abre la ruta autenticada `/postular-agente`. La acción se oculta para perfiles
 con rol `agent`, que ya cuentan con acceso a su panel. No cambia el rol del
 perfil ni el estado de KYC; la postulación sigue sujeta a revisión.
 
+Mi cuenta consulta el estado más reciente de la postulación propia usando solo
+la columna `status` permitida por RLS/grants. Mientras consulta, muestra un estado
+de carga; si existe una postulación, presenta su estado actual en lugar de invitar
+a duplicarla. Si la consulta falla, muestra un error y una acción de reintento,
+sin presentar el CTA como si no existiera solicitud. Una solicitud aprobada puede
+enlazar al panel de agente; CV, título, rutas privadas y motivos internos no se
+exponen en esta tarjeta.
+
 - El candidato incluye una ruta DEV apagada por defecto y un formulario solo
   visible en el perfil `phase2-dev` con bandera explícita para enviar CV y título,
   validación de firmas PDF/JPG/PNG y límite de 10 MiB, bucket privado, persistencia
@@ -141,6 +149,16 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND MUST eliminar el archivo 30 días después de la decisión final
 - AND el correo receptor provisional MUST configurarse fuera del código y
   MUST NOT recibir el CV como adjunto
+
+### Requisito: Retiro administrativo del acceso de agente
+
+- GIVEN un perfil con rol `agent`, con o sin asignación provincial activa
+- WHEN un moderador con sesión AAL2 confirma el retiro con un motivo de 3 a 500 caracteres
+- THEN el servidor MUST registrar un evento de auditoría inmutable y liberar la plaza provincial en la misma transacción
+- AND MUST cambiar únicamente el rol del perfil a `buyer`
+- AND MUST conservar la cuenta, publicaciones e historial del usuario
+- AND MUST NOT permitir retirar el rol `admin` ni actuar sin AAL2
+- AND la lista de agentes activos MUST devolver solo nombre, provincia (o indicar que no tiene plaza) e identificador para moderación
 
 #### Scenario: Validar y retener un currículum
 - GIVEN una postulación nueva
@@ -279,6 +297,15 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND solo una sesión administrativa AAL2 MAY reabrirla como `contacted`, con
   un motivo registrado en el evento
 
+### Requisito: Moderar el acceso de agentes
+
+- GIVEN un moderador autenticado
+- WHEN consulta o retira el acceso de un agente desde DEV
+- THEN el Worker MUST permitir explícitamente solo las RPC administrativas
+  necesarias y conservar el JWT de la sesión
+- AND PostgreSQL MUST exigir admin AAL2 para listar agentes y retirar acceso
+- AND usuarios anónimos MUST NOT poder invocar estas RPC mediante el Worker
+
 ### Requisito: Cálculo manual legado (no satisface la política nueva)
 
 - GIVEN una oportunidad convertida y una decisión de comisión registrada por
@@ -341,10 +368,24 @@ incluye el estado HTTP y por sí sola no identifica si falló Storage o PostgRES
 La corrección candidata conserva HTTP 409 de PostgREST para que la interfaz
 explique una solicitud abierta existente y registra únicamente la etapa y el
 estado HTTP de fallos de carga/persistencia. El estado de red se registra como
-`network_unavailable`. No se registran datos del formulario, nombres/rutas de
-archivo, contenido documental ni ID de solicitud. Esto mejora el diagnóstico,
-pero no demuestra que el fallo productivo original esté resuelto hasta promover
+`network_unavailable`. El Worker devuelve códigos públicos enumerados distintos
+para fallo de Storage y fallo de persistencia, y la interfaz ofrece mensajes
+específicos sin mostrar el detalle bruto del proveedor. No se registran datos del
+formulario, nombres/rutas de archivo, contenido documental ni ID de solicitud.
+La cobertura automatizada local verifica ambos mensajes y el saneamiento, pero
+esto no demuestra que el fallo productivo original esté resuelto hasta promover
 la corrección y verificar un envío sintético autorizado.
+
+#### Formato de URLs firmadas de Supabase Storage
+
+El REST de Storage devuelve `signedURL` relativa a su raíz como
+`/object/sign/<bucket>/<ruta>?token=...`. Los consumidores de Cubitat validaban
+únicamente `/storage/v1/object/sign/...`, por lo que descartaban firmas válidas
+al abrir documentos desde Moderación y al construir enlaces para correo. El
+Worker normaliza la forma documentada a una URL absoluta del mismo proyecto y
+mantiene validaciones de origen, bucket y token. Esto queda cubierto en pruebas
+locales; el acceso real en DEV aún requiere reintentar la apertura de documentos
+con una sesión administrativa AAL2. No se registra ni se expone la URL firmada.
 
 ### Requisito: Entorno local
 
