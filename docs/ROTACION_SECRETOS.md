@@ -10,6 +10,62 @@ Esta guia explica como rotar las claves usadas en produccion, donde encontrarlas
 - Usar Supabase Dashboard o Management API para configuracion de Auth/SMTP.
 - Despues de pegar una clave en un chat o ticket, rotarla.
 
+## Rotacion coordinada de Turnstile (Worker + Auth DEV/produccion)
+
+El widget compartido usa el mismo secreto en tres destinos: el Worker
+`turnstile-siteverify-cubitat` (`TURNSTILE_SECRET_KEY`), Supabase DEV
+`bknwerqbbysveehcdmzr` y Supabase produccion `tohjzoncoosvjbjcakdl` (en ambos,
+Auth > CAPTCHA habilitado con proveedor `turnstile`). Para evitar que los tres
+servicios queden con valores distintos, usa el script
+`web/scripts/rotate-turnstile-secret.ps1`.
+
+### Preparacion (una sola vez por equipo/usuario)
+
+1. Instala las dependencias de `web` (`npm ci`) para tener la version fijada de
+   Wrangler, o instala Wrangler y confirma que `wrangler.cmd whoami` reconoce la
+   cuenta Cloudflare correcta.
+2. Crea un Supabase Personal Access Token con permisos `auth_config_write` y
+   `project_admin_write` en ambos proyectos. Guarda `SUPABASE_ACCESS_TOKEN`
+   como variable de entorno de usuario desde **Editar las variables de entorno
+   de esta cuenta** > **Variables de usuario** > **Nueva**. El valor queda
+   almacenado en el perfil de Windows sin cifrado, así que usa un token de
+   alcance mínimo en un equipo de confianza. No lo escribas como argumento de
+   PowerShell ni en archivos del repo.
+3. Abre una nueva ventana de PowerShell para que cargue la variable.
+
+### En cada rotacion
+
+1. Rota/crea primero el secreto del widget `cubitat-turnstile` en Cloudflare
+   Turnstile. El script no crea ni rota el secreto del widget: distribuye el
+   valor nuevo que entrega Cloudflare. Cloudflare mantiene válida la clave
+   anterior mientras se actualizan los servicios; rota una sola vez y continúa
+   enseguida con el script.
+2. Desde la raiz del repo, ejecuta:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\web\scripts\rotate-turnstile-secret.ps1
+   ```
+
+3. Pega el nuevo secreto solo en el prompt oculto. El script actualiza Supabase
+   DEV, Supabase produccion y, al final, el Worker compartido. `wrangler secret
+   put` crea y despliega inmediatamente una nueva versión del Worker. No lo
+   pases como argumento, no habilites transcript de PowerShell durante la
+   operación y no captures la salida en un archivo.
+4. Revisa que los tres destinos aparezcan `OK`. Si alguno falla, el proceso
+   termina con codigo distinto de cero y muestra el destino fallido sin incluir
+   respuesta del proveedor. Corrige el acceso y repite con el mismo secreto
+   nuevo; no generes otro mientras los destinos sigan desincronizados.
+5. Comprueba inicio de sesion, registro y recuperacion de contrasena en DEV y
+   produccion, y los flujos que usan el verificador compartido (contacto/reporte).
+
+El proceso no es atomico entre Cloudflare y Supabase. Si se interrumpe a mitad,
+usa la tabla de resultados para volver a aplicar el mismo secreto a los tres
+destinos. El valor se mantiene en memoria durante la ejecucion, no se imprime ni
+se escribe a disco; el script limpia sus variables temporales al terminar. La
+variable de entorno `SUPABASE_ACCESS_TOKEN` permanece disponible para futuras
+rotaciones y almacenada como variable de usuario de Windows (sin cifrado);
+elimínala desde esa configuración cuando ya no se necesite.
+
 ## Fase 2 DEV: alcance obligatorio
 
 La Fase 2 se prueba únicamente en el Worker y proyecto Supabase DEV. Para

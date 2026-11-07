@@ -109,3 +109,8 @@ El diseño se adapta automáticamente:
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** confirmacion y recuperacion deben usar enlaces portables con `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=...`. `{{ .ConfirmationURL }}` queda solo como compatibilidad historica del callback, no como formato preferido.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.
+- **Rotacion Turnstile coordinada:** `web/scripts/rotate-turnstile-secret.ps1`
+  sincroniza el secreto compartido con el Worker verificador y Auth de Supabase
+  DEV/produccion. Requiere una sesion Wrangler valida y
+  `SUPABASE_ACCESS_TOKEN` configurado previamente; pide el secreto Turnstile en
+  un prompt oculto. La guia operativa es `docs/ROTACION_SECRETOS.md`.
