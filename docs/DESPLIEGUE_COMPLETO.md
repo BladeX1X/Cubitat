@@ -1090,3 +1090,25 @@ Beneficios, debe mantener `VITE_PHASE4_VAL_ENABLED=false`; la ruta y el enlace
 `/valorar` no deben formar parte del bundle productivo. La guía anterior sobre
 usar el perfil F4 no autorizaba activar Valoración. Solo DEV puede habilitarla
 con `VITE_PHASE4_VAL_ENABLED=true` para pruebas.
+
+### Rectificación F3 — base y Worker productivos, 2026-11-07
+
+La consulta directa al ledger y catálogo del 2026-11-07 encontró que la
+descripción del 2026-11-04 no correspondía al estado real de producción. La
+base `tohjzoncoosvjbjcakdl` recibió de forma controlada 15 migraciones F3
+mediante el workflow [42364846320](https://github.com/BladeX1X/Cubitat/actions/runs/42364846320).
+El workflow verificó el proyecto objetivo, el conjunto exacto pendiente, el
+dry-run, el esquema resultante, el bucket privado y privilegios críticos.
+
+El Worker `cubitat1` se publicó con el build `phase4-production` para conservar
+los módulos F4 ya activos e incluir F3. Versión Cloudflare:
+`be8ec127-3ddf-4b8b-a0e3-135d76466a62`, 100% del tráfico; se conservaron las
+rutas del dominio y el cron existente. Se generó sitemap dinámico con 446
+URLs. Smoke HTTP: `/`, `/postular-agente`, `/panel-agente` y `/sitemap.xml`
+respondieron 200; `POST /api/phase3/agent-applications` sin sesión respondió
+401, confirmando que no permite enviar sin autenticación.
+
+Este despliegue confirma disponibilidad HTTP y protección anónima, no el flujo
+completo autenticado. Sigue pendiente validar con cuenta autorizada el envío de
+postulación, lectura de documentos con AAL2, decisión y revocación administrativa,
+además de comprobar entrega de correo y purga de documentos en producción.

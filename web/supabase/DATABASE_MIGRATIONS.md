@@ -968,3 +968,18 @@ La nota anterior de migraciones F3 candidatas/no aplicadas describe el estado pr
 La ejecución de solo lectura del workflow controlado de retiro de agentes contra `tohjzoncoosvjbjcakdl` contradijo el estado documentado arriba. La base productiva registra únicamente las migraciones F3 `20261025210000`, `20261025220000` y `20261026200000` de la cadena revisada. No registra `20261013130000`, las migraciones intermedias de leads/referidos, ni `20261103120000`–`20261103180000` o `20261106100000`. El catálogo tampoco encontró tablas públicas `agent_*` ni funciones base de referidos, postulaciones o revocación. Sí aparecen las ocho migraciones Phase 4 `20261105120000`–`20261105180000`; los prerequisitos `profiles`, `is_admin_aal2()` y los roles base existen.
 
 El diagnóstico no ejecutó `db push` ni aplicó SQL. Por tanto, la nota del 2026-11-04 queda supersedida por esta lectura directa. `web/wrangler.jsonc` mantiene `PHASE3_ENABLED=true` para `cubitat1`, pero el esquema productivo aún no cubre los módulos F3; los flujos autenticados que dependen de esas tablas/RPC pueden fallar. El nuevo workflow `.github/workflows/supabase-production-phase3-migrations.yml` prepara una promoción aislada con lista explícita, requisitos de esquema, dry-run exacto y verificaciones posteriores. No activar pruebas funcionales hasta que la migración y el bundle de Worker estén desplegados.
+
+### Rectificación — migraciones F3 aplicadas en producción 2026-11-07
+
+El estado de solo lectura inmediatamente anterior queda supersedido. El workflow
+controlado [42364846320](https://github.com/BladeX1X/Cubitat/actions/runs/42364846320)
+completó en `main` el preflight, dry-run exacto, aplicación y verificación de
+esquema/permisos para las 15 migraciones revisadas:
+`20261013130000`, `20261024190000`, `20261025010000`, `20261025020000`,
+`20261025140000`, `20261027100000`, `20261028193000`, `20261103120000`–
+`20261103180000` y `20261106100000`. La verificación incluyó ledger, tablas y
+RPC requeridas, bucket privado de documentos y grants críticos. No usar
+`migration repair` ni repetir `db push` para esta cadena sin un nuevo
+diagnóstico. El Worker de aplicación también se publicó después; el QA
+autenticado de envío, revisión, documentos y correo sigue siendo necesario
+antes de marcar F3 funcionalmente cerrada.
