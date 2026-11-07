@@ -1,0 +1,206 @@
+name: Apply Cubitat Phase 3 production migrations
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-production-database
+  cancel-in-progress: false
+
+jobs:
+  apply-phase3:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Prepare isolated Phase 3 migration workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir="$RUNNER_TEMP/cubitat-phase3-production"
+          mkdir -p "$workdir/supabase/migrations" "$workdir/supabase/templates"
+          cp web/supabase/config.toml "$workdir/supabase/config.toml"
+          cp web/supabase/templates/confirmation.html \
+            web/supabase/templates/recovery.html \
+            web/supabase/templates/password_changed_notification.html \
+            "$workdir/supabase/templates/"
+          versions=(
+            20261013130000_phase3_agent_growth.sql
+            20261024190000_bound_agent_lead_creation.sql
+            20261025010000_bound_agent_lead_creation.sql
+            20261025020000_pause_unvalidated_agent_growth_rpcs.sql
+            20261025140000_bound_agent_lead_text_inputs.sql
+            20261027100000_make_lost_agent_leads_final.sql
+            20261028193000_preserve_agent_referral_link_pause.sql
+            20261103120000_agent_application_intake.sql
+            20261103130000_agent_application_review_actions.sql
+            20261103140000_agent_application_email_outbox.sql
+            20261103150000_agent_application_province_capacity.sql
+            20261103160000_agent_application_evidence_retention.sql
+            20261103170000_agent_signup_referral_attribution.sql
+            20261103180000_add_billing_plan_catalog.sql
+            20261106100000_agent_access_revocation.sql
+          )
+          for file in "${versions[@]}"; do
+            if [[ ! -f "web/supabase/migrations/$file" ]]; then
+              echo "Missing canonical Phase 3 migration source: $file"
+              exit 1
+            fi
+            cp "web/supabase/migrations/$file" "$workdir/supabase/migrations/"
+          done
+
+      - name: Verify production target, prerequisites, schema, and pending set
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *"postgres.tohjzoncoosvjbjcakdl"* ]]; then
+            echo "SUPABASE_DB_URL is absent or does not identify Cubitat production."
+            exit 1
+          fi
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c "select version from supabase_migrations.schema_migrations order by version")
+          required_baseline=(20260930110000 20260930120000 20261025210000 20261025220000 20261026200000)
+          for version in "${required_baseline[@]}"; do
+            if ! grep -Fxq "$version" <<<"$remote_versions"; then
+              echo "Required production baseline migration $version is not registered; stopping."
+              exit 1
+            fi
+          done
+          shopt -s nullglob
+          while IFS= read -r version; do
+            [[ -z "$version" ]] && continue
+            if [[ ! "$version" =~ ^[0-9]{14}$ ]]; then
+              echo "Production ledger contains a non-canonical version identifier."
+              exit 1
+            fi
+            matches=(web/supabase/migrations/"${version}"_*.sql)
+            if [[ ${#matches[@]} -ne 1 ]]; then
+              echo "No unique canonical migration source for a version recorded in production."
+              exit 1
+            fi
+            cp "${matches[0]}" "$RUNNER_TEMP/cubitat-phase3-production/supabase/migrations/"
+          done <<<"$remote_versions"
+
+          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT
+            (to_regclass('public.profiles') IS NOT NULL)::text,
+            (to_regprocedure('public.is_admin_aal2()') IS NOT NULL)::text,
+            (SELECT count(*) = 4 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'user_role' AND e.enumlabel IN ('buyer','seller','agent','admin'))::text,
+            (SELECT count(*) = 0 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p') AND c.relname IN ('agent_referral_links','agent_leads','agent_lead_events','agent_commissions','agent_commission_events','agent_applications','agent_application_events','agent_application_email_outbox','agent_province_assignments','agent_signup_attributions','billing_plan_versions','agent_role_moderation_events'))::text,
+            (to_regprocedure('public.ensure_agent_referral_link()') IS NULL)::text,
+            (to_regprocedure('public.create_agent_lead(text,text,text,text,text,text,text,boolean)') IS NULL)::text,
+            (to_regprocedure('public.review_agent_application(uuid,text,text)') IS NULL)::text,
+            (to_regprocedure('public.revoke_agent_access(uuid,text)') IS NULL)::text;
+          SQL
+          )
+          echo "Production prerequisite/schema flags (profiles|AAL2|roles|agent-tables-absent|referral-rpc-absent|lead-rpc-absent|application-rpc-absent|revoke-rpc-absent): $schema_state"
+          if [[ "$schema_state" != 'true|true|true|true|true|true|true|true' ]]; then
+            echo "Production is not in the reviewed Phase 3 pre-migration state; no SQL was applied."
+            exit 1
+          fi
+
+          local_versions=$(find "$RUNNER_TEMP/cubitat-phase3-production/supabase/migrations" -maxdepth 1 -type f -name '*.sql' \
+            -printf '%f\n' | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          pending_versions=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
+          expected_pending=$'20261013130000\n20261024190000\n20261025010000\n20261025020000\n20261025140000\n20261027100000\n20261028193000\n20261103120000\n20261103130000\n20261103140000\n20261103150000\n20261103160000\n20261103170000\n20261103180000\n20261106100000'
+          if [[ "$pending_versions" != "$expected_pending" ]]; then
+            echo "Pending production migrations differ from the explicitly reviewed Phase 3 set; stopping."
+            printf 'Observed pending versions:\n%s\n' "$pending_versions"
+            exit 1
+          fi
+
+      - name: Dry-run exact Phase 3 production migration set
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --dry-run --yes 2>&1)
+          safe_output=$(printf '%s\n' "$dry_run" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          printf '%s\n' "$safe_output"
+          for version in 20261013130000 20261024190000 20261025010000 20261025020000 20261025140000 20261027100000 20261028193000 20261103120000 20261103130000 20261103140000 20261103150000 20261103160000 20261103170000 20261103180000 20261106100000; do
+            if ! grep -Fq "$version" <<<"$dry_run"; then
+              echo "Dry-run did not enumerate expected migration $version."
+              exit 1
+            fi
+          done
+          unexpected=$(grep -Eo '202[0-9]{11,13}' <<<"$dry_run" | sort -u | grep -Ev '^(20261013130000|20261024190000|20261025010000|20261025020000|20261025140000|20261027100000|20261028193000|20261103120000|20261103130000|20261103140000|20261103150000|20261103160000|20261103170000|20261103180000|20261106100000)$' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "Dry-run contains an unreviewed migration; stopping."
+            exit 1
+          fi
+
+      - name: Apply reviewed Phase 3 production migrations
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --yes
+
+      - name: Verify production Phase 3 schema and privileges
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            required_version text;
+          BEGIN
+            FOREACH required_version IN ARRAY ARRAY[
+              '20261013130000','20261024190000','20261025010000','20261025020000',
+              '20261025140000','20261027100000','20261028193000','20261103120000',
+              '20261103130000','20261103140000','20261103150000','20261103160000',
+              '20261103170000','20261103180000','20261106100000'
+            ] LOOP
+              IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version = required_version) THEN
+                RAISE EXCEPTION 'phase3_migration_missing_%', required_version;
+              END IF;
+            END LOOP;
+            IF to_regclass('public.agent_referral_links') IS NULL
+              OR to_regclass('public.agent_leads') IS NULL
+              OR to_regclass('public.agent_applications') IS NULL
+              OR to_regclass('public.agent_application_events') IS NULL
+              OR to_regclass('public.agent_application_email_outbox') IS NULL
+              OR to_regclass('public.agent_province_assignments') IS NULL
+              OR to_regclass('public.agent_signup_attributions') IS NULL
+              OR to_regclass('public.billing_plan_versions') IS NULL
+              OR to_regclass('public.agent_role_moderation_events') IS NULL
+              OR to_regprocedure('public.review_agent_application(uuid,text,text)') IS NULL
+              OR to_regprocedure('public.revoke_agent_access(uuid,text)') IS NULL
+              OR NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id='agent_application_documents' AND NOT public) THEN
+              RAISE EXCEPTION 'phase3_schema_incomplete';
+            END IF;
+            IF has_table_privilege('anon','public.agent_applications','SELECT')
+              OR has_table_privilege('anon','public.agent_application_email_outbox','SELECT')
+              OR has_table_privilege('anon','public.agent_province_assignments','SELECT')
+              OR has_table_privilege('authenticated','public.agent_application_email_outbox','SELECT')
+              OR has_table_privilege('authenticated','public.agent_province_assignments','SELECT')
+              OR has_function_privilege('anon','public.revoke_agent_access(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'phase3_privileges_invalid';
+            END IF;
+          END;
+          $$;
+          SELECT 'Cubitat production Phase 3 schema and core privileges verified';
+          SQL
