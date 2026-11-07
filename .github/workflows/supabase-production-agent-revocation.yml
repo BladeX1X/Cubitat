@@ -88,6 +88,23 @@ jobs:
           )
           echo "Production catalog flags (profiles|assignments|AAL2|audit-table|list-RPC|revoke-RPC|immutable-trigger): $schema_state"
           if [[ "$schema_state" != 'true|true|true|false|false|false|false' ]]; then
+            echo "Production agent/province relations and column names (catalog metadata only):"
+            psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT c.relname, string_agg(a.attname, ',' ORDER BY a.attnum)
+          FROM pg_class AS c
+          JOIN pg_namespace AS n ON n.oid = c.relnamespace
+          JOIN pg_attribute AS a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+          WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
+            AND (c.relname ILIKE '%agent%' OR c.relname ILIKE '%province%')
+          GROUP BY c.relname ORDER BY c.relname;
+          SQL
+            echo "Production user-role enum labels:"
+            psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT string_agg(e.enumlabel, ',' ORDER BY e.enumsortorder)
+          FROM pg_type AS t JOIN pg_enum AS e ON e.enumtypid = t.oid
+          JOIN pg_namespace AS n ON n.oid = t.typnamespace
+          WHERE n.nspname = 'public' AND t.typname = 'user_role';
+          SQL
             echo "Production schema is not pristine for this migration. No SQL was applied; reconcile the exact existing objects before retrying."
             exit 1
           fi
