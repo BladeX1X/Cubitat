@@ -88,6 +88,8 @@ jobs:
           )
           echo "Production catalog flags (profiles|assignments|AAL2|audit-table|list-RPC|revoke-RPC|immutable-trigger): $schema_state"
           if [[ "$schema_state" != 'true|true|true|false|false|false|false' ]]; then
+            recent_versions=$(printf '%s\n' "$remote_versions" | grep -E '^2026110[3-6]' || true)
+            echo "Production migration ledger versions for phases 3/4 and agent revoke: ${recent_versions:-none}"
             echo "Production agent/province relations and column names (catalog metadata only):"
             psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
           SELECT c.relname, string_agg(a.attname, ',' ORDER BY a.attnum)
