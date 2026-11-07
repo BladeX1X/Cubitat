@@ -88,6 +88,8 @@ jobs:
           )
           echo "Production catalog flags (profiles|assignments|AAL2|audit-table|list-RPC|revoke-RPC|immutable-trigger): $schema_state"
           if [[ "$schema_state" != 'true|true|true|false|false|false|false' ]]; then
+            agent_versions=$(printf '%s\n' "$remote_versions" | grep -E '^(20261013130000|20261024190000|20261025010000|20261025020000|20261025140000|20261025210000|20261025220000|20261026200000|20261027100000|20261028193000|20261103120000|20261103130000|20261103140000|20261103150000|20261103160000|20261103170000|20261103180000|20261106100000)$' || true)
+            echo "Production ledger versions for the full agent feature chain: ${agent_versions:-none}"
             recent_versions=$(printf '%s\n' "$remote_versions" | grep -E '^2026110[3-6]' || true)
             echo "Production migration ledger versions for phases 3/4 and agent revoke: ${recent_versions:-none}"
             echo "Production agent/province relations and column names (catalog metadata only):"
