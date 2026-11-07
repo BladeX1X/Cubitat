@@ -133,7 +133,7 @@ jobs:
           set -euo pipefail
           set +x
           set +e
-          dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --dry-run --yes 2>&1)
+          dry_run=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --dry-run --include-all --yes 2>&1)
           dry_run_status=$?
           set -e
           safe_output=$(printf '%s\n' "$dry_run" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
@@ -161,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           set +x
-          supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --yes
+          supabase db push --workdir "$RUNNER_TEMP/cubitat-phase3-production" --db-url "$SUPABASE_DB_URL" --include-all --yes
 
       - name: Verify production Phase 3 schema and privileges
         shell: bash
