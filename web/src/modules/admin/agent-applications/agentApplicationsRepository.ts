@@ -18,6 +18,13 @@ export type AgentApplicationDocumentLinks = {
   expires_in: number
 }
 
+export type ActiveAgent = {
+  agent_id: string
+  full_name: string
+  province: string
+  assigned_at: string | null
+}
+
 export const AGENT_APPLICATIONS_PAGE_SIZE = 20
 
 function getSafeRpcError(error: unknown): { code: string; name: string; status: number | null; message: string; keys: string[] } {
@@ -88,6 +95,30 @@ export async function fetchPendingAgentApplications(page: number): Promise<{ ite
     .range(from, to)
   if (error) throw new Error('No se pudieron cargar las postulaciones.')
   return { items: (data ?? []) as PendingAgentApplication[], total: count ?? 0 }
+}
+
+export async function fetchActiveAgentsForModeration(): Promise<ActiveAgent[]> {
+  const { data, error } = await supabase.rpc('list_active_agents_for_moderation')
+  if (error) {
+    throw new Error(getReviewRpcErrorMessage(error).replace(
+      'No se pudo guardar la decisión administrativa',
+      'No se pudo cargar la lista de agentes activos',
+    ))
+  }
+  return (data ?? []) as ActiveAgent[]
+}
+
+export async function revokeAgentAccess(agentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_agent_access', {
+    p_agent_id: agentId,
+    p_reason: reason.trim(),
+  })
+  if (error) {
+    const diagnostic = getSafeRpcError(error)
+    if (diagnostic.code === 'P0002') throw new Error('El agente ya no está activo. Actualiza la lista.')
+    if (diagnostic.code === '22023') throw new Error('Escribe un motivo de entre 3 y 500 caracteres.')
+    throw new Error(getReviewRpcErrorMessage(error).replace('la decisión', 'la revocación'))
+  }
 }
 
 export async function fetchAgentApplicationDocumentLinks(applicationId: string): Promise<AgentApplicationDocumentLinks> {

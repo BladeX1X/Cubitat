@@ -45,6 +45,8 @@ export type MaterialListing = {
   phone: string | null
   whatsapp: string | null
   photoUrls: string[]
+  /** True when at least one private photo reference could not be signed for reading. */
+  photoUnavailable?: boolean
   updatedAt: string
 }
 

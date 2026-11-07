@@ -34,7 +34,17 @@ function safeSignedUrl(value: unknown, baseUrl: string): string | null {
   if (typeof value !== 'string' || value.length === 0) return null
   try {
     const resolved = new URL(value, baseUrl)
-    if (resolved.origin !== new URL(baseUrl).origin || !resolved.pathname.startsWith(`/storage/v1/object/sign/${BUCKET}/`)) return null
+    const base = new URL(baseUrl)
+    if (resolved.origin !== base.origin) return null
+
+    // Supabase's Storage REST API returns `signedURL` relative to the storage
+    // API root (`/object/sign/...`), not the project root (`/storage/v1/...`).
+    // Accept both forms, but always return a browser-usable project URL.
+    if (resolved.pathname.startsWith(`/object/sign/${BUCKET}/`)) {
+      resolved.pathname = `/storage/v1${resolved.pathname}`
+    }
+    if (!resolved.pathname.startsWith(`/storage/v1/object/sign/${BUCKET}/`)
+      || !resolved.searchParams.has('token')) return null
     return resolved.toString()
   } catch {
     return null

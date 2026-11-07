@@ -25,12 +25,22 @@ envía documentos a Supabase desde el navegador.
 ## Accesibilidad y estados
 
 Los campos tienen etiquetas explícitas; tamaño, campos faltantes y errores del
-servidor presentan mensajes claros sin mostrar detalles internos. Un conflicto
-por solicitud abierta se muestra como tal. El éxito confirma recepción en estado
+servidor presentan mensajes claros sin mostrar detalles internos. Los fallos 503
+usan códigos seguros para distinguir problemas al guardar documentos privados
+de problemas al registrar la solicitud; los detalles de Storage/PostgREST nunca
+se muestran. Un conflicto por solicitud abierta se muestra como tal. El éxito confirma recepción en estado
 pendiente, no aprobación ni entrega efectiva del correo.
 La página adapta el formulario a una columna en móvil.
 
 ## Verificación
 
 `AgentApplicationPage.test.tsx` cubre requeridos, envío autenticado multipart,
-respuesta exitosa, endpoint apagado y archivo superior a 10 MB.
+respuesta exitosa, endpoint apagado, errores seguros por etapa y archivo
+superior a 10 MB.
+
+El Worker normaliza el `signedURL` relativo que devuelve Storage REST antes de
+entregar enlaces efímeros al panel administrativo o al correo. La respuesta se
+limita al origen configurado, al bucket privado de postulaciones y a URLs con
+token. Las pruebas de `agent-application-documents.test.ts` y
+`agent-application-email-dispatcher.test.ts` cubren la forma documentada
+`/object/sign/...`.

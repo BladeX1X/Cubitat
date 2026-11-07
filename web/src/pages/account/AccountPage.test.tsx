@@ -49,6 +49,17 @@ describe('AccountPage - Role Selector', () => {
           upsert: upsertProfile,
         } as any
       }
+      if (table === 'agent_applications') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }),
+              }),
+            }),
+          }),
+        } as any
+      }
       if (table === 'search_alerts') {
         return {
           select: () => ({
@@ -488,6 +499,56 @@ describe('AccountPage - Role Selector', () => {
 })
 
 describe('AccountPage agent application shortcut', () => {
+  it('shows the latest application status instead of inviting an applicant to apply again', async () => {
+    const applicationStatusQuery = {
+      eq: () => ({
+        order: () => ({
+          limit: () => ({
+            maybeSingle: () => Promise.resolve({ data: { status: 'reviewing' }, error: null }),
+          }),
+        }),
+      }),
+    }
+    const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: { role: 'admin', full_name: 'Usuario Test', phone: '', avatar_url: '' },
+                error: null,
+              }),
+            }),
+          }),
+        } as any
+      }
+      if (table === 'agent_applications') {
+        return { select: () => ({ ...applicationStatusQuery }) } as any
+      }
+      if (table === 'search_alerts') {
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) } as any
+      }
+      return {} as any
+    })
+
+    render(
+      <AccountPage
+        user={mockUser}
+        userRole="admin"
+        onBack={vi.fn()}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+        onNavigateAgentApplication={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Postulación en revisión')).toBeInTheDocument()
+    expect(screen.getByText('El equipo está revisando tu solicitud.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ser agente' })).not.toBeInTheDocument()
+    fromSpy.mockRestore()
+  })
+
   it('keeps account contact details within the mobile content width', async () => {
     const longEmail = 'agente.pruebas.responsive@example.test'
     const fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
@@ -543,6 +604,17 @@ describe('AccountPage agent application shortcut', () => {
               single: () => Promise.resolve({
                 data: { role: 'buyer', verification_status: 'unverified' },
                 error: null,
+              }),
+            }),
+          }),
+        } as any
+      }
+      if (table === 'agent_applications') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }),
               }),
             }),
           }),

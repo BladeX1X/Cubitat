@@ -37,7 +37,7 @@ describe('agent application private document links', () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce(new Response('true', { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ cv_path: cvPath, diploma_path: diplomaPath }]), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: `/storage/v1/object/sign/agent_application_documents/${cvPath}?token=cv` }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: `/object/sign/agent_application_documents/${cvPath}?token=cv` }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: `/storage/v1/object/sign/agent_application_documents/${diplomaPath}?token=diploma` }), { status: 200 }))
 
     const response = await handleAgentApplicationDocumentLinks(request(), id, env, fetchFn)

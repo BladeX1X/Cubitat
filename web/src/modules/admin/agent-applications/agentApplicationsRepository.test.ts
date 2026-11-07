@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchAgentApplicationDocumentLinks, fetchPendingAgentApplications, reviewAgentApplication } from './agentApplicationsRepository'
+import { fetchActiveAgentsForModeration, fetchAgentApplicationDocumentLinks, fetchPendingAgentApplications, reviewAgentApplication } from './agentApplicationsRepository'
 
 const query = vi.hoisted(() => ({
   select: vi.fn(),
@@ -60,6 +60,12 @@ describe('agentApplicationsRepository', () => {
     query.rpc.mockResolvedValueOnce({ data: null, error: { code: '22023' } })
 
     await expect(reviewAgentApplication('application-id', 'approved')).rejects.toThrow(/KYC/i)
+  })
+
+  it('describes agent-list failures as loading failures, not save failures', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: { error: 'Operación no permitida.' } })
+
+    await expect(fetchActiveAgentsForModeration()).rejects.toThrow(/No se pudo cargar la lista de agentes activos/i)
   })
 
   it('reports when the hosted PostgREST schema has not loaded the review RPC', async () => {

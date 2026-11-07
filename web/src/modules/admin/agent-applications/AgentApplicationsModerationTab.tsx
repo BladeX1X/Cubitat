@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ExternalLink, FileText, RefreshCw, ShieldCheck } from 'lucide-react'
+import { ExternalLink, FileText, RefreshCw, ShieldCheck, UserRoundX } from 'lucide-react'
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from '../components/AdminStates'
 import { AdminPagination } from '../components/AdminPagination'
 import { Button } from '../../../shared/ui/button'
 import { Textarea } from '../../../shared/ui/textarea'
 import {
   fetchAgentApplicationDocumentLinks,
+  fetchActiveAgentsForModeration,
   fetchPendingAgentApplications,
   reviewAgentApplication,
+  revokeAgentAccess,
   AGENT_APPLICATIONS_PAGE_SIZE,
   type AgentApplicationDocumentLinks,
+  type ActiveAgent,
   type PendingAgentApplication,
 } from './agentApplicationsRepository'
 
@@ -33,6 +36,24 @@ export function AgentApplicationsModerationTab() {
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [activeAgents, setActiveAgents] = useState<ActiveAgent[]>([])
+  const [agentsLoading, setAgentsLoading] = useState(true)
+  const [agentsError, setAgentsError] = useState<string | null>(null)
+  const [revokingAgentId, setRevokingAgentId] = useState<string | null>(null)
+  const [revocationTargetId, setRevocationTargetId] = useState<string | null>(null)
+  const [revocationReason, setRevocationReason] = useState('')
+
+  const loadActiveAgents = useCallback(async () => {
+    setAgentsLoading(true)
+    setAgentsError(null)
+    try {
+      setActiveAgents(await fetchActiveAgentsForModeration())
+    } catch (cause: unknown) {
+      setAgentsError(cause instanceof Error ? cause.message : 'No se pudo cargar la lista de agentes activos.')
+    } finally {
+      setAgentsLoading(false)
+    }
+  }, [])
 
   const load = useCallback(async (targetPage: number) => {
     setLoading(true)
@@ -49,6 +70,7 @@ export function AgentApplicationsModerationTab() {
   }, [])
 
   useEffect(() => { void load(page) }, [load, page])
+  useEffect(() => { void loadActiveAgents() }, [loadActiveAgents])
 
   async function showDocuments(application: PendingAgentApplication) {
     setLoadingDocumentsId(application.id)
@@ -92,10 +114,24 @@ export function AgentApplicationsModerationTab() {
     }
   }
 
-  if (loading) return <AdminLoadingState message="Cargando postulaciones de agentes..." />
-  if (error) return <AdminErrorState message={error} onRetry={() => void load(page)} />
-  if (total === 0) {
-    return <div className="space-y-3">{actionMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{actionMessage}</p>}<AdminEmptyState title="No hay postulaciones pendientes" message="Las nuevas solicitudes aparecerán aquí para revisión administrativa." /></div>
+  async function confirmAgentRevocation(agent: ActiveAgent) {
+    setRevokingAgentId(agent.agent_id)
+    setActionError(null)
+    setActionMessage(null)
+    try {
+      await revokeAgentAccess(agent.agent_id, revocationReason)
+      setRevocationTargetId(null)
+      setRevocationReason('')
+      const slotMessage = agent.province === 'Sin plaza provincial asignada'
+        ? 'No tenía una plaza provincial asignada.'
+        : `La plaza de ${agent.province} quedó libre.`
+      setActionMessage(`Se retiró el acceso de agente a ${agent.full_name}. Su cuenta y anuncios se conservaron. ${slotMessage}`)
+      await Promise.all([loadActiveAgents(), load(page)])
+    } catch (cause: unknown) {
+      setActionError(cause instanceof Error ? cause.message : 'No se pudo retirar el acceso de agente.')
+    } finally {
+      setRevokingAgentId(null)
+    }
   }
 
   return (
@@ -106,13 +142,44 @@ export function AgentApplicationsModerationTab() {
           <h2 id="agent-applications-title" className="mt-1 text-lg font-bold text-neutral-900">Postulaciones de agentes</h2>
           <p className="mt-1 text-sm text-neutral-600">Los CV y títulos permanecen privados; sus enlaces expiran en dos minutos.</p>
         </div>
-        <Button type="button" variant="outline" onClick={() => void load(page)}><RefreshCw className="mr-2 h-4 w-4" />Actualizar</Button>
+        <Button type="button" variant="outline" onClick={() => { void load(page); void loadActiveAgents() }}><RefreshCw className="mr-2 h-4 w-4" />Actualizar</Button>
       </header>
 
       {documentError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{documentError}</p>}
       {actionError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
       {actionMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{actionMessage}</p>}
-      <div className="space-y-3">
+      <section aria-labelledby="active-agents-title" className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+        <header>
+          <h3 id="active-agents-title" className="text-base font-bold text-neutral-900">Agentes activos</h3>
+          <p className="mt-1 text-sm text-neutral-600">Retirar el acceso conserva la cuenta, las publicaciones y el historial. La plaza provincial se libera.</p>
+        </header>
+        {agentsLoading ? <AdminLoadingState message="Cargando agentes activos..." /> : null}
+        {!agentsLoading && agentsError ? <AdminErrorState message={agentsError} onRetry={() => void loadActiveAgents()} /> : null}
+        {!agentsLoading && !agentsError && activeAgents.length === 0 ? <AdminEmptyState title="No hay agentes activos" message="Los perfiles habilitados como agentes aparecerán aquí." /> : null}
+        {!agentsLoading && !agentsError && activeAgents.length > 0 ? <div className="space-y-3">{activeAgents.map((agent) => (
+          <article key={agent.agent_id} className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h4 className="break-words font-semibold text-neutral-900">{agent.full_name}</h4>
+              <p className="text-sm text-neutral-600">{agent.province} · Agente activo · ID {agent.agent_id.slice(0, 8)}</p>
+            </div>
+            {revocationTargetId === agent.agent_id ? <div className="w-full space-y-2 sm:max-w-xl">
+              <label htmlFor={`agent-revocation-reason-${agent.agent_id}`} className="block text-sm font-semibold text-neutral-800">Motivo para retirar el acceso</label>
+              <Textarea id={`agent-revocation-reason-${agent.agent_id}`} value={revocationReason} maxLength={500} onChange={(event) => setRevocationReason(event.target.value)} placeholder="Describe brevemente la razón administrativa." />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" variant="outline" className="border-red-600 text-red-700 hover:bg-red-50" disabled={revokingAgentId === agent.agent_id || revocationReason.trim().length < 3} onClick={() => void confirmAgentRevocation(agent)}>{revokingAgentId === agent.agent_id ? 'Guardando...' : 'Confirmar retiro'}</Button>
+                <Button type="button" variant="outline" disabled={revokingAgentId === agent.agent_id} onClick={() => { setRevocationTargetId(null); setRevocationReason('') }}>Cancelar</Button>
+              </div>
+            </div> : <Button type="button" variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-50 sm:w-auto" onClick={() => { setRevocationTargetId(agent.agent_id); setRevocationReason('') }}><UserRoundX className="mr-2 h-4 w-4" />Retirar acceso</Button>}
+          </article>
+        ))}</div> : null}
+      </section>
+
+      <section aria-labelledby="agent-applications-queue-title" className="space-y-3">
+        <h3 id="agent-applications-queue-title" className="text-base font-bold text-neutral-900">Postulaciones pendientes</h3>
+        {loading ? <AdminLoadingState message="Cargando postulaciones de agentes..." /> : null}
+        {!loading && error ? <AdminErrorState message={error} onRetry={() => void load(page)} /> : null}
+        {!loading && !error && total === 0 ? <AdminEmptyState title="No hay postulaciones pendientes" message="Las nuevas solicitudes aparecerán aquí para revisión administrativa." /> : null}
+      {!loading && !error && total > 0 && <div className="space-y-3">
         {applications.map((application) => {
           const links = linksByApplication[application.id]
           return (
@@ -153,8 +220,9 @@ export function AgentApplicationsModerationTab() {
             </article>
           )
         })}
-      </div>
-      <AdminPagination page={page} total={total} pageSize={AGENT_APPLICATIONS_PAGE_SIZE} itemLabel="postulaciones" onPageChange={setPage} />
+      </div>}
+      {!loading && !error && total > 0 && <AdminPagination page={page} total={total} pageSize={AGENT_APPLICATIONS_PAGE_SIZE} itemLabel="postulaciones" onPageChange={setPage} />}
+      </section>
     </section>
   )
 }

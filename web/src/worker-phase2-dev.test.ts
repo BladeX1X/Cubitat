@@ -138,6 +138,49 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(anonymousResponse.status).toBe(403)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  it('proxies agent access moderation RPCs only with an authenticated session', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('[]', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { default: worker } = await import('./worker-phase2-dev')
+    const env = {
+      PHASE2_ENABLED: 'true',
+      VITE_SUPABASE_URL: 'https://project.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'anon-key',
+      RATE_LIMITER: {
+        idFromName: vi.fn(() => 'global'),
+        get: vi.fn(() => ({ fetch: vi.fn().mockResolvedValue(new Response('{"allowed":true}', { status: 200 })) })),
+      },
+    }
+
+    for (const rpcName of ['list_active_agents_for_moderation', 'revoke_agent_access']) {
+      const authenticatedResponse = await worker.fetch(
+        new Request(`https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/rpc/${rpcName}`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer admin-jwt', apikey: 'anon-key', 'Content-Type': 'application/json' },
+          body: '{}',
+        }),
+        env as never,
+        { waitUntil: vi.fn() } as never,
+      )
+
+      expect(authenticatedResponse.status).toBe(200)
+      expect(new Headers(fetchMock.mock.calls.at(-1)?.[1]?.headers).get('Authorization')).toBe('Bearer admin-jwt')
+
+      const anonymousResponse = await worker.fetch(
+        new Request(`https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/rpc/${rpcName}`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer dummy-key-safe-from-browsers', apikey: 'anon-key', 'Content-Type': 'application/json' },
+          body: '{}',
+        }),
+        env as never,
+        { waitUntil: vi.fn() } as never,
+      )
+      expect(anonymousResponse.status).toBe(403)
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('Phase 3 DEV agent application route', () => {

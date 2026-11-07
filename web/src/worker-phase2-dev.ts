@@ -73,6 +73,8 @@ const worker = createWorker({
     'submit_property_verification',
     'review_property_verification',
     'review_agent_application',
+    'list_active_agents_for_moderation',
+    'revoke_agent_access',
   ],
 });
 

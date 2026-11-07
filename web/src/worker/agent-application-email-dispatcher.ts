@@ -75,8 +75,14 @@ function safeSignedUrl(value: unknown, baseUrl: string): string | null {
   try {
     const resolved = new URL(value, baseUrl)
     const base = new URL(baseUrl)
-    if (resolved.origin !== base.origin
-      || !resolved.pathname.startsWith(`/storage/v1/object/sign/${BUCKET}/`)
+    if (resolved.origin !== base.origin) return null
+
+    // Storage REST returns `/object/sign/...` relative to `/storage/v1`.
+    // Normalize that documented response before exposing it as a project URL.
+    if (resolved.pathname.startsWith(`/object/sign/${BUCKET}/`)) {
+      resolved.pathname = `/storage/v1${resolved.pathname}`
+    }
+    if (!resolved.pathname.startsWith(`/storage/v1/object/sign/${BUCKET}/`)
       || !resolved.searchParams.has('token')) return null
     return resolved.toString()
   } catch {

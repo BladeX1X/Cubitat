@@ -4108,3 +4108,94 @@ No migration was applied or repaired. Production was not queried. Next: compare 
 - Worker `cubitat1` F4 publicado a las rutas productivas, versión `8f8731c7-9384-4490-83d6-e5a5218b43e2`. Build dinámico generó 446 URLs. Smoke de páginas F4 200 y endpoint público de contacto: GET 405 JSON.
 - Pendiente QA autenticado de publicación/moderación, reseñas, contacto y valoración. Beneficios no procesa pagos ni aplica bloqueos de suscripción. El smoke HTTP no se toma como prueba de transacciones de usuario.
 - Evidencia detallada en `Cubitat - Despliegue Fase 4 Produccion 2026-11-05.md` dentro del vault y en `web/supabase/DATABASE_MIGRATIONS.md`.
+
+## Avance local F3/F4 — diagnóstico seguro de postulaciones — 2026-11-06
+
+- Rama aislada `bugfix/phase34-local-closeout`, basada en `origin/main`; cambios aún sin commit ni despliegue.
+- F3: el Worker devuelve códigos públicos enumerados distintos cuando falla la carga privada de documentos o la persistencia de la solicitud. La UI muestra instrucciones específicas y no refleja detalles upstream. El conflicto 409 conserva su mensaje de solicitud abierta.
+- Pruebas específicas: 14/14 PASS. Gates raíz: lint PASS; 196 archivos, 874 PASS, 1 SKIP; build estándar PASS. `build:phase4-production:ci` PASS con URL productiva y clave pública placeholder solo para build estático; se verificó bundle combinado F2/F3/F4 y Worker.
+- No hubo acceso a Supabase, cambios de esquema/datos ni despliegue. El QA autenticado de postulaciones F3 y los flujos de publicación/moderación, reseñas, contacto y valoración F4 siguen pendientes en DEV/producción según autorización y sesión disponible.
+- F4-MAT: si una URL firmada de foto privada falla, el catálogo conserva el anuncio y marca la foto como temporalmente no disponible. La tarjeta y el detalle muestran un aviso accesible en vez de un espacio vacío sin explicación. Prueba focal y gates completos verificados después de añadir el cambio.
+
+## Checklist para cerrar F3/F4 — 2026-11-06
+
+- Se creó `docs/CHECKLIST_QA_CIERRE_FASES_3_4_2026-11-06.md` con pruebas ordenadas para postulación/documentos/decisiones, correo y retención, publicaciones y moderación, filtros/favoritos, reseñas/contacto, responsive y promoción.
+- La lista distingue despliegue/rutas de QA funcional autenticado. No se realizaron pruebas remotas ni cambios de datos al redactarla.
+- Los arreglos de diagnóstico de postulaciones y error de fotos Materiales siguen solo en la rama local hasta desplegarse deliberadamente a DEV.
+
+## F3 — estado de postulación visible en Mi cuenta — 2026-11-06
+
+- Mi cuenta consulta el `status` más reciente de `agent_applications` del usuario autenticado. La tarjeta informa recibida, en revisión, lista de espera, aprobada, no aprobada o retirada; en errores ofrece reintento y evita invitar a postularse de nuevo.
+- La sección vive en `AccountPhaseThreeSection.tsx` y se carga solo con Fase 3 habilitada o en DEV, para mantener la exclusión F2/F3 del bundle base de producción. Aprobados tienen enlace al Panel de Agente; rechazados/retirados pueden volver a postularse.
+- La primera versión `26a3b090-994c-48d3-8a3d-06d49c34da4a` habilitó F3, pero no transportó las banderas de F4 del build previo. Se corrigió en DEV con `c68f269f-e863-4deb-81d1-fb9886064d74`: F3 sigue habilitada y `VITE_PHASE4_SVC/REV/MAT/BIZ_ENABLED=true`; `Valorar` continúa apagado. Esta versión también incluye el aviso accesible para fotos Materiales no disponibles.
+- La captura del usuario confirma en `/mi-cuenta` el estado real “Postulación no aprobada” y el CTA “Volver a postularme”; por tanto, el QA visual de ese estado queda verificado. No se muestran comentarios internos de moderación.
+- El release se construyó en worktree limpio desde `origin/main`; no se incluyeron otros cambios locales. Lint PASS; suite 196 archivos, 874 PASS, 1 SKIP; build DEV y guard de Fase 4 DEV PASS. Smoke HTTP: home, `/mi-cuenta`, `/servicios`, `/materiales`, `robots.txt`, `sitemap.xml` todos 200; los chunks de F3/F4 están publicados y el de Materiales contiene el aviso. Sitemap preservado en 2 URLs. Warnings preexistentes: chunk MapLibre >500 kB y sitemap estático por falta de clave pública.
+- Producción y Supabase intactos. El despliegue no ha simulado un fallo real de Storage ni sustituye QA de correo, retención y otros flujos autenticados.
+
+## F3 — corrección de enlaces firmados en Storage — DEV — 2026-11-06
+
+- Causa del aviso «Supabase Storage no pudo generar los enlaces privados»: Storage REST devuelve `signedURL` relativa a la raíz como `/object/sign/<bucket>/<ruta>?token=...`; los Workers de documentos y correo solo aceptaban `/storage/v1/object/sign/...` y rechazaban firmas válidas.
+- Ambos consumidores normalizan la respuesta al URL del proyecto y exigen mismo origen, bucket `agent_application_documents` y token; nunca registran ni envían al cliente el detalle bruto del proveedor. Pruebas focales: 12/12 PASS.
+- Release limpio derivado de `origin/main` más cambios ya publicados de estado F3 en Mi cuenta y fallback de fotos Materiales; rama local `bugfix/f3-storage-signed-url-dev`. Gates del release: lint PASS; 196 archivos, 874 PASS/1 SKIP; `build:phase2-dev` y verificadores Phase 2/4 PASS.
+- Worker `cubitat1-phase2-dev` desplegado como `394ef3fb-d21e-4579-905e-2246a15ca995`. Se mantuvieron F3 y SVC/REV/MAT/BIZ activos; Valorar apagado. Páginas `/`, `/mi-cuenta`, `/moderar`, `/postular-agente`, `/servicios`, `/materiales` responden 200; endpoint protegido de documentos responde 401 sin sesión, señalando que la ruta F3 está activa y conserva autenticación.
+- Pendiente: confirmar desde Moderación, con sesión admin AAL2, que «Ver documentos» abre ambos archivos y vuelve a producir enlaces de 120 segundos. No se abrió ni copió ningún documento durante este trabajo. No hubo cambios en Supabase ni producción.
+- El diagnóstico seguro para distinguir fallos al enviar postulación continúa local y no se incluyó en este release. El repo `.agents/AGENTS.md` no estaba disponible en este checkout.
+
+
+## 2026-11-06 — Navegación responsive de Mi cuenta en DEV
+
+- Causa: el lateral de Cuenta usaba lg y quedaba oculto al reducir ventana/zoom, sin navegación sustituta.
+- Se añade barra horizontal desplazable bajo md con Mi cuenta, Favoritos, Mis publicaciones y Panel de Agente elegible; el lateral aparece desde md.
+- Lint PASS; suite release 196 archivos, 875 PASS/1 SKIP; build DEV, guards Phase 2/4 PASS; build productivo y guards de aislamiento PASS.
+- Worker DEV cubitat1-phase2-dev, versión 6dda33ad-0bde-4557-8bb7-3ca991c48370. /mi-cuenta responde 200 y bundle servido contiene la nueva navegación. Producción y Supabase intactos.
+- Pendiente: confirmación visual del usuario en viewport estrecho; pruebas automatizadas verifican que los destinos se muestran y navegan.
+
+
+## 2026-11-06 — Corrección inmediata del bundle DEV
+
+- Se detectó que el despliegue 6dda33ad-0bde-4557-8bb7-3ca991c48370 tomó el dist productivo porque
+npm run build había corrido después de build:phase2-dev; F3 no quedaba en la app. Se volvió a compilar explícitamente en modo DEV y se reemplazó el deploy.
+- Versión DEV vigente 24e554d3-e2d4-4808-bcf1-b321ab0ad39d. Guards phase2-dev/phase4 PASS. Smoke de /mi-cuenta, /postular-agente, /servicios, /materiales: 200. El JS de entrada referencia AccountPhaseThreeSection, AgentApplicationPage, ServiceDirectoryPage y MaterialsMarketplacePage chunks.
+- Producción/Supabase intactos. Si el usuario aún ve assets antiguos, recargar con Ctrl+F5 o limpiar cache PWA.
+
+
+## 2026-11-06 — Apertura de documentos F3 confirmada por usuario
+
+- En Moderación DEV el usuario confirmó que se abrieron CV y título de la postulación. El cambio de estado a En revisión fue realizado por el usuario.
+- Apertura funcional queda confirmada según ese reporte; expiración del URL firmado aún pendiente. No se tocó producción ni Supabase.
+
+## QA F3 y retiro administrativo de agentes — 2026-11-06
+- Usuario confirma que rechazó la postulación QA actual en DEV y señala que solo falta probar aprobación. No se aprobó una cuenta real.
+- Se preparó localmente la sección Agentes activos para retirar el rol con AAL2, motivo obligatorio, auditoría inmutable y liberación transaccional de plaza. Conserva cuenta, anuncios e historial; admins no aparecen en la lista.
+- La migración candidata 20261106100000_agent_access_revocation.sql aún no se valida en scratch, no se ha cotejado/aplicado en DEV y el UI no está desplegado. Producción intacta.
+
+## Despliegue DEV — retiro auditado de agentes — 2026-11-07
+
+- Worker `cubitat1-phase2-dev` publicado con la interfaz F3 de agentes activos y acción **Retirar acceso**, versión `36f2fa5f-95c1-4a9c-8b3f-1ae8a0154ec8`.
+- Perfil construido con `VITE_PHASE3_UI_ENABLED=true`; publicación al Worker DEV con `PHASE3_ENABLED=true`. No se desplegó a producción.
+- La consulta de Supabase DEV confirmó que existen `agent_role_moderation_events`, `list_active_agents_for_moderation()` y `revoke_agent_access(uuid,text)`. La migración se ejecutó por CLI; falta confirmar con `supabase migration list --linked` que `20261106100000` quedó registrado en el historial, porque el primer `migration repair` se ejecutó desde una carpeta sin el archivo local.
+- Smoke posterior: `/` y `/moderar` HTTP 200; el asset publicado `AgentApplicationsModerationTab-yJ40jBwL.js` HTTP 200 y contiene Agentes activos / Retirar acceso.
+- Gates: lint PASS; suite 196 archivos, 878 PASS / 1 SKIP; build estándar PASS; build DEV PASS. Build adicional phase3-production:ci omitido por faltar la configuración pública productiva. No se probó una revocación autenticada.
+- Pendiente: verificar historial remoto y probar con admin AAL2 y agente sintético, comprobando razón, auditoría, conservación de cuenta/anuncios y liberación de cupo. F3 approval QA también sigue pendiente.
+
+### Diagnóstico — lista de agentes de moderación en DEV — 2026-11-07
+
+- Hallazgo: `/moderar` muestra error al cargar Agentes activos. `worker-phase2-dev.ts` no permitía `list_active_agents_for_moderation` ni `revoke_agent_access`; el proxy las rechazaba con 403 antes de llegar a PostgREST.
+- Corrección local en `D:\cubitat-phase34-work`, rama `bugfix/phase34-local-closeout`: ambas RPC se añadieron a la allowlist autenticada; los controles AAL2 continúan en PostgreSQL. El fallback visual ahora describe que la lista no pudo cargarse, no guardarse.
+- Regresión Worker: RPC permitidas para sesión autenticada, denegadas a anon; prueba del mensaje de carga. Lint PASS; 196 archivos / 880 pruebas PASS / 1 omitida; build estándar PASS.
+- Deploy DEV pendiente. El build `phase2-dev` con UI F3 explícita generó assets, pero falló en el sitemap dinámico por falta local de `VITE_SUPABASE_ANON_KEY`. No se expuso ni se reutilizó la clave de producción. El HTML DEV activo referencia 29 chunks que no existen en `dist` local, por lo que no es seguro desplegar ese bundle mezclado.
+- Siguiente paso: recuperar el checkout exacto del release DEV o conseguir su clave pública anon de DEV y construir desde la fuente coherente; desplegar solo tras comparar assets. Producción y Supabase no se modificaron.
+### Resultado de despliegue — allowlist de RPC para agentes activos — 2026-11-07
+
+- Estado anterior «Deploy DEV pendiente» supersedido: el Worker `cubitat1-phase2-dev` quedó publicado en `2026-11-07T07:36:08Z`, versión `bc22cfbc-8824-4c9a-82a0-b4dfa4333256` (100%).
+- Wrangler usó `wrangler.phase2-dev.jsonc` y una copia de los 73 recursos estáticos servidos por el DEV vigente; subió solo `index.html` (los otros 72 ya estaban en el almacén de assets). No se mezcló el `dist` local divergente.
+- Smoke HTTP posterior: `/` y `/moderar` 200. La ruta F3 `/api/phase3/agent-applications` devuelve 404 porque `PHASE3_ENABLED=false` permanece según la configuración de este deploy; no se activó F3 aquí.
+- Producción y Supabase no se modificaron. Falta QA en `/moderar` con sesión administrativa AAL2 para confirmar lista y revocación de agente. La prueba CUA no estuvo disponible por timeout.
+
+## Promoción de retiro auditado de agentes — 2026-11-07
+
+- La rama `bugfix/phase34-local-closeout` se basa en `main` actual (`0de16ae3`) y contiene correcciones F3/F4 revisadas para postulación, enlaces privados, cuenta, imágenes de Materiales y moderación de agentes.
+- El fix de proxy de RPC se añadió también a `worker-phase2-production.ts`; antes solo estaba en el Worker DEV, por lo que producción habría seguido rechazando la lista/retiro aun con el SQL.
+- Migración `20261106100000_agent_access_revocation.sql`: aplicada en DEV según consulta de objetos, pero sin versión remota registrada; producción aún no modificada.
+- Se prepara promoción por PR y un workflow manual de producción que aborta si el destino no es `tohjzoncoosvjbjcakdl`, hay esquema parcial, o el dry-run no enumera únicamente esta migración.
+- Lint, suite completa y build Fase 4 de producción se están repitiendo antes de abrir PR. Despliegue Worker y migración productiva siguen pendientes hasta integrar CI verde.

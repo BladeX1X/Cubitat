@@ -65,6 +65,23 @@ describe('AgentApplicationPage', () => {
     expect(alert).not.toHaveTextContent('secret internal error')
   })
 
+  it('explains safe storage and persistence failures without showing upstream details', async () => {
+    const { container, unmount } = render(<AgentApplicationPage user={user} onBack={vi.fn()} />)
+    fillRequiredFields()
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ error: 'document_storage_unavailable', details: 'private upstream detail' }), { status: 503 }))
+    fireEvent.submit(container.querySelector('form')!)
+    const storageAlert = await screen.findByRole('alert')
+    expect(storageAlert).toHaveTextContent('guardar los documentos privados')
+    expect(storageAlert).not.toHaveTextContent('private upstream detail')
+
+    unmount()
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ error: 'application_persistence_unavailable' }), { status: 503 }))
+    const next = render(<AgentApplicationPage user={user} onBack={vi.fn()} />)
+    fillRequiredFields()
+    fireEvent.submit(next.container.querySelector('form')!)
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo registrar la postulación')
+  })
+
   it('rejects files above 10 MB before network submission', async () => {
     render(<AgentApplicationPage user={user} onBack={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Provincia principal'), { target: { value: 'La Habana' } })

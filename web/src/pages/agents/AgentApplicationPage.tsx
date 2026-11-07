@@ -18,14 +18,27 @@ type AgentApplicationPageProps = {
 
 type SubmissionState = 'idle' | 'submitting' | 'submitted' | 'error'
 
-function getSubmissionError(status: number): string {
+function getSubmissionError(status: number, code?: string): string {
   if (status === 400) return 'Revisa la provincia, la formación y los documentos seleccionados.'
   if (status === 401) return 'Tu sesión venció. Inicia sesión e inténtalo de nuevo.'
   if (status === 404) return 'La postulación todavía no está habilitada en este entorno.'
   if (status === 409) return 'Ya existe una postulación abierta asociada a tu cuenta.'
   if (status === 413) return 'Los archivos superan el límite permitido.'
   if (status === 429) return 'Ya alcanzaste el límite de envíos. Inténtalo más adelante.'
+  if (status === 503 && code === 'document_storage_unavailable') return 'No se pudieron guardar los documentos privados. Revisa los archivos e inténtalo más tarde.'
+  if (status === 503 && code === 'application_persistence_unavailable') return 'No se pudo registrar la postulación. Inténtalo más tarde; los documentos temporales se retiraron.'
   return 'No se pudo enviar la postulación. Inténtalo de nuevo más tarde.'
+}
+
+async function readSafeErrorCode(response: Response): Promise<string | undefined> {
+  try {
+    const payload: unknown = await response.json()
+    if (typeof payload !== 'object' || payload === null || !('error' in payload)) return undefined
+    const code = payload.error
+    return typeof code === 'string' && /^[a-z_]{1,64}$/.test(code) ? code : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export function AgentApplicationPage({ user, onBack }: AgentApplicationPageProps) {
@@ -87,7 +100,7 @@ export function AgentApplicationPage({ user, onBack }: AgentApplicationPageProps
 
       if (!response.ok) {
         setState('error')
-        setErrorMessage(getSubmissionError(response.status))
+        setErrorMessage(getSubmissionError(response.status, await readSafeErrorCode(response)))
         return
       }
 

@@ -208,7 +208,7 @@ export async function handleAgentApplicationSubmission(
         phase: 'storage',
         ...(uploadStatus === undefined ? {} : { status: uploadStatus }),
       })
-      return response(503, 'Could not store application documents')
+      return response(503, 'document_storage_unavailable')
     }
   }
 
@@ -242,7 +242,9 @@ export async function handleAgentApplicationSubmission(
     })
     // PostgREST reports unique-constraint conflicts as HTTP 409. Preserve that
     // safe status so the UI can explain that an open application already exists.
-    return response(persistenceStatus === 409 ? 409 : 503, 'Could not submit application')
+    return response(persistenceStatus === 409 ? 409 : 503, persistenceStatus === 409
+      ? 'application_already_open'
+      : 'application_persistence_unavailable')
   }
 
   logWorkerEvent('info', 'agent_application_submitted')

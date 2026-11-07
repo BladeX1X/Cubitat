@@ -4,7 +4,26 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-11-05.
+Última revisión documental: 2026-11-07.
+
+## Retiro auditado de agentes — migración 2026-11-06
+
+- `20261106100000_agent_access_revocation.sql` agrega RPCs AAL2 para consultar
+  agentes activos y retirar el rol con motivo obligatorio. El cambio conserva
+  cuentas/anuncios, libera la plaza y registra una bitácora inmutable en una
+  transacción. La lista solo expone nombre, provincia e ID e incluye agentes
+  heredados sin asignación para permitir retirarles el rol.
+- pgTAP: `supabase/tests/agent_role_revocation_local.sql`.
+- DEV: el esquema se aplicó por CLI y una consulta confirmó tabla y RPC, pero
+  el ledger no quedó registrado; la reconciliación del historial remoto sigue
+  pendiente. No ejecutar `db push` global ni `migration repair` en DEV.
+- Producción: todavía no aplicada. El workflow manual
+  `.github/workflows/supabase-production-agent-revocation.yml` limita el
+  dry-run y el despliegue a esta versión, verifica el proyecto productivo y
+  requiere que el esquema esté en estado previo completo. Ejecutarlo solo
+  después de integrar esta migración en `main` y confirmar sus gates.
+- La prueba SQL del contrato es `supabase/tests/agent_role_revocation_local.sql`;
+  ejecución alojada de revocación con usuario sintético aún pendiente.
 
 ## Preparación de Fase 4 para producción — 2026-11-05
 

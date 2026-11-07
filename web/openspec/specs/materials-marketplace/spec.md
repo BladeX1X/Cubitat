@@ -60,6 +60,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   un anuncio publicado y no agotado. La app crea URLs firmadas de una hora al
   renderizar el catálogo/ficha; Storage privado nunca se configura como bucket
   público ni se almacena la URL firmada en la fila.
+- Si una firma falla, el catálogo conserva el anuncio y muestra un estado
+  accesible de foto temporalmente no disponible, en vez de esconder el fallo
+  detrás de un espacio vacío.
 - Los enlaces HTTPS previos a esta migración se conservan si ya están en la fila,
   pero no se admiten como imágenes nuevas. Su migración a Storage se hará sin
   borrado automático de archivos anteriores.

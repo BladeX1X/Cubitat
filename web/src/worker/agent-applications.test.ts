@@ -97,9 +97,21 @@ describe('agent application submission endpoint', () => {
 
     const response = await handleAgentApplicationSubmission(request, baseEnv, 'applicant-id', fetchFn)
     expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'application_persistence_unavailable' })
     expect(fetchFn).toHaveBeenCalledTimes(4)
     expect(String(fetchFn.mock.calls[3]![0])).toContain('/storage/v1/object/agent_application_documents')
     expect((fetchFn.mock.calls[3]![1] as RequestInit).method).toBe('DELETE')
+  })
+
+  it('reports a safe storage-specific error when private document upload fails', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('internal storage details', { status: 503 }))
+    const request = new Request('https://dev.example/api/phase3/agent-applications', { method: 'POST', body: applicationForm() })
+
+    const response = await handleAgentApplicationSubmission(request, baseEnv, 'applicant-id', fetchFn)
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'document_storage_unavailable' })
+    expect(fetchFn).toHaveBeenCalledOnce()
   })
 
   it('reports an existing open application as a conflict and removes the new uploads', async () => {

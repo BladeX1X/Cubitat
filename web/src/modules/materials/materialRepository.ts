@@ -42,6 +42,7 @@ function parseMaterial(value: unknown): MaterialListing | null {
     phone: typeof value.phone === 'string' ? value.phone : null,
     whatsapp: typeof value.whatsapp === 'string' ? value.whatsapp : null,
     photoUrls: parseImageReferences(value.photo_urls),
+    photoUnavailable: false,
     updatedAt: value.updated_at,
   }
 }
@@ -68,14 +69,19 @@ async function signMaterialPhotos(listings: MaterialListing[], coverOnly = false
     }
   }
 
-  return listings.map((listing) => ({
-    ...listing,
-    photoUrls: (coverOnly ? listing.photoUrls.slice(0, 1) : listing.photoUrls).flatMap((reference) => {
+  return listings.map((listing) => {
+    const references = coverOnly ? listing.photoUrls.slice(0, 1) : listing.photoUrls
+    const photoUnavailable = references.some((reference) => isMaterialPhotoPath(reference) && !signedUrls.has(reference))
+    return {
+      ...listing,
+      photoUnavailable,
+      photoUrls: references.flatMap((reference) => {
       if (!isMaterialPhotoPath(reference)) return [reference]
       const signedUrl = signedUrls.get(reference)
       return signedUrl ? [signedUrl] : []
-    }),
-  }))
+      }),
+    }
+  })
 }
 
 export async function fetchMaterialListings(filters: {

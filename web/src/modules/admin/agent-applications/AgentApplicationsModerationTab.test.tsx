@@ -4,6 +4,8 @@ import { AgentApplicationsModerationTab } from './AgentApplicationsModerationTab
 
 const repository = vi.hoisted(() => ({
   fetchPendingAgentApplications: vi.fn(),
+  fetchActiveAgentsForModeration: vi.fn(),
+  revokeAgentAccess: vi.fn(),
   fetchAgentApplicationDocumentLinks: vi.fn(),
   reviewAgentApplication: vi.fn(),
 }))
@@ -20,10 +22,19 @@ const application = {
   created_at: '2026-11-03T18:00:00.000Z',
 }
 
+const activeAgent = {
+  agent_id: '27e46228-8bb3-4da9-a9d3-1a1bf0d29f75',
+  full_name: 'Agente QA',
+  province: 'La Habana',
+  assigned_at: '2026-11-03T18:00:00.000Z',
+}
+
 describe('AgentApplicationsModerationTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     repository.fetchPendingAgentApplications.mockResolvedValue({ items: [application], total: 1 })
+    repository.fetchActiveAgentsForModeration.mockResolvedValue([activeAgent])
+    repository.revokeAgentAccess.mockResolvedValue(undefined)
     repository.fetchAgentApplicationDocumentLinks.mockResolvedValue({
       cv_url: 'https://supabase.example/cv?token=short',
       diploma_url: 'https://supabase.example/diploma?token=short',
@@ -58,6 +69,20 @@ describe('AgentApplicationsModerationTab', () => {
     render(<AgentApplicationsModerationTab />)
 
     await waitFor(() => expect(screen.getByText('No hay postulaciones pendientes')).toBeInTheDocument())
+  })
+
+  it('requires a reason and revokes access without presenting account deletion', async () => {
+    render(<AgentApplicationsModerationTab />)
+
+    expect(await screen.findByText('Agente QA')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Retirar acceso' }))
+    const confirm = screen.getByRole('button', { name: 'Confirmar retiro' })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Motivo para retirar el acceso'), { target: { value: 'Incumplimiento de las reglas.' } })
+    fireEvent.click(confirm)
+
+    await waitFor(() => expect(repository.revokeAgentAccess).toHaveBeenCalledWith(activeAgent.agent_id, 'Incumplimiento de las reglas.'))
+    expect(await screen.findByRole('status')).toHaveTextContent(/cuenta y anuncios se conservaron/i)
   })
 
   it('starts review through the AAL2-protected RPC repository action', async () => {
