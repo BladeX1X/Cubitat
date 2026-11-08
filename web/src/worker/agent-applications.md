@@ -4,7 +4,12 @@
 Deriva PDF, JPEG o PNG a partir de los bytes y no confía en el nombre ni el MIME
 que envía el navegador. El tamaño máximo es inclusivo: 10 MiB exactos se aceptan
 y cualquier byte adicional se rechaza. La ruta requiere `PHASE3_ENABLED=true`;
-la bandera está activa en los Workers DEV y producción desplegados.
+la bandera está activa en producción. El smoke de solo lectura del 2026-11-08
+encontró un 404 en el intake del Worker DEV, así que el registro de una versión
+anterior con la bandera activa no representa el runtime actual. El perfil
+`phase34-dev` preparado fija la bandera a `true` y combina la UI F3 con los
+módulos no experimentales de Fase 4; falta compilar con la clave pública DEV y
+desplegar para repetir el smoke. Producción se mantiene sin cambios.
 
 El Worker limita el cuerpo antes de analizar multipart, exige sesión autenticada,
 valida campos/provincia y requiere CV y título/diploma. Sube con el secreto de
@@ -17,8 +22,9 @@ registran solo la etapa y el estado HTTP, nunca campos del formulario, nombres
 de archivos, rutas de Storage o contenido documental. Un conflicto HTTP 409 se
 conserva para mostrar que ya existe una solicitud abierta.
 
-DEV registra las seis migraciones F3 `20261103120000`–`20261103170000` y el
-Worker tiene `PHASE3_ENABLED=true`; producción también tiene el flujo activo.
+DEV registra las seis migraciones F3 `20261103120000`–`20261103170000`; su
+Worker requiere volver a activar F3 en el perfil combinado. Producción también
+tiene el flujo activo.
 El QA autenticado positivo de envío en producción sigue pendiente. La
 RPC AAL2 permite iniciar revisión, lista de espera, rechazo y aprobación
 auditados. Una plaza se asigna en transacción serializada por provincia, exige

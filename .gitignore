@@ -14,6 +14,7 @@ temp_supa/
 node_modules/
 dist/
 dist-ssr/
+.wrangler/
 original_app.tsx
 test-insert.sql
 test-signup.js

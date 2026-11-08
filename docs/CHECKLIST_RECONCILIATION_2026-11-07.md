@@ -55,3 +55,19 @@ Se contrastó el tramo operativo más reciente de `Cubitat - Checklist de Lanzam
 ## Cambios documentales realizados
 
 Esta revisión se agrega como un apéndice fechado; no reemplaza ni reescribe entradas históricas. Los pendientes se conservaron abiertos cuando la evidencia era solo local, HTTP, antigua o dependía de autenticación.
+
+## Seguimiento de perfil DEV combinado — 2026-11-08
+
+- El smoke no autenticado volvió a confirmar `404` para
+  `POST /api/phase3/agent-applications` en `cubitat1-phase2-dev`; la bandera
+  activa de notas antiguas no describe el runtime comprobado.
+- En la rama `bugfix/phase34-dev-profile` se preparó
+  `wrangler.phase34-dev.jsonc` con F2+F3 habilitadas, endpoint DEV y Supabase
+  DEV. El build reúne UI F3 con F4-SVC/REV/MAT/BIZ, excluye Valoración y exige
+  la clave pública DEV.
+- Estado: **preparado, aún no desplegado**. Faltan clave pública publishable/anon
+  DEV en la sesión de build, lint/tests/build, deploy con confirmación y smoke
+  HTTP más QA autenticado.
+- El deploy activa el cron F3 en DEV: verificar remitente/destinatario y
+  credenciales de correo, y observar la purga. No cambia producción ni ejecuta
+  migraciones.

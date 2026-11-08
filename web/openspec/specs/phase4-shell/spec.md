@@ -29,3 +29,13 @@ ni reglas comerciales.
   o valoración.
 - Moderación común se compone mediante adaptadores suministrados por cada
   módulo y autenticación AAL2 de plataforma.
+
+### Perfil combinado de QA DEV
+
+- El perfil `phase34-dev` MUST habilitar las UIs de Fase 3 y los módulos de
+  servicios, reseñas, materiales y beneficios manuales de Fase 4 en un solo
+  bundle DEV.
+- MUST apuntar únicamente al Worker y proyecto Supabase DEV, excluir Valoración
+  y rechazar el build si falta la clave pública de Supabase DEV.
+- La publicación DEV MUST pasar por confirmación interactiva y mantener intacta
+  la configuración de producción.

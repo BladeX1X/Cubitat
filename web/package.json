@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build && node scripts/verify-phase2-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs && node scripts/generate-sitemap.mjs",
     "build:phase2-dev": "tsc -b && node scripts/verify-phase2-dev-config.mjs && vite build --mode phase2-dev && node scripts/generate-sitemap.mjs --phase2-dev && node scripts/verify-phase2-dev-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
+    "build:phase34-dev": "tsc -b && node scripts/verify-phase34-dev-config.mjs && vite build --mode phase34-dev && node scripts/generate-sitemap.mjs --phase2-dev --static && node scripts/verify-phase2-dev-bundle.mjs && node scripts/verify-phase3-dev-bundle.mjs && node scripts/verify-phase4-dev-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-kyc": "tsc -b && vite build --mode phase2-kyc && node scripts/generate-sitemap.mjs && node scripts/verify-kyc-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-documents": "tsc -b && vite build --mode phase2-documents && node scripts/generate-sitemap.mjs && node scripts/verify-property-documents-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
     "build:phase2-production": "tsc -b && vite build --mode phase2-production && node scripts/generate-sitemap.mjs --require-dynamic && node scripts/verify-phase2-full-production-bundle.mjs && node scripts/verify-phase2-worker-bundle.mjs && node scripts/verify-private-secret-bundle.mjs",
@@ -35,7 +36,8 @@
     "seo:sitemap": "node scripts/generate-sitemap.mjs",
     "deploy": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase4-production && node scripts/confirm-deploy.mjs production && wrangler deploy --config wrangler.jsonc",
     "cf:deploy": "npm run deploy",
-    "deploy:phase2-dev": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-dev && node scripts/confirm-deploy.mjs phase2-dev && wrangler deploy --config wrangler.phase2-dev.jsonc"
+    "deploy:phase2-dev": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-dev && node scripts/confirm-deploy.mjs phase2-dev && wrangler deploy --config wrangler.phase2-dev.jsonc",
+    "deploy:phase34-dev": "npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase34-dev && node scripts/confirm-deploy.mjs phase34-dev && wrangler deploy --config wrangler.phase34-dev.jsonc"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",

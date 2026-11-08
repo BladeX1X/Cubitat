@@ -39,20 +39,31 @@ export default defineConfig(({ mode }) => {
   // Ignore Vite's ambient additional-host escape hatch; use the validated app setting.
   delete process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
   const env = loadEnv(mode, __dirname, '')
-  const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents'
+  const phase34DevBuild = mode === 'phase34-dev'
+  const phase2DevBuild = mode === 'phase2-dev' || mode === 'phase2-agents' || phase34DevBuild
   const phase2AgentConsentProduction = mode === 'phase2-agent-consent-production'
   const phase4Production = mode === 'phase4-production'
   const productionBuild = mode === 'phase2-production'
     || phase2AgentConsentProduction
     || mode === 'phase3-production'
     || phase4Production
-  const phase3UiEnabled = mode === 'phase3-production' || phase4Production || (phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true')
+  const phase3UiEnabled = phase34DevBuild || mode === 'phase3-production' || phase4Production || (phase2DevBuild && env.VITE_PHASE3_UI_ENABLED === 'true')
   const phase2UiEnabled = phase2DevBuild || productionBuild
   const agentWhatsappConsentUiEnabled = phase2AgentConsentProduction
     || phase3UiEnabled
     || (phase2DevBuild && env.VITE_AGENT_WHATSAPP_CONSENT_UI_ENABLED === 'true')
   const imageDuplicateModerationEnabled = phase2UiEnabled
-  const phase4Flags = resolvePhase4Flags({ phase4Production, phase2DevBuild, env })
+  const phase34DevEnv = phase34DevBuild
+    ? {
+        ...env,
+        VITE_PHASE4_SVC_ENABLED: 'true',
+        VITE_PHASE4_REV_ENABLED: 'true',
+        VITE_PHASE4_MAT_ENABLED: 'true',
+        VITE_PHASE4_BIZ_ENABLED: 'true',
+        VITE_PHASE4_VAL_ENABLED: 'false',
+      }
+    : env
+  const phase4Flags = resolvePhase4Flags({ phase4Production, phase2DevBuild, env: phase34DevEnv })
   const kycUiEnabled = phase2UiEnabled || mode === 'phase2-kyc'
   const propertyVerificationUiEnabled = phase2UiEnabled || mode === 'phase2-documents'
   const phase2SupabaseUrl = phase2DevBuild
@@ -65,6 +76,15 @@ export default defineConfig(({ mode }) => {
   const supabaseUrl =
     publicSupabaseUrl ||
     'http://127.0.0.1:54321'
+
+  if (phase34DevBuild) {
+    if (publicSupabaseUrl !== 'https://bknwerqbbysveehcdmzr.supabase.co') {
+      throw new Error('El perfil phase34-dev requiere el proyecto Supabase DEV bknwerqbbysveehcdmzr.')
+    }
+    if (!supabaseAnonKey) {
+      throw new Error('El perfil phase34-dev requiere VITE_SUPABASE_ANON_KEY del proyecto DEV; no uses la clave productiva.')
+    }
+  }
 
   if (mode === 'phase2-documents') {
     const productionSupabaseUrl = 'https://tohjzoncoosvjbjcakdl.supabase.co'

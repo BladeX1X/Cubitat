@@ -6,6 +6,7 @@ import { createInterface } from 'node:readline/promises'
 const confirmationPhrases = {
   production: 'DEPLOY PRODUCTION',
   'phase2-dev': 'DEPLOY DEV',
+  'phase34-dev': 'DEPLOY PHASE 3+4 DEV',
 }
 
 export async function confirmDeployment(target, input = stdin, output = stdout) {
@@ -13,7 +14,7 @@ export async function confirmDeployment(target, input = stdin, output = stdout) 
     ? confirmationPhrases[target]
     : undefined
   if (!expectedPhrase) {
-    throw new Error('Destino inválido. Usa production o phase2-dev.')
+    throw new Error('Destino inválido. Usa production, phase2-dev o phase34-dev.')
   }
 
   if (!input.isTTY || !output.isTTY) {

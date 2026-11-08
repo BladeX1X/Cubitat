@@ -1038,6 +1038,34 @@ web/.env.example
 
 ## Preparación de código para Fase 3
 
+### Perfil combinado para QA F3/F4 en DEV — 2026-11-08
+
+El endpoint
+`POST https://cubitat1-phase2-dev.pochiprats18.workers.dev/api/phase3/agent-applications`
+respondió 404 en la comprobación del 2026-11-08, confirmando que el runtime DEV
+no tenía activa la bandera F3. Se preparó el perfil explícito
+`wrangler.phase34-dev.jsonc` con `PHASE2_ENABLED=true`, `PHASE3_ENABLED=true`,
+el proyecto Supabase DEV y el origen DEV. `npm run build:phase34-dev` reúne las
+UIs F3 y los módulos F4 de servicios, reseñas, materiales y beneficios
+manuales; excluye Valoración y requiere `VITE_SUPABASE_ANON_KEY` del proyecto
+DEV.
+
+Desde `web` en PowerShell, configura la clave pública *publishable/anon de
+Supabase DEV* solo en la sesión actual y ejecuta:
+
+```powershell
+$env:VITE_SUPABASE_ANON_KEY = Read-Host "Clave pública publishable/anon de Supabase DEV"
+npm run build:phase34-dev
+npm run deploy:phase34-dev
+```
+
+El deploy repite lint, suite y build, requiere escribir
+`DEPLOY PHASE 3+4 DEV` y publica solo el Worker DEV. Al activar F3, las tareas
+cron DEV de correo de postulaciones y purga de documentos vencidos también
+quedan activas; revisar sus secretos y logs. Este perfil no ejecuta migraciones
+ni debe usarse para producción. Está preparado, no desplegado, hasta que pasen
+build y smoke DEV.
+
 El perfil candidato `phase3-production` genera la aplicación con módulos F3 y requiere la configuración pública de Supabase productivo. Comandos:
 
 - `npm run build:phase3-production` genera sitemap dinámico y verifica los bundles; requiere `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de producción.
