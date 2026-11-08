@@ -198,3 +198,7 @@ Guia del proyecto:
 - [x] **Extraer Header y Footer:** Separados en `components/layout/Header.tsx` y `components/layout/SiteFooter.tsx`, con cobertura del Header.
 - [ ] **React Router:** Evaluar migración cuando la cantidad de rutas crezca significativamente.
 - [ ] **Imágenes propias de provincias:** Reemplazar fotos de Unsplash de las 16 provincias por imágenes controladas del proyecto.
+
+## Cloudflare Workers Builds — DEV F3/F4
+
+El Worker `cubitat1-phase2-dev` se construye desde la rama `bugfix/phase34-dev-profile` con `npm run build:phase34-dev` y se publica usando `wrangler.phase34-dev.jsonc`. Esta rama es el despliegue DEV de ese Worker; no es la rama ni el Worker de producción. Los previews de otras ramas se mantienen desactivados.
