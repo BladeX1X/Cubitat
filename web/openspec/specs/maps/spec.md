@@ -5,6 +5,36 @@ Visualizar la ubicación de los inmuebles e integrar la búsqueda geográfica in
 
 ## Requirements
 
+### Requirement: Mapas agregados por provincia en Servicios y Materiales
+El sistema MUST permitir abrir opcionalmente un mapa agregado en los directorios
+de Servicios y Materiales. El mapa MUST usar conteos completos que respeten los
+filtros del catálogo excepto la provincia activa, y MUST aplicar la provincia
+seleccionada como filtro del catálogo. El mapa MUST ocultar coordenadas exactas y
+debe cargarse bajo demanda para no retrasar los catálogos.
+
+#### Scenario: Abrir mapa de catálogo
+- GIVEN el usuario está en el directorio de Servicios o Materiales
+- WHEN abre “Mostrar mapa”
+- THEN se carga MapLibre y se ven conteos agrupados por provincia para todos los
+  resultados que coinciden con los otros filtros
+- AND el mapa muestra una ubicación provincial aproximada, no direcciones
+
+#### Scenario: Filtrar desde un conteo provincial
+- GIVEN el mapa agregado muestra provincias con resultados
+- WHEN el usuario pulsa el número o el círculo de una provincia
+- THEN el directorio aplica el filtro provincial y actualiza tarjetas y total
+- AND el mapa conserva conteos calculados bajo los filtros restantes
+
+#### Scenario: Expandir conteos agrupados
+- GIVEN varias provincias están agrupadas en un cluster
+- WHEN el usuario pulsa el número o el círculo del cluster
+- THEN el mapa acerca la vista para separar los marcadores
+
+#### Scenario: Mapa cerrado o con error
+- GIVEN el mapa está cerrado o su estilo no carga
+- WHEN se usa el catálogo
+- THEN el catálogo y sus filtros siguen disponibles y el mapa permanece diferido
+
 ### Requirement: Ubicación Aproximada en Detalle de Propiedad
 El sistema MUST mostrar un mapa estático o interactivo reducido en la ficha de detalle de la propiedad para ubicar el inmueble sin revelar la dirección exacta por motivos de privacidad.
 
@@ -102,3 +132,27 @@ El build MUST incluir el worker de MapLibre y sus dependencias como recursos Jav
 - THEN la URL del worker MUST responder con JavaScript del build, no con `index.html`
 - AND MapLibre MUST cargar teselas vectoriales y dibujar el mapa base al acercar, además de los marcadores de propiedades
 - AND un fallo del worker MUST registrarse como error de recurso del mapa
+
+### Requirement: Mapa agregado responsive en catálogos
+El panel agregado de Servicios y Materiales MUST permanecer visible al abrirse
+en cualquier tamaño de pantalla. En pantallas estrechas MUST ocupar la ventana
+como diálogo modal, permitir cierre explícito y con Escape, y bloquear el scroll
+del documento mientras esté abierto. En escritorio MUST aparecer junto a los
+filtros y resultados, con altura de ventana y posición sticky. Los estados de
+carga y error MUST conservar el mismo comportamiento de cierre y no ocultar los
+catálogos en escritorio.
+
+#### Scenario: Abrir mapa en móvil
+- GIVEN el usuario abre el mapa desde Servicios o Materiales en una pantalla
+  estrecha
+- WHEN el mapa está cargando, listo o en error
+- THEN el panel ocupa la pantalla y ofrece un botón visible para cerrarlo
+- AND Escape cierra el panel y se restaura el scroll del documento
+
+#### Scenario: Abrir mapa en escritorio
+- GIVEN el usuario abre el mapa desde Servicios o Materiales en una pantalla
+  amplia
+- WHEN se muestran filtros, resultados y mapa
+- THEN las tres áreas aparecen simultáneamente
+- AND el panel del mapa mantiene su altura visible y acompaña el scroll con
+  posición sticky

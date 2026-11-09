@@ -6,7 +6,9 @@ Presenta anuncios publicados de materiales de construcción con filtros por
 texto del título, categoría, provincia y disponibilidad, detalle, precio
 declarado, consulta privada para el vendedor y acceso a solicitud de publicación.
 El catálogo pagina desde Supabase, muestra el total exacto de coincidencias y
-permite cargar más resultados sin limitar la búsqueda al primer bloque.
+permite cargar más resultados sin limitar la búsqueda al primer bloque. Un mapa
+opcional muestra anuncios disponibles agrupados por provincia y aplica esa
+provincia como filtro del catálogo.
 
 ## Reglas
 
@@ -17,6 +19,11 @@ permite cargar más resultados sin limitar la búsqueda al primer bloque.
   productiva actual no tiene columna `municipality`. No se simula el filtro en
   el navegador ni se afirma cobertura municipal para materiales hasta preparar
   y reconciliar una migración de base de datos.
+- El mapa se carga bajo demanda y cuenta todas las páginas que cumplen texto,
+  categoría y disponibilidad (sin agotados); no presenta direcciones ni
+  ubicaciones exactas y no ofrece un filtro municipal inexistente.
+- En móvil, mapa y estados de carga/error ocupan la pantalla y se cierran con el
+  botón o Escape; en escritorio aparecen junto al catálogo en un panel sticky.
 - La disponibilidad y el precio son declaraciones del vendedor, no garantía,
   reserva ni oferta contractual.
 - Las consultas requieren cuenta autenticada y no crean órdenes ni pagos.

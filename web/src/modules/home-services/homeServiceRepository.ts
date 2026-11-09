@@ -1,6 +1,7 @@
 import { HOME_SERVICE_CATEGORIES, type HomeServiceCategory, type HomeServiceProvider, type OwnedHomeServiceProvider } from './types'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { aggregateProvinceCounts } from '../marketplace/provinceAggregates'
 
 type ProviderRow = {
   id: unknown
@@ -88,6 +89,33 @@ export async function fetchHomeServiceProviders(filters: {
     return { items: (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null), total: count ?? 0 }
   } catch (error) {
     return logLoadFailure('fetch_provider_list_exception', error)
+  }
+}
+
+export async function fetchHomeServiceProvinceCounts(filters: {
+  category?: HomeServiceCategory
+  municipality?: string
+  search?: string
+} = {}): Promise<{ province: string; count: number }[]> {
+  try {
+    const rows: { province: string }[] = []
+    const pageSize = 1000
+    for (let offset = 0; ; offset += pageSize) {
+      let query = supabase.from('home_service_providers').select('province', { count: 'exact' })
+        .eq('status', 'published').order('province').range(offset, offset + pageSize - 1)
+      if (filters.category) query = query.eq('category', filters.category)
+      if (filters.municipality) query = query.contains('municipalities', [filters.municipality])
+      const search = filters.search?.trim().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ')
+      if (search) query = query.or(`display_name.ilike.%${search}%,description.ilike.%${search}%`)
+      const { data, error, count } = await query
+      if (error) return logLoadFailure('fetch_provider_province_counts', error)
+      const page = (Array.isArray(data) ? data : []).filter((row): row is { province: string } => isRecord(row) && typeof row.province === 'string')
+      rows.push(...page)
+      if (page.length < pageSize || rows.length >= (count ?? 0)) break
+    }
+    return aggregateProvinceCounts(rows)
+  } catch (error) {
+    return logLoadFailure('fetch_provider_province_counts_exception', error)
   }
 }
 

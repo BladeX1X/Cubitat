@@ -2,6 +2,7 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { MATERIAL_AVAILABILITIES, MATERIAL_CATEGORIES, MATERIAL_CURRENCIES, type MaterialCategory, type MaterialCurrency, type MaterialListing, type OwnedMaterialListing } from './types'
 import { isMaterialPhotoPath, isMaterialPhotoReference, materialPhotoExtension, MATERIAL_PHOTO_BUCKET, validateMaterialPhotoFiles } from './materialPhotos'
+import { aggregateProvinceCounts } from '../marketplace/provinceAggregates'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -111,6 +112,33 @@ export async function fetchMaterialListings(filters: {
     return { items: await signMaterialPhotos(listings, true), total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
+  }
+}
+
+export async function fetchMaterialProvinceCounts(filters: {
+  category?: MaterialCategory
+  availability?: Exclude<MaterialListing['availability'], 'out_of_stock'>
+  search?: string
+} = {}): Promise<{ province: string; count: number }[]> {
+  try {
+    const rows: { province: string }[] = []
+    const pageSize = 1000
+    for (let offset = 0; ; offset += pageSize) {
+      let query = supabase.from('material_listings').select('province', { count: 'exact' })
+        .eq('status', 'published').neq('availability', 'out_of_stock').order('province').range(offset, offset + pageSize - 1)
+      if (filters.category) query = query.eq('category', filters.category)
+      if (filters.availability) query = query.eq('availability', filters.availability)
+      const search = filters.search?.trim().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ')
+      if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+      const { data, error, count } = await query
+      if (error) return throwLoadError('fetch_material_province_counts', error)
+      const page = (Array.isArray(data) ? data : []).filter((row): row is { province: string } => isRecord(row) && typeof row.province === 'string')
+      rows.push(...page)
+      if (page.length < pageSize || rows.length >= (count ?? 0)) break
+    }
+    return aggregateProvinceCounts(rows)
+  } catch (error) {
+    return throwLoadError('fetch_material_province_counts_exception', error)
   }
 }
 
