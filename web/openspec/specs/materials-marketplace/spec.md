@@ -55,8 +55,11 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   Comprar/Rentar; en móvil el mapa ocupa la pantalla y se puede cerrar. El
   acceso al mapa queda en un botón flotante fijo, accesible al desplazarse por
   el catálogo; al abrirlo en móvil, el propio mapa ofrece el cierre.
-- En escritorio, con el mapa cerrado, los filtros aparecen en una columna
-  lateral junto a los anuncios; en móvil se apilan antes del catálogo.
+- Los filtros se presentan en una barra compacta sobre resultados con el patrón
+  visual de Comprar. En escritorio se distribuyen en una fila; a menor ancho
+  pasan a dos columnas y en móvil a una, sin quitar las opciones propias de
+  Materiales. El desplazamiento horizontal de controles estrechos ocurre dentro
+  de la barra fija para que esta siga visible mientras se desplaza la página.
 
 ## Contrato de imágenes
 

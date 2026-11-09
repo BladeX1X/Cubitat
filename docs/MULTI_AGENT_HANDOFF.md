@@ -4214,3 +4214,65 @@ npm run build había corrido después de build:phase2-dev; F3 no quedaba en la a
 - Revalidación local de cierre: `npm run lint`, `npm run test:run` (196 archivos, 882 aprobadas, 1 omitida) y `npm run build`: PASS. El build estándar confirma el bundle de producción y no demuestra que el historial esté desplegado en DEV.
 - La política remota de `agent_application_events` exige `is_admin_aal2()` para lectura; anon/public no tienen SELECT. No se cambiaron permisos ni datos.
 - Estado sigue local hasta integrar a la rama que alimenta el Worker DEV y confirmar build, versión activa y consulta de la nota con admin AAL2. Producción intacta.
+
+### Verificación de bundle DEV — 2026-11-08
+
+- Confirmado por HTTP público: `/moderar` y el chunk `/assets/AgentApplicationsModerationTab-CyxjcX8Q.js` responden 200; el chunk contiene «Historial privado de rechazos» y «Nota interna».
+- Esto prueba que la interfaz llegó al Worker DEV; no prueba lectura de datos ni renderizado en sesión AAL2. La cola debe contener una postulación sintética rechazada para cerrar la inspección visual del moderador.
+- Esta evidencia supersede las notas anteriores de este archivo que describían este módulo de historial como solo local o pendiente de despliegue; no certifica otros endpoints ni todos los flujos F3.
+- Privacidad esperada: la nota queda solo para moderación AAL2; Mi cuenta muestra estado genérico. Producción y datos de Supabase sin cambios.
+### F4 public catalogs DEV vs production — 2026-11-08
+
+- Read-only HTTP checks: `/servicios` and `/materiales` plus their deployed bundles return 200 in both environments.
+- Public exact counts using directory visibility rules: DEV has 100 published Services and 13 eligible Materials; production has 0 rows in each queried F4 catalog table. This is a data-availability difference, not evidence of an asset/deployment failure.
+- Current UI pagination is batches of 24 with “Cargar más”. Search/filter behavior and count-to-card consistency still need interactive QA in DEV.
+- No production rows or statuses were changed. Follow-up: test zero/one/multiple-page filter cases in DEV; separately decide whether production should receive F4 listings.
+
+## QA F3 — privacidad del comentario del moderador — 2026-11-08
+
+- En navegador DEV, la cuenta solicitante mostró estado genérico sin comentario; con sesión admin AAL2, el historial privado mostró las notas internas de dos postulaciones rechazadas.
+- No se cambiaron solicitudes ni documentos; producción y Supabase no se modificaron.
+- La prueba de privacidad queda verificada en DEV. Continúa pendiente probar una aprobación sintética y sus efectos de rol/plaza/estado.
+- Este resultado supersede las notas anteriores de esta bitácora que dejaban pendiente la vista del historial AAL2; no cierra los demás flujos autenticados de F3.
+
+## QA F4 — filtros de Materiales en DEV — 2026-11-08
+
+- Interacción en navegador DEV: categoría Cemento devuelve 2 anuncios; con filtros limpios, Disponible devuelve 7, Disponibilidad limitada 3 y Por encargo 3.
+- “Limpiar filtros” restaura la vista general con 13 anuncios y los controles en sus valores iniciales.
+- Paginación de más de 24 anuncios no se puede validar con el catálogo actual. Siguen pendientes combinaciones de provincia/municipio y el filtro municipal tras reconciliar su migración.
+- Prueba de solo lectura; no se alteraron registros ni se tocó producción.
+
+## QA F4 — filtros de Servicios en DEV — 2026-11-08
+
+- En el navegador DEV se comprobaron categoría Electricidad, provincia La Habana y municipio Centro Habana; la selección municipal dejó 1 ficha con ubicación compatible.
+- La búsqueda «Electricidad doméstica» conservó esa ficha y su combinación con Plomería mostró correctamente cero resultados.
+- «Limpiar filtros» restauró todos los controles y mostró 100 profesionales disponibles.
+- «Cargar más profesionales» añadió una segunda tanda de tarjetas. Queda pendiente contrastar el total de fichas cargadas con el contador y observar la última tanda/ocultación del botón.
+- Solo lectura; no se tocaron anuncios, base de datos ni producción. Responsive, error/reintento y filtros restantes continúan pendientes.
+
+## F4 — integración responsive del mapa SVC/MAT — 2026-11-09
+
+- Rama `bugfix/phase34-dev-profile`: mapa provincial compartido reanudado para ambos catálogos, con carga diferida y selección vinculada al filtro de provincia.
+- Se corrigió el overlay en móvil y la visibilidad del mapa/estados en escritorio; Escape y cierre explícito restauran el scroll.
+- Lint, suite, build, despliegue DEV y QA visual de ambos módulos aún pendientes. Producción no se tocó.
+
+#### Actualización de despliegue DEV — 2026-11-09
+
+- La integración SVC/MAT ya está desplegada en Worker DEV `cubitat1-phase2-dev`, versión `7edc353e-7544-4167-b29a-957912ff745f`.
+- Lint, suite (197 archivos, 884 aprobadas, 1 omitida) y build `phase34-dev`: PASS. Smoke HTTP y bundles de `/servicios` y `/materiales`: 200 y lanzador de mapa presente.
+- Pendiente QA visual/funcional móvil y escritorio (selección, cierre/Escape, scroll y estados de carga/error). No se cambió producción ni Supabase.
+
+
+### 2026-11-09 — actualización posterior del mapa SVC/MAT en DEV
+
+- Esta versión de Worker reemplaza la versión `7edc353e-7544-4167-b29a-957912ff745f` anotada arriba: `b9fa6510-abe1-4cc9-b47d-6f13e0d45cda`.
+- Corregida la selección del mapa para aceptar clics en círculos y etiquetas numéricas; los grupos acercan el mapa y las provincias aplican el filtro del catálogo.
+- Lint, suite (198 archivos, 888 aprobadas, 1 omitida) y build `phase34-dev`: PASS. Rutas públicas 200 y chunk del mapa idéntico al artefacto local.
+- Falta QA visual post-despliegue para confirmar filtro/zoom en navegador. Producción y Supabase intactas.
+
+### 2026-11-09 — estructura tipo Comprar para Servicios y Materiales
+
+- Implementada localmente una composición compartida de barra de filtros, catálogo/mapa y controles flotantes; cada directorio mantiene sus filtros propios.
+- Lint y build `phase34-dev` PASS; verificadores de bundle/secretos PASS. Suite completa: 199 archivos PASS; 890 pruebas PASS y 1 omitida.
+- Desplegada en Worker DEV `cubitat1-phase2-dev`, versión `87febe0a-8e00-40e4-82f8-0727935295d7`. `/servicios`, `/materiales`, sus módulos y el chunk del mapa responden HTTP 200.
+- Pendiente QA visual/funcional responsive (composición, filtros, mapa y botones flotantes). Producción y Supabase intactas.

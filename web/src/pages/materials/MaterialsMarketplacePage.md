@@ -22,8 +22,11 @@ provincia como filtro del catálogo.
 - El mapa se carga bajo demanda y cuenta todas las páginas que cumplen texto,
   categoría y disponibilidad (sin agotados); no presenta direcciones ni
   ubicaciones exactas y no ofrece un filtro municipal inexistente.
-- En escritorio, los filtros permanecen en un panel lateral tanto con el mapa
-  abierto como cerrado; en pantallas menores se apilan antes del catálogo.
+- La barra de filtros reutiliza el patrón de Comprar: controles compactos en
+  una fila arriba del catálogo y saltos a dos columnas o una columna según el
+  ancho disponible. En desplazamiento de página permanece fija bajo el
+  encabezado; en anchos reducidos, solo su contenido se desplaza horizontalmente.
+  Categoría, provincia y disponibilidad siguen siendo propios de Materiales.
 - En móvil, mapa y estados de carga/error ocupan la pantalla y se cierran con el
   botón o Escape; en escritorio, al activar “Mostrar mapa”, filtros y tarjetas
   quedan en la columna izquierda y el mapa fijo al viewport en la derecha,

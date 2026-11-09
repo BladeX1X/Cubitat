@@ -44,8 +44,11 @@ calidad del trabajo.
   Comprar/Rentar; en móvil el mapa ocupa la pantalla y se puede cerrar. El
   acceso al mapa queda en un botón flotante fijo, accesible al desplazarse por
   el directorio; al abrirlo en móvil, el propio mapa ofrece el cierre.
-- En escritorio, con el mapa cerrado, los filtros aparecen en una columna
-  lateral junto a los resultados; en móvil se apilan antes del catálogo.
+- Los filtros se presentan en una barra compacta sobre resultados con el patrón
+  visual de Comprar. En escritorio se distribuyen en una fila; a menor ancho
+  pasan a dos columnas y en móvil a una, sin quitar las opciones propias de
+  Servicios. El desplazamiento horizontal de controles estrechos ocurre dentro
+  de la barra fija para que esta siga visible mientras se desplaza la página.
 - Las galerías cargan miniaturas optimizadas y diferidas.
 - Reseñas son una extensión opcional especificada en
   `phase4-review-reputation/spec.md`; el directorio sigue funcionando apagada.

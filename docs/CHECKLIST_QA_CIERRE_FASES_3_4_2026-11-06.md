@@ -14,19 +14,33 @@ Estado: lista de trabajo; no es una certificación de cierre.
 - [x] Estado real de postulación en Mi cuenta verificado en captura del usuario: “Postulación no aprobada” y CTA “Volver a postularme”.
 - [x] Smoke HTTP post-release de home, Mi cuenta, Servicios, Materiales y SEO: 200; assets de estado y módulos F4: 200.
 - [x] Gates locales del arreglo actual: lint, suite y build pasan; el detalle está en `docs/MULTI_AGENT_HANDOFF.md`.
-- [ ] El diagnóstico seguro del envío de postulaciones continúa local. El aviso de fotos Materiales ya está publicado en DEV. La normalización de enlaces privados de documentos ya está publicada en DEV, y el usuario confirmó apertura del CV y el título con sesión admin AAL2 en DEV; falta comprobar expiración.
+- [x] El diagnóstico seguro del envío de postulaciones está publicado en DEV: el bundle identifica fallos de Storage y persistencia con códigos seguros. Esto verifica el artefacto servido, no un envío end-to-end; siguen pendientes el envío sintético, el tratamiento real del error y el reintento sin duplicados. El aviso de fotos de Materiales y la normalización de enlaces privados también están publicados; falta comprobar expiración de enlaces.
 
 ## Orden recomendado de pruebas
 
 ### Historial privado de motivos de rechazo — DEV — 2026-11-08
 
+> Snapshot inicial supersedido por la rectificación y evidencia autenticada que aparecen a continuación.
+
 - [x] Implementación local: Postulaciones en Moderación incluye historial paginado de rechazos y muestra la nota como interna.
 - [x] Pruebas locales de componente, lint, suite completa y build estándar: PASS (196 archivos; 882 aprobadas, 1 omitida).
 - [x] Regresión de Mi cuenta: la prueba incluye deliberadamente una nota interna en el objeto de respuesta y confirma que el solicitante solo ve el estado (882 pruebas aprobadas).
-- [ ] Ejecutar `build:phase34-dev` con variables públicas del proyecto Supabase DEV y publicar únicamente en el Worker DEV.
-- [ ] Con AAL2, verificar que Moderación carga la nota y, con la cuenta solicitante, verificar que no aparece. Usar solo datos sintéticos.
+- [x] La versión DEV desplegada incluye el historial; la verificación visual autenticada se completó después de este snapshot.
+- [x] En navegador, la vista del moderador AAL2 mostró notas internas de dos postulaciones rechazadas; Mi cuenta del solicitante mantiene el estado genérico.
 
-El build estándar pasó, pero no sustituye `build:phase34-dev`. Aún no se desplegó este cambio ni se hizo la comprobación autenticada. Usar únicamente la configuración pública del proyecto DEV; no reutilizar una clave de producción.
+Esta sección registra el estado inicial y queda supersedida: el despliegue y la comparación de privacidad ya se comprobaron en DEV. No se modificaron solicitudes durante la comprobación.
+
+### Rectificación — Historial privado de rechazos en DEV — 2026-11-08
+
+- [x] La sección de historial presenta el motivo como nota interna en la vista de Moderación; la tarjeta de Mi cuenta consulta únicamente `agent_applications.status`.
+- [x] RLS limita la lectura de `agent_application_events` a sesiones admin AAL2.
+- [x] Pruebas focales locales: 2 archivos, 22 pruebas aprobadas; la cuenta solicitante no muestra el texto del motivo incluido deliberadamente en la respuesta de prueba.
+- [x] Worker DEV `cubitat1-phase2-dev` activo en versión `dcf754bc-d5aa-44d2-9069-1cc510a8d0ec` (100% del tráfico, despliegue automático del 2026-11-09T00:47:32Z).
+- [x] Smoke anónimo DEV: home 200; GET al endpoint de ingreso de postulaciones 405; GET a la ruta privada de documentos de una solicitud 401. Esto confirma las rutas y el rechazo sin sesión, pero no sustituye QA autenticado.
+- [x] En navegador DEV, Mi cuenta muestra «Postulación no aprobada» y el texto genérico «Puedes revisar los requisitos y enviar una nueva postulación»; el comentario del moderador no aparece al solicitante.
+- [x] En navegador DEV, con sesión de moderador AAL2, se abrió «Historial privado de rechazos» y se vieron las notas internas de dos solicitudes rechazadas.
+
+La comparación visual confirma que la nota es solo para moderación: el postulante recibe el estado genérico y el moderador AAL2 ve la nota en el historial privado. No se alteraron solicitudes ni documentos. Producción y Supabase no se modificaron en esta comprobación.
 
 ### 1. F3 — postulación de agente en DEV
 
@@ -49,11 +63,20 @@ El build estándar pasó, pero no sustituye `build:phase34-dev`. Aún no se desp
 - [ ] Verificar estados de outbox: reclamado, enviado, reintento y fallo; asegurar que un reintento no mande duplicados.
 - [ ] Confirmar en DEV la purga programada de CV/título **30 días después de la decisión**, con filas de QA vencidas/sintéticas; comprobar resultado en Storage y estado de purga sin abrir/copiar documentos.
 - [ ] Confirmar que el bucket sigue privado, que una sesión no autorizada recibe 401/403 y que ningún log o mensaje revela URL firmada, ruta o contenido del archivo.
-- [ ] Revisar visualmente los mensajes de error de postulación después de desplegar el diagnóstico local a DEV.
+- [ ] QA visual de los mensajes de error de postulación en DEV; el diagnóstico ya está desplegado, pero falta provocar una falla sintética y revisar la presentación.
 
 ### 3. F3 — negocio todavía provisional
 
-- [ ] Documentar la matriz provisional de prestaciones gratis/de pago y dejar claro que no cobra ni bloquea automáticamente.
+- [x] Matriz provisional documentada: durante esta etapa, las prestaciones de agente existentes se consideran disponibles sin cobro ni bloqueo automático. No hay todavía una asignación definitiva de funciones gratis/de pago; suscripción, pagos y comisiones siguen pendientes de decisión e implementación. No presentar ingresos como liquidados.
+
+| Prestación | Tratamiento provisional | Límite de esta decisión |
+| --- | --- | --- |
+| Panel y herramientas de agente ya implementadas | Sin cobro ni bloqueo por suscripción | Se mantienen los requisitos de rol/aprobación ya existentes. |
+| Publicaciones y gestión de cartera del agente | Sin cobro automático ni paywall nuevo | Aplican moderación y reglas actuales del producto. |
+| Contactos, métricas y referidos ya implementados | Sin cobro automático ni paywall nuevo | No se prometen métricas, cupos ni beneficios aún no validados. |
+| Suscripciones, pagos y comisiones | No activar; pendiente | Requiere definir precios, prestaciones, ciclo de cobro, reembolsos y conciliación. |
+
+Esta tabla es provisional y evita introducir cargos o bloqueos mientras se define el modelo comercial; no constituye el catálogo final de planes.
 - [ ] Revisar atribución de referidos al alta y al agente en una prueba sintética; documentar duplicados, autorreferidos y ausencia de código.
 - [ ] Mantener pagos, suscripciones y ledger recurrente de comisiones como pendientes de definición e implementación; no activar cobros ni presentar ingresos como liquidados.
 
@@ -116,3 +139,72 @@ Marcar una casilla solo después de observar el resultado en el entorno indicado
 - La versión 6dda33ad-0bde-4557-8bb7-3ca991c48370 fue reemplazada: se había desplegado el dist productivo y faltaban módulos F3.
 - Versión vigente 24e554d3-e2d4-4808-bcf1-b321ab0ad39d, recompilada con uild:phase2-dev; Mi cuenta, Postulación, Servicios y Materiales dan 200 y el entrypoint referencia sus chunks.
 - Producción/Supabase intactos. Recargar DEV con Ctrl+F5 o refrescar caché PWA si se ve la versión anterior.
+
+### Verificación de bundle DEV — 2026-11-08
+
+- Confirmado por HTTP público: `/moderar` y el chunk `/assets/AgentApplicationsModerationTab-CyxjcX8Q.js` responden 200; el chunk contiene «Historial privado de rechazos» y «Nota interna».
+- En el momento de esta comprobación HTTP aún faltaba inspeccionar los datos en sesión; el pendiente quedó cerrado después con la verificación autenticada de dos notas que consta arriba.
+- Esta evidencia supersede las notas anteriores de este archivo que describían este módulo de historial como solo local o pendiente de despliegue; no certifica otros endpoints ni todos los flujos F3.
+- Privacidad esperada: la nota queda solo para moderación AAL2; Mi cuenta muestra estado genérico. Producción y datos de Supabase sin cambios.
+### Catálogos F4 — comparación de datos públicos DEV/producción — 2026-11-08
+
+- [x] Se comprobaron por HTTP las rutas `/servicios` y `/materiales` y sus bundles actuales: responden 200 en DEV y producción.
+- [x] Consulta pública de solo lectura, con los filtros que usa el directorio (`status=published`; Materiales excluye `out_of_stock`) y conteo exacto: DEV devuelve 100 servicios y 13 materiales; producción devuelve 0 servicios y 0 materiales en las tablas F4 consultadas.
+- [x] El código servido incluye los directorios F4. La implementación pagina en lotes de 24 y presenta «Cargar más»; esto no equivale a validar todavía todos los filtros ni el total mostrado en cada combinación.
+- [ ] Determinar si producción debe tener anuncios F4 públicos. No insertar datos ni cambiar estados de producción sin autorización explícita y un conjunto de anuncios/medios acordado.
+- [ ] Continuar la prueba de filtros en DEV con valores que produzcan cero, una y varias páginas, y contrastar conteos con las tarjetas visibles.
+
+### F4 — filtros del catálogo de Materiales comprobados en DEV — 2026-11-08
+
+- [x] Sin filtros, el directorio muestra 13 anuncios; categoría Cemento muestra 2 y los dos corresponden a Cemento.
+- [x] Disponibilidad: Disponible muestra 7, Disponibilidad limitada muestra 3 y Por encargo muestra 3; las tarjetas visibles corresponden al estado seleccionado.
+- [x] Limpiar filtros restablece categoría, provincia y disponibilidad y devuelve los 13 anuncios.
+- [ ] No se pudo validar paginación de varias páginas: 13 registros son menos que el tamaño de lote de 24. Probarla cuando DEV tenga más de 24 publicaciones sintéticas.
+- [ ] Siguen pendientes los casos combinados de provincia/municipio y el filtro municipal, sujeto a reconciliar la migración de ubicación.
+- Alcance: solo lectura e interacción de filtros en DEV. No se crearon ni alteraron publicaciones; producción y Supabase permanecen intactos.
+
+## QA F4 — filtros y carga progresiva de Servicios en DEV — 2026-11-08
+
+- [x] Categoría Electricidad: los resultados se limitaron a anuncios de esa categoría.
+- [x] Provincia La Habana habilitó municipios; al elegir Centro Habana quedó 1 profesional y la ficha indicaba Centro Habana, Cerro · La Habana.
+- [x] Búsqueda «Electricidad doméstica» mantuvo el resultado coincidente; combinarla con Plomería produjo el estado vacío esperado.
+- [x] «Limpiar filtros» restableció categoría, provincia, municipio y búsqueda; el directorio volvió a mostrar 100 profesionales disponibles.
+- [x] «Cargar más profesionales» anexó otra tanda de tarjetas sin recargar la página. La UI mantuvo el total disponible en 100.
+- [ ] Pendiente contrastar el número exacto de tarjetas con el total y probar que la última tanda oculta el botón; la comprobación solo observó que el control cargaba más resultados.
+- [ ] Responsive, estados de error/reintento, filtros restantes y autenticación todavía pendientes.
+- Alcance: navegación pública de solo lectura en Worker DEV `cubitat1-phase2-dev`; no se alteraron publicaciones, Supabase ni producción.
+
+## F4 — mapa provincial responsive en Servicios y Materiales — 2026-11-09
+
+- [x] Se recuperó en la rama DEV la experiencia local del mapa agregado compartido: carga diferida, conteos por provincia y selección que filtra el catálogo, sin revelar coordenadas individuales.
+- [x] Se corrigió la composición responsive de ambos directorios: escritorio muestra filtros, resultados y mapa en columnas; móvil abre el mapa y sus estados de carga/error como panel de pantalla completa, con cierre por botón/Escape y bloqueo/restauración del scroll.
+- [x] Gates locales: lint y build `phase34-dev` PASS; `test:run` PASS (197 archivos, 884 aprobadas, 1 omitida). Bundles phase2/3/4 y verificación de secretos PASS.
+- [x] Desplegado en Worker DEV `cubitat1-phase2-dev`, versión `7edc353e-7544-4167-b29a-957912ff745f`; producción intacta.
+- [x] Smoke HTTP de `/servicios` y `/materiales`: ambos 200; sus bundles incluyen el lanzador y el mapa provincial diferido.
+- [ ] QA visual/funcional en viewport móvil y escritorio: abrir mapa, selección provincial, cierre/Escape, scroll y estados de carga/error. Producción intacta.
+
+
+### Retest del clic en mapa provincial — DEV — 2026-11-09
+
+- La selección provincial reconoce clics tanto en círculos como en etiquetas numéricas; tocar un grupo acerca el mapa al grupo y tocar una provincia aplica su filtro.
+- Gates: `npm run lint` PASS; `npm run test:run -- --maxWorkers=2` PASS (198 archivos, 888 aprobadas, 1 omitida); `npm run build:phase34-dev` PASS.
+- Worker DEV `cubitat1-phase2-dev`, versión `b9fa6510-abe1-4cc9-b47d-6f13e0d45cda`. `/servicios` y `/materiales` responden HTTP 200; el chunk del mapa remoto coincide byte por byte con el local.
+- [ ] Pendiente confirmar visualmente tras el despliegue el filtro provincial y el zoom de grupos. Producción y Supabase intactas; el smoke HTTP no demuestra interacción visual.
+
+- [x] 2026-11-09 — Verificación live adicional: /servicios y /materiales en el Worker DEV devuelven HTTP 200; los bundles de ambos directorios y ProvinceAggregateMap coinciden byte por byte con web/dist local. El mapa está desplegado en DEV; la interacción visual en móvil/escritorio continúa pendiente. Producción y Supabase intactas.
+- [x] 2026-11-09 — Pruebas focales del mapa en DEV/local: `provinceAggregates.test.ts` y `provinceMapInteractions.test.ts`, 2 archivos y 6 pruebas PASS. La QA visual responsive sigue abierta.
+
+## Diseño compartido de Comprar en Servicios y Materiales — 2026-11-09
+
+- [x] Implementada localmente una estructura compartida para la barra de filtros, el catálogo/mapa y los controles flotantes, reutilizando el patrón de Comprar y conservando los filtros específicos de cada directorio.
+- [x] Lint y build `phase34-dev` PASS; verificadores del bundle Phase 2/3/4 y secretos PASS. Suite completa: 199 archivos PASS; 890 pruebas PASS y 1 omitida.
+- [x] Desplegada en Worker DEV `cubitat1-phase2-dev`, versión `87febe0a-8e00-40e4-82f8-0727935295d7`.
+- [x] Smoke HTTP: `/servicios`, `/materiales`, bundles de ambos directorios y chunk compartido del mapa responden 200.
+- [ ] Pendiente QA visual/funcional en escritorio y móvil: disposición tipo Comprar, filtros, mapa y controles flotantes.
+- Alcance: DEV solamente; producción y Supabase intactas.
+## F4 — persistencia de barra de filtros en Servicios y Materiales — 2026-11-09
+
+- [x] Causa localizada: `overflow-x: auto` estaba aplicado al mismo elemento sticky y hacía que la barra dejara de seguir el desplazamiento de la página.
+- [x] Corrección implementada localmente: el wrapper sticky queda separado del carril que permite desplazamiento horizontal.
+- [x] Lint, suite completa y build general PASS (891 pruebas aprobadas, 1 omitida).
+- [ ] Build `phase34-dev` y verificación visual en DEV pendientes: el perfil no compila en este entorno sin `VITE_SUPABASE_ANON_KEY` del proyecto DEV. No se desplegó este cambio; producción y Supabase intactas.

@@ -24,8 +24,11 @@ definir el flujo de pausa/revisión.
 - El mapa se carga bajo demanda y usa conteos de todas las páginas que cumplen
   texto, categoría y municipio; seleccionar una provincia aplica el filtro del
   catálogo. El mapa muestra ubicaciones provinciales aproximadas, no domicilios.
-- En escritorio, los filtros permanecen en un panel lateral tanto con el mapa
-  abierto como cerrado; en pantallas menores se apilan antes del catálogo.
+- La barra de filtros reutiliza el patrón de Comprar: controles compactos en
+  una fila arriba del catálogo y saltos a dos columnas o una columna según el
+  ancho disponible. En desplazamiento de página permanece fija bajo el
+  encabezado; en anchos reducidos, solo su contenido se desplaza horizontalmente.
+  Categoría, provincia y municipio siguen siendo propios de Servicios.
 - En móvil, mapa y estados de carga/error ocupan la pantalla y se cierran con el
   botón o Escape; en escritorio, al activar “Mostrar mapa”, filtros y tarjetas
   quedan en la columna izquierda y el mapa fijo al viewport en la derecha,

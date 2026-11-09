@@ -5,11 +5,12 @@ type MarketplaceMapToggleProps = {
   open: boolean
   mapId: string
   onToggle: () => void
+  className?: string
 }
 
-export function MarketplaceMapToggle({ open, mapId, onToggle }: MarketplaceMapToggleProps) {
+export function MarketplaceMapToggle({ open, mapId, onToggle, className = '' }: MarketplaceMapToggleProps) {
   return (
-    <div className="marketplace-map-floating-actions" aria-label="Acciones del mapa">
+    <div className={`marketplace-map-floating-actions ${className}`.trim()} aria-label="Acciones del mapa">
       <Button
         type="button"
         variant="secondary"
