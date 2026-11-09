@@ -8,12 +8,14 @@ import {
   fetchAgentApplicationDocumentLinks,
   fetchActiveAgentsForModeration,
   fetchPendingAgentApplications,
+  fetchRejectedAgentApplicationEvents,
   reviewAgentApplication,
   revokeAgentAccess,
   AGENT_APPLICATIONS_PAGE_SIZE,
   type AgentApplicationDocumentLinks,
   type ActiveAgent,
   type PendingAgentApplication,
+  type RejectedAgentApplicationEvent,
 } from './agentApplicationsRepository'
 
 const SIGNED_LINK_LIFETIME_MS = 120_000
@@ -36,6 +38,12 @@ export function AgentApplicationsModerationTab() {
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [rejectionEvents, setRejectionEvents] = useState<RejectedAgentApplicationEvent[]>([])
+  const [historyPage, setHistoryPage] = useState(0)
+  const [historyTotal, setHistoryTotal] = useState(0)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const [activeAgents, setActiveAgents] = useState<ActiveAgent[]>([])
   const [agentsLoading, setAgentsLoading] = useState(true)
   const [agentsError, setAgentsError] = useState<string | null>(null)
@@ -71,6 +79,27 @@ export function AgentApplicationsModerationTab() {
 
   useEffect(() => { void load(page) }, [load, page])
   useEffect(() => { void loadActiveAgents() }, [loadActiveAgents])
+
+  async function loadRejectionHistory(targetPage: number, append = false) {
+    setHistoryLoading(true)
+    setHistoryError(null)
+    try {
+      const result = await fetchRejectedAgentApplicationEvents(targetPage)
+      setRejectionEvents((current) => append ? [...current, ...result.items] : result.items)
+      setHistoryTotal(result.total)
+      setHistoryPage(targetPage)
+    } catch (cause: unknown) {
+      setHistoryError(cause instanceof Error ? cause.message : 'No se pudo cargar el historial de rechazos.')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  function toggleRejectionHistory() {
+    const nextOpen = !historyOpen
+    setHistoryOpen(nextOpen)
+    if (nextOpen && rejectionEvents.length === 0 && !historyLoading) void loadRejectionHistory(0)
+  }
 
   async function showDocuments(application: PendingAgentApplication) {
     setLoadingDocumentsId(application.id)
@@ -222,6 +251,28 @@ export function AgentApplicationsModerationTab() {
         })}
       </div>}
       {!loading && !error && total > 0 && <AdminPagination page={page} total={total} pageSize={AGENT_APPLICATIONS_PAGE_SIZE} itemLabel="postulaciones" onPageChange={setPage} />}
+      <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm" aria-labelledby="agent-rejection-history-title">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 id="agent-rejection-history-title" className="font-semibold text-neutral-900">Historial privado de rechazos</h3>
+            <p className="mt-1 text-sm text-neutral-600">Los motivos solo son visibles para moderación autorizada.</p>
+          </div>
+          <Button type="button" variant="outline" aria-expanded={historyOpen} onClick={toggleRejectionHistory}>
+            {historyOpen ? 'Ocultar historial' : 'Ver historial'}
+          </Button>
+        </div>
+        {historyOpen && <div className="mt-4 space-y-3">
+          {historyError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{historyError} <button type="button" className="ml-1 font-semibold underline" onClick={() => void loadRejectionHistory(0)}>Reintentar</button></p>}
+          {historyLoading && <p role="status" className="text-sm text-neutral-600">Cargando historial...</p>}
+          {!historyLoading && !historyError && rejectionEvents.length === 0 && <p className="rounded-xl bg-neutral-50 p-3 text-sm text-neutral-600">No hay rechazos registrados.</p>}
+          {rejectionEvents.map((event, index) => <article key={`${event.application_id}-${event.created_at}-${index}`} className="rounded-xl border border-neutral-200 p-3">
+            <h4 className="font-semibold text-neutral-900">{event.agent_applications.education_title}</h4>
+            <p className="mt-1 text-sm text-neutral-600">{event.agent_applications.province} · Rechazada {formatDate(event.created_at)}</p>
+            <p className="mt-2 text-sm text-neutral-800"><span className="font-semibold">Nota interna:</span> {event.reason || 'No se registró un motivo.'}</p>
+          </article>)}
+          {rejectionEvents.length < historyTotal && <Button type="button" variant="outline" disabled={historyLoading} onClick={() => void loadRejectionHistory(historyPage + 1, true)}>Cargar más historial</Button>}
+        </div>}
+      </section>
       </section>
     </section>
   )

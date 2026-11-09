@@ -18,6 +18,16 @@ Estado: lista de trabajo; no es una certificación de cierre.
 
 ## Orden recomendado de pruebas
 
+### Historial privado de motivos de rechazo — DEV — 2026-11-08
+
+- [x] Implementación local: Postulaciones en Moderación incluye historial paginado de rechazos y muestra la nota como interna.
+- [x] Pruebas locales de componente, lint, suite completa y build estándar: PASS (196 archivos; 882 aprobadas, 1 omitida).
+- [x] Regresión de Mi cuenta: la prueba incluye deliberadamente una nota interna en el objeto de respuesta y confirma que el solicitante solo ve el estado (882 pruebas aprobadas).
+- [ ] Ejecutar `build:phase34-dev` con variables públicas del proyecto Supabase DEV y publicar únicamente en el Worker DEV.
+- [ ] Con AAL2, verificar que Moderación carga la nota y, con la cuenta solicitante, verificar que no aparece. Usar solo datos sintéticos.
+
+El build estándar pasó, pero no sustituye `build:phase34-dev`. Aún no se desplegó este cambio ni se hizo la comprobación autenticada. Usar únicamente la configuración pública del proyecto DEV; no reutilizar una clave de producción.
+
 ### 1. F3 — postulación de agente en DEV
 
 - [x] En **Mi cuenta**, la captura autenticada confirma “Postulación no aprobada” y “Volver a postularme”; el motivo interno no se presenta al postulante. Falta cubrir otros estados y el error de consulta con reintento.

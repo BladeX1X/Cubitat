@@ -20,6 +20,14 @@ preexistentes deben reconciliarse con una provincia antes de habilitar el flujo
 en un entorno hosted. Cuando vence la retención, el endpoint responde 410 y la
 pestaña explica que los documentos ya fueron eliminados.
 
+La sección **Historial privado de rechazos** consulta los eventos de rechazo en
+páginas y solo se presenta en esta vista administrativa protegida por AAL2. El
+moderador puede volver a consultar la nota interna y el estado/provincia de la
+solicitud; el motivo no se copia a la respuesta del solicitante ni a la tarjeta
+de estado de Mi cuenta. El acceso continúa sujeto a RLS de
+`agent_application_events`. La consulta y visualización tienen cobertura de
+componente local; la verificación con una sesión admin AAL2 en DEV sigue pendiente.
+
 La sección **Agentes activos** usa RPCs autenticadas permitidas explícitamente
 por el Worker DEV, que conserva el JWT de la sesión; PostgreSQL exige admin
 AAL2 para ambas operaciones. Para retirar el

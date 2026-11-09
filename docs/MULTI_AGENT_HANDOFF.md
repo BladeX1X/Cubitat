@@ -4199,3 +4199,18 @@ npm run build había corrido después de build:phase2-dev; F3 no quedaba en la a
 - Migración `20261106100000_agent_access_revocation.sql`: aplicada en DEV según consulta de objetos, pero sin versión remota registrada; producción aún no modificada.
 - Se prepara promoción por PR y un workflow manual de producción que aborta si el destino no es `tohjzoncoosvjbjcakdl`, hay esquema parcial, o el dry-run no enumera únicamente esta migración.
 - Lint, suite completa y build Fase 4 de producción se están repitiendo antes de abrir PR. Despliegue Worker y migración productiva siguen pendientes hasta integrar CI verde.
+
+## 2026-11-08 — Historial privado de rechazos (DEV)
+
+- Rama: `bugfix/phase34-dev-profile`; historial paginado en Moderación para que el moderador vuelva a consultar las notas internas de rechazo.
+- Privacidad: solo interfaz administrativa con AAL2 y RLS; Mi cuenta del solicitante continúa mostrando el estado sin el motivo.
+- Gates locales estándar: lint, test:run y build PASS. Build específico `build:phase34-dev` detenido porque el entorno local no tiene `VITE_SUPABASE_URL` ni clave pública DEV.
+- Estado: implementado local; todavía no compilado con perfil DEV, desplegado ni verificado autenticado. Producción y filas de Supabase intactas.
+- Siguiente paso: compilar con la configuración pública DEV correspondiente y verificar visibilidad diferencial usando una solicitud sintética.
+
+### Verificación de confidencialidad — actualización 2026-11-08
+
+- Añadida regresión en `AccountPage.test.tsx`: aunque el resultado simulado incluya una nota interna, Mi cuenta no la renderiza; solo muestra el estado al solicitante.
+- Revalidación local de cierre: `npm run lint`, `npm run test:run` (196 archivos, 882 aprobadas, 1 omitida) y `npm run build`: PASS. El build estándar confirma el bundle de producción y no demuestra que el historial esté desplegado en DEV.
+- La política remota de `agent_application_events` exige `is_admin_aal2()` para lectura; anon/public no tienen SELECT. No se cambiaron permisos ni datos.
+- Estado sigue local hasta integrar a la rama que alimenta el Worker DEV y confirmar build, versión activa y consulta de la nota con admin AAL2. Producción intacta.
