@@ -48,6 +48,16 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   ubicación a `material_listings` y a sus flujos de alta/edición. Hasta entonces,
   el catálogo no debe ofrecer un filtro municipal de materiales.
 
+### Mapa adaptable
+
+- Al abrir “Mostrar mapa” en escritorio, filtros y anuncios permanecen en una
+  columna izquierda y el mapa aparece simultáneamente a la derecha, como en
+  Comprar/Rentar; en móvil el mapa ocupa la pantalla y se puede cerrar. El
+  acceso al mapa queda en un botón flotante fijo, accesible al desplazarse por
+  el catálogo; al abrirlo en móvil, el propio mapa ofrece el cierre.
+- En escritorio, con el mapa cerrado, los filtros aparecen en una columna
+  lateral junto a los anuncios; en móvil se apilan antes del catálogo.
+
 ## Contrato de imágenes
 
 - `material-listings` es un bucket privado. Las rutas tienen la forma

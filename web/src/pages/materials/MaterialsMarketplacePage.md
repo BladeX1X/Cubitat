@@ -22,8 +22,14 @@ provincia como filtro del catálogo.
 - El mapa se carga bajo demanda y cuenta todas las páginas que cumplen texto,
   categoría y disponibilidad (sin agotados); no presenta direcciones ni
   ubicaciones exactas y no ofrece un filtro municipal inexistente.
+- En escritorio, los filtros permanecen en un panel lateral tanto con el mapa
+  abierto como cerrado; en pantallas menores se apilan antes del catálogo.
 - En móvil, mapa y estados de carga/error ocupan la pantalla y se cierran con el
-  botón o Escape; en escritorio aparecen junto al catálogo en un panel sticky.
+  botón o Escape; en escritorio, al activar “Mostrar mapa”, filtros y tarjetas
+  quedan en la columna izquierda y el mapa fijo al viewport en la derecha,
+  siguiendo la presentación de Comprar/Rentar. El control “Mostrar mapa” queda
+  fijo en la parte inferior para encontrarlo al desplazarse; en móvil se oculta
+  mientras el mapa está abierto para dejar disponible el botón de cierre propio.
 - La disponibilidad y el precio son declaraciones del vendedor, no garantía,
   reserva ni oferta contractual.
 - Las consultas requieren cuenta autenticada y no crean órdenes ni pagos.

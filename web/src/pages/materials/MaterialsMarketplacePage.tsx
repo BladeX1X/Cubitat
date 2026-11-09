@@ -1,13 +1,15 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, Boxes, Map, MapPin, PackageSearch } from 'lucide-react'
+import { ArrowLeft, Boxes, MapPin, PackageSearch } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
 import { MarketplaceContactActions } from '../../shared/ui/MarketplaceContactActions'
+import { MarketplaceMapToggle } from '../../modules/marketplace/MarketplaceMapToggle'
 import { fetchMaterialListing, fetchMaterialListings, fetchMaterialProvinceCounts, sendMaterialInquiry } from '../../modules/materials/materialRepository'
 import type { ProvinceCount } from '../../modules/marketplace/provinceAggregates'
 import { ProvinceMapStatus } from '../../modules/marketplace/ProvinceMapStatus'
 import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, type MaterialCategory, type MaterialListing } from '../../modules/materials/types'
 import { cubanProvinces } from '../../shared/data/cubaLocations'
+import '../marketplace/MarketplaceDirectoryMap.css'
 
 const ProvinceAggregateMap = lazy(() => import('../../modules/marketplace/ProvinceAggregateMap').then((module) => ({ default: module.ProvinceAggregateMap })))
 
@@ -168,13 +170,14 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
   }
 
   return (
-    <main className="min-h-[75vh] bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12">
+    <main className={`marketplace-directory-map-page min-h-[75vh] bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12 ${mapOpen ? 'is-map-open' : ''}`}>
       <div className={`mx-auto ${mapOpen ? 'max-w-screen-2xl' : 'max-w-6xl'}`}>
         <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-emerald-800"><PackageSearch size={17} />Materiales de construcción</p>
         <h1 className="mt-2 text-3xl font-black text-neutral-900 sm:text-4xl">Materiales para construir y reparar</h1>
         <p className="mt-3 max-w-2xl text-neutral-600">Explora anuncios de vendedores y consulta el precio y la disponibilidad antes de comprar. Cubitat no procesa pagos ni reservas.</p>
-        <div className="mt-5 flex flex-wrap gap-2"><Button type="button" className="min-h-11" onClick={onCreateListing}>Vender materiales</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageListings}>Mis anuncios</Button><Button type="button" variant="outline" className="min-h-11" aria-expanded={mapOpen} aria-controls="materials-province-map" onClick={() => setMapOpen((open) => !open)}><Map size={17} className="mr-2" />{mapOpen ? 'Ocultar mapa' : 'Mostrar mapa'}</Button></div>
-        <div className={`mt-7 grid gap-5 ${mapOpen ? 'min-[1021px]:grid-cols-[240px_minmax(320px,1fr)_minmax(320px,38%)]' : 'lg:grid-cols-[260px_minmax(0,1fr)]'}`}>
+        <div className="mt-5 flex flex-wrap gap-2"><Button type="button" className="min-h-11" onClick={onCreateListing}>Vender materiales</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageListings}>Mis anuncios</Button></div>
+        <div className={`marketplace-directory-layout mt-7 ${mapOpen ? 'is-map-open' : ''}`}>
+          <div className="marketplace-directory-catalog">
           <aside aria-label="Filtros de materiales" className="h-fit space-y-4 rounded-2xl border border-neutral-200 bg-white p-4">
             <h2 className="text-lg font-bold">Filtrar resultados</h2>
             <label className="block text-sm font-semibold">Buscar material<input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setOffset(0); setListings([]) }} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" placeholder="Cemento, tubería…" /></label>
@@ -184,11 +187,13 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
             {(category || province || availability || search) && <Button type="button" variant="outline" className="w-full" onClick={() => { setCategory(''); setProvince(''); setAvailability(''); setSearch(''); setOffset(0); setListings([]) }}>Limpiar filtros</Button>}
           </aside>
           <div className="min-w-0"><p className="mb-4 text-sm text-neutral-600" aria-live="polite">{total} {total === 1 ? 'anuncio disponible' : 'anuncios disponibles'}</p>
-            {listings.length === 0 ? <section className="rounded-2xl border border-dashed border-neutral-300 bg-white px-5 py-14 text-center"><h2 className="text-lg font-bold">No encontramos materiales con esos filtros</h2><p className="mt-2 text-sm text-neutral-600">Prueba otra palabra, categoría o provincia.</p></section> : <section className={`grid gap-5 ${mapOpen ? 'sm:grid-cols-1 min-[1280px]:grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-3'}`} aria-label="Materiales disponibles">{listings.map((item) => <button key={item.id} type="button" onClick={() => openListing(item)} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="relative h-48 bg-amber-50">{item.photoUrls[0] ? <img src={item.photoUrls[0]} alt="" loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /></div>}{item.photoUnavailable && <span role="status" className="absolute inset-x-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 text-center text-xs text-amber-900">Fotos no disponibles temporalmente</span>}</div><div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{MATERIAL_CATEGORY_LABELS[item.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{item.title}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{item.province}</p><p className="mt-3 text-lg font-extrabold text-emerald-800">{formatPrice(item)}</p><p className="mt-1 text-xs text-neutral-500">{availabilityLabel(item.availability)}</p><span className="mt-4 inline-flex min-h-10 items-center font-bold text-emerald-800">Ver anuncio →</span></div></button>)}</section>}
+            {listings.length === 0 ? <section className="rounded-2xl border border-dashed border-neutral-300 bg-white px-5 py-14 text-center"><h2 className="text-lg font-bold">No encontramos materiales con esos filtros</h2><p className="mt-2 text-sm text-neutral-600">Prueba otra palabra, categoría o provincia.</p></section> : <section className={`grid gap-5 ${mapOpen ? 'sm:grid-cols-1' : 'sm:grid-cols-2 xl:grid-cols-3'}`} aria-label="Materiales disponibles">{listings.map((item) => <button key={item.id} type="button" onClick={() => openListing(item)} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="relative h-48 bg-amber-50">{item.photoUrls[0] ? <img src={item.photoUrls[0]} alt="" loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /></div>}{item.photoUnavailable && <span role="status" className="absolute inset-x-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 text-center text-xs text-amber-900">Fotos no disponibles temporalmente</span>}</div><div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{MATERIAL_CATEGORY_LABELS[item.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{item.title}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{item.province}</p><p className="mt-3 text-lg font-extrabold text-emerald-800">{formatPrice(item)}</p><p className="mt-1 text-xs text-neutral-500">{availabilityLabel(item.availability)}</p><span className="mt-4 inline-flex min-h-10 items-center font-bold text-emerald-800">Ver anuncio →</span></div></button>)}</section>}
             {listings.length < total && <div className="mt-6 text-center"><Button type="button" variant="outline" onClick={() => setOffset(listings.length)} disabled={loading}>{loading ? 'Cargando…' : 'Cargar más anuncios'}</Button></div>}
           </div>
-          {mapOpen && <div id="materials-province-map" className="contents" aria-busy={provinceCountsLoading}><Suspense fallback={<ProvinceMapStatus onClose={() => setMapOpen(false)} resultLabel="anuncios de materiales" />}>{provinceCountsError ? <ProvinceMapStatus error onClose={() => setMapOpen(false)} resultLabel="anuncios de materiales" /> : <ProvinceAggregateMap counts={provinceCounts} selectedProvince={province} onClose={() => setMapOpen(false)} onSelectProvince={(nextProvince) => { setProvince((current) => current === nextProvince ? '' : nextProvince); setOffset(0); setListings([]) }} accent="#b45309" resultLabel="anuncios de materiales" />}</Suspense></div>}
+          </div>
+          {mapOpen && <div id="materials-province-map" className="marketplace-directory-map" aria-busy={provinceCountsLoading}><Suspense fallback={<ProvinceMapStatus onClose={() => setMapOpen(false)} resultLabel="anuncios de materiales" />}>{provinceCountsError ? <ProvinceMapStatus error onClose={() => setMapOpen(false)} resultLabel="anuncios de materiales" /> : <ProvinceAggregateMap counts={provinceCounts} selectedProvince={province} onClose={() => setMapOpen(false)} onSelectProvince={(nextProvince) => { setProvince((current) => current === nextProvince ? '' : nextProvince); setOffset(0); setListings([]) }} accent="#b45309" resultLabel="anuncios de materiales" />}</Suspense></div>}
         </div>
+        <MarketplaceMapToggle mapId="materials-province-map" open={mapOpen} onToggle={() => setMapOpen((open) => !open)} />
       </div>
     </main>
   )

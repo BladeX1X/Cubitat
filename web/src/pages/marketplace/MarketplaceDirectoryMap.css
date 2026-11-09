@@ -1,0 +1,126 @@
+/* Shared split view for the Services and Materials directories. */
+.marketplace-map-floating-actions {
+  position: fixed;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.marketplace-map-floating-toggle {
+  min-height: 48px;
+  gap: 8px;
+  border-radius: 999px;
+  padding-inline: 20px;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.2);
+  font-weight: 800;
+  pointer-events: auto;
+}
+
+.marketplace-directory-map-page {
+  padding-bottom: 5rem;
+}
+
+.marketplace-directory-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1020px) {
+  .marketplace-directory-map-page.is-map-open .marketplace-map-floating-actions {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .marketplace-map-floating-toggle {
+    min-height: 44px;
+    padding-inline: 18px;
+    font-size: 0.875rem;
+  }
+}
+
+.marketplace-directory-catalog {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* Mantén los filtros en una columna lateral también cuando el mapa está cerrado. */
+@media (min-width: 1021px) {
+  .marketplace-directory-catalog {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  }
+}
+
+.marketplace-directory-map {
+  /* On small screens the map component itself is a full-screen dialog. */
+  display: block;
+  min-width: 0;
+}
+
+@media (min-width: 1021px) {
+  .marketplace-directory-layout.is-map-open {
+    grid-template-columns: minmax(0, 1fr) minmax(390px, 44vw);
+    gap: 0;
+    min-height: calc(100dvh - 76px);
+  }
+
+  .marketplace-directory-layout.is-map-open .marketplace-directory-catalog {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    padding-right: clamp(18px, 2.2vw, 34px);
+  }
+
+  .marketplace-directory-layout.is-map-open .marketplace-directory-map {
+    position: sticky;
+    top: 76px;
+    display: block;
+    height: calc(100dvh - 76px);
+    min-height: 560px;
+    overflow: hidden;
+    background: #eef3f1;
+  }
+
+  .marketplace-directory-layout.is-map-open .marketplace-directory-catalog > :nth-child(2) > section[aria-label] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .marketplace-directory-map > section {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+    width: 100%;
+    height: 100% !important;
+    min-height: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (min-width: 1021px) and (max-width: 1360px) {
+  .marketplace-directory-catalog {
+    grid-template-columns: minmax(180px, 210px) minmax(0, 1fr);
+  }
+
+  .marketplace-directory-layout.is-map-open {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 44vw);
+  }
+
+  .marketplace-directory-layout.is-map-open .marketplace-directory-catalog {
+    grid-template-columns: minmax(180px, 210px) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1361px) {
+  .marketplace-directory-layout.is-map-open .marketplace-directory-catalog > :nth-child(2) > section[aria-label] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

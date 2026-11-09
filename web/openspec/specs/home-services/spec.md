@@ -39,6 +39,13 @@ calidad del trabajo.
 
 - Las páginas deben ser utilizables en móvil, por teclado y con lector de
   pantalla; contemplan carga, error, estado vacío y reintento.
+- Al abrir “Mostrar mapa” en escritorio, filtros y resultados permanecen en una
+  columna izquierda y el mapa aparece simultáneamente a la derecha, como en
+  Comprar/Rentar; en móvil el mapa ocupa la pantalla y se puede cerrar. El
+  acceso al mapa queda en un botón flotante fijo, accesible al desplazarse por
+  el directorio; al abrirlo en móvil, el propio mapa ofrece el cierre.
+- En escritorio, con el mapa cerrado, los filtros aparecen en una columna
+  lateral junto a los resultados; en móvil se apilan antes del catálogo.
 - Las galerías cargan miniaturas optimizadas y diferidas.
 - Reseñas son una extensión opcional especificada en
   `phase4-review-reputation/spec.md`; el directorio sigue funcionando apagada.
