@@ -241,3 +241,27 @@ El check externo de Cloudflare Workers Builds sigue en FAILURE, build
 motivo del error. La consulta de versiones del Worker DEV confirma que no hubo
 despliegue: sigue activa `36efd098-375e-46d0-b0e7-a38d6f8ff83e` del 2026-11-15.
 El PR #228 permanece abierto y no desplegado.
+
+### Forma de datos para separar contactos — 2026-11-16
+
+El snapshot privado [`43839389470`](https://github.com/BladeX1X/Cubitat/actions/runs/43839389470)
+repitió la captura de esquema/ledger y ejecutó un conteo agregado de
+`properties.contact_info`: 317 propiedades; 315 objetos JSON no vacíos y 2
+vacíos; cero NULL, valores no objeto, claves distintas de `name/phone/email`,
+valores no-string en esos campos y valores sobre los límites de destino. No se
+exportaron valores ni se escribió en producción. La forma observada no presenta
+objeciones de datos conocidas para el movimiento; aún falta validar el conjunto
+de migraciones y sus overlays antes de aplicarlo.
+
+La revisión del código del panel encontró que `propertiesRepository` todavía
+seleccionaba `properties.contact_info`, lo cual fallaría al desplegar la
+migración `20261026231000_restrict_property_contact_info_select.sql`. En la
+rama de release se cambió la consulta general para excluir esa columna y cargar
+el contacto mediante `get_admin_property_contact_details` con sesión AAL2. La
+regresión primero falló por la selección insegura y luego pasó; falta CI del
+commit de corrección. Producción no ha recibido DDL/DML ni bundle.
+
+Las versiones asociadas al flujo de contacto siguen no registradas en el ledger
+remoto; incluir al menos `20261025160000`, `20261025190000`, `20261026220000`,
+`20261026231000`, `20261026234000` y `20261111180000` en la revisión de
+dependencias. No aplicar una secuencia parcial ni `db push` global.

@@ -53,6 +53,8 @@ El sistema MUST permitir revisar estado y calidad de anuncios.
 - GIVEN existe una propiedad publicada o pendiente
 - WHEN un admin la revisa
 - THEN el sistema MUST mostrar datos principales, propietario, contacto y estado
+- AND MUST obtener nombre y teléfono por la RPC privada `get_admin_property_contact_details` en sesión AAL2
+- AND MUST excluir `properties.contact_info` de la consulta general de propiedades
 - AND el admin SHOULD poder cambiar estado cuando la interfaz lo permita
 - AND toda accion sensible SHOULD quedar auditable
 
