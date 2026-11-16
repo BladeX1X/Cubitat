@@ -19,6 +19,24 @@
     "PUBLIC_SITE_URL": "https://cubitat1-phase2-dev.pochiprats18.workers.dev",
     "ALERT_EMAIL_FROM": "Cubitat DEV <onboarding@resend.dev>"
   },
+  "previews": {
+    "vars": {
+      "PHASE2_ENABLED": "true",
+      "PHASE3_ENABLED": "true",
+      "VITE_SUPABASE_URL": "https://bknwerqbbysveehcdmzr.supabase.co",
+      "TURNSTILE_VERIFY_URL": "https://turnstile-siteverify-cubitat.pochiprats18.workers.dev",
+      "PUBLIC_SITE_URL": "https://cubitat1-phase2-dev.pochiprats18.workers.dev",
+      "ALERT_EMAIL_FROM": "Cubitat DEV <onboarding@resend.dev>"
+    },
+    "durable_objects": {
+      "bindings": [
+        {
+          "name": "RATE_LIMITER",
+          "class_name": "RateLimiter"
+        }
+      ]
+    }
+  },
   "services": [
     {
       "binding": "TURNSTILE_VERIFY",

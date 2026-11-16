@@ -42,14 +42,23 @@ El proyecto Supabase y el origen deben ser los de DEV; la clave pública
 se guarda en el repositorio. No uses aquí `wrangler.jsonc`, que apunta al
 Worker productivo.
 
-En la pestaña **Previews Base**, mantén también la raíz `web`, el comando de
-build `npm run build:phase34-dev` y la variable de build
-`VITE_SUPABASE_ANON_KEY` del proyecto DEV. La configuración de **Production** y
-la de previews son independientes; dejar la raíz de previews en `/` hace que
-Cloudflare busque `package.json` fuera de `web` y falle con `ENOENT` antes de
-compilar. El comando de preview existente es `npx wrangler preview`.
-Al corregir estos ajustes, valida una ejecución nueva del repositorio: el botón
-de reintento puede conservar la configuración capturada por el build anterior.
+En la pestaña **Previews Base** y en los ajustes del preview de cada rama,
+mantén raíz `web`, build `npm run build:phase34-dev`, variable de build
+`VITE_SUPABASE_ANON_KEY` del proyecto DEV y comando de preview
+`npx wrangler preview --config wrangler.phase34-dev.jsonc --ignore-base-config`.
+Production y
+previews son independientes. La configuración DEV declara explícitamente los
+valores de runtime del proyecto DEV y un Durable Object aislado para cada
+preview. `--ignore-base-config` impide mezclar variables y bindings remotos de
+otra configuración. Los secretos de runtime no se copian automáticamente a los
+previews; para QA que dependa de ellos, configura secretos DEV dedicados en
+Previews Base después de revisar su alcance. No uses el archivo `wrangler.jsonc`,
+que apunta al Worker productivo.
+Dejar la raíz de previews en `/` hace que Cloudflare busque `package.json`
+fuera de `web` y falle con `ENOENT` antes de compilar. Cambiar **Previews Base**
+no actualiza previews existentes: guarda también los ajustes de la rama actual
+y valida una ejecución nueva, porque el reintento puede conservar los ajustes
+capturados por un build anterior.
 
 El perfil verifica las UIs de F3/F4 y excluye las referencias productivas antes
 de generar el bundle. Para una publicación manual, usa
