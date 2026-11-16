@@ -15,9 +15,10 @@ orden y propósito, pero no sustituye la lectura del SQL.
   conteos por categoría y límites de longitud; no exporta nombres, teléfonos,
   correos ni valores JSON de anuncios.
 - El resumen permite comprobar si existen objetos con claves no contempladas,
-  JSON que no sea objeto o valores mayores que los límites del destino antes de
-  mover o limpiar información. Su ejecución es de solo lectura y su artefacto
-  dura un día. No sustituye la revisión de la migración ni autoriza aplicarla.
+  JSON que no sea objeto, valores de contacto no-string o valores mayores que
+  los límites del destino antes de mover o limpiar información. Su ejecución es
+  de solo lectura y su artefacto dura un día. No sustituye la revisión de la
+  migración ni autoriza aplicarla.
 
 ## Retiro auditado de agentes — migración 2026-11-06
 
