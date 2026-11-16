@@ -12,11 +12,17 @@ concurrency:
 
 jobs:
   schema-snapshot:
-    if: github.ref == 'refs/heads/release/phase34-production-20261115'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout release source
+      - name: Checkout trusted workflow source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout release SQL sources as data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: release/phase34-production-20261115
+          path: release-source
 
       - name: Verify production target and capture schema-only snapshot
         shell: bash
@@ -42,7 +48,8 @@ jobs:
                 -c "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version" \
                 > /snapshot/remote-migration-versions.txt
             '
-          cp web/supabase/migrations/*.sql "$RUNNER_TEMP/cubitat-production-schema/"
+          cp release-source/web/supabase/migrations/*.sql \
+            "$RUNNER_TEMP/cubitat-production-schema/"
           (
             cd "$RUNNER_TEMP/cubitat-production-schema"
             sha256sum schema.sql remote-migration-versions.txt

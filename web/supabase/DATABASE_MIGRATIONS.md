@@ -1071,16 +1071,16 @@ diagnóstico. El Worker de aplicación también se publicó después; el QA
 autenticado de envío, revisión, documentos y correo sigue siendo necesario
 antes de marcar F3 funcionalmente cerrada.
 
-## Conciliación del esquema productivo
+## Captura de esquema productivo para conciliación
 
-El flujo manual `.github/workflows/supabase-production-schema-snapshot.yml`
-captura un volcado PostgreSQL solo de esquema, el ledger de migraciones de
-producción y las fuentes SQL de la rama de release. Solo lee la base, comprueba
-que la URI corresponde a producción y conserva el artefacto privado de GitHub
-Actions durante un día. Solo puede ejecutarse desde
-`release/phase34-production-20261115` y requiere el secreto `SUPABASE_DB_URL`.
+El workflow manual `.github/workflows/supabase-production-schema-snapshot.yml`
+se ejecuta desde `main` y genera un volcado solo de esquema, el ledger remoto y
+las fuentes SQL de `release/phase34-production-20261115`. Comprueba que la URI
+corresponda al proyecto `tohjzoncoosvjbjcakdl`, no ejecuta SQL de migración y
+retiene el artefacto privado durante un día. No incluye filas de las tablas de
+negocio.
 
-Usar la captura para comparar objetos, grants, políticas, funciones, triggers
-y versiones reales de producción antes de seleccionar SQL forward. No es un
-respaldo completo ni una prueba de restauración; no autoriza `db push`,
-`migration repair` ni la aplicación de migraciones sin clasificar.
+Usar la captura para comparar objetos, grants, políticas, funciones, triggers y
+versiones reales antes de preparar la lista exacta de SQL forward. No es un
+respaldo ni una prueba de restauración; no habilita `db push` global ni
+`migration repair`.
