@@ -39,6 +39,10 @@ El volcado schema-only no se completó porque la CLI quedó descargando su image
 de `pg_dump`; se detuvo antes de crear un volcado utilizable. Por tanto, aún no
 se compararon los efectos de las 57 fuentes con las definiciones actuales.
 
+> Estado histórico supersedido por la instantánea de solo lectura del
+> 2026-11-16, documentada al final de este archivo. La instantánea sí se obtuvo
+> después mediante el workflow dedicado; no se aplicó SQL.
+
 ### Sondeo de catálogo productivo — 2026-11-16
 
 Tras volver a autenticar la CLI se hizo una consulta SQL `SELECT` contra el
@@ -127,10 +131,10 @@ inventario exhaustivo. Se desvinculó la carpeta release al terminar.
   moderación y contacto F4 que los registros de producción dejan pendientes.
 - Clasificar y probar las 57 versiones no registradas, y confirmar configuración
   de Worker, cron, Auth, dominios y secretos sin copiar valores privados al repo.
-- Obtener un dump de esquema productivo (sin datos) por un método que no dependa
-  de la imagen local de `pg_dump`; comparar grants, policies, funciones, triggers,
-  vistas y tablas con el efecto de cada una de las 57 fuentes antes de aprobar
-  cualquier conjunto.
+- La instantánea de esquema ya se obtuvo; completar la clasificación de las 63
+  fuentes sin registro comparando grants, policies, funciones, triggers,
+  vistas, tablas, dependencias y efectos sobre datos antes de aprobar cualquier
+  conjunto.
 - Seguir el checklist de contenido/legal y backup/restore; no marcar como
   verificados elementos que solo pasaron en local o DEV.
 
@@ -194,3 +198,28 @@ explican por qué el bundle no se debe desplegar todavía sin una secuencia SQL
 incremental reconciliada. Las consultas fueron exclusivamente a catálogo/ledger;
 no se leyeron filas de negocio ni se ejecutó SQL de escritura. La rama quedó
 desvinculada de producción tras la lectura.
+
+### Instantánea completa schema-only — 2026-11-16
+
+El workflow manual [`Supabase Production Schema Snapshot`](https://github.com/BladeX1X/Cubitat/actions/runs/43832798096)
+terminó correctamente en `main` (43 s). Verificó el destino por referencia del
+proyecto, obtuvo `pg_dump --schema-only`, leyó el ledger remoto y empaquetó las
+fuentes SQL de la rama release como datos. El artefacto privado
+`cubitat-production-schema-43832798096` mide 261,357 bytes y vence el
+2026-11-17 08:38 UTC. No incluye filas de negocio; el workflow no ejecuta SQL.
+
+Comparación reproducible del archivo de versiones: 101 versiones remotas, 164
+fuentes locales y 63 fuentes sin registro; cero versiones remotas sin fuente
+local. La inspección del DDL confirma objetos base de Fase 4 y auditoría ya
+presentes, pero siguen ausentes `property_contact_details`,
+`get_public_property_contact`, `resolve_property_report`,
+`saved_marketplace_listings` y el bucket `home-service-photos`. Por tanto, el
+bundle actual aún depende de cambios de esquema pendientes. El estado no se
+resuelve ejecutando las 63 fuentes a ciegas: al menos un objeto existe sin su
+correspondiente fila de ledger y varios objetos requeridos sí faltan.
+
+No se aplicó migración, no se leyó contenido de anuncios ni se restauró el
+respaldo. La clasificación objeto por objeto de las 63 fuentes, el análisis de
+duplicados/overlays históricos, las pruebas de un conjunto forward aislado y la
+recuperación de respaldo verificable siguen pendientes. **Decisión:** no
+desplegar aún el bundle ni ejecutar migraciones en producción.

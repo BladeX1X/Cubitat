@@ -42,6 +42,15 @@ El `db dump` schema-only no se completó (la CLI no terminó de descargar su
 imagen de `pg_dump`); no se obtuvo comparación de definiciones y no se modificó
 la base.
 
+> Actualización 2026-11-16: estado histórico supersedido por el workflow
+> [`Supabase Production Schema Snapshot`](https://github.com/BladeX1X/Cubitat/actions/runs/43832798096),
+> que obtuvo correctamente una instantánea `pg_dump --schema-only` sin ejecutar
+> SQL. El artefacto privado `cubitat-production-schema-43832798096` contiene el
+> DDL y ledger remoto (101 versiones), vence el 2026-11-17 08:38 UTC y no
+> contiene filas de negocio. La clasificación exhaustiva de las 63 fuentes
+> locales sin registro continúa pendiente; no usar `db push` global ni
+> `migration repair`.
+
 Esta observación actualiza cualquier estado histórico inferior que describa
 estas mismas versiones como pendientes o no aplicadas. Los bloques fechados se
 conservan como evidencia de su momento; no usar sus instrucciones genéricas de
