@@ -1,0 +1,288 @@
+name: Apply reviewed Phase 3 and 4 production migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type APPLY PHASE34 PRODUCTION MIGRATIONS to confirm the production run
+        required: true
+        type: string
+      backup_run_id:
+        description: Successful, recent production backup workflow run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cubitat-production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  apply-reviewed-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out operations workflow
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check out immutable Phase 3/4 release sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 47b576c2773a9b9b80127bd43b15ad6065ed9356
+          path: release-source
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Confirm explicit approval and recent recoverable backup
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRMATION" != 'APPLY PHASE34 PRODUCTION MIGRATIONS' ]]; then
+            echo 'The confirmation phrase does not match; production was not changed.'
+            exit 1
+          fi
+          if [[ ! "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo 'Backup run ID must contain digits only.'
+            exit 1
+          fi
+          run_json=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID")
+          conclusion=$(jq -r '.conclusion' <<<"$run_json")
+          created=$(jq -r '.created_at' <<<"$run_json")
+          workflow=$(jq -r '.name' <<<"$run_json")
+          if [[ "$conclusion" != success || "$workflow" != 'Supabase Backup' ]]; then
+            echo 'The selected run is not a successful Supabase production backup.'
+            exit 1
+          fi
+          age_seconds=$(( $(date -u +%s) - $(date -u -d "$created" +%s) ))
+          if (( age_seconds < 0 || age_seconds > 86400 )); then
+            echo 'The verified backup must be less than 24 hours old.'
+            exit 1
+          fi
+          artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name == "supabase-database-backup" and .expired == false) | .id' | head -n 1)
+          if [[ -z "$artifact" ]]; then
+            echo 'The selected backup artifact is missing or expired.'
+            exit 1
+          fi
+          echo 'Recent successful backup artifact confirmed.'
+
+      - name: Build a temporary migration workdir from the exact reviewed set
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/cubitat-phase34-production"
+          mkdir -p "$root/supabase/migrations" "$root/supabase/templates"
+          cp release-source/web/supabase/config.toml "$root/supabase/config.toml"
+          cp release-source/web/supabase/templates/confirmation.html \
+            release-source/web/supabase/templates/recovery.html \
+            release-source/web/supabase/templates/password_changed_notification.html \
+            "$root/supabase/templates/"
+          files=(
+            20260930170000_property_verification_audit.sql
+            20261022140000_harden_property_ai_moderation_input.sql
+            20261023170000_explicit_worker_core_column_grants.sql
+            20261023190000_revoke_service_role_contact_metrics_table_access.sql
+            20261023200000_revoke_service_role_direct_duplicate_tables.sql
+            20261024120000_pin_production_definer_search_paths.sql
+            20261024130000_worker_only_property_view_counter.sql
+            20261024140000_pin_duplicate_definer_search_paths.sql
+            20261024150000_revoke_public_trigger_function_execution.sql
+            20261024170000_bound_storage_upload_quotas.sql
+            20261024180000_backfill_kyc_evidence_retention.sql
+            20261024220000_pin_notification_trigger_search_paths.sql
+            20261024230000_bound_search_alerts_per_user.sql
+            20261024235000_revoke_public_schema_create.sql
+            20261024235950_restrict_anonymous_property_columns.sql
+            20261024235955_revoke_api_trigger_function_execute.sql
+            20261024235957_worker_only_storage_uploads.sql
+            20261024235958_restrict_admin_audit_view_privileges.sql
+            20261024235959_optimize_auth_uid_rls_policies.sql
+            20261025000000_enforce_storage_upload_quotas.sql
+            20261025030000_bound_public_property_view_counter.sql
+            20261025040000_restrict_public_view_counter_rpc.sql
+            20261025050000_reject_kyc_resubmission_after_verification.sql
+            20261025060000_bound_verification_text_fields.sql
+            20261025070000_confirm_kyc_storage_purge.sql
+            20261025100000_idempotent_property_ai_moderation.sql
+            20261025110000_restrict_public_default_api_privileges.sql
+            20261025120000_combine_permissive_rls_policies.sql
+            20261025130000_revoke_trigger_rpc_execution.sql
+            20261025150000_restrict_public_property_image_listing.sql
+            20261025160000_separate_property_contact_details.sql
+            20261025170000_pin_admin_helper_search_path.sql
+            20261025180000_revoke_excess_public_table_privileges.sql
+            20261025190000_use_private_contact_in_trust_score.sql
+            20261025200000_revoke_audit_view_write_privileges.sql
+            20261025230000_private_property_image_access.sql
+            20261025235900_revoke_remaining_trigger_execute.sql
+            20261025250000_grant_required_public_api_table_privileges.sql
+            20261026210000_revoke_property_contact_truncate_privileges.sql
+            20261026220000_preserve_property_trust_score_contact_factor.sql
+            20261026231000_restrict_property_contact_info_select.sql
+            20261026232000_restrict_postgres_public_default_api_privileges.sql
+            20261026233000_restrict_notification_user_updates.sql
+            20261026234000_restrict_property_owner_internal_writes.sql
+            20261027120000_add_owner_scoped_property_contact_metrics.sql
+            20261027223000_harden_security_definer_search_paths.sql
+            20261028170000_restrict_public_avatar_listing.sql
+            20261028180000_normalize_storage_preflight_size.sql
+            20261028190000_restrict_public_aal_helper_execution.sql
+            20261028200000_restrict_notification_client_update.sql
+            20261029100000_limit_active_search_alerts.sql
+            20261029120000_revoke_legacy_unbounded_phase4_listing_rpc.sql
+            20261029130000_route_verified_directory_rpcs_through_worker.sql
+            20261029140000_revoke_global_public_function_default_execute.sql
+            20261030100000_validate_property_image_owner_paths.sql
+            20261030150000_revoke_prepare_search_alert_trigger_execute.sql
+            20261030160000_bound_push_subscription_growth.sql
+            20261111180000_get_public_property_contact.sql
+            20261114170000_fix_material_photo_storage_policy_privileges.sql
+            20261115120000_phase4_service_owner_id_insert_privilege.sql
+            20261115130000_atomic_property_report_resolution.sql
+            20261116100000_phase4_saved_marketplace_listings.sql
+            20261116110000_phase4_home_service_photo_storage.sql
+            20261116120000_phase4_saved_marketplace_privileges.sql
+          )
+          for file in "${files[@]}"; do
+            source="release-source/web/supabase/migrations/$file"
+            if [[ ! -f "$source" ]]; then echo "Missing reviewed source: $file"; exit 1; fi
+            cp "$source" "$root/supabase/migrations/"
+          done
+          staged_versions=$(find "$root/supabase/migrations" -maxdepth 1 -name '*.sql' -type f -printf '%f\n' | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          count=$(wc -l <<<"$staged_versions")
+          [[ "$count" -eq 64 ]]
+          {
+            echo 'REVIEWED_VERSIONS<<PHASE34VERSIONS'
+            printf '%s\n' "$staged_versions"
+            echo 'PHASE34VERSIONS'
+          } >> "$GITHUB_ENV"
+          echo 'Staged exactly 64 reviewed migration files.'
+
+      - name: Verify production target, ledger fingerprint, source inventory, data guards, and exact pending set
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *'postgres.tohjzoncoosvjbjcakdl'* ]]; then
+            echo 'Database URL does not identify the intended production project.'
+            exit 1
+          fi
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c 'select version from supabase_migrations.schema_migrations order by version')
+          remote_count=$(wc -l <<<"$remote_versions")
+          remote_hash=$(printf '%s\n' "$remote_versions" | sort -u | sha256sum | cut -d' ' -f1)
+          if [[ "$remote_count" -ne 101 || "$remote_hash" != '1c279aaf38b9079ca87f6cd0a37e99880d51f541adac7fbf5923a181079c2202' ]]; then
+            echo 'Production migration ledger differs from the reviewed snapshot; no SQL was applied.'
+            exit 1
+          fi
+
+          src_count=$(find release-source/web/supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)
+          [[ "$src_count" -eq 165 ]] || { echo 'Release migration source inventory changed.'; exit 1; }
+          shopt -s nullglob
+          while IFS= read -r version; do
+            [[ "$version" =~ ^[0-9]{14}$ ]] || { echo 'Non-canonical production ledger version.'; exit 1; }
+            matches=(release-source/web/supabase/migrations/"${version}"_*.sql)
+            [[ ${#matches[@]} -eq 1 ]] || { echo 'Production ledger has no unique reviewed source.'; exit 1; }
+            cp "${matches[0]}" "$RUNNER_TEMP/cubitat-phase34-production/supabase/migrations/"
+          done <<<"$remote_versions"
+          local_versions=$(find "$RUNNER_TEMP/cubitat-phase34-production/supabase/migrations" -maxdepth 1 -name '*.sql' -printf '%f\n' | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          pending=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
+          [[ "$pending" == "$REVIEWED_VERSIONS" ]] || { echo 'Pending versions differ from the exact reviewed allowlist.'; exit 1; }
+
+          psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 \
+            -f web/supabase/preflight/production-phase34-migration-preflight.sql \
+            > "$RUNNER_TEMP/phase34-preflight.txt"
+          for check in contacts.sql_null_rows contacts.invalid_json_shape_rows contacts.unmapped_key_rows contacts.non_text_field_rows contacts.over_limit_field_rows storage.property_image_objects_without_auth_owner storage.property_image_refs_missing_objects storage.property_image_refs_owner_mismatches; do
+            value=$(awk -F'|' -v key="$check" '$1==key {print $2}' "$RUNNER_TEMP/phase34-preflight.txt")
+            [[ "$value" == 0 ]] || { echo "Preflight data-safety guard failed: $check"; exit 1; }
+          done
+          for check in core.property_verification_audit_exists core.contact_table_absent core.saved_marketplace_table_absent core.public_contact_rpc_absent core.report_resolution_rpc_absent core.home_service_photo_bucket_absent; do
+            value=$(awk -F'|' -v key="$check" '$1==key {print $2}' "$RUNNER_TEMP/phase34-preflight.txt")
+            [[ "$value" == 1 ]] || { echo "Preflight schema-state guard failed: $check"; exit 1; }
+          done
+          bucket_count=$(awk -F'|' '$1=="storage.property_images_bucket_rows" {print $2}' "$RUNNER_TEMP/phase34-preflight.txt")
+          public_count=$(awk -F'|' '$1=="storage.property_images_bucket_public_rows" {print $2}' "$RUNNER_TEMP/phase34-preflight.txt")
+          [[ "$bucket_count" == 1 && "$public_count" == 1 ]] || { echo 'Property image bucket differs from reviewed public pre-migration state.'; exit 1; }
+          private_contact_baseline=$(awk -F'|' '$1=="contacts.nonempty_object_rows" {print $2}' "$RUNNER_TEMP/phase34-preflight.txt")
+          echo "PHASE34_PRIVATE_CONTACT_BASELINE=$private_contact_baseline" >> "$GITHUB_ENV"
+          echo 'Production fingerprint and aggregate migration guards passed.'
+
+      - name: Dry-run and verify only the 64 reviewed migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          set +e
+          output=$(supabase db push --workdir "$RUNNER_TEMP/cubitat-phase34-production" --db-url "$SUPABASE_DB_URL" --dry-run --include-all --yes 2>&1)
+          status=$?
+          set -e
+          safe=$(printf '%s\n' "$output" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          printf '%s\n' "$safe"
+          [[ "$status" -eq 0 ]] || { echo 'Dry-run failed; production was not changed.'; exit "$status"; }
+          dry_versions=$(grep -Eo '202[0-9]{11}' <<<"$output" | sort -u || true)
+          [[ "$dry_versions" == "$REVIEWED_VERSIONS" ]] || { echo 'Dry-run did not enumerate exactly the 64 reviewed migration versions.'; exit 1; }
+
+      - name: Apply the reviewed migration sequence
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$RUNNER_TEMP/cubitat-phase34-production" --db-url "$SUPABASE_DB_URL" --include-all --yes
+
+      - name: Verify production postconditions and retain aggregate evidence
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 \
+            -f web/supabase/preflight/production-phase34-migration-postcheck.sql \
+            > "$RUNNER_TEMP/phase34-postcheck.txt"
+          value() { awk -F'|' -v key="$1" '$1==key {print $2}' "$RUNNER_TEMP/phase34-postcheck.txt"; }
+          [[ "$(value ledger.release_migrations)" == 64 ]] || { echo 'Expected migration ledger entries are missing.'; exit 1; }
+          [[ "$(value contacts.legacy_nonempty_rows)" == 0 ]] || { echo 'Legacy contact data remains in properties.'; exit 1; }
+          [[ "$(value contacts.private_rows)" -ge "$PHASE34_PRIVATE_CONTACT_BASELINE" ]] || { echo 'Private contact row count is below the pre-migration baseline.'; exit 1; }
+          for check in audit.missing_submission_events audit.missing_terminal_events kyc.eligible_retention_rows push.registered_at_null_rows privilege.anon_private_contact_select privilege.anon_saved_listing_select privilege.anon_property_contact_rpc; do
+            [[ "$(value "$check")" == 0 ]] || { echo "Post-migration safety check failed: $check"; exit 1; }
+          done
+          for check in storage.property_bucket_private storage.service_bucket_private schema.private_contact_table schema.public_contact_rpc schema.report_resolution_rpc schema.saved_listings_table schema.service_photos_bucket privilege.auth_saved_listing_select privilege.service_property_contact_rpc; do
+            [[ "$(value "$check")" == 1 ]] || { echo "Post-migration capability check failed: $check"; exit 1; }
+          done
+          [[ "$(value policy.saved_listings_count)" == 3 ]] || { echo 'Saved listing policy count differs from the reviewed contract.'; exit 1; }
+          [[ "$(value policy.service_photos_count)" == 5 ]] || { echo 'Service photo policy count differs from the reviewed contract.'; exit 1; }
+          {
+            echo 'result=PASS'
+            echo 'project=Cubitat production'
+            echo 'release=Phase 3 and Phase 4 migration set'
+            cat "$RUNNER_TEMP/phase34-postcheck.txt"
+          } > "$RUNNER_TEMP/phase34-run-summary.txt"
+
+      - name: Upload aggregate verification summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase34-production-migration-summary-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase34-run-summary.txt
+          if-no-files-found: ignore
+          retention-days: 3
