@@ -258,10 +258,17 @@ seleccionaba `properties.contact_info`, lo cual fallaría al desplegar la
 migración `20261026231000_restrict_property_contact_info_select.sql`. En la
 rama de release se cambió la consulta general para excluir esa columna y cargar
 el contacto mediante `get_admin_property_contact_details` con sesión AAL2. La
-regresión primero falló por la selección insegura y luego pasó; falta CI del
-commit de corrección. Producción no ha recibido DDL/DML ni bundle.
+regresión primero falló por la selección insegura y luego pasó. CI del commit
+`2c6ba04` también terminó PASS en `quality` y `database-security`, con
+validaciones de perfiles productivos F2/F3/F4 en run
+[`43840482215`](https://github.com/BladeX1X/Cubitat/actions/runs/43840482215).
+Producción no ha recibido DDL/DML ni bundle.
 
 Las versiones asociadas al flujo de contacto siguen no registradas en el ledger
 remoto; incluir al menos `20261025160000`, `20261025190000`, `20261026220000`,
 `20261026231000`, `20261026234000` y `20261111180000` en la revisión de
 dependencias. No aplicar una secuencia parcial ni `db push` global.
+
+El check externo de Cloudflare Workers Builds volvió a fallar con build
+`04bf101e-753e-486f-874f-2847d645d1a3`; GitHub no expone el motivo. El PR #228
+sigue draft y sin despliegue. No se usó bypass del check.
