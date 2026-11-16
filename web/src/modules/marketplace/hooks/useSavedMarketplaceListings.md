@@ -12,8 +12,11 @@ contacto. Mientras Auth resuelve la sesión, conserva el estado de carga; si no
 puede leer los IDs guardados, expone un error recuperable y `retryLoad` en vez
 de representar la consulta fallida como una lista vacía. `enabled` permite
 mantenerla apagada en perfiles sin la migración. El release incorpora una
-migración canónica para producción; habilitar los perfiles productivos solo en
-el mismo release coordinado con la aplicación y verificación de esa migración.
+migración canónica para producción y una migración forward que elimina los
+permisos amplios concedidos por los privilegios por defecto del esquema; la
+tabla permite a `authenticated` solo lectura, alta y baja propias. Habilitar los
+perfiles productivos solo en el mismo release coordinado con la aplicación y
+verificación de las migraciones.
 
 ## Verificación
 

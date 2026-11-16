@@ -127,6 +127,14 @@ El proxy del Worker DEV MUST permitir `POST` y `DELETE` en esa tabla solo cuando
 - AND no MUST mostrarse un error de persistencia hasta que haya una sesión
 - AND el mensaje del prompt MUST referirse a favoritos de forma general y no solo a propiedades o inmuebles
 
+#### Scenario: Permisos de la tabla de favoritos de catálogo
+- GIVEN se despliega `saved_marketplace_listings` en un proyecto con permisos por defecto del esquema
+- WHEN se aplican las migraciones de favoritos
+- THEN `authenticated` MUST conservar solo `SELECT`, `INSERT` y `DELETE`
+- AND MUST NOT poder actualizar o reasignar la fila a otra cuenta
+- AND `anon` y `service_role` MUST NOT recibir acceso a la tabla
+- AND las políticas RLS MUST limitar lectura, alta y baja al UID de la sesión
+
 #### Scenario: Guardar favorito a través del proxy DEV
 - GIVEN un usuario autenticado guarda o quita un favorito de Servicio o Material
 - WHEN la solicitud pasa por `/api/supabase`

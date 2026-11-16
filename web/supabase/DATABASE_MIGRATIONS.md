@@ -66,9 +66,12 @@ pendiente y pausa su propiedad dentro de una operación AAL2;
 `20261116100000_phase4_saved_marketplace_listings.sql` crea favoritos privados
 de Servicios y Materiales con RLS e índices únicos;
 `20261116110000_phase4_home_service_photo_storage.sql` configura el bucket
-privado WebP de servicios, límites y políticas de acceso a fotos.
+privado WebP de servicios, límites y políticas de acceso a fotos;
+`20261116120000_phase4_saved_marketplace_privileges.sql` elimina permisos
+heredados por defecto de la tabla de favoritos y concede a `authenticated`
+solo lectura, alta y baja.
 
-Estas cuatro fuentes aún no se aplicaron a producción. La migración de contacto
+Estas cinco fuentes aún no se aplicaron a producción. La migración de contacto
 `20261025160000_separate_property_contact_details.sql` y sus dependientes
 requieren reconciliación aparte: mueve datos privados y no debe incluirse sin
 respaldo recuperable y revisión de dependencias. El historial productivo
@@ -1092,3 +1095,11 @@ GitHub Actions run [43841317949](https://github.com/BladeX1X/Cubitat/actions/run
 La clasificación de las 63 fuentes del árbol local sin ledger remoto sigue siendo pendiente. La inspección del snapshot schema-only confirma deriva (objetos sin ledger y objetos requeridos ausentes); las coincidencias por nombre de objeto en SQL no determinan por sí solas qué migraciones se aplicaron. No ejecutar `db push` global ni `migration repair`. El replay aislado no se ha ejecutado en este equipo: Docker Desktop Engine no está disponible.
 
 CI final del commit `f44d5f4` — run [43842815133](https://github.com/BladeX1X/Cubitat/actions/runs/43842815133): `quality` y `database-security` PASS, con perfiles F2/F3/F4 PASS. No cambia la necesidad de reconciliar las 63 migraciones no registradas ni habilita una aplicación global.
+
+### Hallazgo del replay schema-only — privilegios de Favoritos — 2026-11-16
+
+Un replay aislado sobre el snapshot schema-only de producción [43839389470](https://github.com/BladeX1X/Cubitat/actions/runs/43839389470) ejecutó sin error 11 fuentes seleccionadas del flujo release. La base de replay no contenía filas de negocio. El control SQL detectó que los ACL por defecto del esquema daban `UPDATE` sobre `saved_marketplace_listings` a `authenticated` y lectura a `service_role`, pese a que `20261116100000` solo declara `SELECT/INSERT/DELETE`.
+
+La migración forward `20261116120000_phase4_saved_marketplace_privileges.sql` limpia explícitamente los grants a `PUBLIC`, `anon`, `authenticated` y `service_role`, y luego concede únicamente `SELECT`, `INSERT`, `DELETE` a `authenticated`. Tras la corrección, `phase4_marketplace_rollout_local.sql` pasó 14/14 y la consulta de ACL confirmó que `anon` no lee, `authenticated` no actualiza y `service_role` no lee. La prueba de contacto con filas sintéticas dentro de transacción también pasó y terminó en rollback.
+
+El replay prueba solo el subconjunto seleccionado; no aprueba las otras fuentes pendientes. El inventario actualizado es 165 fuentes locales, 101 en ledger, 64 locales sin registro y cero remotas sin fuente. No aplicar `db push` global ni `migration repair`; producción sigue sin escritura.

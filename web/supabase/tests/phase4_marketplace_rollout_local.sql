@@ -14,7 +14,8 @@ SELECT ok(
 );
 SELECT ok(
   NOT has_table_privilege('anon', 'public.saved_marketplace_listings', 'SELECT')
-    AND NOT has_table_privilege('authenticated', 'public.saved_marketplace_listings', 'UPDATE'),
+    AND NOT has_table_privilege('authenticated', 'public.saved_marketplace_listings', 'UPDATE')
+    AND NOT has_table_privilege('service_role', 'public.saved_marketplace_listings', 'SELECT'),
   'favorites are private and cannot be reassigned by update'
 );
 SELECT ok(
@@ -24,9 +25,9 @@ SELECT ok(
   'authenticated users can use their favorites'
 );
 SELECT ok(
-  EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_select' AND qual ILIKE '%auth.uid()%')
-    AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_insert' AND with_check ILIKE '%auth.uid()%')
-    AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_delete' AND qual ILIKE '%auth.uid()%'),
+  EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_select' AND qual ILIKE '%uid()%')
+    AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_insert' AND with_check ILIKE '%uid()%')
+    AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'saved_marketplace_listings' AND policyname = 'saved_marketplace_listings_owner_delete' AND qual ILIKE '%uid()%'),
   'favorite reads and writes are scoped to the signed-in owner'
 );
 SELECT ok(
@@ -47,7 +48,7 @@ SELECT ok(
   'service gallery references are validated before save'
 );
 SELECT ok(
-  EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'home_service_photos_owner_upload' AND cmd = 'INSERT' AND roles @> ARRAY['authenticated']::name[] AND with_check ILIKE '%auth.uid()%'),
+  EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'home_service_photos_owner_upload' AND cmd = 'INSERT' AND roles @> ARRAY['authenticated']::name[] AND with_check ILIKE '%uid()%'),
   'service photo uploads are owner-scoped'
 );
 SELECT ok(
