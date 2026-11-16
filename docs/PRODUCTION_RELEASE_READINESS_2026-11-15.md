@@ -418,3 +418,21 @@ cambios.
 - Los controles de código y Preview DEV están verdes; producción sigue intacta. El deploy de Worker sigue detrás de la migración porque el push/merge a `main` activa publicación automática. El workflow existente de F4 solo admite ocho migraciones F4 prístinas y no es válido para este ledger divergente. No ejecutar `db push`, reparación de ledger ni aplicar las 64 fuentes sin una allowlist reconciliada.
 - Próximos pasos accionables: clasificar individualmente las 64 fuentes y efectos ya aplicados; demostrar restauración de respaldo en un destino aislado; cerrar el conjunto incremental con guardas para 315 contactos, 40 fotos, retención KYC y timestamps push; añadir workflow manual de producción con ref exacto, preflight/dry-run/postchecks; después aplicar DB, verificar, y finalmente integrar el PR para que Cloudflare publique el bundle. No se ejecutó SQL de escritura, merge ni deploy productivo.
 - `.agents/AGENTS.md` no está disponible en el worktree; se conserva el reporte y se siguen las instrucciones restantes presentes en el repositorio y el vault.
+
+### Comparación de símbolos contra snapshot productivo — 2026-11-16
+
+Una lectura de solo esquema del artefacto `43903330601` se comparó con los objetos nombrados en las 64 migraciones sin ledger. La comparación encuentra nombres de funciones/tablas/índices ausentes en estas fuentes (la presencia por nombre no verifica que definición, políticas o grants sean idénticos):
+
+```text
+20261022140000 20261024170000 20261024230000 20261024235957
+20261025000000 20261025100000 20261025160000 20261026234000
+20261027120000 20261028180000 20261029100000 20261030100000
+20261030160000 20261111180000 20261114170000 20261115130000
+20261116100000 20261116110000
+```
+
+Los faltantes funcionales incluyen el helper de moderación AI, cuotas/guard de Storage, claims de moderación, tabla y trigger de contactos privados, guard de escritura de propiedades, métricas de contacto, normalización de Storage, guard de rutas de imágenes, registro limitado de Push, RPC de contacto protegido, helpers de fotos de Materiales, resolución atómica de reportes, tabla/RLS de favoritos y políticas/helpers para fotos de Servicios. También faltan los índices de auditoría de verificación, cuotas de alertas y registro de Push. Hay overlays duplicados de alertas y Storage; la lista no se traduce directamente en 18 migraciones ejecutables: se necesita reconciliar orden, definición final y grants.
+
+Conteos agregados adicionales para evaluar `20261025230000_private_property_image_access.sql`: 40/40 objetos del bucket tienen una carpeta inicial con UUID y propietario en Auth; 36/40 coinciden además con el `user_id` de alguna propiedad. Hay 28 referencias de portada/galería en propiedades de todos los estados: cero sin objeto y cero con ruta de otro propietario. Catorce objetos aparecen referenciados y 26 no aparecen hoy en esas referencias, pero los 40 conservan propietario Auth válido y lectura del dueño por ruta. La migración mantiene lectura pública solo para objetos exactos enlazados a propiedades publicadas. Estos conteos respaldan la matriz de rutas; no comprueban los grants/policies vigentes ni la función final del Worker.
+
+La escritura de cada migración requiere su propia guarda: auditoría y retención KYC tienen cero filas pendientes de backfill; separación de contacto movería los 315 JSON válidos; `push_endpoint_owners` tiene seis filas y hoy no tiene `registered_at`, por lo que la migración asignaría deliberadamente una fecha histórica común; el bucket nuevo de Servicios se crea por upsert y sus tablas de negocio están vacías. No aplicar el conjunto hasta revisar el significado de esa fecha Push y cerrar postchecks.
