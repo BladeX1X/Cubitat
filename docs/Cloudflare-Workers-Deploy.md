@@ -48,6 +48,8 @@ build `npm run build:phase34-dev` y la variable de build
 la de previews son independientes; dejar la raíz de previews en `/` hace que
 Cloudflare busque `package.json` fuera de `web` y falle con `ENOENT` antes de
 compilar. El comando de preview existente es `npx wrangler preview`.
+Al corregir estos ajustes, valida una ejecución nueva del repositorio: el botón
+de reintento puede conservar la configuración capturada por el build anterior.
 
 El perfil verifica las UIs de F3/F4 y excluye las referencias productivas antes
 de generar el bundle. Para una publicación manual, usa
