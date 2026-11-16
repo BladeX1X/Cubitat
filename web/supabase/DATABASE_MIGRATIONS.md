@@ -25,6 +25,14 @@ orden y propósito, pero no sustituye la lectura del SQL.
   commit `47b576c2773a9b9b80127bd43b15ad6065ed9356`; el conjunto se aborta ante
   cualquier diferencia. El workflow aún requiere integrarse en `main` y
   ejecutarse; hasta entonces no marcar estas migraciones como aplicadas.
+- La primera ejecución del workflow, run `43914299622`, se detuvo antes del
+  dry-run. La inspección directa de solo lectura confirmó que el bucket
+  `home-service-photos` no existe y no tiene objetos ni políticas; seis tablas
+  `home_service_*` sí existen, como permiten las migraciones anteriores. El
+  control anterior contaba filas para representar ausencia y produjo un falso
+  bloqueo. La consulta ahora verifica la ausencia con `NOT EXISTS`; hay que
+  integrar la corrección y repetir el preflight antes de aplicar SQL. No se
+  ejecutó ninguna migración en ese intento.
 - Orden planeado: integrar primero este workflow operativo y correrlo con el
   backup verificado; comprobar el ledger y los postchecks; después integrar el
   release de código PR #228 para que el Worker empiece a usar las capacidades
