@@ -276,10 +276,12 @@ Se preparó
 [`web/supabase/preflight/phase34-production-data-preflight.sql`](../web/supabase/preflight/phase34-production-data-preflight.sql),
 un sondeo de solo lectura que informa 16 conteos/indicadores para estas
 operaciones y no devuelve valores de contactos, documentos ni endpoints. La
-consulta pasó sintaxis sobre un esquema local mínimo con las columnas
-observadas en el snapshot; esa comprobación no sustituye su ejecución contra
-producción. El resultado productivo se debe revisar y guardar como evidencia
-agregada antes de fijar la allowlist.
+consulta pasó primero en un esquema local mínimo y luego contra una restauración
+local del schema-only productivo. La segunda ejecución encontró todas las
+relaciones/columnas necesarias; devolvió cero en los 16 indicadores porque el
+dump de esquema no contiene filas de negocio, por lo que esos ceros no son
+conteos de producción. El resultado real aún se debe obtener en solo lectura,
+revisar y guardar antes de fijar la allowlist.
 
 La CLI autenticada local sigue sin permiso `projects_read` (403); no se enlazó
 ni se ejecutó contra producción. El workflow de snapshot dispone del secreto de

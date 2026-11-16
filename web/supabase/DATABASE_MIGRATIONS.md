@@ -1131,8 +1131,12 @@ El sondeo de datos agregado preparado en
 `supabase/preflight/phase34-production-data-preflight.sql` devuelve solamente
 conteos para auditoría, retención KYC, forma del JSON de contacto, bucket de
 fotos y cantidad de filas de push. Se comprobó sintácticamente en una instancia
-local mínima y no se ha ejecutado en producción. Cualquier valor fuera de los
-criterios descritos debe investigarse antes de ejecutar la migración asociada.
+local mínima y después contra una restauración local del schema-only productivo;
+las 16 filas de salida se pudieron calcular con las columnas reales. Sus ceros
+son consecuencia de que el snapshot no incluye datos de negocio y no representan
+conteos productivos. Aún no se ejecutó en producción. Cualquier valor fuera de
+los criterios descritos debe investigarse antes de ejecutar la migración
+asociada.
 
 La CLI del entorno de trabajo no tiene `projects_read` (403). No se enlazó el
 proyecto ni se intentó escritura remota; falta ejecutar el sondeo mediante un
