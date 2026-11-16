@@ -380,3 +380,32 @@ Se añadió la migración forward `20261116120000_phase4_saved_marketplace_privi
 Validación local posterior: lint PASS; 240 archivos de pruebas PASS (1,090 pruebas PASS, 1 omitida); build estándar PASS y verificaciones de aislamiento/secreto PASS. El build local usó fallback estático de sitemap por falta de configuración pública de Supabase; no equivale al perfil productivo. El check de Cloudflare del PR sigue sin diagnóstico y la migración aún no se ha aplicado en producción. Al añadir la fuente forward, el inventario pasa a 165 archivos locales, 101 versiones en el ledger y 64 fuentes locales sin registro; todavía no están clasificadas todas.
 
 No se aplicó DDL/DML ni bundle en producción. El replay de 11 migraciones es un subconjunto dirigido, no sustituye la conciliación exhaustiva de las restantes ni la revisión de dependencias.
+
+### Workers Preview phase34-dev — 2026-11-16
+
+Se reprodujo y corrigió el fallo de Workers Builds en la rama del PR #228. El
+build anterior alcanzaba la etapa de deploy, pero `npx wrangler preview` leía
+por defecto `web/wrangler.jsonc`, destinado al Worker productivo, y abortaba
+porque el perfil no declaraba `previews`. Además, los previews ya existentes
+conservaban su propia raíz `/` aunque se corrigiera **Previews Base**.
+
+El commit `9b78ea8` añade `previews` explícito en
+`web/wrangler.phase34-dev.jsonc`, con variables Supabase DEV y Durable Object
+aislado por preview. El guard de build comprueba la URL DEV, banderas de fase,
+clase del Durable Object y ausencia de URLs/rutas productivas. En Cloudflare se
+guardó raíz `web`, `npm run build:phase34-dev` y
+`npx wrangler preview --config wrangler.phase34-dev.jsonc
+--ignore-base-config` tanto en Previews Base como en la rama del PR. No se
+modificaron ajustes de Production. No se copiaron secretos de runtime a los
+previews.
+
+Workers Builds build `9b7f5dea-d2d2-412f-9186-89bfe67e13c4` terminó **PASS** y
+publicó `https://release-phase34-production-20261115-cubitat1-phase2-dev.pochiprats18.workers.dev`.
+Smoke GET de `/`, `/servicios`, `/materiales`, `/publicar` y `/mi-cuenta`:
+HTTP 200. Validación local: lint PASS; Vitest 240 archivos, 1,090 PASS/1
+omitida; build estándar PASS; build `phase34-dev` y sus guardas PASS;
+`wrangler deploy --dry-run --config wrangler.phase34-dev.jsonc` PASS.
+Esto valida el preview y la entrega del bundle, no sus flujos autenticados ni
+una promoción productiva. La ejecución GitHub del commit `9b78ea8` sigue en
+curso; actualizar después su estado. Producción y Supabase no recibieron
+cambios.
