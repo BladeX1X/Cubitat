@@ -1,0 +1,58 @@
+name: Supabase Production Schema Snapshot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-production-schema-snapshot
+  cancel-in-progress: false
+
+jobs:
+  schema-snapshot:
+    if: github.ref == 'refs/heads/release/phase34-production-20261115'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify production target and capture schema-only snapshot
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *tohjzoncoosvjbjcakdl* ]]; then
+            echo "SUPABASE_DB_URL is absent or does not identify Cubitat production."
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/cubitat-production-schema"
+          docker run --rm \
+            --env SUPABASE_DB_URL \
+            --volume "$RUNNER_TEMP/cubitat-production-schema:/snapshot" \
+            postgres:17-alpine \
+            sh -ceu '
+              pg_dump --no-password --schema-only --dbname="$SUPABASE_DB_URL" \
+                --file=/snapshot/schema.sql
+              psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+                -c "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version" \
+                > /snapshot/remote-migration-versions.txt
+            '
+          cp web/supabase/migrations/*.sql "$RUNNER_TEMP/cubitat-production-schema/"
+          (
+            cd "$RUNNER_TEMP/cubitat-production-schema"
+            sha256sum schema.sql remote-migration-versions.txt
+            printf 'schema.sql bytes: '
+            wc -c < schema.sql
+          )
+
+      - name: Upload temporary schema snapshot
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cubitat-production-schema-${{ github.run_id }}
+          path: ${{ runner.temp }}/cubitat-production-schema/
+          retention-days: 1

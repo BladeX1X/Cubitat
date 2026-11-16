@@ -1061,3 +1061,17 @@ RPC requeridas, bucket privado de documentos y grants críticos. No usar
 diagnóstico. El Worker de aplicación también se publicó después; el QA
 autenticado de envío, revisión, documentos y correo sigue siendo necesario
 antes de marcar F3 funcionalmente cerrada.
+
+## Conciliación del esquema productivo
+
+El flujo manual `.github/workflows/supabase-production-schema-snapshot.yml`
+captura un volcado PostgreSQL solo de esquema, el ledger de migraciones de
+producción y las fuentes SQL de la rama de release. Solo lee la base, comprueba
+que la URI corresponde a producción y conserva el artefacto privado de GitHub
+Actions durante un día. Solo puede ejecutarse desde
+`release/phase34-production-20261115` y requiere el secreto `SUPABASE_DB_URL`.
+
+Usar la captura para comparar objetos, grants, políticas, funciones, triggers
+y versiones reales de producción antes de seleccionar SQL forward. No es un
+respaldo completo ni una prueba de restauración; no autoriza `db push`,
+`migration repair` ni la aplicación de migraciones sin clasificar.
