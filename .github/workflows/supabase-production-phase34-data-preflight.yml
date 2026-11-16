@@ -37,7 +37,9 @@ jobs:
             postgres:17-alpine \
             sh -ceu '
               psql "$SUPABASE_DB_URL" -X -qAt -F "|" -v ON_ERROR_STOP=1 \
-                -f /preflight/phase34-production-data-preflight.sql
+                -c "BEGIN READ ONLY" \
+                -f /preflight/phase34-production-data-preflight.sql \
+                -c "ROLLBACK"
             ' > "$result_file"
 
           if [[ "$(wc -l < "$result_file")" -ne 16 ]]; then
