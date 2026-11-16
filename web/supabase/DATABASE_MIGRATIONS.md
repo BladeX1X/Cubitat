@@ -6,6 +6,17 @@ orden y propósito, pero no sustituye la lectura del SQL.
 
 Última revisión documental: 2026-11-16.
 
+## Aplicación de migraciones de producción Fases 3/4 — 2026-11-16
+
+El workflow controlado [43916761042](https://github.com/BladeX1X/Cubitat/actions/runs/43916761042)
+aplicó las 64 migraciones revisadas desde el conjunto inmutable de fuentes del
+release. La comprobación del target, huella del ledger, preflight, dry-run y
+postcondiciones terminó correctamente. El guard de ausencia del bucket
+`home-service-photos` se corrigió e integró mediante PR #233 antes de ejecutar
+la secuencia. La restauración aislada del backup `43829229062` había superado
+el replay previo. La ejecución remota se limitó al proyecto de producción
+`tohjzoncoosvjbjcakdl`; no usar esta referencia para enlazar el CLI a DEV.
+
 ### Sondeo de objetos — 2026-11-16
 
 Consulta `SELECT` solo de catálogo sobre producción: de una muestra de 26

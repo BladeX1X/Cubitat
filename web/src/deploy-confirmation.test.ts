@@ -18,6 +18,9 @@ describe('manual deployment guard', () => {
     expect(scripts['deploy:phase2-dev']).toBe(
       'npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase2-dev && node scripts/confirm-deploy.mjs phase2-dev && wrangler deploy --config wrangler.phase2-dev.jsonc',
     )
+    expect(scripts['deploy:phase34-dev']).toBe(
+      'npm run lint && npm run test:run -- --maxWorkers=2 && npm run build:phase34-dev && node scripts/confirm-deploy.mjs phase34-dev && wrangler deploy --config wrangler.phase34-dev.jsonc',
+    )
   })
 
   it('requires a dynamic sitemap for the production build', () => {
@@ -40,6 +43,17 @@ describe('manual deployment guard', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('consola interactiva')
+  })
+
+  it('recognizes the combined phase 3/4 development deployment target', () => {
+    const result = spawnSync(process.execPath, [confirmationScript, 'phase34-dev'], {
+      encoding: 'utf8',
+      input: 'DEPLOY DEV\n',
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('consola interactiva')
+    expect(result.stderr).not.toContain('Destino inválido')
   })
 
   it('rejects unknown deployment targets', () => {
