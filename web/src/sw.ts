@@ -7,6 +7,7 @@ import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from
 import { CacheFirst } from 'workbox-strategies'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { mayShowPush } from './modules/notifications/push/pushBinding'
+import { isCacheablePublicStorageImage, purgeLegacyPropertyImageCacheEntries } from './shared/lib/cacheablePublicStorageImage'
 import { actionPathWithNotification, safeActionPath } from './swRouting'
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<{ url: string; revision?: string | null }> }
@@ -16,14 +17,22 @@ clientsClaim()
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(purgeLegacyPropertyImageCacheEntries(
+    caches,
+    self.location.origin,
+    import.meta.env.VITE_SUPABASE_URL,
+  ))
+})
+
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/\/api\//] }))
 registerRoute(
-  /^(https:\/\/.*\.supabase\.co|\/api\/supabase)\/storage\/v1\/object\/public\/.*/i,
+  ({ url }) => isCacheablePublicStorageImage(url, self.location.origin, import.meta.env.VITE_SUPABASE_URL),
   new CacheFirst({
     cacheName: 'supabase-image-cache',
     plugins: [
       new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new CacheableResponsePlugin({ statuses: [200] }),
     ],
   }),
 )

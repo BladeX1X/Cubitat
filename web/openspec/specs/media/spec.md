@@ -89,6 +89,13 @@ El sistema MUST tratar URLs de imagen como datos no confiables hasta normalizarl
 - THEN el sistema MUST descartarla o reemplazarla por fallback
 - AND MUST evitar inyectar contenido ejecutable desde campos de imagen
 
+#### Scenario: Propiedades retiradas del caché público
+- GIVEN una versión anterior del service worker almacenó una imagen de `property_images` en `supabase-image-cache`
+- WHEN una versión nueva del service worker se activa
+- THEN MUST eliminar del caché las entradas públicas de imágenes de propiedades, tanto directas como servidas por el proxy del mismo origen
+- AND MUST dejar de guardar imágenes de `property_images` en ese caché
+- AND SHOULD conservar las entradas de otros buckets públicos que sigan siendo aptos para caché
+
 ### Requirement: Señales de coincidencia perceptual para moderación
 En los perfiles DEV y `phase2-production`, el sistema MUST calcular en el Worker un hash perceptual de las imágenes
 WebP guardadas y comparar sus bits con imágenes de publicaciones activas. Una
