@@ -26,8 +26,10 @@ El flujo conectado de Cloudflare ejecuta primero su Build command y después
 `npx wrangler deploy`. Para publicaciones manuales desde una terminal, usa los
 scripts del repositorio: `npm run deploy` ejecuta lint, pruebas y el build
 integral de producción antes de pedir la confirmación `DEPLOY PRODUCTION` y
-llamar a Wrangler. En DEV usa `npm run deploy:phase2-dev`; este construye el
-perfil DEV, pide `DEPLOY DEV` y despliega con `wrangler.phase2-dev.jsonc`.
+llamar a Wrangler. Para el perfil combinado de Fases 3/4 en DEV usa
+`npm run deploy:phase34-dev`; este construye el perfil DEV, pide `DEPLOY DEV`
+y despliega con `wrangler.phase34-dev.jsonc`. El perfil legado de Fase 2 usa
+`npm run deploy:phase2-dev` y `wrangler.phase2-dev.jsonc`.
 Ambos comandos requieren una terminal interactiva y se detienen si falla una
 validación o la confirmación. `npm run cf:deploy` es un alias de producción.
 
@@ -114,7 +116,17 @@ Production branch: main
 La configuración remota de Cloudflare no se modifica con estos scripts. El
 guard aplica a las publicaciones manuales mediante npm; en Cloudflare Builds,
 mantén el Build command del perfil integral seguido por el Deploy command.
+Los destinos `phase2-dev` y `phase34-dev` usan la frase de confirmación
+`DEPLOY DEV`; el segundo corresponde al perfil combinado de QA de Fases 3 y 4.
 
 `npm run build` conserva un perfil base para comprobar el aislamiento modular; no usarlo en el trigger productivo, porque reemplazaría los módulos completos de Fases 2, 3 y 4. Cloudflare Workers Builds ejecuta la compilación y el despliegue en cada push a la rama de producción. Comprueba en el Dashboard que su Build command sea `npm run build:phase4-production`; si usa un perfil anterior, cada push puede volver a ocultar módulos F4. El build de CI debe mantenerse en `npm run build:phase4-production:ci` y nunca ser el comando de despliegue.
+
+## Lanzamiento de Fases 1–4 — 2026-11-16
+
+PR #228 se integró a `main` como `db033141f08e597fb8200eed3f0c829241ebe343`.
+El build de producción utilizó `npm run build:phase4-production` y desplegó
+Worker `cubitat1`, versión `3e8d0279`, al 100% según el historial de rollout.
+El smoke público de portada, resultados de venta, servicios y materiales
+respondió HTTP 200; no se ejecutaron escrituras autenticadas en producción.
 
 Verificación posterior: el merge de PR #130 (`3e46bec`) disparó el build `6086639e-5c26-4b49-876a-b6d1045d2067`; build y deploy terminaron en verde usando el comando anterior, y la versión `98c825b6-a653-48b1-9c60-6ea76bf40e06` quedó activa al 100%. El smoke autenticado volvió a mostrar los módulos KYC, Documentos y Coincidencias pHash.
