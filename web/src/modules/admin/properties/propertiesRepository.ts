@@ -3,7 +3,7 @@ import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/featu
 import { PAGE_SIZE } from '../core/constants'
 import type { ModerationFilter, ModerationProperty, PropertyModerationFilters, StatusCounts, StatusFilter } from '../core/types'
 
-const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,contact_info,status,moderation_message'
+const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message'
 
 type ProfileSummary = { id: string; full_name: string | null; email: string | null }
 type DuplicateFlag = { property_id: string; duplicate_of: string }
@@ -115,19 +115,29 @@ export async function fetchModerationProperties(
   if (properties.length === 0) return { properties: [], total }
 
   const userIds = [...new Set(properties.map((property) => property.user_id))].filter(Boolean)
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, full_name, email')
-    .in('id', userIds)
-  if (profileError) throw profileError
+  const propertyIds = properties.map((property) => property.id)
+  const [profileResult, contactResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds),
+    supabase.rpc('get_admin_property_contact_details', { p_property_ids: propertyIds }),
+  ])
+  if (profileResult.error) throw profileResult.error
+  if (contactResult.error) throw contactResult.error
 
-  const profiles = (profileData ?? []) as unknown as ProfileSummary[]
+  const profiles = (profileResult.data ?? []) as unknown as ProfileSummary[]
   const profileMap = new Map(profiles.map((profile) => [
     profile.id,
     profile.full_name && profile.email
       ? `${profile.full_name} · ${profile.email}`
       : profile.email || profile.full_name || `ID ${profile.id.slice(0, 8)}`,
   ]))
+  const privateContacts = (contactResult.data ?? []) as Array<{
+    property_id: string
+    contact_info: ModerationProperty['contact_info']
+  }>
+  const contactMap = new Map(privateContacts.map((contact) => [contact.property_id, contact.contact_info]))
 
   const duplicateMap = new Map<string, { id: string; title: string }>()
   const imageDuplicateMap = new Map<string, NonNullable<ModerationProperty['image_duplicate_matches']>>()
@@ -205,6 +215,7 @@ export async function fetchModerationProperties(
     total,
     properties: properties.map((property) => ({
       ...property,
+      contact_info: contactMap.get(property.id) ?? null,
       user_email: profileMap.get(property.user_id),
       duplicate_of: duplicateMap.get(property.id)?.id,
       duplicate_title: duplicateMap.get(property.id)?.title,

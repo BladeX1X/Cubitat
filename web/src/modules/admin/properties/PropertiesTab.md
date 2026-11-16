@@ -10,6 +10,9 @@ La pestaña `PropertiesTab` presenta la cola paginada de propiedades para modera
 - La búsqueda textual se limita a 100 caracteres y elimina puntuación reservada por el filtro PostgREST.
 - La vista `Coincidencias pHash` usa una RPC propia, por lo que no presenta los filtros generales.
 - La UI emplea los componentes compartidos `Button`, `Input` y `Select`.
+- La consulta general no lee `properties.contact_info`. El repositorio obtiene
+  los datos privados de contacto mediante `get_admin_property_contact_details`
+  para los IDs de la página; esa RPC exige una sesión administrativa AAL2.
 
 ## Validación
 

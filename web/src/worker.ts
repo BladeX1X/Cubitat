@@ -2,6 +2,7 @@ import { RateLimiter } from './rate-limiter';
 import {
   handlePublicContactSubmission,
   handlePublicMarketplaceContact,
+  handlePublicPropertyContact,
   handlePublicReportSubmission,
   verifyTurnstile,
   type PublicSubmissionEnv,
@@ -9,6 +10,7 @@ import {
 import { checkPwnedPassword, shouldCheckPwnedPassword } from './modules/auth/pwnedPassword';
 import { logWorkerEvent } from './worker/logger';
 import { readBoundedBytes, readBoundedJsonObject, readBoundedText } from './worker/boundedJson.js';
+import { handlePropertyImageUpload } from './worker/property-image-uploads';
 import {
   dispatchPendingPushNotifications,
   handlePushSubscriptionRequest,
@@ -818,6 +820,62 @@ export function createWorker(options: WorkerOptions = {}) {
       return withSecurityHeaders(await handlePublicMarketplaceContact(request, env), url);
     }
 
+    if (path === '/api/public/property-contact') {
+      if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const contactRateLimit = await checkRateLimit(env, `${clientIp}:public-property-contact:v1`, 10, 10 * 60 * 1000);
+      if (!contactRateLimit.allowed) return rateLimitResponse(contactRateLimit.resetAt);
+      return withSecurityHeaders(await handlePublicPropertyContact(request, env), url);
+    }
+
+    if (path === '/api/property-view') {
+      if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rateLimit = await checkRateLimit(env, `${clientIp}:property-view:v1`, 120, 60_000);
+      if (!rateLimit.allowed) return rateLimitResponse(rateLimit.resetAt);
+
+      const parsed = await readBoundedJsonObject<{ propertyId?: unknown }>(request, 1024);
+      if (!parsed.ok) {
+        const message = parsed.status === 413 ? 'Payload too large'
+          : parsed.status === 408 ? 'Request body timed out' : 'Invalid request';
+        return jsonResponse({ error: message }, parsed.status);
+      }
+      const propertyId = parsed.value.propertyId;
+      if (typeof propertyId !== 'string' || !uuidRegex.test(propertyId)) {
+        return jsonResponse({ error: 'Invalid property ID' }, 400);
+      }
+      if (!env.SUPABASE_SERVICE_ROLE_KEY) return jsonResponse({ error: 'Unavailable' }, 503);
+
+      try {
+        const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/increment_property_view_count`, {
+          method: 'POST',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ property_id: propertyId }),
+        });
+        if (!response.ok) {
+          logWorkerEvent('warn', 'property_view_count_failed', { reason: 'fetch_http', status: response.status });
+          return jsonResponse({ error: 'Unavailable' }, 503);
+        }
+        return jsonResponse({ ok: true });
+      } catch {
+        logWorkerEvent('warn', 'property_view_count_failed', { reason: 'network_unavailable' });
+        return jsonResponse({ error: 'Unavailable' }, 503);
+      }
+    }
+
+    if (path === '/api/property-images/upload') {
+      if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+      const user = await getAuthenticatedUser(request.headers.get('Authorization') || '', env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+      const uploadRateLimit = await checkRateLimit(env, `user:${user.id}:property-image-upload:v1`, 30, 5 * 60_000);
+      if (!uploadRateLimit.allowed) return rateLimitResponse(uploadRateLimit.resetAt);
+      return addSecurityHeaders(await handlePropertyImageUpload(request, env, user.id));
+    }
+
     // Endpoint interno para moderación con IA
     if (path === '/api/ai-moderate' && request.method === 'POST') {
       const authHeader = request.headers.get('Authorization') || '';
@@ -1082,10 +1140,7 @@ export function createWorker(options: WorkerOptions = {}) {
         'properties', 'property_reports', 'notifications', 'search_alerts', 'saved_properties', 'contacts',
         ...(options.additionalAuthenticatedWriteTables ?? []),
       ];
-      const allowedPublicRpcs = [
-        'increment_property_view_count',
-        ...(options.additionalPublicRpcs ?? []),
-      ];
+      const allowedPublicRpcs = [...(options.additionalPublicRpcs ?? [])];
       const allowedAuthenticatedRpcs = [
         'get_admin_metrics',
         'get_admin_mfa_bypass_until',
@@ -1193,7 +1248,8 @@ export function createWorker(options: WorkerOptions = {}) {
       // Bloquear POST a tablas no permitidas
       if (method === 'POST'
         && tableName
-        && !allowedWriteTables.includes(tableName)
+        && (!allowedWriteTables.includes(tableName)
+          || (tableName === 'saved_marketplace_listings' && !authenticated))
         && !isAllowedAuthenticatedRpc
         && !isAllowedPublicRpc) {
         return jsonResponse({ error: 'Operación no permitida.' }, 403);
@@ -1248,8 +1304,11 @@ export function createWorker(options: WorkerOptions = {}) {
           );
         }
       }
+      // Firmar URLs es una lectura de Storage: el SDK usa POST, pero no debe consumir cuota de subida.
       // 3. Subida de Imágenes (POST/PUT a storage/v1/object/*) - Máximo 40 cada 10 minutos
-      else if ((method === 'POST' || method === 'PUT') && subPath.startsWith('/storage/v1/object/')) {
+      else if ((method === 'POST' || method === 'PUT')
+        && subPath.startsWith('/storage/v1/object/')
+        && !(method === 'POST' && /^\/storage\/v1\/object\/sign(?:\/|$)/.test(subPath))) {
         const key = `${clientIp}:storage`;
         if (await isRateLimited(env, key, 40, 600000)) {
           return new Response(

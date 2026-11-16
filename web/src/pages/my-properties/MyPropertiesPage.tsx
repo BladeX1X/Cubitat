@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { Button } from '../../shared/ui/button'
 import {
@@ -18,6 +18,7 @@ import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/prop
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { createOwnedPropertyCoverPreviews, revokePrivateImagePreviewUrls } from '../../modules/properties/utils/privateImagePreviews'
 
 const PropertyVerificationPanel = import.meta.env.DEV
   || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
@@ -37,11 +38,36 @@ type Property = {
   location: string
   price_usd: number | null
   cover_image: string | null
+  cover_preview_url?: string | null
   status: PropertyStatus
   moderation_message: string | null
   created_at: string
   user_id: string
   view_count?: number
+}
+
+type PropertyStatusFilter = 'all' | 'review' | 'published' | 'rejected' | 'draft' | 'hidden'
+
+const PROPERTY_STATUS_FILTERS: Array<{
+  id: PropertyStatusFilter
+  label: string
+  className: string
+}> = [
+  { id: 'all', label: 'Todas', className: 'border-neutral-200 text-neutral-700' },
+  { id: 'review', label: 'En revisión', className: 'border-amber-200 text-amber-800' },
+  { id: 'published', label: 'Publicadas', className: 'border-emerald-200 text-emerald-800' },
+  { id: 'rejected', label: 'Rechazadas', className: 'border-red-200 text-red-800' },
+  { id: 'draft', label: 'Borradores', className: 'border-blue-200 text-blue-800' },
+  { id: 'hidden', label: 'Ocultas', className: 'border-neutral-200 text-neutral-700' },
+]
+
+function matchesStatusFilter(property: Property, filter: PropertyStatusFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'review') return property.status === 'pending_review'
+  if (filter === 'published') return property.status === 'published' || property.status === 'ai_approved'
+  if (filter === 'rejected') return property.status === 'ai_rejected'
+  if (filter === 'draft') return property.status === 'draft' || property.status === 'local_draft'
+  return property.status === 'paused' || property.status === 'owner_hidden'
 }
 
 export type MyPropertiesPageProps = {
@@ -126,8 +152,12 @@ export function PropertyCard({
       {/* Cover image */}
       <div className="relative h-48 overflow-hidden bg-neutral-100">
         <img
-          src={property.cover_image || PLACEHOLDER_IMAGE}
+          src={property.cover_preview_url || property.cover_image || PLACEHOLDER_IMAGE}
           alt={property.title}
+          onError={(event) => {
+            event.currentTarget.onerror = null
+            event.currentTarget.src = PLACEHOLDER_IMAGE
+          }}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-3 left-3">
@@ -289,33 +319,46 @@ export function MyPropertiesPage({
   })
 
   const [properties, setProperties] = useState<Property[]>([])
+  const [statusFilter, setStatusFilter] = useState<PropertyStatusFilter>('all')
+  const privatePreviewRows = useRef<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(null)
   const [visibilityMessage, setVisibilityMessage] = useState<{
     type: 'success' | 'error'
     text: string
   } | null>(null)
+  const visibleProperties = properties.filter((property) => matchesStatusFilter(property, statusFilter))
 
   /* ---- fetch ---- */
   useEffect(() => {
+    let active = true
+    revokePrivateImagePreviewUrls(privatePreviewRows.current)
+    privatePreviewRows.current = []
     async function load() {
       setLoading(true)
+      setProperties([])
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser()
 
-        if (!user) return
+        if (!active) return
+        if (!user || user.id !== userId) return
 
         const { data, error } = await supabase
           .from('properties')
-          .select('*')
+          .select('id,title,location,price_usd,cover_image,status,moderation_message,created_at,user_id,view_count')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
         let finalProperties: Property[] = []
         if (!error && data) {
-          finalProperties = data as Property[]
+          finalProperties = await createOwnedPropertyCoverPreviews(data as Property[], user.id)
+          if (!active) {
+            revokePrivateImagePreviewUrls(finalProperties)
+            return
+          }
+          privatePreviewRows.current = finalProperties
         }
 
         // Cargar borrador local si existe en localStorage
@@ -354,12 +397,17 @@ export function MyPropertiesPage({
           })
         }
 
-        setProperties(finalProperties)
+        if (active) setProperties(finalProperties)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
-    load()
+    void load()
+    return () => {
+      active = false
+      revokePrivateImagePreviewUrls(privatePreviewRows.current)
+      privatePreviewRows.current = []
+    }
   }, [userId])
 
   /* ---- delete handler ---- */
@@ -385,10 +433,26 @@ export function MyPropertiesPage({
     )
     if (!confirmed) return
 
-    const { error } = await supabase.from('properties').delete().eq('id', propertyId)
-
-    if (!error) {
+    setVisibilityLoadingId(propertyId)
+    setVisibilityMessage(null)
+    try {
+      const { error } = await supabase.from('properties').delete().eq('id', propertyId)
+      if (error) throw error
       setProperties((prev) => prev.filter((p) => p.id !== propertyId))
+      setVisibilityMessage({ type: 'success', text: 'La propiedad fue eliminada.' })
+    } catch (reason) {
+      logSafeEvent({
+        module: 'my_properties',
+        action: 'delete_property',
+        level: 'error',
+        code: sanitizeErrorReason(reason),
+      })
+      setVisibilityMessage({
+        type: 'error',
+        text: 'No se pudo eliminar la propiedad. Comprueba tu conexión y vuelve a intentarlo.',
+      })
+    } finally {
+      setVisibilityLoadingId(null)
     }
   }
 
@@ -474,6 +538,41 @@ export function MyPropertiesPage({
             </div>
           )}
 
+          {!loading && properties.length > 0 && (
+            <div className="mb-6">
+              <div
+                role="group"
+                aria-label="Filtrar publicaciones por estado"
+                className="flex gap-2 overflow-x-auto pb-2"
+              >
+                {PROPERTY_STATUS_FILTERS.map((filter) => {
+                  const count = properties.filter((property) => matchesStatusFilter(property, filter.id)).length
+                  const active = statusFilter === filter.id
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      aria-pressed={active}
+                      disabled={count === 0 && filter.id !== 'all'}
+                      onClick={() => setStatusFilter(filter.id)}
+                      className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${filter.className} ${active ? 'bg-[#035f53] !border-[#035f53] !text-white' : 'bg-white hover:bg-neutral-50'}`}
+                    >
+                      {filter.label}
+                      <span className={`rounded-full px-1.5 py-0.5 text-xs ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {statusFilter !== 'all' && (
+                <p className="mt-1 text-xs text-neutral-500" aria-live="polite">
+                  Mostrando {visibleProperties.length} de {properties.length} publicaciones
+                </p>
+              )}
+            </div>
+          )}
+
           {visibilityMessage && (
             <div
               role={visibilityMessage.type === 'error' ? 'alert' : 'status'}
@@ -490,9 +589,20 @@ export function MyPropertiesPage({
             <LoadingSpinner />
           ) : properties.length === 0 ? (
             <MyPropertiesEmptyState onPublish={() => onNewProperty()} />
+          ) : visibleProperties.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-neutral-200 px-6 py-12 text-center">
+              <p className="font-semibold text-neutral-800">No hay publicaciones en este estado</p>
+              <button
+                type="button"
+                className="mt-3 text-sm font-semibold text-[#035f53] underline underline-offset-2"
+                onClick={() => setStatusFilter('all')}
+              >
+                Ver todas las publicaciones
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property) => (
+              {visibleProperties.map((property) => (
                 <PropertyCard
                   key={property.id}
                   property={property}

@@ -4,7 +4,98 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-11-07.
+Última revisión documental: 2026-11-16.
+
+### Sondeo de objetos — 2026-11-16
+
+Consulta `SELECT` solo de catálogo sobre producción: de una muestra de 26
+funciones/tablas candidatas asociadas con las 57 fuentes locales no registradas,
+solo aparecieron `public.property_verification_audit` y
+`public.is_admin_aal2`; `public.property_contact_details` no existe. La primera
+está presente sin una versión de migración correspondiente en el ledger, por lo
+que hay deriva entre ledger y esquema. Es una muestra, no clasificación final ni
+prueba de que el resto de SQL se deba aplicar. No se leyeron filas de usuarios ni
+se ejecutó DDL/DML. La carpeta quedó desvinculada de producción al terminar.
+
+## Ledger de Supabase producción — lectura de solo lectura — 2026-11-15
+
+Con el proyecto `tohjzoncoosvjbjcakdl` enlazado, `supabase migration list
+--linked` reportó 158 fuentes locales: 101 registradas también en el ledger
+remoto, 57 solo locales y 0 versiones remotas sin fuente local en este árbol.
+Las 15 versiones F3 (`20261013130000`, `20261024190000`, `20261025010000`,
+`20261025020000`, `20261025140000`, `20261027100000`, `20261028193000`,
+`20261103120000`–`20261103180000`, `20261106100000`) y las ocho F4
+(`20261105120000`–`20261105180000`) constan en remoto.
+
+Las 57 versiones solo locales no son una lista aprobada para ejecutar. Algunas
+pueden ser overlays DEV, propuestas no aplicadas o cambios cuyo efecto ya se
+introdujo manualmente. No usar `db push` global ni `migration repair`; clasificar
+cada fuente contra el esquema productivo, reconciliar procedencia y dependencias,
+y validar cualquier conjunto pequeño en una base aislada. El listado exacto de
+IDs observados está en
+[`docs/PRODUCTION_RELEASE_READINESS_2026-11-15.md`](../../docs/PRODUCTION_RELEASE_READINESS_2026-11-15.md).
+No se aplicó SQL en esta comprobación.
+`supabase db lint --linked --level warning` también pasó sin errores de esquema.
+La carpeta release quedó desvinculada tras las consultas para evitar comandos
+`--linked` accidentales contra producción.
+El `db dump` schema-only no se completó (la CLI no terminó de descargar su
+imagen de `pg_dump`); no se obtuvo comparación de definiciones y no se modificó
+la base.
+
+> Actualización 2026-11-16: estado histórico supersedido por el workflow
+> [`Supabase Production Schema Snapshot`](https://github.com/BladeX1X/Cubitat/actions/runs/43832798096),
+> que obtuvo correctamente una instantánea `pg_dump --schema-only` sin ejecutar
+> SQL. El artefacto privado `cubitat-production-schema-43832798096` contiene el
+> DDL y ledger remoto (101 versiones), vence el 2026-11-17 08:38 UTC y no
+> contiene filas de negocio. La clasificación exhaustiva de las 63 fuentes
+> locales sin registro continúa pendiente; no usar `db push` global ni
+> `migration repair`.
+
+Esta observación actualiza cualquier estado histórico inferior que describa
+estas mismas versiones como pendientes o no aplicadas. Los bloques fechados se
+conservan como evidencia de su momento; no usar sus instrucciones genéricas de
+`db push` para el estado productivo actual.
+
+## Migraciones Fase 4 para release coordinado — 2026-11-16 — no aplicadas
+
+Se añadieron migraciones forward para las funciones nuevas que requiere el
+paquete de código: `20261115120000_phase4_service_owner_id_insert_privilege.sql`
+otorga solo la columna `id` para publicación idempotente de servicios;
+`20261115130000_atomic_property_report_resolution.sql` resuelve un reporte
+pendiente y pausa su propiedad dentro de una operación AAL2;
+`20261116100000_phase4_saved_marketplace_listings.sql` crea favoritos privados
+de Servicios y Materiales con RLS e índices únicos;
+`20261116110000_phase4_home_service_photo_storage.sql` configura el bucket
+privado WebP de servicios, límites y políticas de acceso a fotos;
+`20261116120000_phase4_saved_marketplace_privileges.sql` elimina permisos
+heredados por defecto de la tabla de favoritos y concede a `authenticated`
+solo lectura, alta y baja.
+
+Estas cinco fuentes aún no se aplicaron a producción. La migración de contacto
+`20261025160000_separate_property_contact_details.sql` y sus dependientes
+requieren reconciliación aparte: mueve datos privados y no debe incluirse sin
+respaldo recuperable y revisión de dependencias. El historial productivo
+mantiene 57 versiones locales sin clasificar; estas cuatro nuevas fuentes no
+hacen seguro un `db push` global.
+
+### Refresh directo de ledger/catálogo — 2026-11-16
+
+La consulta de solo lectura a `supabase_migrations.schema_migrations` confirmó
+101 versiones remotas. La lista CLI, ahora con las seis fuentes de promoción
+incluidas en este checkout, muestra 63 fuentes locales sin registro remoto y
+ninguna fuente remota sin archivo local. El total actual es 164 fuentes
+canónicas; las 57 locales sin registro observadas el 2026-11-15 quedan como
+conteo histórico.
+
+Una consulta de solo lectura al catálogo confirmó que existen
+`home_service_providers`, `material_listings`, `property_reports`,
+`property_verification_audit`, `is_admin_aal2()` y la vista
+`admin_moderation_audit_log`; existen `material-listings` y la RPC
+`get_public_marketplace_contact`. No existen `property_contact_details`,
+`get_public_property_contact`, `resolve_property_report`, la tabla de favoritos,
+el bucket `home-service-photos` ni sus helpers. Esto confirma gaps concretos
+para el bundle promocionado, pero no clasifica por completo las otras 63
+fuentes. No se consultaron filas de negocio ni se ejecutó DDL/DML.
 
 ## Preparación del release productivo Fases 3/4 — 2026-11-16
 
@@ -68,11 +159,10 @@ orden y propósito, pero no sustituye la lectura del SQL.
 - DEV: el esquema se aplicó por CLI y una consulta confirmó tabla y RPC, pero
   el ledger no quedó registrado; la reconciliación del historial remoto sigue
   pendiente. No ejecutar `db push` global ni `migration repair` en DEV.
-- Producción: todavía no aplicada. El workflow manual
-  `.github/workflows/supabase-production-agent-revocation.yml` limita el
-  dry-run y el despliegue a esta versión, verifica el proyecto productivo y
-  requiere que el esquema esté en estado previo completo. Ejecutarlo solo
-  después de integrar esta migración en `main` y confirmar sus gates.
+- Producción: rectificación 2026-11-15 — el ledger remoto consultado ahora
+  registra `20261106100000`; el estado anterior de este bloque queda supersedido.
+  No repetir la migración ni ejecutar el workflow histórico
+  `.github/workflows/supabase-production-agent-revocation.yml` para esta versión.
 - La prueba SQL del contrato es `supabase/tests/agent_role_revocation_local.sql`;
   ejecución alojada de revocación con usuario sintético aún pendiente.
 
@@ -1048,3 +1138,70 @@ Usar la captura para comparar objetos, grants, políticas, funciones, triggers y
 versiones reales antes de preparar la lista exacta de SQL forward. No es un
 respaldo ni una prueba de restauración; no habilita `db push` global ni
 `migration repair`.
+
+### Revalidación de CI del release — 2026-11-16
+
+GitHub Actions run [43841317949](https://github.com/BladeX1X/Cubitat/actions/runs/43841317949) terminó `quality` y `database-security` en PASS, incluyendo pruebas, lint, build y perfiles productivos F2/F3/F4. El check externo Cloudflare Workers Builds continúa en FAILURE para el build `78d47b38-11ff-4cde-95d8-01f05337b546`; GitHub no incluye la causa. No se desplegó Worker ni se aplicó DDL/DML productivo.
+
+La clasificación de las 63 fuentes del árbol local sin ledger remoto sigue siendo pendiente. La inspección del snapshot schema-only confirma deriva (objetos sin ledger y objetos requeridos ausentes); las coincidencias por nombre de objeto en SQL no determinan por sí solas qué migraciones se aplicaron. No ejecutar `db push` global ni `migration repair`. El replay aislado no se ha ejecutado en este equipo: Docker Desktop Engine no está disponible.
+
+CI final del commit `f44d5f4` — run [43842815133](https://github.com/BladeX1X/Cubitat/actions/runs/43842815133): `quality` y `database-security` PASS, con perfiles F2/F3/F4 PASS. No cambia la necesidad de reconciliar las 63 migraciones no registradas ni habilita una aplicación global.
+
+### Hallazgo del replay schema-only — privilegios de Favoritos — 2026-11-16
+
+Un replay aislado sobre el snapshot schema-only de producción [43839389470](https://github.com/BladeX1X/Cubitat/actions/runs/43839389470) ejecutó sin error 11 fuentes seleccionadas del flujo release. La base de replay no contenía filas de negocio. El control SQL detectó que los ACL por defecto del esquema daban `UPDATE` sobre `saved_marketplace_listings` a `authenticated` y lectura a `service_role`, pese a que `20261116100000` solo declara `SELECT/INSERT/DELETE`.
+
+La migración forward `20261116120000_phase4_saved_marketplace_privileges.sql` limpia explícitamente los grants a `PUBLIC`, `anon`, `authenticated` y `service_role`, y luego concede únicamente `SELECT`, `INSERT`, `DELETE` a `authenticated`. Tras la corrección, `phase4_marketplace_rollout_local.sql` pasó 14/14 y la consulta de ACL confirmó que `anon` no lee, `authenticated` no actualiza y `service_role` no lee. La prueba de contacto con filas sintéticas dentro de transacción también pasó y terminó en rollback.
+
+El replay prueba solo el subconjunto seleccionado; no aprueba las otras fuentes pendientes. El inventario actualizado es 165 fuentes locales, 101 en ledger, 64 locales sin registro y cero remotas sin fuente. No aplicar `db push` global ni `migration repair`; producción sigue sin escritura.
+
+### Estado actualizado del replay de release — 2026-11-16
+
+La nota anterior sobre replay limitado a 11 fuentes queda supersedida: el commit
+`597f61b0d5cf0d06cd6ea7c3af708369aeaf0d6b` fue reproducido en un Postgres
+local aislado, partiendo del schema-only productivo, y las 64 fuentes locales
+sin fila en ledger terminaron sin error SQL. El replay no incluyó filas de
+negocio. La prueba de catálogo Fase 4 obtuvo 14/14; la prueba transaccional de
+contacto terminó con rollback.
+
+El replay permite continuar el análisis de sintaxis y dependencias, pero no
+convierte las 64 fuentes en una allowlist para producción. Se identificaron
+DML ejecutado en aplicación para auditoría histórica de verificaciones,
+retención KYC, migración de contactos, cambio de visibilidad del bucket
+`property_images` y backfill temporal de tombstones push. Antes de aplicarlos se
+requieren conteos agregados, guardas y postchecks sobre el estado productivo
+actual, además de reconciliar objetos que existen sin registro de migración.
+
+Run CI [43846726074](https://github.com/BladeX1X/Cubitat/actions/runs/43846726074)
+terminó `quality` y `database-security` PASS, incluidos perfiles F2/F3/F4.
+Cloudflare Workers Builds falló para `4d44a71c-e7fa-4517-8172-09d4a7734ad7`
+sin log de causa visible desde GitHub. No desplegar ni ejecutar `db push` global
+hasta resolver ese check y cerrar la allowlist incremental.
+
+El sondeo de datos agregado preparado en
+`supabase/preflight/phase34-production-data-preflight.sql` devuelve solamente
+conteos para auditoría, retención KYC, forma del JSON de contacto, bucket de
+fotos y cantidad de filas de push. Se comprobó sintácticamente en una instancia
+local mínima y después contra una restauración local del schema-only productivo;
+las 16 filas de salida se pudieron calcular con las columnas reales. Sus ceros
+son consecuencia de que el snapshot no incluye datos de negocio y no representan
+conteos productivos. Aún no se ejecutó en producción. Cualquier valor fuera de
+los criterios descritos debe investigarse antes de ejecutar la migración
+asociada.
+
+La CLI del entorno de trabajo no tiene `projects_read` (403). No se enlazó el
+proyecto ni se intentó escritura remota; falta ejecutar el sondeo mediante un
+canal de solo lectura con el secreto de conexión de producción y revisar los
+conteos resultantes.
+
+Comparación posterior del catálogo en replay local sin filas: la cadena de 64
+fuentes agrega tres tablas y reemplaza políticas RLS y privilegios en módulos
+de propiedades, perfiles, KYC, contactos, push, notificaciones, alertas y
+Storage (44 políticas añadidas, 45 retiradas/reemplazadas y 318 líneas de
+grants/revokes en el diff). Esto confirma que el release debe revisar y probar
+la cadena completa de hardening; seleccionar solo las últimas migraciones
+dejaría dependencias y controles de seguridad fuera del bundle.
+
+Con las 64 fuentes aplicadas, `phase4_marketplace_rollout_local.sql` pasó
+14/14 y `public_property_contact_privileges_local.sql` terminó con rollback.
+No se ejecutó ninguna consulta de escritura en producción.

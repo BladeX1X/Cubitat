@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ArrowLeft, Boxes } from 'lucide-react'
-import { createMaterialListing, fetchMyMaterialListings, removeUnattachedMaterialPhotos, updateMaterialListing, uploadMaterialPhotos } from '../../modules/materials/materialRepository'
+import { createMaterialListing, createOwnedMaterialPhotoPreviews, fetchMyMaterialListings, removeUnattachedMaterialPhotos, updateMaterialListing, uploadMaterialPhotos } from '../../modules/materials/materialRepository'
 import { MATERIAL_PHOTO_MAX_BYTES, MATERIAL_PHOTO_MAX_COUNT, validateMaterialPhotoFiles } from '../../modules/materials/materialPhotos'
 import { MATERIAL_AVAILABILITIES, MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, MATERIAL_CURRENCIES, type MaterialCategory, type MaterialCurrency, type MaterialListing } from '../../modules/materials/types'
+import { compressCatalogPhoto } from '../../shared/lib/catalogPhotos'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
+import { MultiPhotoUploadField } from '../../shared/ui/MultiPhotoUploadField'
 
 type MaterialListingSubmissionPageProps = {
   onBack: () => void
@@ -19,6 +21,12 @@ const AVAILABILITY_LABELS: Record<MaterialListing['availability'], string> = {
   made_to_order: 'Por encargo',
 }
 
+function makeMaterialSlug(title: string, retryToken: string): string {
+  const base = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'material'
+  return `${base}-${retryToken}`
+}
+
 export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingId }: MaterialListingSubmissionPageProps) {
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<MaterialCategory>('cemento')
@@ -31,10 +39,15 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   const [whatsapp, setWhatsapp] = useState('')
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPaths, setPhotoPaths] = useState<string[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<Array<{ path: string; url: string }>>([])
+  const [unavailablePhotoPreviews, setUnavailablePhotoPreviews] = useState(0)
   const [removedPhotoPaths, setRemovedPhotoPaths] = useState<string[]>([])
   const [savedListingId, setSavedListingId] = useState<string | null>(null)
+  const [newListingToken] = useState(() => crypto.randomUUID().replaceAll('-', ''))
+  const [pendingCreateSlug, setPendingCreateSlug] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [compressingPhotos, setCompressingPhotos] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [loadingExisting, setLoadingExisting] = useState(Boolean(listingId))
 
@@ -43,10 +56,12 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   useEffect(() => {
     if (!listingId) return
     let active = true
-    void fetchMyMaterialListings().then((listings) => {
+    void fetchMyMaterialListings().then(async (listings) => {
       if (!active) return
       const listing = listings.find((item) => item.id === listingId)
       if (!listing) { setError('No se encontró un anuncio editable.'); return }
+      const previewResult = await createOwnedMaterialPhotoPreviews(listing.id, listing.photoPaths)
+      if (!active) return
       setTitle(listing.title)
       setCategory(listing.category)
       setDescription(listing.description)
@@ -57,13 +72,46 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       setPhone(listing.phone || '')
       setWhatsapp(listing.whatsapp || '')
       setPhotoPaths(listing.photoPaths)
+      setPhotoPreviews(previewResult.photos)
+      setUnavailablePhotoPreviews(previewResult.unavailableCount)
     }).catch(() => { if (active) setError('No se pudo cargar el anuncio para editar.') })
       .finally(() => { if (active) setLoadingExisting(false) })
     return () => { active = false }
   }, [listingId])
 
+  async function handlePhotoSelection(files: File[]) {
+    const validation = validateMaterialPhotoFiles(files, photoPaths.length + photoFiles.length)
+    if (validation) {
+      setError(validation === 'TOO_MANY'
+        ? `Puedes adjuntar hasta ${MATERIAL_PHOTO_MAX_COUNT} fotos por anuncio.`
+        : validation === 'INVALID_TYPE'
+          ? 'Usa archivos WebP, JPEG o PNG.'
+          : `Cada foto debe pesar como máximo ${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB.`)
+      return
+    }
+
+    setCompressingPhotos(true)
+    setError('')
+    try {
+      const compressed = await Promise.all(files.map(compressCatalogPhoto))
+      const compressedValidation = validateMaterialPhotoFiles(compressed, photoPaths.length + photoFiles.length)
+      if (compressedValidation) throw new Error(`CATALOG_PHOTO_${compressedValidation}`)
+      setPhotoFiles((current) => [...current, ...compressed])
+    } catch (compressionError) {
+      setError(compressionError instanceof Error && compressionError.message === 'IMAGE_DIMENSIONS_TOO_LARGE'
+        ? 'Una foto supera la resolución permitida. Reduce su tamaño y vuelve a seleccionarla.'
+        : 'No se pudieron preparar todas las fotos. No se añadió ninguna; vuelve a intentarlo.')
+    } finally {
+      setCompressingPhotos(false)
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (compressingPhotos) {
+      setError('Espera a que terminen de prepararse las fotos antes de enviar.')
+      return
+    }
     const parsedPrice = price.trim() ? Number(price) : null
     const photoValidation = validateMaterialPhotoFiles(photoFiles, photoPaths.length)
     if (photoValidation) {
@@ -94,18 +142,37 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       }
       let targetListingId = listingId || savedListingId
       if (!targetListingId) {
-        targetListingId = await createMaterialListing(input)
+        const stableSlug = pendingCreateSlug ?? makeMaterialSlug(title, newListingToken)
+        if (!pendingCreateSlug) setPendingCreateSlug(stableSlug)
+        targetListingId = await createMaterialListing(input, stableSlug)
         setSavedListingId(targetListingId)
+        const resumeSearch = new URLSearchParams(window.location.search)
+        resumeSearch.set('edit', targetListingId)
+        const search = resumeSearch.toString()
+        const resumePath = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`
+        window.history.replaceState(window.history.state, '', resumePath)
       }
-      const uploadedPaths = await uploadMaterialPhotos(targetListingId, photoFiles, photoPaths.length)
+      const uploadedPaths = photoFiles.length
+        ? await uploadMaterialPhotos(targetListingId, photoFiles, photoPaths.length)
+        : []
       try {
         await updateMaterialListing(targetListingId, { ...input, photoPaths: [...photoPaths, ...uploadedPaths] })
       } catch (updateError) {
-        await removeUnattachedMaterialPhotos(uploadedPaths)
+        if (updateError instanceof Error && updateError.message === 'MATERIAL_LISTING_PERMISSION_DENIED') {
+          await removeUnattachedMaterialPhotos(uploadedPaths)
+        } else if (uploadedPaths.length) {
+          // The server may have committed the update before the response failed.
+          // Keep these paths locally so retry reuses the same objects instead of duplicating uploads.
+          const previewResult = await createOwnedMaterialPhotoPreviews(targetListingId, uploadedPaths)
+          setPhotoPaths((previous) => Array.from(new Set([...previous, ...uploadedPaths])))
+          setPhotoPreviews((previous) => [...previous, ...previewResult.photos.filter((photo) => !previous.some((current) => current.path === photo.path))])
+          setUnavailablePhotoPreviews((previous) => previous + previewResult.unavailableCount)
+          setPhotoFiles([])
+        }
         throw updateError
       }
       await removeUnattachedMaterialPhotos(removedPhotoPaths)
-      setPhotoPaths((previous) => [...previous, ...uploadedPaths])
+      setPhotoPaths((previous) => Array.from(new Set([...previous, ...uploadedPaths])))
       setRemovedPhotoPaths([])
       setPhotoFiles([])
       setSubmitted(true)
@@ -115,7 +182,8 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       else if (submitError instanceof Error && submitError.message === 'MATERIAL_PHOTO_INVALID_TYPE') setError('Usa archivos WebP, JPEG o PNG.')
       else if (submitError instanceof Error && submitError.message === 'MATERIAL_PHOTO_TOO_LARGE') setError(`Cada foto debe pesar como máximo ${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB.`)
       else if (submitError instanceof Error && submitError.message === 'MATERIAL_PHOTO_UPLOAD_FAILED') setError(listingId ? 'No se pudieron cargar las fotos. No se guardaron cambios; vuelve a intentarlo.' : 'El anuncio quedó guardado como pendiente, pero no se pudieron cargar las fotos. Vuelve a intentarlo para adjuntarlas.')
-      else setError('No se pudo guardar el anuncio. Comprueba la conexión e inténtalo otra vez.')
+      else if (submitError instanceof Error && submitError.message === 'MATERIAL_LISTING_PERMISSION_DENIED') setError('No se pudo guardar el anuncio por un permiso de la cuenta. Tus fotos siguen seleccionadas; revisa que estés en la cuenta propietaria e inténtalo de nuevo.')
+      else setError('No se pudo confirmar el guardado. Revisa Mis anuncios antes de reintentarlo; tus fotos quedan conservadas.')
     } finally {
       setSaving(false)
     }
@@ -142,10 +210,10 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
             <label className="text-sm font-semibold">Teléfono<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={32} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold">WhatsApp<input type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} maxLength={32} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold sm:col-span-2">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} required minLength={20} maxLength={5000} rows={5} className="mt-1 block w-full rounded-xl border border-neutral-300 px-3 py-2" /></label>
-            <label className="text-sm font-semibold sm:col-span-2">Fotos del producto<input key={photoFiles.length ? 'selected' : 'empty'} type="file" accept="image/webp,image/jpeg,image/png" multiple onChange={(event) => { const files = Array.from(event.currentTarget.files ?? []); const validation = validateMaterialPhotoFiles(files, photoPaths.length); if (validation) { setError(validation === 'TOO_MANY' ? `Puedes adjuntar hasta ${MATERIAL_PHOTO_MAX_COUNT} fotos por anuncio.` : validation === 'INVALID_TYPE' ? 'Usa archivos WebP, JPEG o PNG.' : `Cada foto debe pesar como máximo ${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB.`); setPhotoFiles([]); return } setError(''); setPhotoFiles(files) }} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3 py-2 font-normal file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-1 file:font-semibold" /><span className="mt-1 block text-xs font-normal text-neutral-500">Hasta {MATERIAL_PHOTO_MAX_COUNT} fotos, WebP/JPEG/PNG, máximo {Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB por foto. Las fotos nuevas permanecen privadas hasta que se apruebe el anuncio. {photoPaths.length > 0 && `Este anuncio tiene ${photoPaths.length} foto${photoPaths.length === 1 ? '' : 's'} guardada${photoPaths.length === 1 ? '' : 's'}.`}</span>{photoFiles.length > 0 && <span className="mt-1 block text-xs text-neutral-600">{photoFiles.length} archivo(s) listo(s) para subir.</span>}</label>
-            {photoPaths.length > 0 && <ul className="sm:col-span-2" aria-label="Fotos guardadas">{photoPaths.map((path, index) => <li key={path} className="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-sm"><span className="truncate text-neutral-600">Foto {index + 1}</span><button type="button" className="min-h-10 px-2 font-semibold text-red-700 underline" onClick={() => { setPhotoPaths((previous) => previous.filter((candidate) => candidate !== path)); setRemovedPhotoPaths((previous) => [...previous, path]) }}>Quitar</button></li>)}</ul>}
+            <MultiPhotoUploadField label="Fotos del producto" files={photoFiles} existingPhotos={photoPaths.map((path) => ({ id: path, src: photoPreviews.find((preview) => preview.path === path)?.url }))} maxCount={MATERIAL_PHOTO_MAX_COUNT} maxSizeLabel={`${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB`} isCompressing={compressingPhotos || saving} onSelectFiles={(files) => void handlePhotoSelection(files)} onRemoveFile={(index) => setPhotoFiles((previous) => previous.filter((_, current) => current !== index))} onRemoveExisting={(photo) => { setPhotoPaths((previous) => previous.filter((path) => path !== photo.id)); setPhotoPreviews((previous) => previous.filter((preview) => preview.path !== photo.id)); setRemovedPhotoPaths((previous) => [...previous, photo.id]) }} />
+            {unavailablePhotoPreviews > 0 && <p role="status" className="sm:col-span-2 text-sm text-amber-800">No se pudieron cargar {unavailablePhotoPreviews === 1 ? 'una foto guardada' : `${unavailablePhotoPreviews} fotos guardadas`}. Puedes conservarlas o quitarlas del anuncio.</p>}
             {error && <p role="alert" className="sm:col-span-2 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-            <div className="sm:col-span-2"><Button type="submit" className="min-h-11" disabled={saving}>{saving ? 'Enviando…' : listingId ? 'Guardar y enviar a revisión' : 'Enviar a revisión'}</Button></div>
+            <div className="sm:col-span-2"><Button type="submit" className="min-h-11" disabled={saving || compressingPhotos}>{compressingPhotos ? 'Preparando fotos…' : saving ? 'Enviando…' : listingId ? 'Guardar y enviar a revisión' : 'Enviar a revisión'}</Button></div>
           </form>
         </section>
       </div>

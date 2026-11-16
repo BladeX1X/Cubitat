@@ -3,12 +3,10 @@ import {
   Bath,
   BedDouble,
   Car,
-  MessageCircle,
   Ruler,
 } from 'lucide-react'
 import { formatPrice } from '../../../shared/lib/formatPrice'
 import { Badge } from '../../../shared/ui/badge'
-import { Button } from '../../../shared/ui/button'
 import {
   Carousel,
   CarouselContent,
@@ -19,13 +17,14 @@ import {
 } from '../../../shared/ui/carousel'
 import { SavePropertyButton } from './SavePropertyButton'
 import type { Property } from '../types'
-import { normalizePhoneForTel, normalizePhoneForWhatsApp } from '../utils/contact'
 import {
   getPropertyGalleryImages,
   optimizePropertyCardImage,
   PROPERTY_IMAGE_FALLBACK,
 } from '../utils/images'
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
+import { MarketplaceContactActions } from '../../../shared/ui/MarketplaceContactActions'
+import { publicPropertyLocation } from '../../../shared/lib/propertyLocation'
 
 const VerificationBadge = PHASE_TWO_ENABLED
   ? lazy(() => import('../../kyc/components/VerificationBadge').then((module) => ({
@@ -244,42 +243,14 @@ export function PropertyCard({
         </div>
 
         {/* Row 5: Actions */}
-        <div className="property-actions">
-          <Button
-            variant="outline"
-            className="property-contact-btn"
-            type="button"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation()
-              const phone = property.contact_info?.phone
-              if (phone) {
-                window.location.href = `tel:${normalizePhoneForTel(phone)}`
-              } else {
-                onSelect(property.id, true)
-              }
-            }}
-          >
-            Contactar
-          </Button>
-          <Button
-            className="property-whatsapp-btn"
-            type="button"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation()
-              const phone = property.contact_info?.phone
-              if (phone) {
-                window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
-              } else {
-                onSelect(property.id, true)
-              }
-            }}
-          >
-            <MessageCircle size={14} fill="white" className="stroke-none shrink-0" />
-            Consultar
-          </Button>
-        </div>
+        <MarketplaceContactActions
+          listingType="property"
+          listingId={property.id}
+          listingTitle={property.title}
+          listingLocation={publicPropertyLocation(property.location) ?? ''}
+          layout="card"
+          onMissing={() => onSelect(property.id, true)}
+        />
       </div>
     </article>
   )

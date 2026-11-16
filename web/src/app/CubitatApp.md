@@ -58,6 +58,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 
 - La app mantiene estado local simple para el MVP y usa navegacion interna ligera antes de incorporar React Router.
 - La portada se extrajo a `src/pages/home/HomePage.tsx` para que la pagina principal evolucione sin hacer crecer `CubitatApp`.
+- Las lecturas públicas usan la proyección compartida `PUBLIC_PROPERTY_SELECT`; el contacto legado `properties.contact_info` está revocado en PostgREST y se resuelve por el canal protegido de contacto, no desde la consulta del catálogo.
 - La portada se renderiza aunque Supabase este cargando o devuelva error. Esto protege la experiencia PWA/mobile-first: el usuario siempre debe poder abrir `/` y usar el buscador inicial.
 - El filtrado se deriva con `useMemo`.
 - La ruta y el enlace `/valorar` dependen de `VITE_PHASE4_VAL_ENABLED`. La
@@ -68,7 +69,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - El mapa queda desacoplado como modulo reemplazable para reincorporarlo en una vista dedicada o en un modo mapa/lista.
 - El login esta fuera del flujo de scroll y se renderiza como modal.
 - Las rutas privadas (`/publicar`, `/editar/:id`, `/mis-propiedades`, `/mi-cuenta`, `/favoritos`) abren login y vuelven a portada si no hay usuario.
-- `Favoritos` reutiliza `saved_properties` y las tarjetas oficiales para no duplicar logica visual.
+- `Favoritos` reutiliza `saved_properties` y, cuando se habilitan las banderas F4-SVC/F4-MAT, suma servicios y materiales guardados mediante `saved_marketplace_listings`; las tarjetas comparten controles de catálogo.
 - La recuperación de una sesión MFA expirada permanece centralizada:
   `AdminPage` no cierra sesiones ni consulta Auth; únicamente propaga el
   callback hasta el guard. El cierre limpia la caché offline y el borrador
@@ -179,6 +180,7 @@ Siguiente refactor recomendado:
 
 - `CubitatApp` ahora controla `isMobileMenuOpen` para abrir/cerrar el menú móvil del header.
 - En móvil se muestra una capa específica: `mobile-header-actions`, `mobile-menu-panel` y `mobile-bottom-nav`.
+- El proveedor global de favoritos de Servicios/Materiales se habilita según las banderas Fase 4 activas; así los perfiles de prueba locales y DEV mantienen estado sincronizado con sus catálogos.
 - La navegación móvil cierra el panel antes de cambiar de vista para evitar que el menú quede encima de la pantalla siguiente.
 - La barra inferior móvil navega a `Inicio`, `Favoritos`, `Vender` y `Cuenta`.
 - Esta solución es temporal dentro de `CubitatApp`; cuando se extraiga el layout, mover estas piezas a `components/layout/Header.tsx` y `components/layout/MobileBottomNav.tsx`.
@@ -229,3 +231,9 @@ Verificacion reciente (2026-07-01):
 - `npm run build` mantiene KYC fuera de producción.
 - `npm run build:phase2-dev` verifica que el bundle aislado contenga el módulo
   KYC antes de desplegarlo con `wrangler.phase2-dev.jsonc`.
+
+## Fotos privadas en resultados — 2026-11-13
+
+- Al restaurar propiedades desde la caché local, `CubitatApp` normaliza portada y galería para que referencias antiguas `/object/public/property_images/...` se sirvan por el endpoint privado del Worker.
+- La misma normalización se aplica a los registros recibidos de Supabase; URLs externas se conservan.
+- En DEV, la referencia pública antigua de una foto almacenada responde 400; el endpoint privado del Worker devuelve 206 `image/webp` para un anuncio publicado.

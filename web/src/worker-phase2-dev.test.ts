@@ -9,6 +9,7 @@ const handleAgentApplicationSubmission = vi.fn().mockResolvedValue(new Response(
 const handleAgentApplicationDocumentLinks = vi.fn().mockResolvedValue(new Response('{"cv_url":"signed"}', { status: 200 }))
 const dispatchPendingAgentApplicationEmails = vi.fn().mockResolvedValue({ claimed: 0, sent: 0, failed: 0 })
 const purgeFinalAgentApplicationEvidence = vi.fn().mockResolvedValue({ claimed: 0, purged: 0, failed: 0 })
+const handleMaterialPhotoUpload = vi.fn().mockResolvedValue(Response.json({ path: 'owner/listing/photo.webp' }, { status: 201 }))
 
 vi.mock('./worker/alert-email-dispatcher', () => ({ dispatchPendingAlertEmails }))
 vi.mock('./worker/push-notifications', async () => {
@@ -26,6 +27,7 @@ vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission
 vi.mock('./worker/agent-application-documents', () => ({ handleAgentApplicationDocumentLinks }))
 vi.mock('./worker/agent-application-email-dispatcher', () => ({ dispatchPendingAgentApplicationEmails }))
 vi.mock('./worker/agent-application-evidence-retention', () => ({ purgeFinalAgentApplicationEvidence }))
+vi.mock('./worker/material-photo-uploads', () => ({ handleMaterialPhotoUpload }))
 
 describe('Phase 2 DEV scheduled tasks', () => {
   beforeEach(() => {
@@ -95,6 +97,80 @@ describe('Phase 2 DEV scheduled tasks', () => {
     expect(response.status).toBe(200)
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/rpc/get_verified_seller_ids')
+  })
+
+  it('sends material photo uploads through the authenticated DEV storage gateway', async () => {
+    const ownerId = '11111111-1111-4111-8111-111111111111'
+    const listingId = '22222222-2222-4222-8222-222222222222'
+    authenticateImageHashRequest.mockResolvedValue(ownerId)
+    handleMaterialPhotoUpload.mockClear()
+    const { default: worker } = await import('./worker-phase2-dev')
+    const response = await worker.fetch(
+      new Request(`https://cubitat1-phase2-dev.workers.dev/api/material-photos/${listingId}/upload`, {
+        method: 'POST', headers: { Authorization: 'Bearer user-token', 'Content-Type': 'image/webp' }, body: new Uint8Array([1]),
+      }),
+      {
+        VITE_SUPABASE_URL: 'https://project.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'anon-key',
+        RATE_LIMITER: { idFromName: vi.fn(() => 'global'), get: vi.fn(() => ({ fetch: vi.fn().mockResolvedValue(new Response('{"allowed":true}', { status: 200 })) })) },
+      } as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(response.status).toBe(201)
+    expect(authenticateImageHashRequest).toHaveBeenCalledOnce()
+    expect(handleMaterialPhotoUpload).toHaveBeenCalledWith(expect.any(Request), expect.any(Object), ownerId, listingId)
+  })
+
+  it('proxies saved marketplace listing writes only for authenticated users in DEV', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { default: worker } = await import('./worker-phase2-dev')
+    const env = {
+      PHASE2_ENABLED: 'true',
+      VITE_SUPABASE_URL: 'https://project.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'anon-key',
+      RATE_LIMITER: {
+        idFromName: vi.fn(() => 'global'),
+        get: vi.fn(() => ({ fetch: vi.fn().mockResolvedValue(new Response('{"allowed":true}', { status: 200 })) })),
+      },
+    }
+
+    const savedListingUrl = 'https://cubitat1-phase2-dev.workers.dev/api/supabase/rest/v1/saved_marketplace_listings'
+    const authenticatedInsert = await worker.fetch(
+      new Request(savedListingUrl, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer user-jwt', apikey: 'anon-key', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: 'owner-id', service_provider_id: 'service-id', material_listing_id: null }),
+      }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    const anonymousInsert = await worker.fetch(
+      new Request(savedListingUrl, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer dummy-key-safe-from-browsers', apikey: 'anon-key', 'Content-Type': 'application/json' },
+        body: '{}',
+      }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    const authenticatedDelete = await worker.fetch(
+      new Request(`${savedListingUrl}?user_id=eq.owner-id&service_provider_id=eq.service-id`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer user-jwt', apikey: 'anon-key' },
+      }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+
+    expect(authenticatedInsert.status).toBe(204)
+    expect(authenticatedDelete.status).toBe(204)
+    expect(anonymousInsert.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://project.supabase.co/rest/v1/saved_marketplace_listings')
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('Authorization')).toBe('Bearer user-jwt')
+    expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('Authorization')).toBe('Bearer user-jwt')
   })
 
   it('proxies agent application review only with an authenticated session', async () => {

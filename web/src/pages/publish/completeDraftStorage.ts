@@ -6,6 +6,8 @@ export type CompletePublicationDraft = {
   images: DraftImage[]
   step: number
   existingAmenities: string[]
+  /** True only after a user changes a field or the gallery in this editing session. */
+  edited?: boolean
 }
 
 const DB_NAME = 'cubitat-publication-drafts'

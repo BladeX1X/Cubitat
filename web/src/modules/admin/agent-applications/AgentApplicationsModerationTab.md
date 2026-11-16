@@ -20,6 +20,29 @@ preexistentes deben reconciliarse con una provincia antes de habilitar el flujo
 en un entorno hosted. Cuando vence la retención, el endpoint responde 410 y la
 pestaña explica que los documentos ya fueron eliminados.
 
+La sección **Historial privado de rechazos** consulta los eventos de rechazo en
+páginas y solo se presenta en esta vista administrativa protegida por AAL2. El
+moderador puede volver a consultar la nota interna y el estado/provincia de la
+solicitud; el motivo no se copia a la respuesta del solicitante ni a la tarjeta
+de estado de Mi cuenta. El acceso continúa sujeto a RLS de
+`agent_application_events`. La consulta y visualización tienen cobertura de
+componente local. En la revisión visual autenticada en DEV, el solicitante mostró
+únicamente el estado genérico «Postulación no aprobada», mientras que la sesión
+de moderador AAL2 abrió el historial y vio las notas internas de dos
+postulaciones rechazadas. La nota no se expone al solicitante. No se alteraron
+solicitudes ni documentos durante esta comprobación; el comportamiento no se ha
+verificado en producción.
+
+#### Estado de despliegue — 2026-11-08
+
+La versión DEV `dcf754bc-d5aa-44d2-9069-1cc510a8d0ec` incluye este flujo. El
+smoke anónimo confirmó home 200, GET al intake 405 y GET a documentos privados
+401. Las pruebas locales cubren que Mi cuenta no presenta el motivo y que la
+nota aparece en el historial de moderación. En el navegador DEV se comprobó
+que la cuenta solicitante solo ve «Postulación no aprobada» con texto genérico.
+La consulta autenticada del historial queda verificada visualmente en DEV. No se
+ha confirmado esta parte en producción.
+
 La sección **Agentes activos** usa RPCs autenticadas permitidas explícitamente
 por el Worker DEV, que conserva el JWT de la sesión; PostgreSQL exige admin
 AAL2 para ambas operaciones. Para retirar el
@@ -46,13 +69,22 @@ Si el SDK no devuelve SQLSTATE, la UI diferencia fallos de conexión y usa el
 estado HTTP o el tipo/los nombres de campos permitidos como diagnóstico. La UI
 nunca muestra el mensaje bruto del servidor ni el ID de solicitud.
 
-### Lista de agentes en el Worker DEV — 2026-11-07
+### Lista de agentes en el Worker DEV — diagnóstico histórico del 2026-11-07
 
-La sección se renderizaba, pero el Worker devolvía 403 antes de enviar
+En el diagnóstico de esa fecha, la sección se renderizaba, pero el Worker devolvía 403 antes de enviar
 `list_active_agents_for_moderation` a PostgREST: faltaba incluir la RPC en la
 lista permitida de operaciones autenticadas. La misma omisión afectaba
 `revoke_agent_access`. La corrección local añade ambas RPC a la lista; la base
 de datos conserva la autorización AAL2. En el estado observado, la interfaz
 todavía no está reparada en DEV: el bundle activo contiene 29 módulos con hashes
 distintos del build local, así que hay que recuperar el árbol de release
-correspondiente antes de desplegar este arreglo.
+correspondiente antes de desplegar este arreglo. El estado se corrigió después:
+la lista y la RPC se publicaron en DEV; en esta revisión se observó la sección sin
+error, aunque no se validó la lista de agentes activos ni una revocación.
+
+### Verificación de bundle DEV — 2026-11-08
+
+- Confirmado por HTTP público: `/moderar` y el chunk `/assets/AgentApplicationsModerationTab-CyxjcX8Q.js` responden 200; el chunk contiene «Historial privado de rechazos» y «Nota interna».
+- En el momento de esta comprobación HTTP aún faltaba inspeccionar los datos en sesión; el pendiente quedó cerrado después con la verificación autenticada de dos notas que consta arriba.
+- Esta evidencia supersede las notas anteriores de este archivo que describían este módulo de historial como solo local o pendiente de despliegue; no certifica otros endpoints ni todos los flujos F3.
+- Privacidad esperada: la nota queda solo para moderación AAL2; Mi cuenta muestra estado genérico. Producción y datos de Supabase sin cambios.

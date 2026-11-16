@@ -1,12 +1,12 @@
-import { useRef, useState, type ReactNode, type UIEvent } from 'react'
+import { useCallback, useRef, useState, type ReactNode, type UIEvent } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '../../modules/maps/lib/configureMapLibreWorker'
 import {
   Bath,
   BedDouble,
   Car,
   MapPin,
-  MessageCircle,
   Phone,
   Ruler,
   Share2,
@@ -21,10 +21,10 @@ import {
   Building2,
 } from 'lucide-react'
 import { useEffect } from 'react'
-import { publicPropertyLocation } from '../../shared/lib/propertyLocation'
 import { createApproximateLocationArea } from '../../modules/maps/lib/approximateLocationArea'
 import { approximatePropertyCoordinates } from '../../modules/maps/lib/propertyCoordinates'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { isAndroidDevice, isIOSDevice } from '../../shared/pwa/installEnvironment'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { normalizePhoneForStorage, validatePhone } from '../../shared/lib/phone'
@@ -32,11 +32,12 @@ import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { ExchangePreferencesSummary } from '../../modules/properties/components/ExchangePreferencesSummary'
 import { SavePropertyButton } from '../../modules/properties/components/SavePropertyButton'
 import type { OperationType, Property } from '../../modules/properties/types'
+import { PUBLIC_PROPERTY_SELECT } from '../../modules/properties/publicPropertySelect'
 import {
   getPropertyContactInfo,
-  normalizePhoneForTel,
-  normalizePhoneForWhatsApp,
 } from '../../modules/properties/utils/contact'
+import { MarketplaceContactActions } from '../../shared/ui/MarketplaceContactActions'
+import { publicPropertyLocation } from '../../shared/lib/propertyLocation'
 import {
   getPropertyGalleryImages,
   getPropertyCoverImage,
@@ -99,6 +100,8 @@ export function DetailPage({
   onSelectAgent,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const shareInProgress = useRef(false)
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
   const [mediaModalTab, setMediaModalTab] = useState<'photos' | 'map'>('photos')
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
@@ -129,8 +132,12 @@ export function DetailPage({
 
     const incrementViews = async () => {
       try {
-        const { error } = await supabase.rpc('increment_property_view_count', { property_id: property.id })
-        if (error) {
+        const response = await fetch('/api/property-view', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propertyId: property.id }),
+        })
+        if (!response.ok) {
           logSafeEvent({
             module: 'properties',
             action: 'increment_view_count_failed',
@@ -222,39 +229,46 @@ export function DetailPage({
     province = locationParts[0]
   }
 
-  function copyToClipboardFallback() {
-    navigator.clipboard.writeText(window.location.href)
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+  async function copyToClipboardFallback() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err: unknown) {
+      logSafeEvent({
+        module: 'detail',
+        action: 'copy_clipboard',
+        level: 'error',
+        code: sanitizeErrorReason(err),
       })
-      .catch((err) => {
-        logSafeEvent({
-          module: 'detail',
-          action: 'copy_clipboard',
-          level: 'error',
-          code: sanitizeErrorReason(err),
-        })
-      })
+    }
   }
 
   async function handleShare() {
+    if (shareInProgress.current) return
+    shareInProgress.current = true
+    setSharing(true)
     const shareData = {
       title: property.title,
       text: property.description ? (property.description.substring(0, 100) + '...') : 'Anuncio publicado en Cubitat',
       url: window.location.href
     }
 
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch (err: unknown) {
-        if (!(err instanceof DOMException && err.name === 'AbortError')) {
-          copyToClipboardFallback()
+    try {
+      const canUseNativeShare = Boolean(navigator.share) && (isAndroidDevice() || isIOSDevice())
+      if (canUseNativeShare && navigator.share) {
+        try {
+          await navigator.share(shareData)
+        } catch (err: unknown) {
+          if (!(err instanceof DOMException && err.name === 'AbortError')) {
+            await copyToClipboardFallback()
+          }
         }
       }
-    } else {
-      copyToClipboardFallback()
+      else await copyToClipboardFallback()
+    } finally {
+      shareInProgress.current = false
+      setSharing(false)
     }
   }
 
@@ -367,6 +381,8 @@ export function DetailPage({
               type="button"
               variant="outline"
               aria-label="Compartir propiedad"
+              aria-busy={sharing}
+              disabled={sharing}
               onClick={handleShare}
               className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors duration-200"
             >
@@ -442,29 +458,19 @@ export function DetailPage({
               {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
             </div>
             {isPublished && (
-              <div className="detail-desktop-cta-row">
-                <button type="button" className="detail-desktop-primary-cta" onClick={scrollToContact}>
-                  Contactar
-                </button>
-                <button
-                  type="button"
-                  className="detail-desktop-secondary-cta"
-                  onClick={() => {
-                    if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
-                      void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
-                    }
-                    const phone = property.contact_info?.phone
-                    if (phone) {
-                      window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
-                    } else {
-                      scrollToContact()
-                    }
-                  }}
-                >
-                  <MessageCircle size={17} />
-                  Consultar
-                </button>
-              </div>
+              <MarketplaceContactActions
+                listingType="property"
+                listingId={property.id}
+                listingTitle={property.title}
+                listingLocation={publicPropertyLocation(property.location) ?? ''}
+                layout="property-hero"
+                onMissing={scrollToContact}
+                onChannelOpen={(channel) => {
+                  if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+                    void trackContactClickInPhaseTwoDev(property.id, channel)
+                  }
+                }}
+              />
             )}
           </div>
           <div className="detail-desktop-media">
@@ -572,6 +578,8 @@ export function DetailPage({
                     <button
                     type="button"
                     aria-label="Compartir propiedad"
+                    aria-busy={sharing}
+                    disabled={sharing}
                     onPointerDown={(event) => {
                       event.stopPropagation()
                     }}
@@ -755,47 +763,19 @@ export function DetailPage({
       </div>
 
       {isPublished && <div className="mobile-detail-cta" aria-label="Acciones de contacto">
-        {property.contact_info?.phone ? (
-          <a
-            className="mobile-detail-cta-icon"
-            href={`tel:${normalizePhoneForTel(property.contact_info.phone)}`}
-            aria-label="Llamar al anunciante"
-            onClick={() => {
-              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
-                void trackContactClickInPhaseTwoDev(property.id, 'phone')
-              }
-            }}
-          >
-            <Phone size={16} />
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="mobile-detail-cta-icon"
-            onClick={scrollToContact}
-            aria-label="Ver datos de contacto"
-          >
-            <Phone size={16} />
-          </button>
-        )}
-        <button
-          type="button"
-          className="mobile-detail-cta-primary"
-          onClick={() => {
-            const phone = property.contact_info?.phone
-            if (phone) {
-              if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
-                void trackContactClickInPhaseTwoDev(property.id, 'whatsapp')
-              }
-              window.open(`https://wa.me/${normalizePhoneForWhatsApp(phone)}`, '_blank')
-            } else {
-              scrollToContact()
+        <MarketplaceContactActions
+          listingType="property"
+          listingId={property.id}
+          listingTitle={property.title}
+          listingLocation={publicPropertyLocation(property.location) ?? ''}
+          layout="property-mobile"
+          onMissing={scrollToContact}
+          onChannelOpen={(channel) => {
+            if (PHASE_TWO_ENABLED && trackContactClickInPhaseTwoDev) {
+              void trackContactClickInPhaseTwoDev(property.id, channel)
             }
           }}
-        >
-          <MessageCircle size={16} />
-          Consultar
-        </button>
+        />
       </div>}
 
       {isPublished && isReportModalOpen && (
@@ -1112,83 +1092,125 @@ function ImageGallery({
 function DetailLocationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const [mapLoading, setMapLoading] = useState(true)
+  const [mapUnavailable, setMapUnavailable] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const coordinates = approximatePropertyCoordinates({ latitude, longitude })
   const approximateLatitude = coordinates?.latitude
   const approximateLongitude = coordinates?.longitude
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || approximateLatitude == null || approximateLongitude == null) return
+    if (!containerRef.current || mapRef.current) return
+
+    if (approximateLatitude == null || approximateLongitude == null) {
+      setMapLoading(false)
+      setMapUnavailable(true)
+      return
+    }
 
     const abortController = new AbortController()
+    let loadFailed = false
+    let didLoad = false
     const center: [number, number] = [approximateLongitude, approximateLatitude]
+    setMapLoading(true)
+    setMapUnavailable(false)
+    const loadTimeout = window.setTimeout(() => {
+      failMap(new Error('El mapa no respondió antes del tiempo límite'))
+    }, 15_000)
+
+    function failMap(error: unknown) {
+      if (abortController.signal.aborted || loadFailed) return
+      loadFailed = true
+      window.clearTimeout(loadTimeout)
+      setMapLoading(false)
+      setMapUnavailable(true)
+      mapRef.current?.remove()
+      mapRef.current = null
+      logSafeEvent({
+        module: 'maps',
+        action: 'init_detail_map',
+        level: 'error',
+        code: sanitizeErrorReason(error),
+      })
+    }
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return
 
-      const style = await getOpenFreeMapStyle(abortController.signal)
+      try {
+        const style = await getOpenFreeMapStyle(abortController.signal)
+        if (abortController.signal.aborted) return
 
-      mapRef.current = new maplibregl.Map({
-        container: containerRef.current,
-        style,
-        center,
-        zoom: 12,
-        attributionControl: false,
-      })
+        const map = new maplibregl.Map({
+          container: containerRef.current,
+          style,
+          center,
+          zoom: 12,
+          attributionControl: false,
+        })
+        mapRef.current = map
 
-      mapRef.current.addControl(
-        new maplibregl.NavigationControl({ showCompass: false }),
-        'top-right',
-      )
-      mapRef.current.addControl(
-        new maplibregl.AttributionControl({ compact: true }),
-        'bottom-right',
-      )
+        map.addControl(
+          new maplibregl.NavigationControl({ showCompass: false }),
+          'top-right',
+        )
+        map.addControl(
+          new maplibregl.AttributionControl({ compact: true }),
+          'bottom-right',
+        )
 
-      mapRef.current.once('load', () => {
-        if (!mapRef.current) return
-        mapRef.current.addSource('approximate-property-location', {
-          type: 'geojson',
-          data: createApproximateLocationArea(center),
+        map.once('load', () => {
+          if (abortController.signal.aborted || loadFailed || mapRef.current !== map) return
+          try {
+            didLoad = true
+            window.clearTimeout(loadTimeout)
+            map.addSource('approximate-property-location', {
+              type: 'geojson',
+              data: createApproximateLocationArea(center),
+            })
+            map.addLayer({
+              id: 'approximate-property-location-area',
+              type: 'fill',
+              source: 'approximate-property-location',
+              paint: {
+                'fill-color': '#059669',
+                'fill-opacity': 0.2,
+              },
+            })
+            map.addLayer({
+              id: 'approximate-property-location-outline',
+              type: 'line',
+              source: 'approximate-property-location',
+              paint: {
+                'line-color': '#047857',
+                'line-width': 2,
+                'line-opacity': 0.75,
+              },
+            })
+            setMapLoading(false)
+            setMapUnavailable(false)
+          } catch (error) {
+            failMap(error)
+          }
         })
-        mapRef.current.addLayer({
-          id: 'approximate-property-location-area',
-          type: 'fill',
-          source: 'approximate-property-location',
-          paint: {
-            'fill-color': '#059669',
-            'fill-opacity': 0.2,
-          },
+
+        map.on('error', (event) => {
+          if (!didLoad) failMap(event.error ?? new Error('No se pudieron cargar los recursos del mapa'))
         })
-        mapRef.current.addLayer({
-          id: 'approximate-property-location-outline',
-          type: 'line',
-          source: 'approximate-property-location',
-          paint: {
-            'line-color': '#047857',
-            'line-width': 2,
-            'line-opacity': 0.75,
-          },
-        })
-      })
+      } catch (error) {
+        failMap(error)
+      }
     }
 
-    initMap().catch((error) => {
-      if (!abortController.signal.aborted) {
-        logSafeEvent({
-          module: 'maps',
-          action: 'init_detail_map',
-          level: 'error',
-          code: sanitizeErrorReason(error),
-        })
-      }
-    })
+    void initMap()
 
     return () => {
       abortController.abort()
+      window.clearTimeout(loadTimeout)
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [approximateLatitude, approximateLongitude])
+  }, [approximateLatitude, approximateLongitude, retryCount])
 
   return (
     <div className="relative h-full w-full bg-neutral-100">
@@ -1197,6 +1219,31 @@ function DetailLocationMap({ latitude, longitude }: { latitude: number; longitud
         className="h-full w-full"
         aria-label="Mapa de ubicación aproximada de la propiedad"
       />
+      {mapLoading && !mapUnavailable && (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-100/95">
+          <Loader2 className="h-6 w-6 animate-spin text-[#035f53]" aria-hidden="true" />
+          <p className="text-sm text-neutral-600">Cargando mapa…</p>
+        </div>
+      )}
+      {mapUnavailable && (
+        <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-100/95 p-6 text-center">
+          <p className="max-w-sm text-sm text-neutral-700">
+            No se pudo cargar el mapa. La ficha y sus datos siguen disponibles; puedes intentarlo de nuevo.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full border-[#035f53] text-[#035f53]"
+            onClick={() => {
+              setMapUnavailable(false)
+              setMapLoading(true)
+              setRetryCount(count => count + 1)
+            }}
+          >
+            Reintentar mapa
+          </Button>
+        </div>
+      )}
       <div className="absolute bottom-4 left-4 right-4 max-w-sm rounded-lg bg-white/95 p-3 text-left shadow-lg">
         <strong className="block text-sm text-neutral-900">Ubicación aproximada</strong>
         <span className="block text-xs leading-relaxed text-neutral-600">
@@ -1217,19 +1264,30 @@ function ContactCard({
   onReport: () => void
   onSelectAgent?: (agentId: string) => void
 }) {
-  const [contactSent, setContactSent] = useState(() => {
-    const saved = localStorage.getItem(`cubitat_contact_sent_${property.id}`)
-    if (saved) {
-      const diff = Date.now() - Number(saved)
-      return diff < 300000 // 5 minutos de bloqueo
+  const contactCooldownKey = `cubitat_contact_sent_${property.id}`
+  const getCooldownRemainingMs = useCallback(() => {
+    try {
+      const saved = localStorage.getItem(contactCooldownKey)
+      if (!saved) return 0
+      const elapsed = Date.now() - Number(saved)
+      return Number.isFinite(elapsed) && elapsed >= 0 ? Math.max(0, 300000 - elapsed) : 0
+    } catch {
+      return 0
     }
-    return false
-  })
+  }, [contactCooldownKey])
+  const [contactSent, setContactSent] = useState(false)
+  const [contactCooldownActive, setContactCooldownActive] = useState(() => getCooldownRemainingMs() > 0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [contactTurnstileToken, setContactTurnstileToken] = useState<string | null>(null)
   const [contactTurnstileKey, setContactTurnstileKey] = useState(0)
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
+
+  useEffect(() => {
+    if (!contactCooldownActive) return
+    const timeout = window.setTimeout(() => setContactCooldownActive(false), getCooldownRemainingMs())
+    return () => window.clearTimeout(timeout)
+  }, [contactCooldownActive, getCooldownRemainingMs])
 
   useEffect(() => {
     let active = true
@@ -1353,6 +1411,10 @@ function ContactCard({
         {contactSent ? (
           <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 text-xs leading-relaxed">
             <strong>¡Mensaje enviado!</strong> Tu solicitud ha sido procesada. El anunciante se pondrá en contacto contigo pronto.
+          </div>
+        ) : contactCooldownActive ? (
+          <div role="status" className="bg-amber-50 text-amber-900 p-4 rounded-xl border border-amber-100 text-xs leading-relaxed">
+            Ya enviaste una consulta a esta publicación recientemente desde este navegador. Podrás intentarlo de nuevo cuando termine el periodo de espera.
           </div>
         ) : (
           <form onSubmit={handleContactSubmit} className="space-y-3">
@@ -1482,9 +1544,10 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
     async function fetchSimilar() {
       let query = supabase
         .from('properties')
-        .select('*')
+        .select(PUBLIC_PROPERTY_SELECT)
         .eq('property_type', currentProperty.propertyType)
         .eq('operation', currentProperty.operation)
+        .eq('status', 'published')
         .neq('id', currentProperty.id)
 
       if (province) {
@@ -1497,9 +1560,10 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
         const excludeIds = [currentProperty.id, ...data.map((item: any) => item.id)]
         const { data: fallbackData } = await supabase
           .from('properties')
-          .select('*')
+          .select(PUBLIC_PROPERTY_SELECT)
           .eq('property_type', currentProperty.propertyType)
           .eq('operation', currentProperty.operation)
+          .eq('status', 'published')
           .not('id', 'in', `(${excludeIds.join(',')})`)
           .limit(3 - data.length)
           
@@ -1531,7 +1595,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             images: normalizePropertyImages(item.images),
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            contact_info: getPropertyContactInfo(item.id, undefined),
         }))
         setSimilar(mapped)
       }

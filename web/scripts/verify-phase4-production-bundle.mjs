@@ -8,7 +8,7 @@ const javascriptAssets = (await readdir(assetsPath)).filter((name) => name.endsW
 const sources = await Promise.all(javascriptAssets.map((name) => readFile(join(assetsPath, name), 'utf8')))
 
 const requiredMarkers = [
-  'Encuentra profesionales para tu hogar',
+  'Servicios para el hogar',
   'Profesionales disponibles',
   'Comparte tu experiencia',
   'Materiales disponibles',

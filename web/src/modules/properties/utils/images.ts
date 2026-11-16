@@ -12,6 +12,29 @@ function normalizeImageCandidate(value: unknown): string | null {
   return null
 }
 
+/** Routes property-bucket images through the app proxy because the bucket is private. */
+export function normalizePropertyImageReference(image: string): string {
+  if (typeof window === 'undefined') return image
+
+  try {
+    const url = new URL(image, window.location.origin)
+    const isAppProxy = url.origin === window.location.origin
+    const isSupabaseStorage = url.protocol === 'https:' && url.hostname.endsWith('.supabase.co')
+    const isLocalSupabaseStorage = url.protocol === 'http:'
+      && ['localhost', '127.0.0.1'].includes(url.hostname)
+      && url.port === '54321'
+    if ((!isAppProxy && !isSupabaseStorage && !isLocalSupabaseStorage)
+      || url.username || url.password || url.search || url.hash) return image
+
+    const match = url.pathname.match(/^\/(?:api\/supabase\/)?storage\/v1\/object\/(?:public\/)?property_images\/(.+)$/i)
+    if (!match || !match[1] || match[1].split('/').some(segment => !segment || segment === '.' || segment === '..')) return image
+
+    return `${window.location.origin}/api/supabase/storage/v1/object/property_images/${match[1]}`
+  } catch {
+    return image
+  }
+}
+
 export function normalizePropertyImages(value: unknown): string[] {
   if (!value) return []
 
@@ -19,6 +42,7 @@ export function normalizePropertyImages(value: unknown): string[] {
     return value
       .map(normalizeImageCandidate)
       .filter((image): image is string => Boolean(image))
+      .map(normalizePropertyImageReference)
   }
 
   if (typeof value === 'string') {
@@ -38,6 +62,7 @@ export function normalizePropertyImages(value: unknown): string[] {
       .split(',')
       .map((image) => image.trim())
       .filter(Boolean)
+      .map(normalizePropertyImageReference)
   }
 
   return []
@@ -45,7 +70,12 @@ export function normalizePropertyImages(value: unknown): string[] {
 
 export function getPropertyGalleryImages(coverImage: string, images?: string[]): string[] {
   return Array.from(
-    new Set([coverImage, ...(images ?? [])].map(normalizeImageCandidate).filter(Boolean) as string[]),
+    new Set(
+      [coverImage, ...(images ?? [])]
+        .map(normalizeImageCandidate)
+        .filter((image): image is string => Boolean(image))
+        .map(normalizePropertyImageReference),
+    ),
   )
 }
 
@@ -66,5 +96,6 @@ export const PROPERTY_IMAGE_FALLBACK =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 500%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%23dce8e4%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b9d1ca%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22800%22 height=%22500%22 fill=%22url(%23g)%22/%3E%3C/svg%3E'
 
 export function getPropertyCoverImage(value: unknown): string {
-  return normalizeImageCandidate(value) ?? PROPERTY_IMAGE_FALLBACK
+  const image = normalizeImageCandidate(value)
+  return image ? normalizePropertyImageReference(image) : PROPERTY_IMAGE_FALLBACK
 }

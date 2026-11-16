@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   handlePublicMarketplaceContact,
+  handlePublicPropertyContact,
   handlePublicContactSubmission,
   handlePublicReportSubmission,
   type PublicSubmissionEnv,
@@ -134,46 +135,85 @@ describe('public submission handlers', () => {
     await expect(response.json()).resolves.toEqual({ error: 'No fue posible registrar la consulta.' })
   })
 
-  it('reveals marketplace contact only after a matching Turnstile action and trusted RPC', async () => {
+  it('reveals marketplace contact only through the trusted RPC after an explicit request', async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        success: true,
-        action: 'marketplace-contact',
-        hostname: 'cubitathome.com',
-      }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ phone: '+5351234567', whatsapp: null }]), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await handlePublicMarketplaceContact(new Request('https://cubitathome.com/api/public/marketplace-contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ turnstile_token: 'valid-token', listing_type: 'service', listing_id: propertyId }),
+      body: JSON.stringify({ listing_type: 'service', listing_id: propertyId }),
     }), createEnv())
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ phone: '+5351234567', whatsapp: null })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1]?.[0]).toContain('/rpc/get_public_marketplace_contact')
-    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ apikey: 'server-only-key' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('/rpc/get_public_marketplace_contact')
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ apikey: 'server-only-key' })
     expect(response.headers.get('Cache-Control')).toBe('no-store')
   })
 
-  it('does not call the trusted RPC when the marketplace Turnstile action mismatches', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
-      success: true,
-      action: 'contact-owner',
-      hostname: 'cubitathome.com',
-    }), { status: 200 }))
+  it('reveals a published property phone only through the property contact RPC', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify([
+      { phone: '+5351234567', whatsapp: '+5351234567' },
+    ]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicPropertyContact(new Request('https://cubitathome.com/api/public/property-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: propertyId }),
+    }), createEnv())
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ phone: '+5351234567', whatsapp: '+5351234567' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('/rpc/get_public_property_contact')
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ p_property_id: propertyId })
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ apikey: 'server-only-key' })
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it('rejects malformed property contact lookups without querying the database', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await handlePublicPropertyContact(new Request('https://cubitathome.com/api/public/property-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: 'not-a-uuid' }),
+    }), createEnv())
+
+    expect(response.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('distinguishes missing contact from a temporary trusted-database failure', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response('database unavailable', { status: 503 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await handlePublicMarketplaceContact(new Request('https://cubitathome.com/api/public/marketplace-contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ turnstile_token: 'valid-token', listing_type: 'material', listing_id: propertyId }),
+      body: JSON.stringify({ listing_type: 'service', listing_id: propertyId }),
     }), createEnv())
 
-    expect(response.status).toBe(400)
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ error: 'El contacto no esta disponible temporalmente.' })
+  })
+
+  it('reports missing contact only when the trusted RPC succeeds with no rows', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response('[]', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await handlePublicMarketplaceContact(new Request('https://cubitathome.com/api/public/marketplace-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_type: 'material', listing_id: propertyId }),
+    }), createEnv())
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ error: 'No se encontro un contacto publico para este anuncio.' })
   })
 
   it('requires an authenticated reporter only at the Worker boundary, not in the trusted payload builder', async () => {

@@ -76,6 +76,11 @@ bucket-specific limits for Storage uploads. Authentication and rate limits
 MUST run before parsing bodies on routes where the identity can be established
 without parsing the body.
 
+Storage object uploads and replacements MUST use the dedicated upload quota.
+POST requests to `/storage/v1/object/sign/...` create read-only signed URLs and
+MUST use the general request quota instead; they MUST NOT consume the upload
+quota.
+
 #### Scenario: Body exceeds its declared length or byte budget
 
 - GIVEN a Worker endpoint with a configured request-body maximum
@@ -90,6 +95,13 @@ without parsing the body.
 - WHEN the Worker reads the request body
 - THEN it MUST cancel the stream and return HTTP 408
 - AND MUST NOT forward a partial request upstream.
+
+#### Scenario: Signing photo URLs does not consume upload quota
+
+- GIVEN a client requests signed Storage URLs through `/storage/v1/object/sign/...`
+- WHEN the request uses POST as required by the Storage API
+- THEN it MUST use the general request quota
+- AND MUST NOT consume the dedicated upload quota.
 
 #### Scenario: Unauthenticated AI moderation request
 

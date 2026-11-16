@@ -1,3 +1,7 @@
+import { normalizePhoneForStorage, validatePhone } from '../../../shared/lib/phone'
+import { publicPropertyLocation } from '../../../shared/lib/propertyLocation'
+import type { Property } from '../types'
+
 type PropertyContactInfo = {
   name?: string
   phone?: string
@@ -40,14 +44,31 @@ const demoContactInfoById: Record<string, NonNullable<PropertyContactInfo>> = {
 }
 
 export function normalizePhoneForTel(phone: string): string {
-  const digits = phone.replace(/[^0-9+]/g, '')
-  if (digits.startsWith('+53')) return digits
-  if (/^5\d{7}$/.test(digits)) return `+53${digits}`
-  return digits
+  const normalized = normalizePhoneForStorage(phone)
+  if (normalized.startsWith('+')) return normalized
+  if (/^5\d{7}$/.test(normalized)) return `+53${normalized}`
+  return normalized
 }
 
 export function normalizePhoneForWhatsApp(phone: string): string {
   return normalizePhoneForTel(phone).replace('+', '')
+}
+
+export function getPropertyContactChannelUrl(
+  channel: 'phone' | 'whatsapp',
+  phone: string,
+  property: Pick<Property, 'title' | 'location'>,
+): string | null {
+  if (!validatePhone(phone)) return null
+
+  if (channel === 'phone') {
+    return `tel:${normalizePhoneForTel(phone)}`
+  }
+
+  const location = publicPropertyLocation(property.location)
+  const locationText = location ? ` en ${location}` : ''
+  const message = `Hola, estoy interesado en "${property.title}"${locationText}. Quisiera recibir más detalles.`
+  return `https://wa.me/${normalizePhoneForWhatsApp(phone)}?text=${encodeURIComponent(message)}`
 }
 
 export function getPropertyContactInfo(

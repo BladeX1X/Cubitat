@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '../lib/configureMapLibreWorker'
+import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
@@ -241,6 +243,8 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  const [mapLoadError, setMapLoadError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const onCoordinatesRef = useRef(onCoordinatesChange)
   const initialCenterRef = useRef(
     (municipality && MUNICIPALITY_CENTERS[municipality]) ||
@@ -259,6 +263,31 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
 
     const abortController = new AbortController()
     let idleHandle: IdleCallbackHandle | null = null
+    let loadFailed = false
+    let hasLoaded = false
+    const reportedMapErrors = new Set<string>()
+    const failMap = (error: unknown, action: string, shouldLog = true) => {
+      if (abortController.signal.aborted || loadFailed) return
+      loadFailed = true
+      abortController.abort()
+      window.clearTimeout(loadTimeout)
+      setMapReady(false)
+      setMapLoadError(true)
+      mapRef.current?.remove()
+      mapRef.current = null
+      markerRef.current = null
+      if (shouldLog) {
+        logSafeEvent({
+          module: 'maps',
+          action,
+          level: 'error',
+          code: sanitizeErrorReason(error),
+        })
+      }
+    }
+    const loadTimeout = window.setTimeout(() => {
+      failMap(new Error('address_map_load_timeout'), 'address_map_load_timeout')
+    }, 15_000)
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return
@@ -280,8 +309,38 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
         )
 
         mapRef.current.on('load', () => {
-          if (!abortController.signal.aborted) {
+          if (!abortController.signal.aborted && !loadFailed) {
+            hasLoaded = true
+            window.clearTimeout(loadTimeout)
+            setMapLoadError(false)
             setMapReady(true)
+          }
+        })
+
+        mapRef.current.on('error', (event) => {
+          if (abortController.signal.aborted) return
+          const mapError = event as maplibregl.ErrorEvent & { sourceId?: unknown }
+          const resource = classifyMapErrorResource(mapError.sourceId)
+          const code = classifyMapError(mapError.error)
+          const signature = `${resource}:${code}`
+          if (!reportedMapErrors.has(signature)) {
+            reportedMapErrors.add(signature)
+            logSafeEvent({
+              module: 'maps',
+              action: 'maplibre_resource',
+              level: 'error',
+              code,
+              context: { resource },
+            })
+          }
+
+          // Source errors can be isolated tile failures. Let MapLibre continue
+          // loading and use the timeout if the initial map never becomes ready.
+          // Errors without a source, and WebGL loss, prevent a usable map.
+          if (!hasLoaded && (!mapError.sourceId || code === 'MAPLIBRE_WEBGL_CONTEXT_LOST')) {
+            failMap(mapError.error, 'address_map_runtime_error', false)
+          } else if (code === 'MAPLIBRE_WEBGL_CONTEXT_LOST') {
+            failMap(mapError.error, 'address_map_runtime_error', false)
           }
         })
 
@@ -293,12 +352,7 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
         })
       } catch (err) {
         if (!abortController.signal.aborted) {
-          logSafeEvent({
-            module: 'maps',
-            action: 'init_address_map',
-            level: 'error',
-            code: sanitizeErrorReason(err),
-          })
+          failMap(err, 'init_address_map')
         }
       }
     }
@@ -311,6 +365,7 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
 
     return () => {
       abortController.abort()
+      window.clearTimeout(loadTimeout)
       if (idleHandle !== null) {
         if ('cancelIdleCallback' in window && typeof idleHandle === 'number') {
           window.cancelIdleCallback(idleHandle)
@@ -324,7 +379,7 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
       mapRef.current = null
       setMapReady(false)
     }
-  }, [])
+  }, [retryCount])
 
   // Fly to municipality first, fallback to province
   useEffect(() => {
@@ -383,10 +438,27 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
       <div ref={containerRef} className="w-full h-full min-h-[280px]" />
 
       {!mapReady && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-50">
-          <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[11px] text-neutral-500 font-medium">Cargando mapa…</p>
-        </div>
+        mapLoadError ? (
+          <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-50 p-5 text-center">
+            <p className="text-sm font-medium text-neutral-700">No se pudo cargar el mapa. Puedes continuar y volver a intentarlo.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setMapReady(false)
+                setMapLoadError(false)
+                setRetryCount((count) => count + 1)
+              }}
+              className="rounded-full border border-[#035f53] px-4 py-2 text-xs font-bold text-[#035f53] hover:bg-emerald-50"
+            >
+              Reintentar mapa
+            </button>
+          </div>
+        ) : (
+          <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-50">
+            <div className="w-6 h-6 border-2 border-[#035f53] border-t-transparent rounded-full animate-spin" />
+            <p className="text-[11px] text-neutral-500 font-medium">Cargando mapa…</p>
+          </div>
+        )
       )}
 
       <div className="absolute bottom-2 left-2 z-10 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-medium text-neutral-600 shadow-sm border border-neutral-200">

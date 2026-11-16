@@ -11,8 +11,8 @@ cliente.
 
 ## Contrato
 
-- `action`: identifica el flujo protegido, por ejemplo `contact-owner`,
-  `report-property` o `marketplace-contact`.
+- `action`: identifica el flujo protegido, por ejemplo `contact-owner` o
+  `report-property`.
 - `onVerify`: recibe el token cuando Cloudflare completa el desafio.
 - `onExpire`: invalida el token cuando expira.
 - `onError`: permite limpiar el token y mostrar un error recuperable.
@@ -36,9 +36,10 @@ script externo.
 - El Worker exige que `success`, `hostname` y `action` coincidan con la
   solicitud antes de llamar al RPC exclusivo de `service_role`.
 - Cada integracion conserva un `action` explicito para trazabilidad.
-- En servicios y materiales, el navegador solo recibe teléfonos después de que
-  `/api/public/marketplace-contact` valida el action `marketplace-contact`; el
-  RPC de contacto solo es ejecutable con `service_role`.
+- En servicios y materiales, los formularios escritos mantienen sus protecciones
+  habituales. Los botones directos de teléfono/WhatsApp usan otro endpoint del
+  Worker con límite por IP y RPC exclusivo de `service_role`; nunca incluyen los
+  teléfonos en las respuestas del catálogo.
 - Registro y recuperacion entregan el token directamente como `captchaToken` a
   Supabase Auth, que realiza la validacion dentro de la propia operacion.
 
@@ -48,3 +49,7 @@ script externo.
 `onVerify` y comprueba que no se renderice una segunda instancia ni se elimine
 el desafio aprobado. Las pruebas de `public-submissions` verifican el limite de
 confianza entre navegador, Worker, `siteverify` y los RPCs protegidos.
+
+## Carga compartida de la API
+
+Si `window.turnstile` ya existe, el widget la reutiliza y no inserta otra copia del script de Cloudflare. Si la API aún no existe, conserva la carga externa y el manejo de eventos/error/timeout. La prueba unitaria cubre la API global ya disponible.

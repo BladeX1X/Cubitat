@@ -17,16 +17,14 @@ function readJsonDraft(key: string): Record<string, unknown> | null {
 }
 
 export function readPublicationDraft(userId: string): Record<string, unknown> | null {
+  // A pre-account draft has no trustworthy owner. Discard it before returning
+  // either way, so a shared browser cannot hand it to the next signed-in user.
+  localStorage.removeItem(LEGACY_DRAFT_KEY)
+
   const scopedKey = getPublicationDraftKey(userId)
   const scopedDraft = readJsonDraft(scopedKey)
   if (scopedDraft) return scopedDraft
-
-  const legacyDraft = readJsonDraft(LEGACY_DRAFT_KEY)
-  if (!legacyDraft) return null
-
-  localStorage.setItem(scopedKey, JSON.stringify(legacyDraft))
-  localStorage.removeItem(LEGACY_DRAFT_KEY)
-  return legacyDraft
+  return null
 }
 
 export function savePublicationDraft(userId: string, draft: object): void {

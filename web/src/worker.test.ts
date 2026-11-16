@@ -47,6 +47,113 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
+  it('counts public property views through the server-only RPC with per-IP limiting', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const env = { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'server-only-key' }
+    const propertyId = '11111111-1111-4111-8111-111111111111'
+
+    const response = await worker.fetch(new Request('https://cubitathome.com/api/property-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.10' },
+      body: JSON.stringify({ propertyId }),
+    }), env, createContext())
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true })
+    expect(env.RATE_LIMITER.get).toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledWith('https://example.supabase.co/rest/v1/rpc/increment_property_view_count', expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({
+        apikey: 'server-only-key',
+        Authorization: 'Bearer server-only-key',
+      }),
+      body: JSON.stringify({ property_id: propertyId }),
+    }))
+  })
+
+  it('rejects invalid property view requests without calling Supabase', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await worker.fetch(new Request('https://cubitathome.com/api/property-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId: 'not-a-uuid' }),
+    }), createEnv(), createContext())
+
+    expect(response.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rate limits property view requests and requires the server credential', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({
+      fetch: vi.fn(async () => new Response(JSON.stringify({ allowed: false, resetAt: Date.now() + 60_000 }))),
+    }))
+    const request = () => new Request('https://cubitathome.com/api/property-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId: '11111111-1111-4111-8111-111111111111' }),
+    })
+
+    const limitedResponse = await worker.fetch(request(), env, createContext())
+    expect(limitedResponse.status).toBe(429)
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: vi.fn(async () => new Response(JSON.stringify({ allowed: true }))) }))
+    const missingKeyResponse = await worker.fetch(request(), env, createContext())
+    expect(missingKeyResponse.status).toBe(503)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('accepts property photo uploads only after authenticating the advertiser', async () => {
+    const ownerId = '11111111-1111-4111-8111-111111111111'
+    const image = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: ownerId }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/property-images/upload', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer user-token', 'Content-Type': 'image/webp' },
+        body: image,
+      }),
+      { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'service-role-key' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual({ path: expect.stringMatching(new RegExp(`^${ownerId}/[0-9a-f-]+\\.webp$`, 'i')) })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      expect.stringMatching(/^https:\/\/example\.supabase\.co\/storage\/v1\/object\/property_images\//),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer service-role-key', 'x-upsert': 'false' }),
+      }),
+    )
+  })
+
+  it('does not write property photos to Storage when the session is missing or invalid', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/property-images/upload', {
+        method: 'POST', headers: { Authorization: 'Bearer expired-token', 'Content-Type': 'image/webp' }, body: 'fake',
+      }),
+      { ...createEnv(), SUPABASE_SERVICE_ROLE_KEY: 'service-role-key' },
+      createContext(),
+    )
+
+    expect(response.status).toBe(401)
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
   it('uses configured upload limits for each Storage bucket and caps general proxy requests', () => {
     expect(getSupabaseProxyBodyLimit('/storage/v1/object/public/property_images/id.webp', 'POST')).toBe(5 * 1024 * 1024)
     expect(getSupabaseProxyBodyLimit('/storage/v1/object/avatars/user/avatar.webp', 'PUT')).toBe(1024 * 1024)
@@ -284,7 +391,7 @@ describe('Cloudflare Worker security contract', () => {
     expect(getReader).not.toHaveBeenCalled()
   })
 
-  it('rejects oversized Supabase proxy bodies without forwarding them upstream', async () => {
+  it('blocks direct public access to the server-only property view RPC', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     const response = await worker.fetch(
@@ -297,8 +404,8 @@ describe('Cloudflare Worker security contract', () => {
       createContext(),
     )
 
-    expect(response.status).toBe(413)
-    await expect(response.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({ error: 'Operación no permitida.' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -968,6 +1075,53 @@ describe('Cloudflare Worker security contract', () => {
 
     expect(response.status).toBe(200)
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('https://example.supabase.co/storage/v1/object/property_images/user-id/photo.webp')
+  })
+
+  it('uses the general request quota for signed Storage URLs, not the upload quota', async () => {
+    const limiterFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ allowed: true })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    const upstreamFetch = vi.fn(async () => new Response(JSON.stringify({ signedURL: '/signed/photo.webp' })))
+    vi.stubGlobal('fetch', upstreamFetch)
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/storage/v1/object/sign/materials/photo.webp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.21' },
+        body: JSON.stringify({ expiresIn: 300 }),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    const limiterRequest = new URL(String(limiterFetch.mock.calls[0]?.[0]))
+    expect(limiterRequest.searchParams.get('key')).toBe('203.0.113.21:general')
+    expect(limiterRequest.searchParams.get('limit')).toBe('300')
+    expect(limiterRequest.searchParams.get('windowMs')).toBe('60000')
+  })
+
+  it('keeps real Storage uploads on the dedicated upload quota', async () => {
+    const limiterFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ allowed: true })))
+    const env = createEnv()
+    env.RATE_LIMITER.get = vi.fn(() => ({ fetch: limiterFetch }))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+
+    const response = await worker.fetch(
+      new Request('https://cubitathome.com/api/supabase/storage/v1/object/materials/user-id/photo.webp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/webp', 'CF-Connecting-IP': '203.0.113.22' },
+        body: new Uint8Array([1, 2, 3]),
+      }),
+      env,
+      createContext(),
+    )
+
+    expect(response.status).toBe(200)
+    const limiterRequest = new URL(String(limiterFetch.mock.calls[0]?.[0]))
+    expect(limiterRequest.searchParams.get('key')).toBe('203.0.113.22:storage')
+    expect(limiterRequest.searchParams.get('limit')).toBe('40')
+    expect(limiterRequest.searchParams.get('windowMs')).toBe('600000')
   })
 
   it('blocks password login by IP before forwarding it to Supabase', async () => {

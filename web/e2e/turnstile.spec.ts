@@ -1,7 +1,20 @@
 import { test, expect } from '@playwright/test'
+import { mockPublishedProperties } from './propertyFixtures'
 
 test.describe('Cloudflare Turnstile Verification', () => {
   test('debería renderizar los widgets de Turnstile en los formularios correspondientes', async ({ page }) => {
+    const duplicateKeyErrors: string[] = []
+    const duplicateScriptWarnings: string[] = []
+    page.on('console', (message) => {
+      if (message.type() === 'error' && message.text().includes('Encountered two children with the same key')) {
+        duplicateKeyErrors.push(message.text())
+      }
+      if (message.text().includes('Turnstile already has been loaded')) {
+        duplicateScriptWarnings.push(message.text())
+      }
+    })
+    await mockPublishedProperties(page)
+
     // 1. Navegar directamente a la página de resultados
     await page.goto('/resultados')
     
@@ -50,5 +63,8 @@ test.describe('Cloudflare Turnstile Verification', () => {
     
     const forgotTurnstile = page.locator('.turnstile-container[data-action="forgot-password"]')
     await expect(forgotTurnstile).toBeVisible()
+    await expect(page.locator('script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]')).toHaveCount(1)
+    expect(duplicateKeyErrors).toEqual([])
+    expect(duplicateScriptWarnings).toEqual([])
   })
 })

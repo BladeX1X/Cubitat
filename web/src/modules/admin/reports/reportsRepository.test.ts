@@ -5,17 +5,18 @@ import {
   resolveReport,
 } from './reportsRepository'
 
-const { fromMock, selectMock, orderMock, rangeMock, updateMock, eqMock } = vi.hoisted(() => ({
+const { fromMock, selectMock, orderMock, rangeMock, updateMock, eqMock, rpcMock } = vi.hoisted(() => ({
   fromMock: vi.fn(),
   selectMock: vi.fn(),
   orderMock: vi.fn(),
   rangeMock: vi.fn(),
   updateMock: vi.fn(),
   eqMock: vi.fn(),
+  rpcMock: vi.fn(),
 }))
 
 vi.mock('../../../shared/lib/supabaseClient', () => ({
-  supabase: { from: fromMock },
+  supabase: { from: fromMock, rpc: rpcMock },
 }))
 
 describe('reportsRepository', () => {
@@ -33,6 +34,7 @@ describe('reportsRepository', () => {
     rangeMock.mockReset().mockResolvedValue({ data: [], count: 0, error: null })
     updateMock.mockReset().mockReturnValue(query)
     eqMock.mockReset().mockResolvedValue({ error: null })
+    rpcMock.mockReset().mockResolvedValue({ error: null })
   })
 
   it('loads the requested report page in reverse chronological order', async () => {
@@ -52,26 +54,20 @@ describe('reportsRepository', () => {
     await expect(fetchModerationReports(0)).rejects.toBe(error)
   })
 
-  it('pauses the property before resolving the report', async () => {
+  it('resolves a property report atomically through the protected database action', async () => {
     await resolveReport('report-1', 'property-1')
 
-    expect(fromMock).toHaveBeenNthCalledWith(1, 'properties')
-    expect(updateMock).toHaveBeenCalledWith({
-      status: 'paused',
-      moderation_message: 'Ocultada por reportes de usuarios.',
+    expect(rpcMock).toHaveBeenCalledWith('resolve_property_report', {
+      p_report_id: 'report-1',
+      p_property_id: 'property-1',
     })
-    expect(eqMock).toHaveBeenNthCalledWith(1, 'id', 'property-1')
-    expect(fromMock).toHaveBeenNthCalledWith(2, 'property_reports')
-    expect(updateMock).toHaveBeenNthCalledWith(2, { status: 'resolved' })
-    expect(eqMock).toHaveBeenNthCalledWith(2, 'id', 'report-1')
   })
 
-  it('does not update the report when pausing the property fails', async () => {
-    const error = new Error('property update failed')
-    eqMock.mockResolvedValueOnce({ error })
+  it('propagates transactional resolution failures', async () => {
+    const error = new Error('report resolution failed')
+    rpcMock.mockResolvedValueOnce({ error })
 
     await expect(resolveReport('report-1', 'property-1')).rejects.toBe(error)
-    expect(fromMock).toHaveBeenCalledTimes(1)
   })
 
   it('marks a report as dismissed', async () => {

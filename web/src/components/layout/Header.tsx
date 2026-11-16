@@ -16,7 +16,6 @@ interface HeaderProps {
   navigateModerar: () => void
   navigatePublish: () => void
   navigateResults: () => void
-  navigateAgentApplication?: () => void
   navigateServices?: () => void
   navigateMaterials?: () => void
   navigateValuation?: () => void
@@ -35,7 +34,6 @@ export function Header({
   navigateModerar,
   navigatePublish,
   navigateResults,
-  navigateAgentApplication,
   navigateServices,
   navigateMaterials,
   navigateValuation,
@@ -112,11 +110,6 @@ export function Header({
           >
             Permutar
           </a>
-          {navigateAgentApplication && (
-            <a href="/postular-agente" onClick={(event) => { event.preventDefault(); handleNavigation(navigateAgentApplication) }}>
-              Ser agente
-            </a>
-          )}
           {navigateServices && <a href="/servicios" onClick={(event) => { event.preventDefault(); handleNavigation(navigateServices) }}>Servicios</a>}
           {navigateMaterials && <a href="/materiales" onClick={(event) => { event.preventDefault(); handleNavigation(navigateMaterials) }}>Materiales</a>}
           {navigateValuation && <a href="/valorar" onClick={(event) => { event.preventDefault(); handleNavigation(navigateValuation) }}>Valorar</a>}
@@ -175,6 +168,12 @@ export function Header({
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={25} />}
           </button>
         </div>
+        {(navigateServices || navigateMaterials) && (
+          <nav className="mobile-catalog-shortcuts" aria-label="Catálogos">
+            {navigateServices && <button type="button" onClick={() => handleNavigation(navigateServices)}>Servicios</button>}
+            {navigateMaterials && <button type="button" onClick={() => handleNavigation(navigateMaterials)}>Materiales</button>}
+          </nav>
+        )}
       </header>
 
       {isMobileMenuOpen && (
@@ -183,6 +182,15 @@ export function Header({
             <span>Menú</span>
             {user && <small>Cuenta Cubitat</small>}
           </div>
+          {(navigateServices || navigateMaterials) && (
+            <nav className="mobile-menu-catalogs" aria-label="Servicios y materiales">
+              <p className="mobile-menu-section-title">Servicios y materiales</p>
+              <div className="mobile-menu-catalog-grid">
+                {navigateServices && <button type="button" onClick={() => handleNavigation(navigateServices)}><BriefcaseBusiness size={18} /><span>Servicios<small>Profesionales del hogar</small></span></button>}
+                {navigateMaterials && <button type="button" onClick={() => handleNavigation(navigateMaterials)}><Boxes size={18} /><span>Materiales<small>Construcción</small></span></button>}
+              </div>
+            </nav>
+          )}
           {user ? (
             <div className="mobile-menu-profile">
               <span>{(user.user_metadata?.full_name || user.email || 'U').slice(0, 1).toUpperCase()}</span>
@@ -234,12 +242,6 @@ export function Header({
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('venta'))}><Search size={18} />Comprar</button>
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('alquiler'))}><Building2 size={18} />Rentar</button>
             <button type="button" onClick={() => handleNavigation(() => handleOperationNavigation('permuta'))}><ArrowLeftRight size={18} />Permutar</button>
-            {navigateAgentApplication && (
-              <button type="button" onClick={() => handleNavigation(navigateAgentApplication)}><BriefcaseBusiness size={18} />Ser agente</button>
-            )}
-            {(navigateServices || navigateMaterials || navigateValuation) && <p className="mobile-menu-section-title">Servicios para vivienda</p>}
-            {navigateServices && <button type="button" onClick={() => handleNavigation(navigateServices)}><BriefcaseBusiness size={18} />Profesionales del hogar</button>}
-            {navigateMaterials && <button type="button" onClick={() => handleNavigation(navigateMaterials)}><Boxes size={18} />Materiales</button>}
             {navigateValuation && <button type="button" onClick={() => handleNavigation(navigateValuation)}><Calculator size={18} />Valoración orientativa</button>}
           </nav>
         </aside>

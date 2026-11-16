@@ -31,6 +31,40 @@ perfil DEV, pide `DEPLOY DEV` y despliega con `wrangler.phase2-dev.jsonc`.
 Ambos comandos requieren una terminal interactiva y se detienen si falla una
 validación o la confirmación. `npm run cf:deploy` es un alias de producción.
 
+## Worker de QA DEV combinado (Fases 3 y 4)
+
+El Worker `cubitat1-phase2-dev` usa el perfil combinado `phase34-dev`. En
+Cloudflare Workers Builds, configura el repositorio `BladeX1X/Cubitat`, el
+directorio raíz `web`, el comando de build `npm run build:phase34-dev` y el
+comando de despliegue `npx wrangler deploy --config wrangler.phase34-dev.jsonc`.
+El proyecto Supabase y el origen deben ser los de DEV; la clave pública
+`VITE_SUPABASE_ANON_KEY` se configura como variable de build en Cloudflare y no
+se guarda en el repositorio. No uses aquí `wrangler.jsonc`, que apunta al
+Worker productivo.
+
+En la pestaña **Previews Base** y en los ajustes del preview de cada rama,
+mantén raíz `web`, build `npm run build:phase34-dev`, variable de build
+`VITE_SUPABASE_ANON_KEY` del proyecto DEV y comando de preview
+`npx wrangler preview --config wrangler.phase34-dev.jsonc --ignore-base-config`.
+Production y
+previews son independientes. La configuración DEV declara explícitamente los
+valores de runtime del proyecto DEV y un Durable Object aislado para cada
+preview. `--ignore-base-config` impide mezclar variables y bindings remotos de
+otra configuración. Los secretos de runtime no se copian automáticamente a los
+previews; para QA que dependa de ellos, configura secretos DEV dedicados en
+Previews Base después de revisar su alcance. No uses el archivo `wrangler.jsonc`,
+que apunta al Worker productivo.
+Dejar la raíz de previews en `/` hace que Cloudflare busque `package.json`
+fuera de `web` y falle con `ENOENT` antes de compilar. Cambiar **Previews Base**
+no actualiza previews existentes: guarda también los ajustes de la rama actual
+y valida una ejecución nueva, porque el reintento puede conservar los ajustes
+capturados por un build anterior.
+
+El perfil verifica las UIs de F3/F4 y excluye las referencias productivas antes
+de generar el bundle. Para una publicación manual, usa
+`npm run deploy:phase34-dev`, que solicita confirmación interactiva antes de
+desplegar.
+
 ## Configuración Del Repositorio
 
 El archivo `web/wrangler.jsonc` define:

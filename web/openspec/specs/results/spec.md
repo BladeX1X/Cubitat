@@ -91,6 +91,12 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - THEN el documento MUST NOT tener desbordamiento horizontal
 - AND los controles MUST conservarse visibles y utilizables
 
+#### Scenario: Filtros móviles en un viewport estrecho
+- GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
+- WHEN abre y cierra la hoja de filtros
+- THEN MUST poder usar los filtros sin desbordamiento horizontal
+- AND las tarjetas de resultados MUST seguir visibles al cerrar los filtros
+
 ### Requirement: Crear alerta desde resultados
 El sistema MUST permitir crear alertas desde la barra de filtros y desde acciones del mapa.
 

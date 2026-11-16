@@ -21,3 +21,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_verified_seller_ids() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_verified_seller_ids() TO anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';

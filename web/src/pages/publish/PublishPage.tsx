@@ -2,16 +2,17 @@ import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { getEditableProperty } from './editablePropertyRepository'
 import { useSEO } from '../../shared/hooks/useSEO'
-import {
-  PROPERTY_IMAGE_RULES,
-  validateImageDimensions,
-  validateImageFile,
-} from '../../shared/lib/imageSecurity'
+import { PROPERTY_IMAGE_RULES, validateImageFile } from '../../shared/lib/imageSecurity'
+import { compressPublicationImage } from './compressPublicationImage'
 import { usePublicationDraft } from './usePublicationDraft'
+import { readCompleteDraft, removeCompleteDraft } from './completeDraftStorage'
+import { uploadPropertyImage } from './uploadPropertyImage'
 import { uploadPublicationImages } from './uploadPublicationImages'
 import { editablePropertyAddress, publicPropertyLocation } from '../../shared/lib/propertyLocation'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+import { createOwnedPropertyImagePreview } from '../../modules/properties/utils/privateImagePreviews'
+import { normalizePropertyImageReference, PROPERTY_IMAGE_FALLBACK } from '../../modules/properties/utils/images'
 import {
   OPERATION_VALUES,
   PROPERTY_TYPE_VALUES,
@@ -28,6 +29,8 @@ import {
   FileCheck,
   Upload,
   X,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   Minus,
   Plus,
@@ -267,13 +270,79 @@ type PublishPageProps = {
   onBack: () => void
   onSubmitSuccess: () => void
   editPropertyId?: string // When set, the form loads and updates an existing property
+  resumeDraft?: boolean
 }
 
 export function PublishPage(props: PublishPageProps) {
-  return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null])} {...props} />
+  const needsDraftChoice = props.resumeDraft === false && !props.editPropertyId
+  const [draftEntry, setDraftEntry] = useState<'checking' | 'choice' | 'error' | 'resume' | 'new'>(
+    needsDraftChoice ? 'checking' : 'resume',
+  )
+  const [choiceError, setChoiceError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!needsDraftChoice || draftEntry !== 'checking') return
+    let cancelled = false
+    void readCompleteDraft(props.userId).then(draft => {
+      if (!cancelled) setDraftEntry(draft ? 'choice' : 'new')
+    }).catch(() => {
+      if (!cancelled) setDraftEntry('error')
+    })
+    return () => { cancelled = true }
+  }, [props.userId, needsDraftChoice, draftEntry])
+
+  async function startNewProperty() {
+    setChoiceError(null)
+    try {
+      await removeCompleteDraft(props.userId)
+      setDraftEntry('new')
+    } catch {
+      setChoiceError('No se pudo liberar el borrador guardado. Inténtalo de nuevo; tus datos siguen intactos.')
+    }
+  }
+
+  if (draftEntry === 'checking') {
+    return <div role="status" className="min-h-[50vh] flex items-center justify-center text-sm text-neutral-600">Comprobando si tienes un borrador guardado…</div>
+  }
+
+  if (draftEntry === 'error') {
+    return (
+      <main className="min-h-[60vh] bg-neutral-100/40 px-4 py-16">
+        <section role="alert" className="mx-auto max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <h1 className="text-xl font-bold text-neutral-900">No pudimos comprobar tus borradores</h1>
+          <p className="mt-2 text-sm text-neutral-600">Para proteger tus datos, no abrimos un anuncio nuevo hasta confirmar si tienes uno pendiente.</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button type="button" onClick={() => setDraftEntry('checking')} className="bg-[#035f53] text-white hover:bg-[#024a41]">Reintentar</Button>
+            <Button type="button" variant="outline" onClick={props.onBack}>Volver</Button>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (draftEntry === 'choice') {
+    return (
+      <main className="min-h-[60vh] bg-neutral-100/40 px-4 py-16">
+        <section role="dialog" aria-modal="true" aria-labelledby="publication-draft-choice-title" className="mx-auto max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg sm:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#035f53]">Borrador guardado</p>
+          <h1 id="publication-draft-choice-title" className="mt-2 text-2xl font-bold text-neutral-900">¿Quieres continuar donde lo dejaste?</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-600">Hay un anuncio sin terminar guardado en este dispositivo. Puedes reanudarlo o empezar otra propiedad. Si empiezas otra, se reemplazará este borrador local; las publicaciones ya enviadas no cambiarán.</p>
+          {choiceError && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{choiceError}</p>}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button type="button" onClick={() => setDraftEntry('resume')} className="bg-[#035f53] text-white hover:bg-[#024a41]">Continuar borrador</Button>
+            <Button type="button" variant="outline" onClick={() => void startNewProperty()}>Empezar una propiedad nueva</Button>
+          </div>
+          <Button type="button" variant="ghost" onClick={props.onBack} className="mt-3">Volver</Button>
+        </section>
+      </main>
+    )
+  }
+
+  const restoreDraft = props.editPropertyId !== undefined || draftEntry === 'resume'
+  return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null, restoreDraft])} {...props} restoreDraft={restoreDraft} />
 }
 
-function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: PublishPageProps) {
+function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreDraft }: PublishPageProps & { restoreDraft: boolean }) {
   const isEditMode = Boolean(editPropertyId)
 
   useSEO({
@@ -284,27 +353,107 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
   const [formData, setFormData] = useState<PublishFormData>(initialFormState)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<{ dataUrl: string; size: number; name: string }[]>([])
+  const [hasUserChanges, setHasUserChanges] = useState(false)
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<Record<string, string>>({})
+  const [imagePreviewErrors, setImagePreviewErrors] = useState<Record<string, boolean>>({})
+  const [imagePreviewRetryKey, setImagePreviewRetryKey] = useState(0)
   const [existingAmenities, setExistingAmenities] = useState<string[]>([])
   const [isCompressing, setIsCompressing] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [editLoading, setEditLoading] = useState(isEditMode)
   const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null)
+  const imageCompressionInProgress = useRef(false)
+  const imagePreviewRequests = useRef(new Map<string, Promise<{ previewUrl: string; size: number } | null>>())
 
   const [showSaveFeedback, setShowSaveFeedback] = useState<boolean>(false)
   const active = useRef(true)
   useEffect(() => {
     active.current = true
-    return () => { active.current = false }
+    const previewRequests = imagePreviewRequests.current
+    return () => {
+      active.current = false
+      for (const request of previewRequests.values()) {
+        void request.then(preview => {
+          if (preview) URL.revokeObjectURL(preview.previewUrl)
+        })
+      }
+      previewRequests.clear()
+    }
   }, [])
-  const draftValue = useMemo(() => ({ formData: { ...formData }, images, step, existingAmenities }), [formData, images, step, existingAmenities])
+  const draftValue = useMemo(() => ({ formData: { ...formData }, images, step, existingAmenities, edited: hasUserChanges }), [formData, images, step, existingAmenities, hasUserChanges])
   const draft = usePublicationDraft(userId, editPropertyId, editLoading, draftValue, saved => {
+    setStep(Math.max(1, Math.min(publishStepLabels.length, saved.step)))
+    if (isEditMode && saved.edited === false) {
+      // A baseline snapshot must never overwrite freshly loaded server data.
+      setHasUserChanges(false)
+      return
+    }
+
+    if (isEditMode && saved.edited !== true) {
+      // Legacy snapshots have no dirty marker. Merge only meaningful values so
+      // empty stale fields/gallery entries do not erase the server version.
+      const meaningfulFormData = Object.fromEntries(
+        Object.entries(saved.formData).filter(([, value]) => value !== '' && value !== null && value !== undefined),
+      )
+      setFormData(previous => ({ ...previous, ...meaningfulFormData }))
+      if (saved.images?.length) {
+        setImages(previous => {
+          const existingReferences = new Set(previous.map(image => normalizePropertyImageReference(image.dataUrl)))
+          return [...previous, ...saved.images.filter(image => !existingReferences.has(normalizePropertyImageReference(image.dataUrl)))]
+        })
+      }
+      if (saved.existingAmenities?.length) setExistingAmenities(saved.existingAmenities)
+      setHasUserChanges(true)
+      return
+    }
+
     setFormData(previous => ({ ...previous, ...saved.formData }))
     setImages(saved.images)
-    setStep(Math.max(1, Math.min(publishStepLabels.length, saved.step)))
     if (saved.existingAmenities.length) setExistingAmenities(saved.existingAmenities)
-  })
+    setHasUserChanges(saved.edited === true)
+  }, restoreDraft)
   const progressPercent = Math.round((step / publishStepLabels.length) * 100)
   const currentStepLabel = publishStepLabels[step - 1] ?? 'Publicación'
+
+  useEffect(() => {
+    let cancelled = false
+    const existingImages = images.filter(image => /\/storage\/v1\/object\/(?:public\/)?property_images\//i.test(image.dataUrl))
+
+    void Promise.all(existingImages.map(async image => {
+      let request = imagePreviewRequests.current.get(image.dataUrl)
+      if (!request) {
+        request = createOwnedPropertyImagePreview(image.dataUrl, userId)
+        imagePreviewRequests.current.set(image.dataUrl, request)
+      }
+      const preview = await request
+      if (cancelled) return
+      if (!preview) {
+        setImagePreviewErrors(previous => ({ ...previous, [image.dataUrl]: true }))
+        return
+      }
+
+      setImagePreviewErrors(previous => {
+        if (!previous[image.dataUrl]) return previous
+        const next = { ...previous }
+        delete next[image.dataUrl]
+        return next
+      })
+      setImagePreviewUrls(previous => previous[image.dataUrl] === preview.previewUrl
+        ? previous
+        : { ...previous, [image.dataUrl]: preview.previewUrl })
+      setImages(previous => {
+        let changed = false
+        const next = previous.map(item => {
+          if (item.dataUrl !== image.dataUrl || item.size === preview.size) return item
+          changed = true
+          return { ...item, size: preview.size }
+        })
+        return changed ? next : previous
+      })
+    }))
+
+    return () => { cancelled = true }
+  }, [images, userId, imagePreviewRetryKey])
 
   useEffect(() => {
     if (isEditMode) return
@@ -312,31 +461,41 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
     let cancelled = false
 
     async function loadSellerContact() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.id !== userId) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || user.id !== userId) return
 
-      const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || ''
-      let profileName = ''
-      let profilePhone = ''
+        const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+        let profileName = ''
+        let profilePhone = ''
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, phone')
-        .eq('id', user.id)
-        .maybeSingle()
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      if (data) {
-        profileName = typeof data.full_name === 'string' ? data.full_name : ''
-        profilePhone = typeof data.phone === 'string' ? data.phone : ''
+        if (data) {
+          profileName = typeof data.full_name === 'string' ? data.full_name : ''
+          profilePhone = typeof data.phone === 'string' ? data.phone : ''
+        }
+
+        if (cancelled) return
+
+        setFormData((prev) => ({
+          ...prev,
+          contactName: prev.contactName || profileName || fallbackName,
+          contactPhone: prev.contactPhone || formatPhoneForDisplay(profilePhone),
+        }))
+      } catch (error) {
+        if (cancelled) return
+        logSafeEvent({
+          module: 'publish',
+          action: 'load_seller_contact_prefill',
+          level: 'warn',
+          code: sanitizeErrorReason(error),
+        })
       }
-
-      if (cancelled) return
-
-      setFormData((prev) => ({
-        ...prev,
-        contactName: prev.contactName || profileName || fallbackName,
-        contactPhone: prev.contactPhone || formatPhoneForDisplay(profilePhone),
-      }))
     }
 
     loadSellerContact()
@@ -415,7 +574,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
           // Load existing images as preview-only entries
           if (data.images && data.images.length > 0) {
             setImages(data.images.map((url: string, i: number) => ({
-              dataUrl: url,
+              dataUrl: normalizePropertyImageReference(url),
               size: 0,
               name: `existing-${i}.webp`,
             })))
@@ -458,8 +617,30 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
     }
   }
 
+  async function handleExitWithoutSaving() {
+    if (isSubmitting || isCompressing || !draft.ready) return
+    const shouldDiscard = window.confirm(
+      'El anuncio publicado no se modificará. Se descartarán los cambios de este formulario. ¿Quieres salir sin guardar?',
+    )
+    if (!shouldDiscard) return
+
+    try {
+      await draft.discard()
+      onBack()
+    } catch (err) {
+      logSafeEvent({
+        module: 'publish',
+        action: 'discard_draft_before_exit',
+        level: 'error',
+        code: sanitizeErrorReason(err),
+      })
+      alert('No se pudieron descartar los cambios. El borrador sigue disponible; inténtalo de nuevo.')
+    }
+  }
+
   // 2. Sincronizar datos de los campos de texto
   function updateFormData(updates: Partial<PublishFormData>) {
+    setHasUserChanges(true)
     setFormData((prev) => {
       const next = { ...prev, ...updates }
       
@@ -480,6 +661,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
       setFormData(initialFormState)
       setImages([])
       setStep(1)
+      setHasUserChanges(false)
       try {
         await draft.discard(false)
       } catch (err) {
@@ -496,6 +678,10 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
   // 3. Compresor de fotos a WebP (con canvas)
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return
+    if (imageCompressionInProgress.current) {
+      alert('Espera a que termine el procesamiento de las fotos antes de agregar más.')
+      return
+    }
     const files = Array.from(e.target.files)
     
     if (images.length + files.length > 20) {
@@ -518,47 +704,115 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
     }
     if (validFiles.length === 0) return
 
+    imageCompressionInProgress.current = true
     setIsCompressing(true)
-    const newCompressed: typeof images = []
+    try {
+      const newCompressed: typeof images = []
 
-    let uploadFailures = 0
-    for (const file of validFiles) {
-      try {
-        const result = await compressToWebP(file)
-        newCompressed.push({
-          dataUrl: result.dataUrl,
-          size: result.size,
-          name: file.name.replace(/\.[^/.]+$/, "") + ".webp"
-        })
-      } catch (err) {
-        logSafeEvent({
-          module: 'publish',
-          action: 'compress_photo',
-          level: 'error',
-          code: sanitizeErrorReason(err),
-        })
-        uploadFailures++
+      let uploadFailures = 0
+      for (const file of validFiles) {
+        try {
+          const result = await compressPublicationImage(file)
+          newCompressed.push({
+            dataUrl: result.dataUrl,
+            size: result.size,
+            name: file.name.replace(/\.[^/.]+$/, "") + ".webp"
+          })
+        } catch (err) {
+          logSafeEvent({
+            module: 'publish',
+            action: 'compress_photo',
+            level: 'error',
+            code: sanitizeErrorReason(err),
+          })
+          uploadFailures++
+        }
       }
-    }
 
-    if (uploadFailures > 0) {
-      alert(`No se pudieron procesar ${uploadFailures} imágenes debido a un formato no admitido o un archivo corrupto.`)
-    }
+      if (uploadFailures > 0) {
+        alert(`No se pudieron procesar ${uploadFailures} imágenes debido a un formato no admitido o un archivo corrupto.`)
+      }
 
-    if (active.current) {
-      setImages((prev) => [...prev, ...newCompressed])
-      setIsCompressing(false)
+      if (active.current && newCompressed.length > 0) {
+        setHasUserChanges(true)
+        setImages((prev) => [...prev, ...newCompressed])
+      }
+    } finally {
+      imageCompressionInProgress.current = false
+      if (active.current) setIsCompressing(false)
     }
   }
 
   function removeImage(idx: number) {
+    const image = images[idx]
+    const remainsInGallery = image && images.some((candidate, index) => index !== idx && candidate.dataUrl === image.dataUrl)
+    if (image && !remainsInGallery) {
+      const previewUrl = imagePreviewUrls[image.dataUrl]
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+        imagePreviewRequests.current.delete(image.dataUrl)
+      } else if (imagePreviewErrors[image.dataUrl]) {
+        imagePreviewRequests.current.delete(image.dataUrl)
+      }
+      setImagePreviewUrls(previous => {
+        if (!previous[image.dataUrl]) return previous
+        const next = { ...previous }
+        delete next[image.dataUrl]
+        return next
+      })
+      setImagePreviewErrors(previous => {
+        if (!previous[image.dataUrl]) return previous
+        const next = { ...previous }
+        delete next[image.dataUrl]
+        return next
+      })
+    }
+    setHasUserChanges(true)
     setImages((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  function retryImagePreview(imageDataUrl: string) {
+    imagePreviewRequests.current.delete(imageDataUrl)
+    setImagePreviewErrors(previous => {
+      if (!previous[imageDataUrl]) return previous
+      const next = { ...previous }
+      delete next[imageDataUrl]
+      return next
+    })
+    setImagePreviewRetryKey(key => key + 1)
+  }
+
+  function moveImage(idx: number, direction: -1 | 1) {
+    setHasUserChanges(true)
+    setImages((prev) => {
+      const target = idx + direction
+      if (target < 0 || target >= prev.length) return prev
+      const reordered = [...prev]
+      const current = reordered[idx]
+      reordered[idx] = reordered[target]
+      reordered[target] = current
+      return reordered
+    })
   }
 
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault()
-    
-    const { data: { user } } = await supabase.auth.getUser()
+
+    let user: { id: string } | null = null
+    try {
+      const { data, error } = await supabase.auth.getUser()
+      if (error) throw error
+      user = data.user
+    } catch (error) {
+      logSafeEvent({
+        module: 'publish',
+        action: 'verify_session_before_publish',
+        level: 'warn',
+        code: sanitizeErrorReason(error),
+      })
+      alert('No se pudo confirmar tu sesión. Comprueba tu conexión e inténtalo de nuevo.')
+      return
+    }
 
     if (!user || user.id !== userId) {
       alert('Debes iniciar sesión para publicar.')
@@ -580,10 +834,23 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
       return
     }
 
+    let pendingImagePaths: string[] | null = null
     try {
       setIsSubmitting(true)
-
-      const uploadedImages = await uploadPublicationImages(user.id, images, supabase.storage.from('property_images'))
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('PROPERTY_IMAGE_SESSION_REQUIRED')
+      const newlyUploadedImagePaths: string[] = []
+      const uploadedImages = await uploadPublicationImages(
+        user.id,
+        images,
+        supabase.storage.from('property_images'),
+        async (blob) => {
+          const path = await uploadPropertyImage(blob, session.access_token)
+          newlyUploadedImagePaths.push(path)
+          return path
+        },
+      )
+      pendingImagePaths = newlyUploadedImagePaths
 
       // 2. Preparar campos extra
       const features = {
@@ -637,7 +904,6 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
 
       // 3. Insertar o actualizar en base de datos (con status pending_review por defecto)
       const propertyPayload = {
-        user_id: user.id,
         title: generatedTitle,
         location: formData.location || 'Cuba',
         description: formData.description || 'Sin descripción',
@@ -665,20 +931,26 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
       setAiStatusMessage('Guardando publicación...')
 
       if (isEditMode && editPropertyId) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('properties')
           .update(propertyPayload)
           .eq('id', editPropertyId)
+          .eq('user_id', user.id)
+          .select('id')
+          .maybeSingle()
         if (error) throw error;
+        if (!data?.id) throw new Error('PROPERTY_EDIT_NOT_AUTHORIZED')
       } else {
         const { data, error } = await supabase
           .from('properties')
-          .insert(propertyPayload)
+          .insert({ ...propertyPayload, user_id: user.id })
           .select('id')
           .single()
         if (error) throw error;
         if (data) savedPropertyId = data.id;
       }
+      // Keep the new objects once the database row references them.
+      pendingImagePaths = null
 
       // 4. Iniciar moderación por IA en segundo plano (Fire and forget)
       try {
@@ -749,13 +1021,36 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
         onSubmitSuccess()
       }, 3000)
     } catch (error: unknown) {
+      const permissionError = error instanceof Error
+        && error.message === 'PROPERTY_EDIT_NOT_AUTHORIZED'
+      const databasePermissionError = typeof error === 'object' && error !== null
+        && 'code' in error && error.code === '42501'
+      if (pendingImagePaths?.length && (permissionError || databasePermissionError)) {
+        try {
+          const { error: cleanupError } = await supabase.storage.from('property_images').remove(pendingImagePaths)
+          if (cleanupError) throw cleanupError
+        } catch (cleanupError) {
+          logSafeEvent({
+            module: 'publish',
+            action: 'cleanup_unreferenced_property_images',
+            level: 'warn',
+            code: sanitizeErrorReason(cleanupError),
+          })
+        }
+      }
       logSafeEvent({
         module: 'publish',
         action: 'publish_property',
         level: 'error',
         code: sanitizeErrorReason(error),
       })
-      alert(`Hubo un error al publicar la propiedad: ${error instanceof Error ? error.message : 'Inténtalo de nuevo.'}`)
+      const safeUploadError = error instanceof Error
+        && error.message === 'No se subieron todas las fotos. Tus datos y fotos se conservan para reintentar.'
+      alert(safeUploadError
+        ? error.message
+        : permissionError || databasePermissionError
+          ? 'No se pudo guardar porque esta cuenta no tiene permiso para editar la publicación. Confirma que estás en la cuenta que la publicó. Tus datos y fotos se conservaron para reintentar.'
+          : 'No se pudo guardar la propiedad. Comprueba tu conexión e inténtalo de nuevo.')
     } finally {
       setIsSubmitting(false)
     }
@@ -810,10 +1105,11 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
             <Button
               type="button"
               variant="outline"
-              onClick={onBack}
+              disabled={isSubmitting || isCompressing || !draft.ready}
+              onClick={() => void handleExitWithoutSaving()}
               className="border-white text-white bg-transparent hover:bg-white/10 rounded-full h-9 px-4 text-xs font-bold transition-all duration-200"
             >
-              Salir
+              Salir sin guardar
             </Button>
           </div>
         </div>
@@ -825,8 +1121,17 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
           {draft.error && <p role="alert" className="p-4 text-sm text-red-700">{draft.error}</p>}
           {editLoading || !draft.ready ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs font-bold text-neutral-500">Cargando datos de la propiedad...</p>
+              {draft.error ? (
+                <>
+                  <p className="text-sm font-semibold text-neutral-700">No pudimos recuperar tu borrador.</p>
+                  <Button type="button" variant="outline" onClick={draft.retry}>Reintentar</Button>
+                </>
+              ) : (
+                <>
+                  <span className="inline-block w-8 h-8 border-4 border-[#035f53] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs font-bold text-neutral-500">Cargando datos de la propiedad...</p>
+                </>
+              )}
             </div>
           ) : submitted ? (
             <PublishSuccessCard />
@@ -902,9 +1207,13 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId }: Publis
                   {step === 6 && (
                     <StepImages
                       images={images}
+                      imagePreviewUrls={imagePreviewUrls}
+                      imagePreviewErrors={imagePreviewErrors}
                       isCompressing={isCompressing}
                       onImageUpload={handleImageUpload}
                       onRemoveImage={removeImage}
+                      onMoveImage={moveImage}
+                      onRetryImagePreview={retryImagePreview}
                       onNext={nextStep}
                       onBack={prevStep}
                     />
@@ -1717,16 +2026,24 @@ function StepDescription({
 /* Paso 6: Imágenes (Uploader WebP obligatorio) */
 function StepImages({
   images,
+  imagePreviewUrls,
+  imagePreviewErrors,
   isCompressing,
   onImageUpload,
   onRemoveImage,
+  onMoveImage,
+  onRetryImagePreview,
   onNext,
   onBack,
 }: {
   images: { dataUrl: string; size: number; name: string }[]
+  imagePreviewUrls: Readonly<Record<string, string>>
+  imagePreviewErrors: Readonly<Record<string, boolean>>
   isCompressing: boolean
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveImage: (idx: number) => void
+  onMoveImage: (idx: number, direction: -1 | 1) => void
+  onRetryImagePreview: (imageDataUrl: string) => void
   onNext: () => void
   onBack: () => void
 }) {
@@ -1742,40 +2059,84 @@ function StepImages({
       <div className="space-y-3">
         <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Sube fotos del inmueble (Mínimo 1, Máximo 20)</label>
         
-        <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 hover:border-[#035f53] rounded-xl p-8 bg-neutral-50/50 cursor-pointer transition-colors duration-200 group">
+        <div
+          role="group"
+          aria-label="Cargar fotos"
+          onDragOver={(event) => {
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'copy'
+          }}
+          onDrop={(event) => {
+            event.preventDefault()
+            onImageUpload({ target: { files: event.dataTransfer.files } } as React.ChangeEvent<HTMLInputElement>)
+          }}
+          className="relative flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 hover:border-[#035f53] rounded-xl p-8 bg-neutral-50/50 cursor-pointer transition-colors duration-200 group"
+        >
           <input
             type="file"
             multiple
             accept="image/*"
+            disabled={isCompressing}
             onChange={onImageUpload}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           <Upload size={28} className="text-neutral-400 group-hover:text-[#035f53] transition-colors duration-200 mb-2" />
           <span className="text-xs font-bold text-neutral-700">Arrastra imágenes o búscalas</span>
-          <span className="text-[10px] text-neutral-400 mt-1">Convertidor WebP optimizado integrado</span>
         </div>
 
         {isCompressing && (
-          <div className="text-xs font-semibold text-emerald-800 flex items-center gap-2 py-1 animate-pulse">
+          <div role="status" className="text-xs font-semibold text-emerald-800 flex items-center gap-2 py-1 animate-pulse">
             <span className="inline-block w-4 h-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
-            Comprimiendo y convirtiendo imágenes...
+            Preparando las fotos…
           </div>
         )}
 
         {images.length > 0 && (
           <div className="grid grid-cols-4 gap-2 pt-2 animate-scaleUp">
             {images.map((img, idx) => (
-              <div key={idx} className="relative aspect-square bg-neutral-100 border border-neutral-200 rounded-lg overflow-hidden group">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${img.dataUrl})` }} />
+              <div key={`${img.name}-${idx}`} role="group" aria-label={`Foto ${idx + 1}: ${img.name}`} className="relative aspect-square bg-neutral-100 border border-neutral-200 rounded-lg overflow-hidden group">
+                {(/\/storage\/v1\/object\/(?:public\/)?property_images\//i.test(img.dataUrl)) && !imagePreviewUrls[img.dataUrl] && (
+                  <div className="absolute inset-x-2 bottom-8 z-10 rounded bg-white/95 px-2 py-1 text-center text-[10px] text-neutral-700 shadow">
+                    {imagePreviewErrors[img.dataUrl] ? (
+                      <>
+                        <p role="status">No se pudo cargar esta foto.</p>
+                        <button type="button" className="mt-1 min-h-7 font-semibold text-emerald-800 underline" onClick={() => onRetryImagePreview(img.dataUrl)} aria-label={`Reintentar carga de Foto ${idx + 1}`}>Reintentar</button>
+                      </>
+                    ) : <p role="status">Cargando foto…</p>}
+                  </div>
+                )}
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${imagePreviewUrls[img.dataUrl] || (/\/storage\/v1\/object\/(?:public\/)?property_images\//i.test(img.dataUrl) ? PROPERTY_IMAGE_FALLBACK : img.dataUrl)})` }}
+                />
                 <button
                   type="button"
                   onClick={() => onRemoveImage(idx)}
                   className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full p-1 shadow transition-colors duration-200"
+                  aria-label={`Eliminar ${img.name}`}
                 >
                   <X size={10} />
                 </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-[8px] text-white text-center py-0.5 truncate">
-                  {(img.size / 1024).toFixed(1)} KB
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-[8px] text-white flex items-center justify-between gap-1 px-1 py-0.5">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => onMoveImage(idx, -1)}
+                    className="min-h-6 min-w-6 flex items-center justify-center rounded disabled:opacity-30"
+                    aria-label={`Mover ${img.name} antes`}
+                  >
+                    <ChevronLeft size={12} />
+                  </button>
+                  <span className="min-w-0 flex-1 truncate text-center">{(img.size / 1024).toFixed(1)} KB</span>
+                  <button
+                    type="button"
+                    disabled={idx === images.length - 1}
+                    onClick={() => onMoveImage(idx, 1)}
+                    className="min-h-6 min-w-6 flex items-center justify-center rounded disabled:opacity-30"
+                    aria-label={`Mover ${img.name} después`}
+                  >
+                    <ChevronRight size={12} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -2130,66 +2491,4 @@ function PublishSuccessCard() {
       </div>
     </div>
   )
-}
-
-/* ==========================================================================
-   HELPERS & COMPRESSORS
-   ========================================================================== */
-
-/* Compresor WebP offline con Canvas */
-async function compressToWebP(file: File): Promise<{ dataUrl: string; size: number }> {
-  const fileValidationError = validateImageFile(file, PROPERTY_IMAGE_RULES)
-  if (fileValidationError) throw new Error(fileValidationError)
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        try {
-          const dimensionError = validateImageDimensions(img.width, img.height, PROPERTY_IMAGE_RULES)
-          if (dimensionError) {
-            reject(new Error(dimensionError))
-            return
-          }
-          const canvas = document.createElement('canvas')
-          let width = img.width
-          let height = img.height
-          
-          const MAX_WIDTH = 800
-          const MAX_HEIGHT = 800
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width
-              width = MAX_WIDTH
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height
-              height = MAX_HEIGHT
-            }
-          }
-
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          if (!ctx) {
-            reject(new Error('No se pudo obtener el contexto 2D del canvas para compresión.'))
-            return
-          }
-          ctx.drawImage(img, 0, 0, width, height)
-          
-          const webpDataUrl = canvas.toDataURL('image/webp', 0.70)
-          const approxSize = Math.round((webpDataUrl.length - 22) * 3 / 4)
-          resolve({ dataUrl: webpDataUrl, size: approxSize })
-        } catch (err) {
-          reject(err || new Error('Fallo durante el procesamiento del canvas.'))
-        }
-      }
-      img.onerror = () => reject(new Error('Error al cargar la imagen.'))
-      img.src = e.target?.result as string
-    }
-    reader.onerror = () => reject(new Error('Error al leer el archivo.'))
-    reader.readAsDataURL(file)
-  })
 }

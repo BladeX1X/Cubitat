@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Header } from './Header'
 import { PWA_INSTALL_REQUEST_EVENT } from './PWAInstallPrompt'
@@ -16,6 +16,9 @@ const callbacks = {
   navigateModerar: vi.fn(),
   navigatePublish: vi.fn(),
   navigateResults: vi.fn(),
+  navigateAgentApplication: vi.fn(),
+  navigateServices: vi.fn(),
+  navigateMaterials: vi.fn(),
   openLogin: vi.fn(),
   handleOperationNavigation: vi.fn(),
   onSignOut: vi.fn(),
@@ -67,6 +70,50 @@ describe('Header mobile menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Permutar' }))
 
     expect(callbacks.handleOperationNavigation).toHaveBeenCalledWith('permuta')
+  })
+
+  it('keeps Ser agente out of public navigation and the mobile menu', () => {
+    render(<Header user={null} {...callbacks} />)
+
+    expect(screen.queryByRole('link', { name: 'Ser agente' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    expect(screen.queryByRole('button', { name: 'Ser agente' })).not.toBeInTheDocument()
+  })
+
+  it('shows Services and Materials first in the mobile menu', () => {
+    render(<Header user={null} {...callbacks} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+
+    const menu = screen.getByRole('complementary', { name: 'Menú móvil' })
+    const catalogs = within(menu).getByRole('navigation', { name: 'Servicios y materiales' })
+    const servicesButton = within(catalogs).getByRole('button', { name: /Servicios/ })
+    const materialsButton = within(catalogs).getByRole('button', { name: /Materiales/ })
+    const accountOptions = within(menu).getByRole('navigation', { name: 'Operaciones' })
+
+    expect(servicesButton).toBeInTheDocument()
+    expect(materialsButton).toBeInTheDocument()
+    expect(catalogs.compareDocumentPosition(accountOptions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    fireEvent.click(servicesButton)
+    expect(callbacks.navigateServices).toHaveBeenCalledOnce()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Servicios y materiales' })).getByRole('button', { name: /Materiales/ }))
+    expect(callbacks.navigateMaterials).toHaveBeenCalledOnce()
+  })
+
+  it('shows direct Services and Materials shortcuts without opening the mobile menu', () => {
+    render(<Header user={null} {...callbacks} />)
+
+    const shortcuts = screen.getByRole('navigation', { name: 'Catálogos' })
+    const services = within(shortcuts).getByRole('button', { name: 'Servicios' })
+    const materials = within(shortcuts).getByRole('button', { name: 'Materiales' })
+    expect(screen.queryByRole('complementary', { name: 'Menú móvil' })).not.toBeInTheDocument()
+
+    fireEvent.click(services)
+    fireEvent.click(materials)
+    expect(callbacks.navigateServices).toHaveBeenCalledOnce()
+    expect(callbacks.navigateMaterials).toHaveBeenCalledOnce()
   })
 
   it('permite solicitar la instalación desde el menú móvil', () => {

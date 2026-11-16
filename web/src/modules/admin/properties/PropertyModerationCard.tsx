@@ -4,6 +4,7 @@ import { Button } from '../../../shared/ui/button'
 import { formatDate, formatPrice } from '../core/formatters'
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
+import { getPropertyCoverImage } from '../../properties/utils/images'
 import { PropertyDetails } from './PropertyDetails'
 import { ImageDuplicateComparison } from './ImageDuplicateComparison'
 
@@ -33,7 +34,7 @@ export function PropertyModerationCard({
       <div className="flex flex-col sm:flex-row">
         <div className="sm:w-56 h-40 sm:h-auto bg-neutral-100 shrink-0">
           {property.cover_image ? (
-            <img src={property.cover_image} alt={property.title} loading="lazy" className="w-full h-full object-cover" />
+            <img src={getPropertyCoverImage(property.cover_image)} alt={property.title} loading="lazy" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">Sin imagen</div>
           )}

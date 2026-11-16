@@ -63,9 +63,9 @@ export function TurnstileWidget({
     let active = true;
     const scriptId = 'cloudflare-turnstile-script';
     const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
-    const script = existingScript || document.createElement('script');
+    const script = existingScript || (window.turnstile ? null : document.createElement('script'));
 
-    if (!existingScript) {
+    if (script && !existingScript) {
       script.id = scriptId;
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
@@ -183,8 +183,8 @@ export function TurnstileWidget({
       reportScriptError('SCRIPT_LOAD_ERROR');
     };
 
-    script.addEventListener('load', handleScriptLoad);
-    script.addEventListener('error', handleScriptError);
+    script?.addEventListener('load', handleScriptLoad);
+    script?.addEventListener('error', handleScriptError);
 
     // Initial check if turnstile is already loaded
     if (window.turnstile) {
@@ -200,8 +200,8 @@ export function TurnstileWidget({
         window.clearInterval(tokenIntervalRef.current);
         tokenIntervalRef.current = null;
       }
-      script.removeEventListener('load', handleScriptLoad);
-      script.removeEventListener('error', handleScriptError);
+      script?.removeEventListener('load', handleScriptLoad);
+      script?.removeEventListener('error', handleScriptError);
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current);

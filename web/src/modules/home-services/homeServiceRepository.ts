@@ -1,6 +1,12 @@
 import { HOME_SERVICE_CATEGORIES, type HomeServiceCategory, type HomeServiceProvider, type OwnedHomeServiceProvider } from './types'
 import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { aggregateProvinceCounts } from '../marketplace/provinceAggregates'
+import { signCatalogCardImage } from '../../shared/lib/catalogStorageImage'
+import {
+  getHomeServicePhotoBucket,
+  isHomeServicePhotoPath,
+} from './homeServicePhotos'
 
 type ProviderRow = {
   id: unknown
@@ -26,8 +32,72 @@ function parseStringList(value: unknown): string[] {
 
 function parseImageUrls(value: unknown): string[] {
   return parseStringList(value).filter((candidate) => {
+    if (isHomeServicePhotoPath(candidate)) return true
     try { return new URL(candidate).protocol === 'https:' } catch { return false }
   }).slice(0, 10)
+}
+
+async function signHomeServicePhotos(
+  providers: HomeServiceProvider[],
+  options: { preserveMissing?: boolean; coverOnly?: boolean } = {},
+): Promise<HomeServiceProvider[]> {
+  const { preserveMissing = false, coverOnly = false } = options
+  const pathsByBucket = new Map<string, Set<string>>()
+  for (const provider of providers) {
+    const references = coverOnly ? provider.galleryUrls.slice(0, 1) : provider.galleryUrls
+    for (const reference of references) {
+      const bucket = getHomeServicePhotoBucket(reference)
+      if (!bucket) continue
+      const paths = pathsByBucket.get(bucket) ?? new Set<string>()
+      paths.add(reference)
+      pathsByBucket.set(bucket, paths)
+    }
+  }
+
+  const signedUrls = new Map<string, string>()
+  for (const [bucket, pathSet] of pathsByBucket) {
+    const paths = Array.from(pathSet)
+    const transformedResults = coverOnly
+      ? await Promise.all(paths.map(async (path) => ({ path, signedUrl: await signCatalogCardImage(bucket, path) })))
+      : []
+    const fallbackPaths = coverOnly
+      ? transformedResults.flatMap((item) => {
+        if (item.signedUrl) {
+          signedUrls.set(`${bucket}:${item.path}`, item.signedUrl)
+          return []
+        }
+        return [item.path]
+      })
+      : paths
+    for (let offset = 0; offset < fallbackPaths.length; offset += 100) {
+      const batch = fallbackPaths.slice(offset, offset + 100)
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrls(batch, 3600)
+      if (error) {
+        logSafeEvent({ module: 'home_services', action: 'sign_provider_photos', level: 'warn', code: sanitizeErrorReason(error) })
+        continue
+      }
+      for (const item of data ?? []) {
+        if (item.path && item.signedUrl) signedUrls.set(`${bucket}:${item.path}`, item.signedUrl)
+      }
+    }
+  }
+  return providers.map((provider) => {
+    const references = coverOnly ? provider.galleryUrls.slice(0, 1) : provider.galleryUrls
+    const photoUnavailable = references.some((reference) => {
+      const bucket = getHomeServicePhotoBucket(reference)
+      return bucket !== null && !signedUrls.has(`${bucket}:${reference}`)
+    })
+    return {
+      ...provider,
+      photoUnavailable,
+      galleryUrls: references.flatMap((reference) => {
+        const bucket = getHomeServicePhotoBucket(reference)
+        if (!bucket) return [reference]
+        const signedUrl = signedUrls.get(`${bucket}:${reference}`)
+        return signedUrl ? [signedUrl] : preserveMissing ? [''] : []
+      }),
+    }
+  })
 }
 
 function parseProvider(value: unknown): HomeServiceProvider | null {
@@ -85,9 +155,37 @@ export async function fetchHomeServiceProviders(filters: {
 
     const { data, error, count } = await query
     if (error) return logLoadFailure('fetch_provider_list', error)
-    return { items: (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null), total: count ?? 0 }
+    const items = (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
+    return { items: await signHomeServicePhotos(items, { coverOnly: true }), total: count ?? 0 }
   } catch (error) {
     return logLoadFailure('fetch_provider_list_exception', error)
+  }
+}
+
+export async function fetchHomeServiceProvinceCounts(filters: {
+  category?: HomeServiceCategory
+  municipality?: string
+  search?: string
+} = {}): Promise<{ province: string; count: number }[]> {
+  try {
+    const rows: { province: string }[] = []
+    const pageSize = 1000
+    for (let offset = 0; ; offset += pageSize) {
+      let query = supabase.from('home_service_providers').select('province', { count: 'exact' })
+        .eq('status', 'published').order('province').range(offset, offset + pageSize - 1)
+      if (filters.category) query = query.eq('category', filters.category)
+      if (filters.municipality) query = query.contains('municipalities', [filters.municipality])
+      const search = filters.search?.trim().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ')
+      if (search) query = query.or(`display_name.ilike.%${search}%,description.ilike.%${search}%`)
+      const { data, error, count } = await query
+      if (error) return logLoadFailure('fetch_provider_province_counts', error)
+      const page = (Array.isArray(data) ? data : []).filter((row): row is { province: string } => isRecord(row) && typeof row.province === 'string')
+      rows.push(...page)
+      if (page.length < pageSize || rows.length >= (count ?? 0)) break
+    }
+    return aggregateProvinceCounts(rows)
+  } catch (error) {
+    return logLoadFailure('fetch_provider_province_counts_exception', error)
   }
 }
 
@@ -100,9 +198,27 @@ export async function fetchHomeServiceProvider(slug: string): Promise<HomeServic
       .eq('status', 'published')
       .maybeSingle()
     if (error) throw error
-    return parseProvider(data)
+    const provider = parseProvider(data)
+    return provider ? (await signHomeServicePhotos([provider]))[0] ?? null : null
   } catch (error) {
     return logLoadFailure('fetch_provider_detail', error)
+  }
+}
+
+export async function fetchHomeServiceProvidersByIds(ids: readonly string[]): Promise<HomeServiceProvider[]> {
+  const listingIds = Array.from(new Set(ids)).slice(0, 100)
+  if (listingIds.length === 0) return []
+  try {
+    const { data, error } = await supabase
+      .from('home_service_providers')
+      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at')
+      .in('id', listingIds)
+      .eq('status', 'published')
+    if (error) throw error
+    const providers = (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
+    return signHomeServicePhotos(providers, { coverOnly: true })
+  } catch (error) {
+    return logLoadFailure('fetch_saved_provider_profiles', error)
   }
 }
 
@@ -113,12 +229,14 @@ export async function fetchMyHomeServiceProviders(): Promise<OwnedHomeServicePro
     throw new Error('OWNED_HOME_SERVICES_LOAD_FAILED')
   }
   if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
+  const providers = data.flatMap((value) => {
     const provider = parseProvider(value)
     if (!provider || !isRecord(value) || typeof value.status !== 'string'
       || !['pending_review', 'published', 'paused', 'rejected'].includes(value.status)) return []
-    return [{ ...provider, status: value.status as OwnedHomeServiceProvider['status'] }]
+    return [{ ...provider, galleryReferences: provider.galleryUrls, status: value.status as OwnedHomeServiceProvider['status'] }]
   })
+  const signedProviders = await signHomeServicePhotos(providers, { preserveMissing: true })
+  return providers.map((provider, index) => ({ ...signedProviders[index], galleryReferences: provider.galleryReferences, status: provider.status }))
 }
 
 export async function sendHomeServiceInquiry(providerId: string, message: string): Promise<void> {
@@ -144,14 +262,15 @@ export async function createHomeServiceProvider(input: {
   phone: string | null
   whatsapp: string | null
   galleryUrls: string[]
-}): Promise<void> {
+}, providerId: string): Promise<void> {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('AUTH_REQUIRED')
   const baseSlug = input.displayName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'profesional'
   const { error } = await supabase.from('home_service_providers').insert({
+    id: providerId,
     owner_id: user.id,
-    slug: `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`,
+    slug: `${baseSlug}-${providerId.replaceAll('-', '').slice(0, 8)}`,
     display_name: input.displayName.trim(),
     category: input.category,
     description: input.description.trim(),
@@ -163,7 +282,14 @@ export async function createHomeServiceProvider(input: {
   })
   if (error) {
     logSafeEvent({ module: 'home_services', action: 'create_service_provider', level: 'warn', code: sanitizeErrorReason(error) })
-    throw new Error('HOME_SERVICE_PROFILE_CREATE_FAILED')
+    // If the first INSERT committed but its response was lost, a retry with the
+    // same client id hits the primary key. Update that owned draft instead of
+    // creating a second profile or leaving the retry stuck.
+    if (isHomeServiceProviderIdConflict(error)) {
+      await updateHomeServiceProvider(providerId, input)
+      return
+    }
+    throw new Error(isPermissionDenied(error) ? 'HOME_SERVICE_PROFILE_PERMISSION_DENIED' : 'HOME_SERVICE_PROFILE_CREATE_FAILED')
   }
 }
 
@@ -190,6 +316,18 @@ export async function updateHomeServiceProvider(providerId: string, input: {
   })
   if (error) {
     logSafeEvent({ module: 'home_services', action: 'update_service_provider', level: 'warn', code: sanitizeErrorReason(error) })
-    throw new Error('HOME_SERVICE_PROFILE_UPDATE_FAILED')
+    throw new Error(isPermissionDenied(error) ? 'HOME_SERVICE_PROFILE_PERMISSION_DENIED' : 'HOME_SERVICE_PROFILE_UPDATE_FAILED')
   }
+}
+
+function isPermissionDenied(error: unknown): boolean {
+  return isRecord(error) && error.code === '42501'
+}
+
+function isHomeServiceProviderIdConflict(error: unknown): boolean {
+  if (!isRecord(error) || error.code !== '23505') return false
+  const diagnostic = [error.message, error.details, error.hint]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+  return /home_service_providers_pkey/i.test(diagnostic)
 }

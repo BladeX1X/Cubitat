@@ -24,17 +24,11 @@ export async function fetchModerationReports(page: number) {
 }
 
 export async function resolveReport(reportId: string, propertyId: string) {
-  const { error: propertyError } = await supabase
-    .from('properties')
-    .update({ status: 'paused', moderation_message: 'Ocultada por reportes de usuarios.' })
-    .eq('id', propertyId)
-  if (propertyError) throw propertyError
-
-  const { error: reportError } = await supabase
-    .from('property_reports')
-    .update({ status: 'resolved' })
-    .eq('id', reportId)
-  if (reportError) throw new Error('Propiedad desactivada, pero no se pudo actualizar el reporte.')
+  const { error } = await supabase.rpc('resolve_property_report', {
+    p_report_id: reportId,
+    p_property_id: propertyId,
+  })
+  if (error) throw error
 }
 
 export async function dismissReport(reportId: string) {

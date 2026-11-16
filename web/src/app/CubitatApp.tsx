@@ -4,6 +4,7 @@ import { Building2, Heart, Home, UserRound } from 'lucide-react'
 import { useAuthModal } from '../modules/auth/contexts/AuthModalContext'
 import { filterProperties } from '../modules/properties/services/filterProperties'
 import type { Property } from '../modules/properties/types'
+import { PUBLIC_PROPERTY_SELECT } from '../modules/properties/publicPropertySelect'
 import { OPERATION_VALUES } from '../shared/lib/propertyTaxonomy'
 import { getPropertyContactInfo } from '../modules/properties/utils/contact'
 import { getPropertyCoverImage, normalizePropertyImages, optimizePropertyCardImage } from '../modules/properties/utils/images'
@@ -410,7 +411,11 @@ export function CubitatApp() {
         const cached = await getCachedProperties()
         if (active && cached && cached.length > 0) {
           hasUsableCache = true
-          setProperties(cached)
+          setProperties(cached.map(property => ({
+            ...property,
+            coverImage: getPropertyCoverImage(property.coverImage),
+            images: normalizePropertyImages(property.images),
+          })))
           setLoading(false) // Ocultar el esqueleto ya que tenemos datos en caché
         }
       } catch (cacheErr) {
@@ -434,7 +439,7 @@ export function CubitatApp() {
         const [{ data, error }, verifiedAgentIds, verifiedSellerIds] = await Promise.all([
           supabase
             .from('properties')
-            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
+            .select(PUBLIC_PROPERTY_SELECT)
             .eq('status', 'published'),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
             ? fetchVerifiedAgentIdsInPhaseTwoDev().catch(() => new Set<string>())
@@ -471,7 +476,7 @@ export function CubitatApp() {
             features: item.features || undefined,
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
             coordinates: approximatePropertyCoordinates(item.coordinates) || { latitude: 23.12, longitude: -82.36 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            contact_info: getPropertyContactInfo(item.id, undefined),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
             isVerifiedSeller: Boolean(item.user_id && verifiedSellerIds.has(item.user_id)),
@@ -515,7 +520,7 @@ export function CubitatApp() {
         const [{ data, error }, verifiedAgentIds, verifiedSellerIds] = await Promise.all([
           supabase
             .from('properties')
-            .select('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,contact_info,features,user_id')
+            .select(PUBLIC_PROPERTY_SELECT)
             .eq('id', selectedPropertyId)
             .single(),
           PHASE_TWO_ENABLED && fetchVerifiedAgentIdsInPhaseTwoDev
@@ -552,7 +557,7 @@ export function CubitatApp() {
             features: item.features || undefined,
             mapPoint: { x: 300, y: 200 },
             coordinates: item.coordinates || { latitude: 23.1136, longitude: -82.3666 },
-            contact_info: getPropertyContactInfo(item.id, item.contact_info),
+            contact_info: getPropertyContactInfo(item.id, undefined),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),
             isVerifiedSeller: Boolean(item.user_id && verifiedSellerIds.has(item.user_id)),
@@ -804,6 +809,22 @@ export function CubitatApp() {
   function navigateMaterials() {
     if (!PHASE_FOUR_MAT_ENABLED) return
     window.history.pushState(null, '', '/materiales')
+    setPageMode('materials')
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigateServiceDetail(slug: string) {
+    if (!PHASE_FOUR_SVC_ENABLED) return
+    window.history.pushState(null, '', `/servicios/${encodeURIComponent(slug)}`)
+    setPageMode('services')
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigateMaterialDetail(slug: string) {
+    if (!PHASE_FOUR_MAT_ENABLED) return
+    window.history.pushState(null, '', `/materiales/${encodeURIComponent(slug)}`)
     setPageMode('materials')
     setSelectedPropertyId(undefined)
     window.scrollTo(0, 0)
@@ -1076,7 +1097,6 @@ export function CubitatApp() {
           navigateModerar={navigateModerar}
           navigatePublish={navigatePublish}
           navigateResults={navigateResults}
-          navigateAgentApplication={PHASE_THREE_UI_ENABLED ? navigateAgentApplication : undefined}
           navigateServices={PHASE_FOUR_SVC_ENABLED ? navigateServices : undefined}
           navigateMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMaterials : undefined}
           navigateValuation={PHASE_FOUR_VAL_ENABLED ? navigateValuation : undefined}
@@ -1171,6 +1191,7 @@ export function CubitatApp() {
         {pageMode === 'publish' && user && (
           <PublishPage
             userId={user.id}
+            resumeDraft={new URLSearchParams(window.location.search).get('load_draft') === 'true'}
             onBack={navigateHome}
             onSubmitSuccess={() => {
               setRefreshCounter((prev) => prev + 1)
@@ -1266,6 +1287,10 @@ export function CubitatApp() {
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onSelectProperty={handleSelectProperty}
             onGoResults={navigateResults}
+            onOpenService={navigateServiceDetail}
+            onOpenMaterial={navigateMaterialDetail}
+            onGoServices={navigateServices}
+            onGoMaterials={navigateMaterials}
           />
         )}
 

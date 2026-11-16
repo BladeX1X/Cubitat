@@ -69,4 +69,17 @@ describe('TurnstileWidget', () => {
       expect(screen.getByText('fallback-token')).toBeInTheDocument()
     })
   })
+
+  it('reutiliza la API global y no carga otra vez el script externo', () => {
+    const turnstile: TurnstileMock = {
+      render: vi.fn(() => 'widget-global'),
+      remove: vi.fn(),
+    }
+    window.turnstile = turnstile as unknown as NonNullable<Window['turnstile']>
+
+    render(<Harness />)
+
+    expect(turnstile.render).toHaveBeenCalledTimes(1)
+    expect(document.querySelectorAll('script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]')).toHaveLength(0)
+  })
 })

@@ -33,7 +33,7 @@ export function SavePropertyButton({
   children,
   ...buttonProps
 }: SavePropertyButtonProps) {
-  const { isSaved, toggleSave } = useSavedProperties()
+  const { isSaved, toggleSave, sessionReady } = useSavedProperties()
   const saved = isSaved(propertyId)
   const ariaLabel = propertyTitle
     ? saved
@@ -53,6 +53,9 @@ export function SavePropertyButton({
       {...buttonProps}
       type="button"
       aria-label={ariaLabel}
+      aria-busy={!sessionReady || buttonProps['aria-busy']}
+      disabled={!sessionReady || buttonProps.disabled}
+      title={!sessionReady ? 'Comprobando tu sesión…' : buttonProps.title}
       className={resolvedClassName}
       onPointerDown={(event) => {
         if (stopPropagation) event.stopPropagation()

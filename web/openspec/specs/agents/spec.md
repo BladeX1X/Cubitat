@@ -361,6 +361,22 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND MUST NOT devolver rutas, tokens, URLs firmadas ni mensajes brutos de infraestructura
 - AND MUST limitar los logs a etapa, estado HTTP y causa enumerada, sin ID de postulación
 
+### Requisito: Confidencialidad del motivo de rechazo
+
+- GIVEN una postulación rechazada con nota interna
+- WHEN un moderador autorizado consulta el historial de rechazos
+- THEN MUST poder leer la nota desde una vista administrativa paginada protegida por AAL2 y RLS
+- AND el motivo MUST permanecer oculto para el solicitante en Mi cuenta y en cualquier respuesta pública
+- AND MUST NOT copiar la nota a notificaciones, logs ni datos públicos
+
+#### Escenario: Solicitante y moderación ven información distinta
+
+- GIVEN una postulación rechazada con motivo registrado
+- WHEN la cuenta solicitante consulta Mi cuenta
+- THEN MUST ver el estado de la postulación sin el motivo interno
+- WHEN un moderador con AAL2 abre el historial privado
+- THEN MUST poder ver el motivo junto con la fecha y el contexto mínimo de la solicitud
+
 #### Observación de producción — envío de postulación (2026-11-05)
 
 La interfaz mostró un fallo genérico al enviar una postulación; la captura no

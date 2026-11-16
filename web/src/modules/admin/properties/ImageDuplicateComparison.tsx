@@ -3,6 +3,7 @@ import { formatDate, formatPrice } from '../core/formatters'
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
 import { getImageMatchLabel } from './imageMatchPolicy'
+import { normalizePropertyImageReference } from '../../properties/utils/images'
 
 type Props = {
   property: ModerationProperty
@@ -40,7 +41,7 @@ function ComparisonListing({
         </span>
       </div>
       {image ? (
-        <img src={image} alt={`Foto de ${title} (${role.toLowerCase()})`} loading="lazy" className="h-44 w-full bg-neutral-100 object-cover" />
+        <img src={normalizePropertyImageReference(image)} alt={`Foto de ${title} (${role.toLowerCase()})`} loading="lazy" className="h-44 w-full bg-neutral-100 object-cover" />
       ) : (
         <div className="flex h-32 items-center justify-center bg-neutral-100 text-xs text-neutral-500">No hay imagen disponible</div>
       )}

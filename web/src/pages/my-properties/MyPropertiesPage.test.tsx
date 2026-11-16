@@ -50,6 +50,28 @@ describe('getPropertyStatusConfig', () => {
     expect(screen.getByText('142')).toBeInTheDocument()
   })
 
+  it('renders the authenticated private image preview on the publication card', () => {
+    render(
+      <PropertyCard
+        property={{
+          id: 'prop-private-photo',
+          title: 'Casa con fotos privadas',
+          location: 'La Habana',
+          price_usd: 50000,
+          cover_image: 'data:image/svg+xml,placeholder',
+          cover_preview_url: 'blob:owner-preview',
+          status: 'published',
+          moderation_message: null,
+          created_at: new Date().toISOString(),
+          user_id: 'owner-1',
+        }}
+        onEdit={vi.fn()} onDelete={vi.fn()} onHide={vi.fn()} onRestore={vi.fn()} actionLoading={false}
+      />,
+    )
+
+    expect(screen.getByRole('img', { name: 'Casa con fotos privadas' })).toHaveAttribute('src', 'blob:owner-preview')
+  })
+
   it('renders a swap property without an optional USD value', () => {
     render(
       <PropertyCard
