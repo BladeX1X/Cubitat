@@ -37,4 +37,16 @@ describe('createPropertySourceData', () => {
     expect(source.features[0]?.properties?.id).toBe('valid-property')
     expect(source.features[0]?.geometry.coordinates).toEqual([-82.38, 23.14])
   })
+
+  it('positions pins from the declared locality when stored coordinates point to another city', () => {
+    const misplacedProperty = {
+      ...baseProperty,
+      id: 'misplaced-property',
+      location: 'Santiago de Cuba, Santiago de Cuba',
+      coordinates: { latitude: 23.12, longitude: -82.36 },
+    }
+
+    const source = createPropertySourceData([misplacedProperty])
+    expect(source.features[0]?.geometry.coordinates).toEqual([-75.82, 20.02])
+  })
 })

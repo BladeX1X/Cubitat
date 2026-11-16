@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { createClientMock } = vi.hoisted(() => ({
   createClientMock: vi.fn(() => ({ auth: {} })),
@@ -12,6 +12,12 @@ describe('Supabase Auth client configuration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.resetModules()
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://test-supabase.invalid')
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon-key')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('uses one PKCE Auth client for callbacks and portable recovery OTPs', async () => {

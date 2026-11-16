@@ -62,7 +62,7 @@ export function MapLibreAdapter({
   const bounds = useMemo(() => {
     const mapBounds = new maplibregl.LngLatBounds()
     properties.forEach((property) => {
-      const coordinates = approximatePropertyCoordinates(property.coordinates)
+      const coordinates = approximatePropertyCoordinates(property.coordinates, property.location)
       if (coordinates) {
         mapBounds.extend([coordinates.longitude, coordinates.latitude])
       }

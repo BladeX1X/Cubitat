@@ -124,6 +124,13 @@ El sistema MUST evitar revelar direccion exacta si el producto requiere ubicacio
 - THEN el sistema SHOULD usar coordenadas aproximadas o zona
 - AND MUST evitar mostrar calle exacta salvo requisito explicito
 
+#### Scenario: Coordenadas incompatibles con la zona declarada
+- GIVEN una propiedad tiene una ubicación pública de un municipio conocido y sus coordenadas guardadas quedan claramente fuera de esa localidad
+- WHEN se muestra la propiedad en un mapa público
+- THEN el mapa MUST usar el centro aproximado de la localidad declarada
+- AND MUST conservar el redondeo de privacidad
+- AND MUST dejar intacta la coordenada guardada y la coordenada privada del anunciante
+
 ### Requirement: Respaldo de pines sincronizado y agrupado
 #### Scenario: Las capas del mapa no se pintan
 - GIVEN las capas GeoJSON no se pueden pintar y se activa el respaldo de marcadores DOM

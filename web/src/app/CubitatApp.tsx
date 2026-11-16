@@ -475,7 +475,7 @@ export function CubitatApp() {
             images: normalizePropertyImages(item.images),
             features: item.features || undefined,
             mapPoint: { x: 300, y: 200 }, // Default fallback coordinates for static assets
-            coordinates: approximatePropertyCoordinates(item.coordinates) || { latitude: 23.12, longitude: -82.36 },
+            coordinates: approximatePropertyCoordinates(item.coordinates, item.location) || { latitude: 23.12, longitude: -82.36 },
             contact_info: getPropertyContactInfo(item.id, undefined),
             user_id: item.user_id || undefined,
             isVerifiedAgent: Boolean(item.user_id && verifiedAgentIds.has(item.user_id)),

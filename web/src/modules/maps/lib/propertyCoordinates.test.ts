@@ -49,4 +49,18 @@ describe('approximatePropertyCoordinates', () => {
   it('rejects invalid coordinates instead of exposing them', () => {
     expect(approximatePropertyCoordinates({ latitude: 91, longitude: -82.3666 })).toBeNull()
   })
+
+  it.each([
+    ['Santiago de Cuba, Santiago de Cuba', { latitude: 23.12, longitude: -82.36 }, { latitude: 20.02, longitude: -75.82 }],
+    ['Holguín, Holguín', { latitude: 23.12, longitude: -82.36 }, { latitude: 20.88, longitude: -76.26 }],
+    ['Matanzas, Matanzas', { latitude: 23.12, longitude: -82.36 }, { latitude: 23.04, longitude: -81.58 }],
+    ['Cárdenas, Matanzas', { latitude: 23.12, longitude: -82.36 }, { latitude: 23.04, longitude: -81.2 }],
+  ])('uses the declared locality when stored coordinates conflict: %s', (location, stored, expected) => {
+    expect(approximatePropertyCoordinates(stored, location)).toEqual(expected)
+  })
+
+  it('preserves the privacy-rounded point when it agrees with the declared locality', () => {
+    expect(approximatePropertyCoordinates({ latitude: 20.024, longitude: -75.824 }, 'Santiago de Cuba, Santiago de Cuba'))
+      .toEqual({ latitude: 20.02, longitude: -75.82 })
+  })
 })
