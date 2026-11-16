@@ -64,8 +64,8 @@ inventario exhaustivo. Se desvinculó la carpeta release al terminar.
    actual encontró 57 versiones locales no registradas; primero comparar cada
    fuente y su efecto con el esquema productivo, y acordar conjuntos pequeños
    aprobados. No marcar versiones aplicadas solo para silenciarlas.
-2. `20261114190000_get_public_property_contact.sql` está únicamente en el
-   checkout de trabajo y se documenta como candidata local no aplicada. Si se
+2. `20261111180000_get_public_property_contact.sql` está en el checkout de
+   release y no figura en el ledger ni en el esquema productivo. Si se
    decide incluir el cambio de Contactar, conservarla como migración forward,
    revisar su contrato Worker/service-role y añadir pruebas/postchecks al
    procedimiento productivo. No modificar migraciones históricas.
@@ -73,9 +73,10 @@ inventario exhaustivo. Se desvinculó la carpeta release al terminar.
    requiere revisión contra el esquema y el ledger de producción. No trasladar
    los overlays marcados DEV-only, cambios retrospectivos ni migraciones con
    procedencia/ID no reconciliados.
-4. La migración de favoritos SVC/MAT no tiene fuente SQL canónica rastreada en
-   los árboles revisados; no reconstruirla ni anunciar favoritos como parte del
-   release hasta recuperar y revisar esa fuente.
+4. La fuente canónica de favoritos SVC/MAT es
+   `20261116100000_phase4_saved_marketplace_listings.sql`; no está registrada
+   ni presente en el esquema productivo. Validarla con el conjunto incremental
+   antes de anunciar favoritos como parte del release.
 5. Crear un workflow de migración limitado al conjunto exacto aprobado para
    esta promoción, con comprobación del ref productivo, dry-run, abort si el
    ledger/esquema es parcial o inesperado, aplicación y postchecks de grants,
