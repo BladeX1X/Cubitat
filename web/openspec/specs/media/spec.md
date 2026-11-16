@@ -89,6 +89,27 @@ El sistema MUST tratar URLs de imagen como datos no confiables hasta normalizarl
 - THEN el sistema MUST descartarla o reemplazarla por fallback
 - AND MUST evitar inyectar contenido ejecutable desde campos de imagen
 
+### Requirement: Privacidad de las fotos de propiedades en el caché PWA
+El service worker MUST NOT conservar fotos de `property_images` en su caché
+compartido de imágenes públicas. Al activarse una nueva versión, MUST eliminar
+las URLs heredadas de ese bucket del caché anterior.
+
+#### Scenario: Una propiedad deja de estar publicada
+- GIVEN una foto de propiedad pudo guardarse en el caché PWA de una versión anterior
+- WHEN el nuevo service worker se activa
+- THEN MUST purgar las entradas directas de Supabase y las del proxy del mismo
+  origen
+- AND MUST mantener otros objetos públicos, como avatares, cuando la purga
+  selectiva funciona
+- AND SHOULD eliminar el caché completo de imágenes si no puede inspeccionar o
+  purgar entradas selectivamente
+
+#### Scenario: Cachear otros objetos públicos
+- GIVEN una solicitud pertenece a un bucket público distinto de `property_images`
+- WHEN la respuesta se almacena en caché
+- THEN MUST corresponder a Supabase configurado o al proxy del mismo origen
+- AND MUST tener estado HTTP 200
+
 ### Requirement: Señales de coincidencia perceptual para moderación
 En los perfiles DEV y `phase2-production`, el sistema MUST calcular en el Worker un hash perceptual de las imágenes
 WebP guardadas y comparar sus bits con imágenes de publicaciones activas. Una

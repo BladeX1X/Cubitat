@@ -17,7 +17,9 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 - Aviso visible cuando el navegador queda offline.
 - Aviso breve cuando la conexion vuelve.
 - Aviso de actualizacion disponible con boton `Actualizar`.
-- Cache runtime unicamente para recursos publicos de Supabase Storage.
+- Cache runtime unicamente para recursos publicos de Supabase Storage distintos
+  de `property_images`; estas fotos pueden dejar de ser accesibles cuando un
+  anuncio cambia de estado y no deben persistir en el dispositivo.
 - Exclusion de MapLibre del precache para evitar descargar el motor de mapas al instalar/actualizar la PWA.
 - Web Push por dispositivo para usuarios autenticados, con destino interno al
   tocar la notificacion.
@@ -33,7 +35,11 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
   - Registra el service worker con `virtual:pwa-register`.
   - Muestra prompts de instalacion, offline/online y update.
 - `web/src/sw.ts`
-  - Conserva el precache y cache de imagenes publicas.
+  - Conserva el precache y cache de imagenes publicas, excepto fotos privadas
+    de propiedades.
+  - Al activarse, purga de forma selectiva URLs heredadas de `property_images`
+    tanto directas de Supabase como del proxy. Si no puede inspeccionar el caché,
+    elimina el caché compartido de imágenes.
   - Muestra los mensajes Push y abre solamente rutas internas del sitio.
 - `web/src/modules/notifications/push/PushNotificationSettings.tsx`
   - Permite activar o desactivar el navegador actual desde Mi cuenta.
@@ -67,8 +73,16 @@ estados inconsistentes despues de un `F5`.
 Supabase storage publico:
 
 - Estrategia: `CacheFirst`
-- Uso: imagenes publicas.
+- Uso: imagenes publicas no pertenecientes a `property_images`.
 - Ventaja: reutiliza imagenes vistas y reduce trafico.
+
+Las fotos de propiedades se sirven mediante autorizacion del bucket privado y
+no se almacenan en el caché compartido de la PWA. El service worker solo acepta para
+caché el proyecto Supabase configurado, el proxy del mismo origen y respuestas
+HTTP 200. Esto evita que el navegador siga mostrando una foto previamente
+cacheada después de que el anuncio deje de estar publicado. Al activar esta
+regla, el service worker elimina las URLs antiguas de ese bucket del caché
+existente.
 
 ## Flujo de instalacion
 
