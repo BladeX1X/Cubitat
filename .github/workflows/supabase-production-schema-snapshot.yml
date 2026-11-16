@@ -37,6 +37,19 @@ jobs:
           fi
 
           mkdir -p "$RUNNER_TEMP/cubitat-production-schema"
+          cat > "$RUNNER_TEMP/cubitat-production-schema/property-contact-data-shape.sql" <<'SQL'
+          SELECT
+            count(*) AS property_rows,
+            count(*) FILTER (WHERE contact_info IS NULL) AS contact_json_null,
+            count(*) FILTER (WHERE contact_info = '{}'::jsonb) AS contact_json_empty_object,
+            count(*) FILTER (WHERE contact_info IS NOT NULL AND jsonb_typeof(contact_info) <> 'object') AS contact_json_non_object,
+            count(*) FILTER (WHERE jsonb_typeof(contact_info) = 'object' AND contact_info <> '{}'::jsonb) AS contact_json_nonempty_object,
+            count(*) FILTER (WHERE jsonb_typeof(contact_info) = 'object' AND (contact_info - ARRAY['name','phone','email']::text[]) <> '{}'::jsonb) AS contact_object_with_unmapped_keys,
+            count(*) FILTER (WHERE octet_length(btrim(contact_info->>'name')) > 480) AS contact_name_over_limit,
+            count(*) FILTER (WHERE octet_length(btrim(contact_info->>'phone')) > 64) AS contact_phone_over_limit,
+            count(*) FILTER (WHERE octet_length(btrim(contact_info->>'email')) > 1020) AS contact_email_over_limit
+          FROM public.properties;
+          SQL
           docker run --rm \
             --env SUPABASE_DB_URL \
             --volume "$RUNNER_TEMP/cubitat-production-schema:/snapshot" \
@@ -47,12 +60,15 @@ jobs:
               psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
                 -c "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version" \
                 > /snapshot/remote-migration-versions.txt
+              psql "$SUPABASE_DB_URL" -X -qAt -F "|" -v ON_ERROR_STOP=1 \
+                -f /snapshot/property-contact-data-shape.sql \
+                > /snapshot/property-contact-data-shape.txt
             '
           cp release-source/web/supabase/migrations/*.sql \
             "$RUNNER_TEMP/cubitat-production-schema/"
           (
             cd "$RUNNER_TEMP/cubitat-production-schema"
-            sha256sum schema.sql remote-migration-versions.txt
+            sha256sum schema.sql remote-migration-versions.txt property-contact-data-shape.sql property-contact-data-shape.txt
             printf 'schema.sql bytes: '
             wc -c < schema.sql
           )
