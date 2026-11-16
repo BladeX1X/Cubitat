@@ -1084,3 +1084,9 @@ Usar la captura para comparar objetos, grants, políticas, funciones, triggers y
 versiones reales antes de preparar la lista exacta de SQL forward. No es un
 respaldo ni una prueba de restauración; no habilita `db push` global ni
 `migration repair`.
+
+### Revalidación de CI del release — 2026-11-16
+
+GitHub Actions run [43841317949](https://github.com/BladeX1X/Cubitat/actions/runs/43841317949) terminó `quality` y `database-security` en PASS, incluyendo pruebas, lint, build y perfiles productivos F2/F3/F4. El check externo Cloudflare Workers Builds continúa en FAILURE para el build `78d47b38-11ff-4cde-95d8-01f05337b546`; GitHub no incluye la causa. No se desplegó Worker ni se aplicó DDL/DML productivo.
+
+La clasificación de las 63 fuentes del árbol local sin ledger remoto sigue siendo pendiente. La inspección del snapshot schema-only confirma deriva (objetos sin ledger y objetos requeridos ausentes); las coincidencias por nombre de objeto en SQL no determinan por sí solas qué migraciones se aplicaron. No ejecutar `db push` global ni `migration repair`. El replay aislado no se ha ejecutado en este equipo: Docker Desktop Engine no está disponible.

@@ -272,3 +272,11 @@ dependencias. No aplicar una secuencia parcial ni `db push` global.
 El check externo de Cloudflare Workers Builds volvió a fallar con build
 `04bf101e-753e-486f-874f-2847d645d1a3`; GitHub no expone el motivo. El PR #228
 sigue draft y sin despliegue. No se usó bypass del check.
+
+### Revalidación de perfiles y estado del build — 2026-11-16
+
+GitHub Actions run [43841317949](https://github.com/BladeX1X/Cubitat/actions/runs/43841317949) completó `quality` y `database-security` en PASS. Incluyó lint, dependencias, pruebas unitarias, build estándar y checks de aislamiento de perfiles productivos F2, F3 y F4. Esto verifica el bundle contra los perfiles CI; no constituye despliegue ni verifica la base productiva.
+
+El check externo de Cloudflare para PR #228 sigue en FAILURE, build `78d47b38-11ff-4cde-95d8-01f05337b546`. GitHub devuelve solo el vínculo al build y ningún log/anotación con la causa. No hay sesión de navegador conectada al agente. El motor local de Docker tampoco está iniciado, así que no se simuló aquí la aplicación de las migraciones sobre la instantánea de esquema.
+
+Continúa el bloqueo de release: no promover Worker ni aplicar SQL productivo hasta obtener el primer error de Cloudflare y completar el replay/revisión de las 63 fuentes sin fila del ledger. Los gaps de RPC/tablas/bucket anotados arriba confirman que el esquema productivo y el ledger no bastan para usar `db push` global.
