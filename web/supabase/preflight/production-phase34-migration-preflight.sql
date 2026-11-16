@@ -127,6 +127,8 @@ SELECT 'core.public_contact_rpc_absent', (to_regprocedure('public.get_public_pro
 UNION ALL
 SELECT 'core.report_resolution_rpc_absent', (to_regprocedure('public.resolve_property_report(uuid,uuid)') IS NULL)::int
 UNION ALL
-SELECT 'core.home_service_photo_bucket_absent', count(*)::bigint
-FROM storage.buckets WHERE id = 'home-service-photos'
+SELECT 'core.home_service_photo_bucket_absent',
+       (NOT EXISTS (
+         SELECT 1 FROM storage.buckets WHERE id = 'home-service-photos'
+       ))::int
 ORDER BY 1;
