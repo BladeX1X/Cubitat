@@ -2,6 +2,25 @@ import { test, expect } from '@playwright/test'
 import { mockPublishedProperties } from './propertyFixtures'
 
 test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
+  test('Comprar y Rentar mantienen el catálogo centrado en pantallas grandes', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    await mockPublishedProperties(page)
+
+    for (const operation of ['venta', 'alquiler']) {
+      await page.goto(`/resultados?operacion=${operation}`)
+      const catalog = page.locator('#resultados')
+      await expect(page.locator('.property-card').first()).toBeVisible()
+
+      const bounds = await catalog.evaluate((element) => {
+        const { left, width } = element.getBoundingClientRect()
+        return { left, width, maxWidth: getComputedStyle(element).maxWidth }
+      })
+
+      expect(bounds.maxWidth).toBe('1152px')
+      expect(Math.abs((1920 - bounds.width) / 2 - bounds.left)).toBeLessThanOrEqual(1)
+    }
+  })
+
   test('Comprar conserva resultados y filtros dentro del viewport móvil de 320 px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 740 })
     await mockPublishedProperties(page)

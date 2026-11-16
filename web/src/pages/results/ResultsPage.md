@@ -61,6 +61,9 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 ## Decisiones Visuales Actuales
 
 - La pagina de resultados usa grid completo de tarjetas, no mapa junto al listado.
+- En escritorio, Comprar/Rentar limita y centra el catálogo a 72 rem (el mismo
+  ancho máximo que los directorios de Servicios y Materiales). Al abrir el mapa,
+  el shell vuelve a ocupar el ancho disponible para conservar la vista dividida.
 - El mapa quedo desacoplado para reincorporarlo despues como modo lista/mapa o pagina especifica.
 - Las tarjetas oficiales son `PropertyCard`.
 - La busqueda desde portada conserva filtros en estado local.

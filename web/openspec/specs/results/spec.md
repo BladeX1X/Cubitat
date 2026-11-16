@@ -8,6 +8,13 @@ Define la experiencia de exploracion de propiedades en lista y mapa.
 ### Requirement: Catalogo paginado
 El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y paginada.
 
+#### Scenario: Catálogo de propiedades centrado en escritorio
+- GIVEN el usuario abre Comprar o Rentar con un viewport de al menos 1021 px
+- WHEN la vista de lista está activa
+- THEN el catálogo MUST mantenerse centrado y limitado a un ancho máximo de 72 rem
+- AND las tarjetas MUST conservar una cuadrícula legible sin estirarse por todo el viewport
+- BUT al abrir el mapa en escritorio el panel de resultados MUST poder ocupar el ancho disponible para la vista dividida
+
 #### Scenario: Ver resultados
 - GIVEN un usuario ejecuta una busqueda
 - WHEN llega a `/resultados`

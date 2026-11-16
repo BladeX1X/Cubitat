@@ -132,7 +132,7 @@
   color: var(--ink) !important;
 }
 
-/* Full-Width Catalog results page styles matching properties.com */
+/* Centered catalog shell for property results. */
 .workspace-catalog {
   width: 100%;
   max-width: 1220px;
@@ -323,10 +323,14 @@
 
 @media (min-width: 1021px) {
   .app-shell.is-results-page .workspace-catalog {
-    max-width: none;
+    max-width: 72rem;
     padding-right: 0;
     padding-bottom: 0;
     padding-left: 0;
+  }
+
+  .app-shell.is-results-page .workspace-catalog:has(.results-desktop-shell.is-map-open) {
+    max-width: none;
   }
 
   .app-shell.is-results-page .results-toolbar-full {
