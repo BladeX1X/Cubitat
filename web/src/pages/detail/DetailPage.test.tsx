@@ -205,6 +205,9 @@ describe('DetailPage - Reportes y Visor', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    // DetailPage records public views on mount; keep this test file isolated
+    // from a local Worker so rejected network requests cannot outlive teardown.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
     mockInsert.mockClear()
     mockEq.mockClear()
     mockNot.mockClear()
