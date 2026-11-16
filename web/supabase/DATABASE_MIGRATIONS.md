@@ -1138,3 +1138,15 @@ La CLI del entorno de trabajo no tiene `projects_read` (403). No se enlazó el
 proyecto ni se intentó escritura remota; falta ejecutar el sondeo mediante un
 canal de solo lectura con el secreto de conexión de producción y revisar los
 conteos resultantes.
+
+Comparación posterior del catálogo en replay local sin filas: la cadena de 64
+fuentes agrega tres tablas y reemplaza políticas RLS y privilegios en módulos
+de propiedades, perfiles, KYC, contactos, push, notificaciones, alertas y
+Storage (44 políticas añadidas, 45 retiradas/reemplazadas y 318 líneas de
+grants/revokes en el diff). Esto confirma que el release debe revisar y probar
+la cadena completa de hardening; seleccionar solo las últimas migraciones
+dejaría dependencias y controles de seguridad fuera del bundle.
+
+Con las 64 fuentes aplicadas, `phase4_marketplace_rollout_local.sql` pasó
+14/14 y `public_property_contact_privileges_local.sql` terminó con rollback.
+No se ejecutó ninguna consulta de escritura en producción.

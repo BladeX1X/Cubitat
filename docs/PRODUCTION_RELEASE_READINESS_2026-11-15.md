@@ -287,6 +287,28 @@ conexión usado para consultas de solo lectura, pero aún no incluye este sondeo
 El build Cloudflare más reciente es
 `54f0a52f-cbce-4457-b312-a1ccb99acc84`; el detalle continúa pendiente.
 
+### Diferencia de catálogo de la cadena completa — 2026-11-16
+
+Se volvió a restaurar la misma captura `schema-only` con rol administrador en
+un contenedor local aislado; el conteo de propiedades fue cero. Tras aplicar
+las 64 fuentes, `pg_dump --schema-only` comparado antes/después mostró que la
+cadena no es solo el conjunto de nuevas tablas de Fase 4: agrega las tablas
+`property_ai_moderation_claims`, `property_contact_details` y
+`saved_marketplace_listings`; crea o reemplaza RPC, triggers de publicación y
+carga de fotos; y cambia políticas RLS de properties, perfiles, KYC,
+notificaciones, contactos, push, anuncios guardados, alertas y Storage. El
+diff normalizado registró 44 políticas nuevas, 45 retiradas/reemplazadas,
+varios cambios de triggers y 318 líneas de grants/revokes. Es un cambio amplio
+de seguridad y permisos que debe desplegarse como una cadena revisada, no como
+solo las cinco migraciones más recientes.
+
+En ese replay completo volvieron a pasar `phase4_marketplace_rollout_local.sql`
+(14/14) y `public_property_contact_privileges_local.sql` (transacción con
+rollback). El test de storage de fotos de Servicios para entorno local no es
+un gate de producción: depende de overlays DEV antiguos que no pertenecen a
+esta captura. La verificación confirma compatibilidad de catálogo y SQL sobre
+esquema vacío; no valida el comportamiento con filas actuales.
+
 ### Revalidación de CI del release — 2026-11-16
 
 La primera CI posterior al merge de `main` encontró un error no manejado de
