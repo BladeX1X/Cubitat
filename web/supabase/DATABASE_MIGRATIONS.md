@@ -6,6 +6,35 @@ orden y propósito, pero no sustituye la lectura del SQL.
 
 Última revisión documental: 2026-11-07.
 
+## Preparación del release productivo Fases 3/4 — 2026-11-16
+
+- Se verificó el respaldo de producción del workflow `Supabase Backup` (run
+  `43829229062`) mediante restauración aislada con PostgreSQL/Supabase 17.6.1;
+  la restauración no se hizo sobre ningún proyecto alojado.
+- Sobre una copia local de esa restauración se reprodujeron, en orden, las 64
+  fuentes que no aparecen en el ledger remoto de 101 versiones. Las 64
+  terminaron sin error y se verificaron en agregado el traslado de contactos a
+  almacenamiento privado, la privacidad de fotos, los eventos de auditoría,
+  los permisos de favoritos/fotos de servicios y las RPC nuevas. No se cambió
+  producción.
+- La ejecución productiva preparada está en
+  `.github/workflows/supabase-production-phase34-migrations.yml`. Solo se podrá
+  iniciar desde `main`, con frase explícita, respaldo exitoso de menos de 24
+  horas, fingerprint exacto del ledger, guards agregados de datos, dry-run de
+  exactamente 64 versiones y postchecks. La fuente de migraciones se fija al
+  commit `47b576c2773a9b9b80127bd43b15ad6065ed9356`; el conjunto se aborta ante
+  cualquier diferencia. El workflow aún requiere integrarse en `main` y
+  ejecutarse; hasta entonces no marcar estas migraciones como aplicadas.
+- Orden planeado: integrar primero este workflow operativo y correrlo con el
+  backup verificado; comprobar el ledger y los postchecks; después integrar el
+  release de código PR #228 para que el Worker empiece a usar las capacidades
+  nuevas. El merge de la rama operativa solo vuelve a desplegar el bundle de
+  `main` que ya estaba en producción.
+- No se usa `migration repair`, no se mezcla con migraciones DEV y no se
+  ejecuta `db push` desde el conjunto completo del checkout. Evidencia de
+  restore/replay en el informe local de preparación; la evidencia productiva
+  solo se añadirá después de que el workflow termine correctamente.
+
 ## Preflight agregado de datos de contacto en producción — 2026-11-16
 
 - El workflow manual `.github/workflows/supabase-production-schema-snapshot.yml`
