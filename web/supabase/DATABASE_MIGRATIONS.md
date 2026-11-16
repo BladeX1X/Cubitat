@@ -1103,3 +1103,26 @@ Un replay aislado sobre el snapshot schema-only de producción [43839389470](htt
 La migración forward `20261116120000_phase4_saved_marketplace_privileges.sql` limpia explícitamente los grants a `PUBLIC`, `anon`, `authenticated` y `service_role`, y luego concede únicamente `SELECT`, `INSERT`, `DELETE` a `authenticated`. Tras la corrección, `phase4_marketplace_rollout_local.sql` pasó 14/14 y la consulta de ACL confirmó que `anon` no lee, `authenticated` no actualiza y `service_role` no lee. La prueba de contacto con filas sintéticas dentro de transacción también pasó y terminó en rollback.
 
 El replay prueba solo el subconjunto seleccionado; no aprueba las otras fuentes pendientes. El inventario actualizado es 165 fuentes locales, 101 en ledger, 64 locales sin registro y cero remotas sin fuente. No aplicar `db push` global ni `migration repair`; producción sigue sin escritura.
+
+### Estado actualizado del replay de release — 2026-11-16
+
+La nota anterior sobre replay limitado a 11 fuentes queda supersedida: el commit
+`597f61b0d5cf0d06cd6ea7c3af708369aeaf0d6b` fue reproducido en un Postgres
+local aislado, partiendo del schema-only productivo, y las 64 fuentes locales
+sin fila en ledger terminaron sin error SQL. El replay no incluyó filas de
+negocio. La prueba de catálogo Fase 4 obtuvo 14/14; la prueba transaccional de
+contacto terminó con rollback.
+
+El replay permite continuar el análisis de sintaxis y dependencias, pero no
+convierte las 64 fuentes en una allowlist para producción. Se identificaron
+DML ejecutado en aplicación para auditoría histórica de verificaciones,
+retención KYC, migración de contactos, cambio de visibilidad del bucket
+`property_images` y backfill temporal de tombstones push. Antes de aplicarlos se
+requieren conteos agregados, guardas y postchecks sobre el estado productivo
+actual, además de reconciliar objetos que existen sin registro de migración.
+
+Run CI [43846726074](https://github.com/BladeX1X/Cubitat/actions/runs/43846726074)
+terminó `quality` y `database-security` PASS, incluidos perfiles F2/F3/F4.
+Cloudflare Workers Builds falló para `4d44a71c-e7fa-4517-8172-09d4a7734ad7`
+sin log de causa visible desde GitHub. No desplegar ni ejecutar `db push` global
+hasta resolver ese check y cerrar la allowlist incremental.

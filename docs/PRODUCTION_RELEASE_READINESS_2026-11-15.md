@@ -225,6 +225,53 @@ duplicados/overlays históricos, las pruebas de un conjunto forward aislado y la
 recuperación de respaldo verificable siguen pendientes. **Decisión:** no
 desplegar aún el bundle ni ejecutar migraciones en producción.
 
+### Replay de las 64 fuentes pendientes — 2026-11-16
+
+Se reprodujo el snapshot `schema-only` en Postgres aislado, sin filas de
+negocio, y se aplicaron secuencialmente las 64 fuentes no registradas del
+checkout release. Las 64 terminaron sin error SQL. Después del replay, la
+prueba de catálogo de Favoritos pasó 14/14 y la prueba transaccional de
+privilegios/contacto terminó correctamente. Esto valida sintaxis, dependencias
+DDL observables y algunos contratos de catálogo; no prueba backfills con datos
+reales ni reconcilia la deriva entre ledger y objetos productivos.
+
+La inspección de las fuentes identificó estas escrituras ejecutadas al aplicar
+migraciones, que requieren conteos/guardas sobre producción antes de cualquier
+promoción:
+
+- `20260930170000_property_verification_audit.sql`: inserta eventos históricos
+  desde solicitudes de verificación; es idempotente por conflicto, pero puede
+  crear un volumen de auditoría considerable.
+- `20261024180000_backfill_kyc_evidence_retention.sql`: asigna fecha de purga a
+  evidencias de solicitudes aprobadas/rechazadas aún no purgadas. Requiere
+  contar candidatos y confirmar que los campos destino siguen nulos.
+- `20261025160000_separate_property_contact_details.sql`: copia los campos
+  reconocidos de `properties.contact_info` a una tabla privada y limpia el JSON
+  legado. Un sondeo agregado anterior halló 315 objetos no vacíos y cero claves
+  desconocidas, tipos no-string o valores sobre los límites; falta guardar una
+  comprobación de igualdad de cantidades inmediatamente antes/después.
+- `20261025230000_private_property_image_access.sql`: cambia el bucket
+  `property_images` a privado; requiere verificar configuración actual y
+  postchecks de lecturas autorizadas/no autorizadas.
+- `20261030160000_bound_push_subscription_growth.sql`: marca las filas
+  históricas sin fecha como anteriores a la ventana de 24 horas, preservando
+  sus tombstones. Requiere conteo previo/posterior de nulos.
+
+Las demás apariciones de `UPDATE`/`INSERT` observadas en esta pasada pertenecen
+a cuerpos de funciones, políticas o pruebas transaccionales, no son backfills
+ejecutados al crear la función. No se ha aprobado todavía ninguna allowlist de
+producción: además de estos datos, siguen pendientes los overlays duplicados,
+objetos preexistentes fuera del ledger, orden/dependencias y el error de build
+de Cloudflare.
+
+GitHub Actions run
+[`43846726074`](https://github.com/BladeX1X/Cubitat/actions/runs/43846726074)
+completó `quality` y `database-security` en PASS el 2026-11-16; los perfiles
+productivos F2/F3/F4 quedaron incluidos. El check externo Cloudflare del PR
+falló otra vez (`4d44a71c-e7fa-4517-8172-09d4a7734ad7`) y GitHub solo expone el
+enlace al detalle, no el log de causa. El PR #228 sigue draft y producción no
+ha recibido DDL/DML ni bundle.
+
 ### Revalidación de CI del release — 2026-11-16
 
 La primera CI posterior al merge de `main` encontró un error no manejado de
