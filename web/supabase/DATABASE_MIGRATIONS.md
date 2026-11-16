@@ -6,6 +6,19 @@ orden y propósito, pero no sustituye la lectura del SQL.
 
 Última revisión documental: 2026-11-07.
 
+## Preflight agregado de datos de contacto en producción — 2026-11-16
+
+- El workflow manual `.github/workflows/supabase-production-schema-snapshot.yml`
+  captura además el esquema, el ledger y un resumen agregado de la forma de
+  `properties.contact_info` para preparar la migración que separa los datos de
+  contacto. El archivo `property-contact-data-shape.txt` contiene únicamente
+  conteos por categoría y límites de longitud; no exporta nombres, teléfonos,
+  correos ni valores JSON de anuncios.
+- El resumen permite comprobar si existen objetos con claves no contempladas,
+  JSON que no sea objeto o valores mayores que los límites del destino antes de
+  mover o limpiar información. Su ejecución es de solo lectura y su artefacto
+  dura un día. No sustituye la revisión de la migración ni autoriza aplicarla.
+
 ## Retiro auditado de agentes — migración 2026-11-06
 
 - `20261106100000_agent_access_revocation.sql` agrega RPCs AAL2 para consultar
