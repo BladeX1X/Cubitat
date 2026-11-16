@@ -45,6 +45,9 @@ jobs:
             count(*) FILTER (WHERE contact_info IS NOT NULL AND jsonb_typeof(contact_info) <> 'object') AS contact_json_non_object,
             count(*) FILTER (WHERE jsonb_typeof(contact_info) = 'object' AND contact_info <> '{}'::jsonb) AS contact_json_nonempty_object,
             count(*) FILTER (WHERE jsonb_typeof(contact_info) = 'object' AND (contact_info - ARRAY['name','phone','email']::text[]) <> '{}'::jsonb) AS contact_object_with_unmapped_keys,
+            count(*) FILTER (WHERE contact_info ? 'name' AND jsonb_typeof(contact_info->'name') NOT IN ('string','null')) AS contact_name_non_string,
+            count(*) FILTER (WHERE contact_info ? 'phone' AND jsonb_typeof(contact_info->'phone') NOT IN ('string','null')) AS contact_phone_non_string,
+            count(*) FILTER (WHERE contact_info ? 'email' AND jsonb_typeof(contact_info->'email') NOT IN ('string','null')) AS contact_email_non_string,
             count(*) FILTER (WHERE octet_length(btrim(contact_info->>'name')) > 480) AS contact_name_over_limit,
             count(*) FILTER (WHERE octet_length(btrim(contact_info->>'phone')) > 64) AS contact_phone_over_limit,
             count(*) FILTER (WHERE octet_length(btrim(contact_info->>'email')) > 1020) AS contact_email_over_limit
