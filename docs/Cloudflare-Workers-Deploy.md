@@ -42,6 +42,13 @@ El proyecto Supabase y el origen deben ser los de DEV; la clave pública
 se guarda en el repositorio. No uses aquí `wrangler.jsonc`, que apunta al
 Worker productivo.
 
+En la pestaña **Previews Base**, mantén también la raíz `web`, el comando de
+build `npm run build:phase34-dev` y la variable de build
+`VITE_SUPABASE_ANON_KEY` del proyecto DEV. La configuración de **Production** y
+la de previews son independientes; dejar la raíz de previews en `/` hace que
+Cloudflare busque `package.json` fuera de `web` y falle con `ENOENT` antes de
+compilar. El comando de preview existente es `npx wrangler preview`.
+
 El perfil verifica las UIs de F3/F4 y excluye las referencias productivas antes
 de generar el bundle. Para una publicación manual, usa
 `npm run deploy:phase34-dev`, que solicita confirmación interactiva antes de
