@@ -31,6 +31,22 @@ perfil DEV, pide `DEPLOY DEV` y despliega con `wrangler.phase2-dev.jsonc`.
 Ambos comandos requieren una terminal interactiva y se detienen si falla una
 validación o la confirmación. `npm run cf:deploy` es un alias de producción.
 
+## Worker de QA DEV combinado (Fases 3 y 4)
+
+El Worker `cubitat1-phase2-dev` usa el perfil combinado `phase34-dev`. En
+Cloudflare Workers Builds, configura el repositorio `BladeX1X/Cubitat`, el
+directorio raíz `web`, el comando de build `npm run build:phase34-dev` y el
+comando de despliegue `npx wrangler deploy --config wrangler.phase34-dev.jsonc`.
+El proyecto Supabase y el origen deben ser los de DEV; la clave pública
+`VITE_SUPABASE_ANON_KEY` se configura como variable de build en Cloudflare y no
+se guarda en el repositorio. No uses aquí `wrangler.jsonc`, que apunta al
+Worker productivo.
+
+El perfil verifica las UIs de F3/F4 y excluye las referencias productivas antes
+de generar el bundle. Para una publicación manual, usa
+`npm run deploy:phase34-dev`, que solicita confirmación interactiva antes de
+desplegar.
+
 ## Configuración Del Repositorio
 
 El archivo `web/wrangler.jsonc` define:
