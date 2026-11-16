@@ -1,0 +1,70 @@
+name: Supabase Production Phase 3/4 Data Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-production-phase34-data-preflight
+  cancel-in-progress: false
+
+jobs:
+  aggregate-preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted workflow and read-only query
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify target and collect aggregate counts
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *tohjzoncoosvjbjcakdl* ]]; then
+            echo "SUPABASE_DB_URL is absent or does not identify Cubitat production."
+            exit 1
+          fi
+
+          result_file="$RUNNER_TEMP/phase34-production-data-preflight.txt"
+          docker run --rm \
+            --env SUPABASE_DB_URL \
+            --volume "$GITHUB_WORKSPACE/web/supabase/preflight:/preflight:ro" \
+            postgres:17-alpine \
+            sh -ceu '
+              psql "$SUPABASE_DB_URL" -X -qAt -F "|" -v ON_ERROR_STOP=1 \
+                -f /preflight/phase34-production-data-preflight.sql
+            ' > "$result_file"
+
+          if [[ "$(wc -l < "$result_file")" -ne 16 ]]; then
+            echo "Expected exactly 16 aggregate checks; stopping without publishing partial output."
+            exit 1
+          fi
+
+          while IFS='|' read -r check_name observed; do
+            if [[ ! "$check_name" =~ ^[a-z0-9_.]+$ || ! "$observed" =~ ^[0-9]+$ ]]; then
+              echo "Preflight output did not match the expected aggregate format."
+              exit 1
+            fi
+          done < "$result_file"
+
+          {
+            echo "## Production migration data preflight"
+            echo
+            echo "Read-only aggregate counts only; no contact, document, endpoint, or listing values were selected."
+            echo
+            echo '```text'
+            cat "$result_file"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload aggregate results briefly
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cubitat-production-phase34-data-preflight-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase34-production-data-preflight.txt
+          retention-days: 1
