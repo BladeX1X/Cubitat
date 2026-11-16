@@ -6,6 +6,7 @@ CREATE FUNCTION pg_temp.assert_true(ok boolean, message text) RETURNS void
 LANGUAGE plpgsql AS $$ BEGIN
   IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%', message; END IF;
 END; $$;
+GRANT EXECUTE ON FUNCTION pg_temp.assert_true(boolean, text) TO anon, authenticated;
 
 INSERT INTO auth.users(id, aud, role, email, raw_user_meta_data, created_at, updated_at)
 VALUES ('f1091200-0000-0000-0000-000000000001', 'authenticated', 'authenticated',

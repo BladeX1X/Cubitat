@@ -1,7 +1,28 @@
 import { test, expect } from '@playwright/test'
+import { mockPublishedProperties } from './propertyFixtures'
 
 test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
+  test('Comprar conserva resultados y filtros dentro del viewport móvil de 320 px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 })
+    await mockPublishedProperties(page)
+    await page.goto('/resultados')
+    await expect(page.locator('.property-card').first()).toBeVisible()
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321)
+
+    await page.getByRole('button', { name: 'Filtros', exact: true }).click()
+    const filters = page.getByRole('dialog', { name: 'Filtros de búsqueda' })
+    await expect(filters).toBeVisible()
+    await expect.poll(() => filters.evaluate(element => element.getBoundingClientRect().width)).toBeLessThanOrEqual(320)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321)
+    await filters.getByRole('button', { name: 'Cerrar filtros' }).click()
+    await expect(filters).toHaveCount(0)
+    await expect(page.locator('.property-card').first()).toBeVisible()
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321)
+  })
+
   test('debería realizar una búsqueda, aplicar filtros avanzados y mostrar resultados uniformes', async ({ page }) => {
+    await mockPublishedProperties(page)
+
     // 1. Navegar a la página de inicio
     await page.goto('/')
     await expect(page).toHaveTitle(/Cubitat/i)
@@ -84,6 +105,10 @@ test.describe('Flujo de Búsqueda y Filtros de Cubitat', () => {
     // 11. Verificar que el catálogo muestra tarjetas de propiedad rediseñadas
     const cards = page.locator('.property-card')
     const count = await cards.count()
+    const visiblePropertyIds = await page.locator('[data-property-card-id]').evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('data-property-card-id')).filter((id): id is string => Boolean(id)),
+    )
+    expect(new Set(visiblePropertyIds).size).toBe(visiblePropertyIds.length)
 
     if (count > 0) {
       // Tomamos la primera tarjeta y verificamos sus elementos uniformes rediseñados

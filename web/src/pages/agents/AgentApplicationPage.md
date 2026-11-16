@@ -15,7 +15,8 @@ envía documentos a Supabase desde el navegador.
   habilitada; los perfiles que ya tienen rol de agente conservan el acceso al
   panel y no ven la acción de postulación.
 - La navegación y el chunk se habilitan en DEV cuando
-  `VITE_PHASE3_UI_ENABLED=true`, o en el perfil explícito `phase3-production`.
+  `VITE_PHASE3_UI_ENABLED=true` con `phase2-dev`, o en el perfil combinado
+  `phase34-dev`; producción usa `phase3-production` o `phase4-production`.
 - El Worker valida la identidad, limita frecuencia/tamaño, inspecciona firmas
   reales, sube al bucket privado y persiste con una RPC reservada al service role.
 - Producción ya tiene la pantalla y el endpoint desplegados con

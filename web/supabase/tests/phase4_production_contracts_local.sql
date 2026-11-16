@@ -13,6 +13,33 @@ BEGIN
     RAISE EXCEPTION 'phase4_tables_missing';
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.buckets
+    WHERE id = 'material-listings' AND public = false
+  ) OR NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'material_photos_owner_upload'
+      AND cmd = 'INSERT'
+      AND roles @> ARRAY['authenticated']::name[]
+      AND with_check ILIKE '%bucket_id = ''material-listings''%'
+      AND with_check ILIKE '%auth.uid()%'
+      AND with_check ILIKE '%count_owned_material_photo_objects%'
+      AND with_check ILIKE '%can_upload_material_photo%'
+  ) THEN
+    RAISE EXCEPTION 'material_photo_owner_upload_policy_missing_or_unscoped';
+  END IF;
+
+  IF NOT has_function_privilege('authenticated', 'public.can_upload_material_photo(text)', 'EXECUTE')
+    OR has_function_privilege('anon', 'public.can_upload_material_photo(text)', 'EXECUTE')
+    OR NOT has_function_privilege('authenticated', 'public.owns_material_photo_listing(text)', 'EXECUTE')
+    OR has_function_privilege('anon', 'public.owns_material_photo_listing(text)', 'EXECUTE')
+    OR NOT has_function_privilege('authenticated', 'public.owns_unreferenced_material_photo(text,text)', 'EXECUTE')
+    OR has_function_privilege('anon', 'public.owns_unreferenced_material_photo(text,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'material_photo_owner_helpers_grants_invalid';
+  END IF;
+
   IF has_column_privilege('anon', 'public.home_service_providers', 'phone', 'SELECT')
     OR has_column_privilege('anon', 'public.home_service_providers', 'whatsapp', 'SELECT')
     OR has_column_privilege('authenticated', 'public.home_service_providers', 'phone', 'SELECT')

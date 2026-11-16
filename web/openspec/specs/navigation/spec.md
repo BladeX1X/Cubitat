@@ -52,7 +52,20 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN el sistema MUST bloquear el desplazamiento del contenido de fondo
 - AND MUST ocultar la navegacion inferior y las acciones flotantes de la pagina
 - AND MUST mantener accesibles mediante scroll las opciones de explorar inmuebles
+- AND MUST mostrar los accesos habilitados de Servicios y Materiales al inicio del panel, antes de las opciones de cuenta
 - AND SHOULD mostrar completas las acciones de explorar en el viewport inicial de un telefono comun
+
+#### Scenario: Acceso directo móvil a Servicios y Materiales
+- GIVEN los catálogos están habilitados y el viewport tiene hasta 620 px
+- WHEN se muestra el encabezado móvil
+- THEN MUST mostrar botones directos «Servicios» y «Materiales» debajo de la marca sin abrir el menú
+- AND cada botón MUST navegar al catálogo correspondiente
+
+#### Scenario: Postulación de agente disponible desde Mi cuenta
+- GIVEN la interfaz de Fase 3 está habilitada
+- WHEN se renderiza la navegación pública o se abre el menú móvil
+- THEN MUST NOT mostrar «Ser agente» como opción de navegación
+- AND la acción para postularse MUST estar disponible dentro de Mi cuenta según el estado de la postulación
 
 ### Requirement: Alias de cuenta
 El sistema MUST aceptar alias publicos razonables para cuenta.

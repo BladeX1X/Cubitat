@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { query, from, createSignedUrls } = vi.hoisted(() => {
+const { query, from, createSignedUrls, createSignedUrl, getUser } = vi.hoisted(() => {
   const query = {
     select: vi.fn(), eq: vi.fn(), neq: vi.fn(), order: vi.fn(), range: vi.fn(), or: vi.fn(),
   }
   Object.values(query).forEach((method) => method.mockReturnValue(query))
-  return { query, from: vi.fn(() => query), createSignedUrls: vi.fn() }
+  return { query, from: vi.fn(() => query), createSignedUrls: vi.fn(), createSignedUrl: vi.fn(), getUser: vi.fn() }
 })
 
-vi.mock('../../shared/lib/supabaseClient', () => ({ supabase: { from, storage: { from: () => ({ createSignedUrls }) } } }))
+vi.mock('../../shared/lib/supabaseClient', () => ({ supabase: { auth: { getUser }, from, storage: { from: () => ({ createSignedUrls, createSignedUrl }) } } }))
 vi.mock('../../shared/lib/logger', () => ({ logSafeEvent: vi.fn(), sanitizeErrorReason: vi.fn(() => 'test') }))
 
-import { fetchMaterialListings } from './materialRepository'
+import { createOwnedMaterialPhotoPreviews, fetchMaterialListings } from './materialRepository'
 
 describe('fetchMaterialListings filters and pagination', () => {
   beforeEach(() => {
@@ -20,6 +20,8 @@ describe('fetchMaterialListings filters and pagination', () => {
     query.select.mockReturnValue(query)
     query.range.mockReturnValue(query)
     createSignedUrls.mockResolvedValue({ data: [], error: null })
+    createSignedUrl.mockResolvedValue({ data: null, error: null })
+    getUser.mockResolvedValue({ data: { user: { id: '11111111-1111-4111-8111-111111111111' } }, error: null })
     Object.assign(query, {
       data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [], updated_at: '2026-11-05T00:00:00Z' }],
       error: null,
@@ -47,10 +49,41 @@ describe('fetchMaterialListings filters and pagination', () => {
       data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [photoPath], updated_at: '2026-11-05T00:00:00Z' }],
     })
     createSignedUrls.mockResolvedValue({ data: [{ path: photoPath, signedUrl: null, error: { message: 'storage unavailable' } }], error: null })
+    createSignedUrl.mockResolvedValue({ data: null, error: new Error('image transformation unavailable') })
 
     const result = await fetchMaterialListings()
 
     expect(createSignedUrls).toHaveBeenCalledWith([photoPath], 3600)
     expect(result.items[0]).toMatchObject({ photoUrls: [], photoUnavailable: true })
+  })
+
+  it('uses a transformed signed thumbnail for the material card cover', async () => {
+    const photoPath = 'f7adba7c-367d-42a8-933a-af01f7f9155a/45c8e993-b64a-4d1c-9e58-20ad1a25eb6b/72b35ff4-8507-4950-ab14-ed1d9dd34042.webp'
+    Object.assign(query, {
+      data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [photoPath], updated_at: '2026-11-05T00:00:00Z' }],
+    })
+    createSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.test/material-thumbnail' }, error: null })
+
+    const result = await fetchMaterialListings()
+
+    expect(createSignedUrl).toHaveBeenCalledWith(photoPath, 3600, {
+      transform: { width: 420, height: 192, resize: 'cover', quality: 65 },
+    })
+    expect(createSignedUrls).not.toHaveBeenCalled()
+    expect(result.items[0]).toMatchObject({ photoUrls: ['https://example.test/material-thumbnail'], photoUnavailable: false })
+  })
+
+  it('signs only photo paths belonging to the current owner and edited listing', async () => {
+    const ownerId = '11111111-1111-4111-8111-111111111111'
+    const listingId = '22222222-2222-4222-8222-222222222222'
+    const photoPath = `${ownerId}/${listingId}/33333333-3333-4333-8333-333333333333.webp`
+    const otherOwnerPath = `44444444-4444-4444-8444-444444444444/${listingId}/55555555-5555-4555-8555-555555555555.webp`
+    const otherListingPath = `${ownerId}/66666666-6666-4666-8666-666666666666/77777777-7777-4777-8777-777777777777.webp`
+    createSignedUrls.mockResolvedValue({ data: [{ path: photoPath, signedUrl: 'https://example.test/signed.webp?token=temporary' }], error: null })
+
+    const result = await createOwnedMaterialPhotoPreviews(listingId, [photoPath, otherOwnerPath, otherListingPath])
+
+    expect(createSignedUrls).toHaveBeenCalledWith([photoPath], 3600)
+    expect(result).toEqual({ photos: [{ path: photoPath, url: 'https://example.test/signed.webp?token=temporary' }], unavailableCount: 2 })
   })
 })

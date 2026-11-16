@@ -1,9 +1,10 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DetailPage } from './DetailPage'
 import { useSEO } from '../../shared/hooks/useSEO'
 import type { Property } from '../../modules/properties/types'
 import type { SearchFilters } from '../../modules/search/types'
+import { fetchMarketplaceContact, getMarketplaceContactUrl } from '../../shared/lib/marketplaceContact'
 
 const {
   mockGetUser,
@@ -12,6 +13,9 @@ const {
   mockSubmitPublicReport,
   mockTurnstileMount,
   mockRpc,
+  mockMapInstances,
+  mockFetchMarketplaceContact,
+  mockGetMarketplaceContactUrl,
 } = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
   mockGetSession: vi.fn(),
@@ -19,7 +23,41 @@ const {
   mockSubmitPublicReport: vi.fn(),
   mockTurnstileMount: vi.fn(),
   mockRpc: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+  mockMapInstances: [] as Array<{
+    handlers: Record<string, (event?: { error?: Error }) => void>
+    emit: (event: string, payload?: { error?: Error }) => void
+  }>,
+  mockFetchMarketplaceContact: vi.fn(),
+  mockGetMarketplaceContactUrl: vi.fn((channel: 'phone' | 'whatsapp') => channel === 'phone'
+    ? 'tel:+5351234567'
+    : 'https://wa.me/5355510101?text=hello'),
 }))
+
+vi.mock('../../shared/lib/marketplaceContact', () => ({
+  fetchMarketplaceContact: mockFetchMarketplaceContact,
+  getMarketplaceContactUrl: mockGetMarketplaceContactUrl,
+}))
+
+vi.mock('maplibre-gl', () => {
+  class MockMap {
+    handlers: Record<string, (event?: { error?: Error }) => void> = {}
+    constructor() { mockMapInstances.push(this) }
+    once(event: string, handler: (event?: { error?: Error }) => void) { this.handlers[event] = handler; return this }
+    on(event: string, handler: (event?: { error?: Error }) => void) { this.handlers[event] = handler; return this }
+    emit(event: string, payload?: { error?: Error }) { this.handlers[event]?.(payload) }
+    addControl() { return this }
+    addSource() { return this }
+    addLayer() { return this }
+    remove() { return this }
+  }
+
+  return {
+    Map: MockMap,
+    NavigationControl: class {},
+    AttributionControl: class {},
+    setWorkerUrl: vi.fn(),
+  }
+})
 
 vi.mock('./publicSubmissions', () => ({
   submitPublicContact: mockSubmitPublicContact,
@@ -66,6 +104,7 @@ vi.mock('../../shared/ui/TurnstileWidget', async () => {
 
 // Mock SupabaseClient
 const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
+const mockEq = vi.fn()
 const mockNot = vi.fn()
 const mockFrom = vi.fn().mockImplementation((table: string) => {
   const proxy: any = new Proxy({}, {
@@ -84,6 +123,12 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
       if (prop === 'not') {
         return (...args: unknown[]) => {
           mockNot(...args)
+          return proxy
+        }
+      }
+      if (prop === 'eq') {
+        return (...args: unknown[]) => {
+          mockEq(...args)
           return proxy
         }
       }
@@ -153,6 +198,7 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getAllByText('Playa, La Habana').length).toBeGreaterThan(0)
   })
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
@@ -160,6 +206,7 @@ describe('DetailPage - Reportes y Visor', () => {
   beforeEach(() => {
     localStorage.clear()
     mockInsert.mockClear()
+    mockEq.mockClear()
     mockNot.mockClear()
     mockFrom.mockClear()
     mockTurnstileMount.mockClear()
@@ -167,6 +214,9 @@ describe('DetailPage - Reportes y Visor', () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
     mockSubmitPublicContact.mockReset().mockResolvedValue(undefined)
     mockSubmitPublicReport.mockReset().mockResolvedValue(undefined)
+    mockFetchMarketplaceContact.mockReset().mockResolvedValue({ phone: '+5351234567', whatsapp: '+5355510101' })
+    mockGetMarketplaceContactUrl.mockClear()
+    mockMapInstances.length = 0
   })
 
   it('debería renderizar la información básica de la propiedad', () => {
@@ -182,6 +232,125 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getAllByText('Casa independiente en Playa')[0]).toBeInTheDocument()
     expect(screen.getAllByText('USD 68,000')[0]).toBeInTheDocument()
     expect(screen.getAllByText('Playa, La Habana')[0]).toBeInTheDocument()
+  })
+
+  it('ignora clics repetidos mientras el diálogo nativo de compartir sigue activo', async () => {
+    let resolveShare!: () => void
+    const pendingShare = new Promise<void>((resolve) => { resolveShare = resolve })
+    const share = vi.fn(() => pendingShare)
+    vi.stubGlobal('navigator', {
+      share,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+    })
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    const shareButtons = screen.getAllByRole('button', { name: 'Compartir propiedad' })
+    const shareButton = shareButtons[0]!
+    fireEvent.click(shareButton!)
+    fireEvent.click(shareButton!)
+
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(shareButtons.every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+
+    await act(async () => {
+      resolveShare()
+      await pendingShare
+    })
+    expect(shareButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
+    fireEvent.click(shareButton)
+    expect(share).toHaveBeenCalledTimes(2)
+  })
+
+  it('usa el portapapeles en escritorio aunque navigator.share esté disponible', async () => {
+    const share = vi.fn()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', {
+      share,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+      platform: 'Win32',
+      maxTouchPoints: 0,
+      clipboard: { writeText },
+    })
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Compartir propiedad' })[0]!)
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.href))
+    expect(share).not.toHaveBeenCalled()
+    expect(await screen.findByText('Copiado')).toBeInTheDocument()
+  })
+
+  it('limita las propiedades similares a anuncios publicados', async () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(mockEq).toHaveBeenCalledWith('status', 'published')
+    })
+  })
+
+  it('abre el teléfono del anunciante desde Contactar en el detalle', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { assign })
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /^contactar$/i }))
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('tel:+5351234567'))
+    expect(fetchMarketplaceContact).toHaveBeenCalledWith('property', mockProperty.id)
+    expect(getMarketplaceContactUrl).toHaveBeenCalledWith('phone', '+5351234567', mockProperty.title, 'Playa, La Habana')
+    vi.unstubAllGlobals()
+  })
+
+  it('abre WhatsApp con el contexto de la publicación desde el detalle', async () => {
+    const popup = { location: { replace: vi.fn() }, opener: {} as Window | null, close: vi.fn() } as unknown as Window
+    const open = vi.fn(() => popup)
+    vi.stubGlobal('open', open)
+    render(
+      <DetailPage
+        property={{ ...mockProperty, contact_info: { phone: '+5351234567' } }}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^consultar$/i })[0])
+
+    await waitFor(() => expect(popup.location.replace).toHaveBeenCalledWith('https://wa.me/5355510101?text=hello'))
+    expect(fetchMarketplaceContact).toHaveBeenCalledWith('property', mockProperty.id)
+    expect(getMarketplaceContactUrl).toHaveBeenCalledWith('whatsapp', '+5355510101', mockProperty.title, 'Playa, La Habana')
+    expect(open).toHaveBeenCalledWith('about:blank', '_blank')
+    vi.unstubAllGlobals()
   })
 
   it('muestra lo que busca el anunciante en una permuta', () => {
@@ -229,6 +398,53 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getAllByText('Ubicación aproximada').length).toBeGreaterThan(0)
     expect(screen.getAllByText(/el marcador no representa la dirección exacta/i).length).toBeGreaterThan(0)
+  })
+
+  it('muestra un error recuperable si el mapa falla antes de cargar y permite reintentarlo', async () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mapa' })[0])
+    await waitFor(() => expect(mockMapInstances.length).toBeGreaterThan(1))
+    act(() => mockMapInstances.at(-1)!.emit('error', { error: new Error('style failed') }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cargar el mapa')
+    const mapsBeforeRetry = mockMapInstances.length
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar mapa' }))
+    await waitFor(() => expect(mockMapInstances.length).toBeGreaterThan(mapsBeforeRetry))
+    act(() => mockMapInstances.at(-1)!.emit('load'))
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(mockMapInstances.length).toBeGreaterThan(mapsBeforeRetry)
+  })
+
+  it('ofrece reintentar si el mapa nunca termina de cargar', async () => {
+    vi.useFakeTimers()
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mapa' })[0])
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(mockMapInstances.length).toBeGreaterThan(0)
+    await act(async () => vi.advanceTimersByTimeAsync(15_000))
+
+    expect(screen.getAllByText(/no se pudo cargar el mapa/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Reintentar mapa' }).length).toBeGreaterThan(0)
   })
 
   it('debería registrar metadatos SEO dinámicos con Open Graph', () => {
@@ -470,7 +686,7 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
   })
 
-  it('debería bloquear contactos repetidos durante cinco minutos', () => {
+  it('explica el periodo de espera sin mostrar un envío exitoso en esta ficha', () => {
     localStorage.setItem('cubitat_contact_sent_00000000-0000-0000-0000-000000000099', Date.now().toString())
 
     render(
@@ -482,8 +698,22 @@ describe('DetailPage - Reportes y Visor', () => {
       />
     )
 
-    expect(screen.getByText(/¡Mensaje enviado!/i)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/ya enviaste una consulta a esta publicación recientemente/i)
+    expect(screen.queryByText(/¡Mensaje enviado!/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
     expect(mockSubmitPublicContact).not.toHaveBeenCalled()
+  })
+
+  it('vuelve a mostrar el formulario al terminar el periodo de espera', () => {
+    vi.useFakeTimers()
+    localStorage.setItem(
+      'cubitat_contact_sent_00000000-0000-0000-0000-000000000099',
+      String(Date.now() - 240_000),
+    )
+    render(<DetailPage property={mockProperty} onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(/ya enviaste una consulta/i)
+    act(() => vi.advanceTimersByTime(60_001))
+    expect(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i })).toBeInTheDocument()
   })
 })

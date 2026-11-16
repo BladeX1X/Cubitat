@@ -32,6 +32,24 @@ describe('publication autosave lifecycle', () => {
     expect(saveCompleteDraft).toHaveBeenCalledTimes(calls)
     expect(removeCompleteDraft).toHaveBeenCalledWith('A', undefined)
   })
+  it('waits for an in-flight autosave before removing the draft', async () => {
+    let finishSave!: () => void
+    vi.mocked(saveCompleteDraft).mockReturnValueOnce(new Promise<void>(resolve => { finishSave = resolve }))
+    const restore = vi.fn()
+    const { result } = renderHook(() => usePublicationDraft('A', undefined, false, value, restore))
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenCalled())
+
+    await act(async () => {
+      const discarding = result.current.discard()
+      await Promise.resolve()
+      expect(removeCompleteDraft).not.toHaveBeenCalled()
+      finishSave()
+      await discarding
+    })
+
+    expect(removeCompleteDraft).toHaveBeenCalledWith('A', undefined)
+  })
   it('ignores hydration after unmount and keeps user and edit keys distinct', async () => {
     let resolve!: (draft: typeof value) => void
     vi.mocked(readCompleteDraft).mockReturnValue(new Promise(r => { resolve = r }))
@@ -42,5 +60,20 @@ describe('publication autosave lifecycle', () => {
     expect(restore).not.toHaveBeenCalled()
     expect(saveCompleteDraft).not.toHaveBeenCalled()
     expect(readCompleteDraft).toHaveBeenCalledWith('B', 'other')
+  })
+  it('allows retrying draft hydration after a transient read failure', async () => {
+    vi.mocked(readCompleteDraft).mockRejectedValueOnce(new Error('temporary storage failure'))
+    const restore = vi.fn()
+    const { result } = renderHook(() => usePublicationDraft('A', undefined, false, value, restore))
+
+    await waitFor(() => expect(result.current.error).toMatch(/no se pudo recuperar/i))
+    expect(result.current.ready).toBe(false)
+
+    await act(async () => result.current.retry())
+
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    expect(result.current.error).toBeNull()
+    expect(restore).toHaveBeenCalledWith(value)
+    expect(readCompleteDraft).toHaveBeenCalledTimes(2)
   })
 })

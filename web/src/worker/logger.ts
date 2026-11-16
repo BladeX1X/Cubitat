@@ -20,6 +20,7 @@ const EVENTS = new Set([
   'kyc_evidence_retention_partial_failure',
   'push_dispatch_failed',
   'push_dispatch_skipped',
+  'property_view_count_failed',
   'image_duplicate_decode_failed',
   'image_duplicate_request_failed',
   'image_duplicate_refresh_failed',
@@ -72,6 +73,7 @@ export type WorkerLogEvent =
   | 'kyc_evidence_retention_partial_failure'
   | 'push_dispatch_failed'
   | 'push_dispatch_skipped'
+  | 'property_view_count_failed'
   | 'image_duplicate_decode_failed'
   | 'image_duplicate_request_failed'
   | 'image_duplicate_refresh_failed'

@@ -504,7 +504,10 @@ describe('AccountPage agent application shortcut', () => {
       eq: () => ({
         order: () => ({
           limit: () => ({
-            maybeSingle: () => Promise.resolve({ data: { status: 'reviewing' }, error: null }),
+            maybeSingle: () => Promise.resolve({
+              data: { status: 'reviewing', reason: 'Nota interna solo para moderación.' },
+              error: null,
+            }),
           }),
         }),
       }),
@@ -545,6 +548,7 @@ describe('AccountPage agent application shortcut', () => {
 
     expect(await screen.findByText('Postulación en revisión')).toBeInTheDocument()
     expect(screen.getByText('El equipo está revisando tu solicitud.')).toBeInTheDocument()
+    expect(screen.queryByText('Nota interna solo para moderación.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Ser agente' })).not.toBeInTheDocument()
     fromSpy.mockRestore()
   })

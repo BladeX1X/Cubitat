@@ -1,8 +1,20 @@
+import { useEffect, useState } from 'react'
+import { BriefcaseBusiness, Boxes, MapPin } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
 import { PropertyCard } from '../../modules/properties/components/PropertyCard'
 import { PropertyCardSkeleton } from '../../modules/properties/components/PropertyCardSkeleton'
 import { useSavedProperties } from '../../modules/properties/hooks/useSavedProperties'
 import type { Property } from '../../modules/properties/types'
+import { useSavedMarketplaceListings } from '../../modules/marketplace/hooks/useSavedMarketplaceListings'
+import { fetchHomeServiceProvidersByIds } from '../../modules/home-services/homeServiceRepository'
+import type { HomeServiceProvider } from '../../modules/home-services/types'
+import { fetchMaterialListingsByIds } from '../../modules/materials/materialRepository'
+import type { MaterialListing } from '../../modules/materials/types'
+import { HOME_SERVICE_CATEGORY_LABELS } from '../../modules/home-services/types'
+import { MATERIAL_CATEGORY_LABELS } from '../../modules/materials/types'
+import { MarketplaceCardImage } from '../../shared/ui/MarketplaceCardImage'
+import { SaveMarketplaceListingButton } from '../../shared/ui/SaveMarketplaceListingButton'
+import { PHASE_FOUR_MAT_ENABLED, PHASE_FOUR_SVC_ENABLED } from '../../shared/config/features'
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
 
@@ -14,6 +26,10 @@ type FavoritesPageProps = {
   onNavigateAgentDashboard?: () => void
   onSelectProperty: (propertyId: string) => void
   onGoResults: () => void
+  onOpenService: (slug: string) => void
+  onOpenMaterial: (slug: string) => void
+  onGoServices: () => void
+  onGoMaterials: () => void
 }
 
 export function FavoritesPage({
@@ -24,15 +40,74 @@ export function FavoritesPage({
   onNavigateAgentDashboard,
   onSelectProperty,
   onGoResults,
+  onOpenService,
+  onOpenMaterial,
+  onGoServices,
+  onGoMaterials,
 }: FavoritesPageProps) {
+  const marketplaceFavoritesEnabled = PHASE_FOUR_SVC_ENABLED || PHASE_FOUR_MAT_ENABLED
   useSEO({
     title: 'Mis Favoritos',
   })
 
-  const { savedPropertyIds, loading } = useSavedProperties()
+  const {
+    savedPropertyIds,
+    loading,
+    error: savedPropertiesError,
+    retryLoad: retrySavedProperties,
+  } = useSavedProperties()
+  const {
+    savedServiceIds,
+    savedMaterialIds,
+    loading: marketplaceLoading,
+    error: savedListingsError,
+    retryLoad: retrySavedListings,
+  } = useSavedMarketplaceListings()
+  const [savedServices, setSavedServices] = useState<HomeServiceProvider[]>([])
+  const [savedMaterials, setSavedMaterials] = useState<MaterialListing[]>([])
+  const [marketplaceError, setMarketplaceError] = useState(false)
+  const [marketplaceItemsLoading, setMarketplaceItemsLoading] = useState(marketplaceFavoritesEnabled)
+  const [marketplaceItemsRetry, setMarketplaceItemsRetry] = useState(0)
   const favoriteProperties = properties.filter((property) =>
     savedPropertyIds.has(property.id),
   )
+  useEffect(() => {
+    let active = true
+    async function loadMarketplaceFavorites() {
+      setMarketplaceItemsLoading(true)
+      setMarketplaceError(false)
+      setSavedServices([])
+      setSavedMaterials([])
+      try {
+        const [services, materials] = await Promise.all([
+          fetchHomeServiceProvidersByIds([...savedServiceIds]),
+          fetchMaterialListingsByIds([...savedMaterialIds]),
+        ])
+        if (!active) return
+        setSavedServices(services)
+        setSavedMaterials(materials)
+      } catch {
+        if (!active) return
+        setMarketplaceError(true)
+      } finally {
+        if (active) setMarketplaceItemsLoading(false)
+      }
+    }
+    if (!marketplaceLoading) void loadMarketplaceFavorites()
+    return () => { active = false }
+  }, [marketplaceItemsRetry, marketplaceLoading, savedMaterialIds, savedServiceIds])
+
+  function retryMarketplaceFavorites() {
+    retrySavedListings()
+    setMarketplaceItemsRetry((value) => value + 1)
+  }
+
+  function retryAllFavorites() {
+    retrySavedProperties()
+    retryMarketplaceFavorites()
+  }
+
+  const totalFavorites = favoriteProperties.length + savedServices.length + savedMaterials.length
 
   return (
     <AccountLayout
@@ -50,19 +125,28 @@ export function FavoritesPage({
           Favoritos
         </h1>
         <p className="mt-2 max-w-2xl text-sm sm:text-base font-semibold text-white/85">
-          Revisa las propiedades que guardaste para compararlas con calma.
+          {marketplaceFavoritesEnabled ? 'Revisa las propiedades, servicios y materiales que guardaste.' : 'Revisa las propiedades que guardaste para compararlas con calma.'}
         </p>
       </section>
 
       <div className="mt-8">
         <div className="catalog-container bg-white rounded-xl border border-neutral-100 p-5 sm:p-6 shadow-[0_4px_14px_rgba(10,31,28,0.04)]">
-          {loading ? (
+          {loading || marketplaceLoading || marketplaceItemsLoading ? (
             <div className="property-catalog-grid">
               {Array.from({ length: 4 }).map((_, index) => (
                 <PropertyCardSkeleton key={index} />
               ))}
             </div>
-          ) : favoriteProperties.length === 0 ? (
+          ) : (savedPropertiesError || savedListingsError || marketplaceError) && totalFavorites === 0 ? (
+            <div className="py-20 px-6 text-center flex flex-col items-center gap-4">
+              <p role="alert" className="max-w-lg text-sm text-red-700">
+                {savedPropertiesError || savedListingsError || 'No se pudieron cargar algunos servicios o materiales guardados. Comprueba la conexión e inténtalo de nuevo.'}
+              </p>
+              <Button variant="outline" className="rounded-full h-10 px-5 text-sm font-bold" onClick={retryAllFavorites}>
+                Reintentar
+              </Button>
+            </div>
+          ) : totalFavorites === 0 ? (
             <div className="py-24 px-6 text-center flex flex-col items-center gap-5">
               <svg aria-hidden="true" focusable="false" className="w-28 h-28 mb-2" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="25" cy="30" r="4" fill="#fda4af" className="animate-ping" style={{ animationDuration: '2.5s' }} />
@@ -85,7 +169,7 @@ export function FavoritesPage({
                   Todavía no tienes favoritos
                 </h2>
                 <p className="text-sm text-neutral-500 mt-2 leading-relaxed">
-                  Guarda propiedades desde los resultados para encontrarlas rápido después.
+                  {marketplaceFavoritesEnabled ? 'Guarda propiedades, servicios o materiales desde sus catálogos para encontrarlos aquí.' : 'Guarda propiedades desde los resultados para encontrarlas rápido después.'}
                 </p>
               </div>
               <Button
@@ -94,25 +178,29 @@ export function FavoritesPage({
               >
                 Buscar propiedades
               </Button>
+              {marketplaceFavoritesEnabled && <div className="flex flex-wrap justify-center gap-3">
+                <Button variant="outline" onClick={onGoServices}>Explorar servicios</Button>
+                <Button variant="outline" onClick={onGoMaterials}>Explorar materiales</Button>
+              </div>}
             </div>
           ) : (
             <>
+              {(savedPropertiesError || savedListingsError || marketplaceError) && <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                <span>{savedPropertiesError || savedListingsError || 'No se pudieron cargar algunos servicios o materiales guardados. Comprueba la conexión e inténtalo de nuevo.'}</span>
+                <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={retryAllFavorites}>Reintentar</Button>
+              </div>}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
                 <p className="text-sm text-neutral-500">
                   <span className="font-bold text-neutral-800">
-                    {favoriteProperties.length}
+                    {totalFavorites}
                   </span>{' '}
-                  {favoriteProperties.length === 1
-                    ? 'propiedad guardada'
-                    : 'propiedades guardadas'}
+                  {totalFavorites === 1 ? 'anuncio guardado' : 'anuncios guardados'}
                 </p>
-                <Button
-                  variant="outline"
-                  className="rounded-full h-9 px-5 text-xs font-bold"
-                  onClick={onGoResults}
-                >
-                  Ver mas propiedades
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoResults}>Propiedades</Button>
+                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoServices}>Servicios</Button>}
+                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoMaterials}>Materiales</Button>}
+                </div>
               </div>
 
               <div className="property-catalog-grid">
@@ -126,6 +214,33 @@ export function FavoritesPage({
                   />
                 ))}
               </div>
+
+              {(savedServices.length > 0 || savedMaterials.length > 0) && (
+                <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-label="Servicios y materiales guardados">
+                  {savedServices.map((service, index) => (
+                    <article key={`service-${service.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                      <div className="relative">
+                        <button type="button" onClick={() => onOpenService(service.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
+                          <div className="h-48 bg-emerald-50"><MarketplaceCardImage src={service.galleryUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-emerald-800"><BriefcaseBusiness size={36} /></div>} /></div>
+                          <div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Servicio · {HOME_SERVICE_CATEGORY_LABELS[service.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{service.displayName}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{service.municipalities.length ? `${service.municipalities.join(', ')} · ` : ''}{service.province}</p></div>
+                        </button>
+                        <SaveMarketplaceListingButton listingType="service" listingId={service.id} listingTitle={service.displayName} />
+                      </div>
+                    </article>
+                  ))}
+                  {savedMaterials.map((material, index) => (
+                    <article key={`material-${material.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                      <div className="relative">
+                        <button type="button" onClick={() => onOpenMaterial(material.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
+                          <div className="h-48 bg-amber-50"><MarketplaceCardImage src={material.photoUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /></div>} /></div>
+                          <div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Material · {MATERIAL_CATEGORY_LABELS[material.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{material.title}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{material.province}</p></div>
+                        </button>
+                        <SaveMarketplaceListingButton listingType="material" listingId={material.id} listingTitle={material.title} />
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

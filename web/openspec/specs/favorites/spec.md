@@ -1,7 +1,7 @@
 # Proceso de Favoritos
 
 ## Purpose
-Define el comportamiento de guardado, consulta y retiro de propiedades favoritas.
+Define el comportamiento de guardado, consulta y retiro de propiedades, servicios y materiales favoritos.
 
 ## Requirements
 
@@ -20,6 +20,14 @@ El sistema MUST permitir guardar propiedades desde catalogo, detalle y previews 
 - WHEN pulsa guardar
 - THEN el sistema MUST abrir una invitacion o modal de login
 - AND despues de autenticarse SHOULD completar o permitir completar la accion solicitada
+
+#### Scenario: La sesión todavía se está comprobando
+- GIVEN el catálogo ya muestra tarjetas pero la consulta de sesión no ha terminado
+- WHEN el usuario intenta guardar una propiedad
+- THEN el botón MUST permanecer deshabilitado y anunciar que se está comprobando la sesión
+- AND MUST NOT abrir el prompt de inicio de sesión ni enviar una escritura hasta conocer el resultado
+- WHEN la sesión se resuelve
+- THEN el botón MUST habilitar la acción normal para usuarios autenticados o anónimos
 
 #### Scenario: Guardar desde preview de mapa
 - GIVEN un usuario ve una preview de propiedad en el mapa cuando exista accion de guardar
@@ -45,6 +53,40 @@ El sistema MUST mostrar una pagina privada con propiedades guardadas.
 - AND si no existen favoritos MUST mostrar un estado vacio con accion para ver mas propiedades
 - AND la ilustracion decorativa del estado vacio MUST permanecer fuera del arbol accesible
 
+#### Scenario: Error al cargar favoritos
+- GIVEN un usuario autenticado abre `/favoritos` y falla la consulta
+- WHEN la carga termina
+- THEN el sistema MUST mostrar un error recuperable en lugar del estado vacío
+- AND MUST permitir reintentar la consulta
+
+#### Scenario: Favorito guardado mientras hay una lectura pendiente
+- GIVEN la lista de favoritos aún se está cargando
+- WHEN el usuario guarda o quita una propiedad antes de que termine esa lectura
+- THEN una respuesta anterior a la escritura MUST NOT deshacer el cambio visible
+- AND el sistema MUST volver a consultar el conjunto después de completar la escritura
+
+#### Scenario: Lectura de favoritos responde antes que la escritura
+- GIVEN el usuario inicia una escritura optimista y luego actualiza Favoritos
+- WHEN la lectura devuelve una instantánea anterior mientras la escritura sigue pendiente
+- THEN el cambio optimista MUST permanecer visible
+- AND el sistema MUST reconciliarlo con una lectura nueva al terminar la escritura
+
+#### Scenario: Doble clic en el mismo favorito
+- GIVEN una escritura para guardar o quitar una propiedad sigue pendiente
+- WHEN el usuario vuelve a pulsar el mismo control
+- THEN el sistema MUST evitar enviar una segunda escritura simultánea para esa cuenta y propiedad
+
+#### Scenario: Sesión cambia durante la lectura o escritura de favoritos
+- GIVEN hay una lectura o escritura pendiente para una cuenta
+- WHEN la sesión cambia a otra cuenta
+- THEN las respuestas anteriores MUST NOT borrar, reemplazar ni reportar error sobre los favoritos de la cuenta nueva
+
+#### Scenario: Error al comprobar sesión de favoritos
+- GIVEN falla la consulta inicial de sesión por un problema de conexión
+- WHEN el usuario abre `/favoritos`
+- THEN el sistema MUST mostrar un mensaje de recuperación en lugar de quedarse cargando
+- AND MUST permitir volver a consultar sesión y favoritos
+
 #### Scenario: Favorito ya no publicado
 - GIVEN una propiedad guardada fue pausada, eliminada u ocultada
 - WHEN el usuario abre favoritos
@@ -66,3 +108,60 @@ El sistema MUST permitir retirar propiedades guardadas sin romper el contexto ac
 - WHEN vuelve a pulsar el boton de favorito en resultados o detalle
 - THEN el sistema MUST eliminar el favorito
 - AND MUST actualizar el icono sin duplicar solicitudes innecesarias
+
+### Requirement: Guardar servicios y materiales en DEV
+El perfil `phase34-dev` MUST permitir guardar perfiles de servicio y anuncios de materiales con el mismo control visual y autenticación compartida, usando `saved_marketplace_listings` con aislamiento por usuario.
+
+La interfaz de catálogo, el proveedor de estado compartido y la pantalla `/favoritos` MUST habilitarse según las banderas F4-SVC/F4-MAT activas, sin depender del nombre de modo de Vite.
+
+El proxy del Worker DEV MUST permitir `POST` y `DELETE` en esa tabla solo cuando la solicitud lleve una sesión autenticada; la política RLS sigue siendo la autoridad final sobre el usuario y el anuncio.
+
+#### Scenario: Guardar un servicio o material
+- GIVEN un usuario autenticado está en el catálogo de Servicios o Materiales
+- WHEN pulsa el corazón de una tarjeta
+- THEN el botón MUST actualizarse y persistir solo el ID del anuncio y el usuario
+- AND pulsarlo de nuevo MUST quitar el favorito
+- GIVEN un usuario anónimo
+- WHEN pulsa el corazón
+- THEN se MUST abrir el prompt compartido de inicio de sesión
+- AND no MUST mostrarse un error de persistencia hasta que haya una sesión
+- AND el mensaje del prompt MUST referirse a favoritos de forma general y no solo a propiedades o inmuebles
+
+#### Scenario: Guardar favorito a través del proxy DEV
+- GIVEN un usuario autenticado guarda o quita un favorito de Servicio o Material
+- WHEN la solicitud pasa por `/api/supabase`
+- THEN el Worker DEV MUST reenviar `POST` y `DELETE` a `saved_marketplace_listings`
+- AND MUST conservar el encabezado de autorización de la sesión
+- WHEN la misma escritura llega sin sesión autenticada
+- THEN el Worker MUST responder `403` sin reenviarla a Supabase
+
+#### Scenario: Error al guardar un servicio o material
+- GIVEN una escritura de favorito falla por conexión o permisos
+- WHEN el guardado termina
+- THEN el botón MUST volver a su estado anterior
+- AND MUST mostrar un aviso accesible para reintentar
+
+#### Scenario: Cambio de cuenta mientras se actualiza un favorito de catálogo
+- GIVEN una escritura o lectura de favoritos está pendiente para una cuenta
+- WHEN Auth cambia a otra cuenta y la petición anterior termina o falla
+- THEN los favoritos anteriores MUST NOT aparecer en la cuenta nueva
+- AND una respuesta de lectura anterior MUST NOT reemplazar el estado optimista ni la lectura más reciente
+- AND un fallo de escritura de la cuenta anterior MUST NOT revertir favoritos de la cuenta nueva
+
+#### Scenario: Consultar favoritos de marketplace
+- GIVEN el usuario abre Favoritos en DEV
+- WHEN existen perfiles o anuncios guardados y publicados
+- THEN la pantalla MUST mostrar conjuntamente propiedades, servicios y materiales guardados
+- AND los servicios/materiales pausados, retirados o no disponibles MUST quedar fuera de los resultados públicos
+- WHEN falla la consulta de favoritos
+- THEN la pantalla MUST mostrar un error recuperable y una acción de reintento, nunca el estado vacío
+
+#### Scenario: Guardar, abrir y quitar un favorito de catálogo
+- GIVEN un usuario autenticado está en el catálogo de Servicios o Materiales
+- WHEN guarda un anuncio
+- THEN su corazón MUST reflejar el estado guardado
+- AND la relación MUST quedar vinculada al usuario y al tipo/ID correctos
+- WHEN abre Favoritos
+- THEN el anuncio MUST aparecer en la lista
+- WHEN quita el anuncio desde Favoritos
+- THEN MUST desaparecer y la lista MUST mostrar el estado vacío si no quedan otros favoritos

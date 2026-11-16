@@ -1,0 +1,56 @@
+# ServiceProviderSubmissionPage
+
+## Responsabilidad
+
+Crear o editar un perfil profesional y enviarlo a revisión con una galería de
+fotos de trabajos. Los datos de contacto son voluntarios y el perfil no se
+presenta como licencia o certificación.
+
+## Flujo de fotografías
+
+- Acepta seleccionar varias imágenes por tanda, hasta 10 referencias por
+  perfil; cada archivo original debe ser JPEG, PNG o WebP y pesar hasta 5 MiB.
+- Las imágenes se convierten al seleccionarlas a WebP de hasta 800×800 px,
+  con límite de 40 megapíxeles y calidad 0.70; el formulario muestra sus
+  miniaturas, orden y portada, y permite quitar elementos individuales.
+- Las fotos nuevas se suben en orden al bucket privado `home-service-photos`.
+  Después se guardan sus rutas, no las URLs firmadas, en la galería del perfil.
+- Al editar perfiles antiguos, se conservan las rutas privadas de tres segmentos
+  en `home-service-profiles`; el catálogo firma esas referencias desde el bucket
+  heredado. Las nuevas cargas continúan usando el bucket y formato actuales.
+- El propietario autenticado conserva lectura privada de sus fotos heredadas; el
+  catálogo solo puede leer las que siga referenciando un perfil publicado. El
+  bucket heredado no admite nuevas cargas.
+- En una edición se conservan los enlaces HTTPS heredados y fotos privadas no
+  quitadas. Las fotos quitadas solo se eliminan de Storage después de guardar;
+  la política de Storage impide borrar las que aún estén referenciadas.
+- Una carga parcial limpia únicamente sus objetos nuevos. Después de un rechazo
+  definitivo de permisos (`42501`), limpia solo las fotos nuevas sin referencia
+  y conserva la selección preparada para reintentar. Ante una respuesta de red
+  ambigua, conserva los objetos. Si se reintenta en el mismo formulario, reutiliza
+  sus rutas y el mismo ID del perfil; si el primer INSERT ya se confirmó en la
+  base de datos, el conflicto de ID se resuelve actualizando ese borrador propio.
+  La migración DEV concede `INSERT` sobre `id` como permiso de columna para el
+  UUID estable; no concede `INSERT` sobre toda la tabla y RLS sigue validando
+  dueño y estado pendiente.
+  Así no vuelve a subir las fotos ni crea otro perfil. Aún se recomienda revisar
+  Mis perfiles si se abandonó el formulario antes de reintentar.
+- La limpieza de fotos antiguas se ejecuta después del guardado y es de mejor
+  esfuerzo; un fallo de red al limpiar no transforma un perfil ya guardado en
+  un error de publicación.
+- El catálogo firma temporalmente fotos referenciadas por perfiles publicados;
+  el propietario puede ver las suyas privadas mientras edita.
+
+El envío se desactiva mientras las fotos se preparan y rechaza un submit
+prematuro para no crear/actualizar el perfil antes de completar la galería.
+El formulario se remonta al cambiar de usuario, descartando datos de contacto,
+galería y campos de la sesión anterior.
+
+## Verificación
+
+Probar selección múltiple, orden/portada, límite de 10, conversión y miniaturas,
+fallo parcial y reintento, edición sin pérdida de referencias y lectura privada
+solo por propietario/admin AAL2 o desde una fila publicada. El E2E
+`service-publish-images.spec.ts` simula un INSERT confirmado cuya respuesta se
+pierde y verifica que el reintento reutilice ID y fotos; no valida escritura real
+en Supabase.

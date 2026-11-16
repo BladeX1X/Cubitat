@@ -49,6 +49,7 @@ El modal se compone de dos zonas principales:
 - **Atribución de alta por referido:** Si la persona abrió un enlace `?ref=AG-XXXXXXXX`, el formulario de registro por correo añade el código validado a `options.data` y lo limpia cuando Auth acepta la solicitud. El trigger de base de datos resuelve el código activo y el agente elegible; nunca se acepta un `agent_id` del navegador. Atribución OAuth, visitas, contactos y comisiones siguen desactivados.
 - **Trigger en Base de Datos (PostgreSQL):** Al crear una cuenta en la nube, el disparador automático `on_auth_user_created` captura el registro en `auth.users` y propaga los metadatos para inicializar automáticamente la ficha del usuario en la tabla pública `profiles` en la nube.
 - **Portales de React:** `LoginModal` y la invitación previa de favoritos usan `createPortal` hacia `document.body`. Ambos comparten `MODAL_LAYER_STYLE` (`z-index: 10030`), por encima de `MAP_FULLSCREEN_LAYER_STYLE` (`z-index: 9999`), para permanecer visibles sobre mapas y galerías a pantalla completa.
+- **Invitación de favoritos:** el texto y el nombre accesible del diálogo son genéricos para poder compartir el flujo entre propiedades, servicios y materiales; no presupone que todo favorito sea un inmueble.
 - **Accesibilidad:** Se mantiene el atributo `aria-modal="true"`, `role="dialog"` y el control de cierre mediante escape.
 
 ## Responsive
@@ -109,3 +110,7 @@ El diseño se adapta automáticamente:
 - **Nueva contrasena:** `/recuperar-contrasena` prepara la sesion temporal enviada por Supabase, limpia la URL para no dejar tokens visibles y guarda la nueva clave con `supabase.auth.updateUser`.
 - **Plantillas de correo:** confirmacion y recuperacion deben usar enlaces portables con `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=...`. `{{ .ConfirmationURL }}` queda solo como compatibilidad historica del callback, no como formato preferido.
 - **Configuracion local:** `supabase/config.toml` usa `site_url = "http://127.0.0.1:5173"`, permite los redirects de auth y exige confirmacion de correo.
+
+## Navegación de acceso/registro/recuperación — QA DEV — 2026-11-14
+
+En móvil, abrir `/favoritos` como visitante abrió inicio de sesión. «Crear cuenta gratis» mostró correo y dos campos de contraseña; volver a inicio, abrir recuperación, volver otra vez y cerrar el modal funcionó sin cambiar `/`. No se envió formulario: no hubo solicitudes a signup/recover/verify.

@@ -1,8 +1,18 @@
-export type MarketplaceListingType = 'service' | 'material'
+export type MarketplaceListingType = 'property' | 'service' | 'material'
 
 export type MarketplaceContact = {
   phone: string | null
   whatsapp: string | null
+}
+
+export class MarketplaceContactError extends Error {
+  readonly reason: 'missing' | 'unavailable'
+
+  constructor(reason: 'missing' | 'unavailable') {
+    super(reason === 'missing' ? 'MARKETPLACE_CONTACT_MISSING' : 'MARKETPLACE_CONTACT_FAILED')
+    this.name = 'MarketplaceContactError'
+    this.reason = reason
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -12,23 +22,41 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function fetchMarketplaceContact(
   listingType: MarketplaceListingType,
   listingId: string,
-  turnstileToken: string,
 ): Promise<MarketplaceContact> {
-  const response = await fetch('/api/public/marketplace-contact', {
+  const isProperty = listingType === 'property'
+  const response = await fetch(isProperty ? '/api/public/property-contact' : '/api/public/marketplace-contact', {
     method: 'POST',
     cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ listing_type: listingType, listing_id: listingId, turnstile_token: turnstileToken }),
+    body: JSON.stringify(isProperty
+      ? { property_id: listingId }
+      : { listing_type: listingType, listing_id: listingId }),
   })
-  if (!response.ok) throw new Error('MARKETPLACE_CONTACT_FAILED')
+  if (!response.ok) throw new MarketplaceContactError(response.status === 404 ? 'missing' : 'unavailable')
   const value: unknown = await response.json()
-  if (!isRecord(value)) throw new Error('MARKETPLACE_CONTACT_FAILED')
+  if (!isRecord(value)) throw new MarketplaceContactError('unavailable')
   const phone = typeof value.phone === 'string' ? value.phone : null
   const whatsapp = typeof value.whatsapp === 'string' ? value.whatsapp : null
   const isPhone = (candidate: string | null) => candidate === null
     || (/^\+?[0-9 ()-]{6,24}$/.test(candidate) && candidate.replace(/\D/g, '').length >= 7 && candidate.replace(/\D/g, '').length <= 15)
   if ((!phone && !whatsapp) || !isPhone(phone) || !isPhone(whatsapp)) {
-    throw new Error('MARKETPLACE_CONTACT_FAILED')
+    throw new MarketplaceContactError('unavailable')
   }
   return { phone, whatsapp }
+}
+
+export function getMarketplaceContactUrl(
+  channel: 'phone' | 'whatsapp',
+  phone: string,
+  title: string,
+  location: string,
+): string | null {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 7 || digits.length > 15) return null
+  if (channel === 'phone') return `tel:${phone.trim().startsWith('+') ? `+${digits}` : digits}`
+  const titleText = title.trim().slice(0, 200)
+  const locationText = location.trim().slice(0, 120)
+  const place = locationText ? ` en ${locationText}` : ''
+  const message = `Hola, estoy interesado en "${titleText}"${place}. Quisiera recibir más detalles.`
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }

@@ -23,14 +23,22 @@ Permite visualizar la información detallada de un inmueble, contactar al anunci
 - AND el mapa de detalle MUST mostrar una zona aproximada sin marcador de domicilio exacto
 - AND editar MUST recuperar las coordenadas privadas autorizadas para el propietario.
 
-### Requirement: Detalle del Inmueble en Pantalla Completa
-El sistema MUST mostrar la ficha técnica extendida del inmueble ocupando todo el ancho de la pantalla cuando un usuario selecciona una propiedad del listado.
+### Requirement: Detalle del inmueble como vista completa y centrada
+El sistema MUST sustituir el catálogo por la ficha técnica extendida al seleccionar una propiedad, manteniendo el contenido centrado y con ancho máximo legible en escritorio. La imagen principal MUST permanecer dentro del contenedor de la ficha y no extenderse a todo el ancho del viewport.
 
 #### Scenario: Apertura de la ficha detallada
 - GIVEN un usuario en la página de resultados `/resultados`
 - WHEN hace clic sobre una tarjeta de propiedad (excluyendo los botones de carrusel y favoritos)
 - THEN el sistema MUST ocultar el listado/catálogo de resultados
-- AND el sistema MUST renderizar la vista de detalle `<PropertyDetail />` a pantalla completa con toda la información técnica
+- AND el sistema MUST renderizar la vista de detalle `<PropertyDetail />` como página completa con toda la información técnica
+- AND en escritorio la portada MUST usar un contenedor centrado con ancho máximo de `1152 px` y columnas equilibradas para información e imagen
+- AND en móvil la portada MUST apilar información e imagen sin desbordamiento horizontal
+
+#### Scenario: Contactar mantiene el mismo destino desde el catálogo y el detalle
+- GIVEN el usuario ve una propiedad publicada con datos de contacto
+- WHEN pulsa `Contactar` en la tarjeta o en la ficha
+- THEN el sistema MUST enfocar el formulario protegido de esa misma propiedad
+- AND MUST conservar el botón de regreso al catálogo y la ruta de detalle
 
 #### Scenario: Mostrar preferencias de una permuta
 - GIVEN una propiedad de permuta contiene `features.exchangePreferences`
@@ -148,6 +156,29 @@ El sistema MUST consultar y renderizar solo propiedades publicas en experiencias
 - WHEN se renderiza home, resultados o detalle publico
 - THEN MUST usar solo propiedades con estado publicable
 - AND MUST ignorar borradores, pausadas u ocultas salvo en areas privadas autorizadas
+- AND MUST solicitar únicamente las columnas concedidas al catálogo público
+- AND MUST NOT incluir `contact_info`, `moderation_message` ni `SELECT *`
+
+#### Scenario: Recomendaciones relacionadas solo publicadas
+- GIVEN una sesión autenticada puede leer además sus propias publicaciones privadas
+- WHEN una ficha consulta propiedades similares, incluida la consulta de relleno
+- THEN MUST filtrar explícitamente `status = published`
+- AND MUST excluir la ficha actual y las propiedades ya incluidas
+
+### Requirement: Portadas privadas en Mis Publicaciones
+La gestión de publicaciones MUST mostrar las fotos privadas del propietario usando su sesión autenticada y MUST NOT depender de la URL pública de Storage.
+
+#### Scenario: Mostrar portada propia
+- GIVEN la propiedad contiene una referencia canónica a una foto WebP de `property_images` bajo la carpeta UUID del propietario autenticado
+- WHEN el propietario abre Mis Publicaciones
+- THEN el cliente MUST descargar la portada con Storage y crear una URL temporal `blob:` para la tarjeta
+- AND MUST revocar la URL temporal al sustituir la lista o abandonar la pantalla
+
+#### Scenario: No cargar fotos privadas ajenas o con error
+- GIVEN la portada apunta a otra carpeta, no cumple la ruta permitida, o la descarga falla
+- WHEN se prepara la tarjeta
+- THEN el cliente MUST NOT descargar ni renderizar esa ruta privada
+- AND MUST mostrar el placeholder sin bloquear las acciones de la publicación
 
 #### Scenario: Completar propiedades relacionadas sin repetir anuncios
 - GIVEN una ficha pública con menos de tres propiedades relacionadas en la misma provincia
@@ -190,3 +221,40 @@ El sistema MUST mostrar skeletons de carga animados (shimmer) en lugar de layout
 - AND el distintivo MUST describir que Cubitat revisó la identidad, sin afirmar certificación legal de la propiedad
 - AND la lista pública de identificadores MUST incluir solo propietarios verificados con una propiedad publicada, sin exponer datos KYC
 - AND la RPC pública MUST devolver únicamente IDs de vendedores verificados con al menos una propiedad publicada, sin exponer evidencia ni datos KYC
+
+### Requirement: Compartir una ficha sin acumular acciones
+La acción de compartir MUST mantener una sola invocación del mecanismo nativo o del portapapeles activa por ficha.
+
+La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selector nativo del sistema. En móviles MUST usar `navigator.share` cuando esté disponible y copiar el enlace como alternativa cuando no lo esté.
+
+#### Scenario: Clics repetidos mientras el diálogo nativo sigue abierto
+- GIVEN un usuario abre la acción nativa para compartir una ficha
+- WHEN vuelve a pulsar compartir antes de que termine la acción anterior
+- THEN el sistema MUST ignorar la activación repetida
+- AND MUST conservar la ficha y permitir compartir de nuevo cuando la acción previa termine o se cancele
+
+#### Scenario: Compartir desde escritorio
+- GIVEN una ficha pública abierta en escritorio y `navigator.share` disponible
+- WHEN la persona selecciona «Compartir»
+- THEN el sistema MUST copiar la URL actual y confirmar «Copiado»
+- AND MUST NOT invocar el selector nativo ni navegar fuera de la ficha
+
+#### Scenario: Compartir desde móvil
+- GIVEN una ficha pública abierta en móvil con `navigator.share` disponible
+- WHEN la persona selecciona «Compartir»
+- THEN el sistema MUST abrir el mecanismo nativo de compartir
+- AND MUST conservar la ficha si el mecanismo se cancela
+
+### Requirement: Conteo seguro de vistas públicas
+- GIVEN un visitante abre una propiedad
+- WHEN el cliente registra una vista
+- THEN MUST enviar únicamente el UUID de la propiedad al endpoint same-origin `/api/property-view`
+- AND el Worker MUST validar el UUID, limitar solicitudes por IP y llamar `increment_property_view_count` con la clave `service_role` exclusivamente en el servidor
+- AND el Worker MUST rechazar llamadas anónimas al RPC directo del proxy
+- AND un fallo de conteo MUST NOT bloquear la ficha ni revelar detalles internos de Supabase
+
+### Requirement: Resolución transaccional de reportes
+- La resolución administrativa MUST requerir una sesión admin AAL2.
+- Al resolver un reporte pendiente, el sistema MUST marcar el reporte como resuelto y pausar su propiedad asociada en la misma transacción.
+- Si cualquiera de las dos actualizaciones falla, ambas MUST revertirse.
+- Un reporte ya resuelto/descartado, o que no corresponda a la propiedad enviada, MUST rechazarse sin modificar la propiedad.

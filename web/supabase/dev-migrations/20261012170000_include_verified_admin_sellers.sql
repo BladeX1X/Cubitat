@@ -25,3 +25,6 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_verified_seller_ids() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_verified_seller_ids() TO anon, authenticated;
+
+-- Make the new/updated RPC visible immediately to the PostgREST API schema cache.
+NOTIFY pgrst, 'reload schema';

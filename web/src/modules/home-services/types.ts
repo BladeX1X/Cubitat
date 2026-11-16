@@ -39,8 +39,10 @@ export type HomeServiceProvider = {
   phone: string | null
   whatsapp: string | null
   galleryUrls: string[]
+  photoUnavailable?: boolean
   updatedAt: string
 }
 export type OwnedHomeServiceProvider = HomeServiceProvider & {
+  galleryReferences: string[]
   status: 'pending_review' | 'published' | 'paused' | 'rejected'
 }

@@ -44,6 +44,8 @@ Cada capacidad vive bajo `src/modules/admin`:
 - `audit-log`: consulta paginada y de solo lectura de cambios/eliminaciones de
   propiedades. Encapsula filtros, estado asíncrono, formateo y tarjetas
   mobile-first sin depender de los módulos de propiedades, reportes o métricas.
+  La proyección `admin_moderation_audit_log` usa `security_invoker`; el SELECT
+  autenticado no evita RLS y solo administradores AAL2 leen las tablas fuente.
 - `kyc`: módulo independiente. En DEV se habilita junto con Fase 2; para
   producción se incorpora únicamente con el perfil explícito
   `npm run build:phase2-kyc`, que define `VITE_KYC_UI_ENABLED=true` sin activar
@@ -119,6 +121,14 @@ comprueba el perfil documental separado y su destino de Supabase productivo.
 `AdminMfaGate.test.tsx` cubre también que una sesión expirada oculte el
 formulario, ejecute el callback de recuperación y mantenga el guard bloqueado
 si ese cierre falla.
+
+La acción «Ocultar propiedad» del módulo `reports` llama a
+`resolve_property_report` con los IDs del reporte y de la propiedad. La función
+exige AAL2, acepta solo reportes pendientes que coincidan con esa propiedad y
+pausa el anuncio en la misma transacción. Su migración DEV
+`20261115130000_atomic_property_report_resolution.sql` sigue pendiente de
+aplicación. `AdminPage.test.tsx` comprueba el nombre y argumentos exactos de la
+RPC; no infiere que la acción funcionó por las lecturas iniciales de las tablas.
 
 ## Moderación de postulaciones Fase 3
 

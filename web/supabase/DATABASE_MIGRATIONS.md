@@ -4,7 +4,86 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-Última revisión documental: 2026-11-07.
+Última revisión documental: 2026-11-16.
+
+### Sondeo de objetos — 2026-11-16
+
+Consulta `SELECT` solo de catálogo sobre producción: de una muestra de 26
+funciones/tablas candidatas asociadas con las 57 fuentes locales no registradas,
+solo aparecieron `public.property_verification_audit` y
+`public.is_admin_aal2`; `public.property_contact_details` no existe. La primera
+está presente sin una versión de migración correspondiente en el ledger, por lo
+que hay deriva entre ledger y esquema. Es una muestra, no clasificación final ni
+prueba de que el resto de SQL se deba aplicar. No se leyeron filas de usuarios ni
+se ejecutó DDL/DML. La carpeta quedó desvinculada de producción al terminar.
+
+## Ledger de Supabase producción — lectura de solo lectura — 2026-11-15
+
+Con el proyecto `tohjzoncoosvjbjcakdl` enlazado, `supabase migration list
+--linked` reportó 158 fuentes locales: 101 registradas también en el ledger
+remoto, 57 solo locales y 0 versiones remotas sin fuente local en este árbol.
+Las 15 versiones F3 (`20261013130000`, `20261024190000`, `20261025010000`,
+`20261025020000`, `20261025140000`, `20261027100000`, `20261028193000`,
+`20261103120000`–`20261103180000`, `20261106100000`) y las ocho F4
+(`20261105120000`–`20261105180000`) constan en remoto.
+
+Las 57 versiones solo locales no son una lista aprobada para ejecutar. Algunas
+pueden ser overlays DEV, propuestas no aplicadas o cambios cuyo efecto ya se
+introdujo manualmente. No usar `db push` global ni `migration repair`; clasificar
+cada fuente contra el esquema productivo, reconciliar procedencia y dependencias,
+y validar cualquier conjunto pequeño en una base aislada. El listado exacto de
+IDs observados está en
+[`docs/PRODUCTION_RELEASE_READINESS_2026-11-15.md`](../../docs/PRODUCTION_RELEASE_READINESS_2026-11-15.md).
+No se aplicó SQL en esta comprobación.
+`supabase db lint --linked --level warning` también pasó sin errores de esquema.
+La carpeta release quedó desvinculada tras las consultas para evitar comandos
+`--linked` accidentales contra producción.
+El `db dump` schema-only no se completó (la CLI no terminó de descargar su
+imagen de `pg_dump`); no se obtuvo comparación de definiciones y no se modificó
+la base.
+
+Esta observación actualiza cualquier estado histórico inferior que describa
+estas mismas versiones como pendientes o no aplicadas. Los bloques fechados se
+conservan como evidencia de su momento; no usar sus instrucciones genéricas de
+`db push` para el estado productivo actual.
+
+## Migraciones Fase 4 para release coordinado — 2026-11-16 — no aplicadas
+
+Se añadieron migraciones forward para las funciones nuevas que requiere el
+paquete de código: `20261115120000_phase4_service_owner_id_insert_privilege.sql`
+otorga solo la columna `id` para publicación idempotente de servicios;
+`20261115130000_atomic_property_report_resolution.sql` resuelve un reporte
+pendiente y pausa su propiedad dentro de una operación AAL2;
+`20261116100000_phase4_saved_marketplace_listings.sql` crea favoritos privados
+de Servicios y Materiales con RLS e índices únicos;
+`20261116110000_phase4_home_service_photo_storage.sql` configura el bucket
+privado WebP de servicios, límites y políticas de acceso a fotos.
+
+Estas cuatro fuentes aún no se aplicaron a producción. La migración de contacto
+`20261025160000_separate_property_contact_details.sql` y sus dependientes
+requieren reconciliación aparte: mueve datos privados y no debe incluirse sin
+respaldo recuperable y revisión de dependencias. El historial productivo
+mantiene 57 versiones locales sin clasificar; estas cuatro nuevas fuentes no
+hacen seguro un `db push` global.
+
+### Refresh directo de ledger/catálogo — 2026-11-16
+
+La consulta de solo lectura a `supabase_migrations.schema_migrations` confirmó
+101 versiones remotas. La lista CLI, ahora con las seis fuentes de promoción
+incluidas en este checkout, muestra 63 fuentes locales sin registro remoto y
+ninguna fuente remota sin archivo local. El total actual es 164 fuentes
+canónicas; las 57 locales sin registro observadas el 2026-11-15 quedan como
+conteo histórico.
+
+Una consulta de solo lectura al catálogo confirmó que existen
+`home_service_providers`, `material_listings`, `property_reports`,
+`property_verification_audit`, `is_admin_aal2()` y la vista
+`admin_moderation_audit_log`; existen `material-listings` y la RPC
+`get_public_marketplace_contact`. No existen `property_contact_details`,
+`get_public_property_contact`, `resolve_property_report`, la tabla de favoritos,
+el bucket `home-service-photos` ni sus helpers. Esto confirma gaps concretos
+para el bundle promocionado, pero no clasifica por completo las otras 63
+fuentes. No se consultaron filas de negocio ni se ejecutó DDL/DML.
 
 ## Retiro auditado de agentes — migración 2026-11-06
 
@@ -17,11 +96,10 @@ orden y propósito, pero no sustituye la lectura del SQL.
 - DEV: el esquema se aplicó por CLI y una consulta confirmó tabla y RPC, pero
   el ledger no quedó registrado; la reconciliación del historial remoto sigue
   pendiente. No ejecutar `db push` global ni `migration repair` en DEV.
-- Producción: todavía no aplicada. El workflow manual
-  `.github/workflows/supabase-production-agent-revocation.yml` limita el
-  dry-run y el despliegue a esta versión, verifica el proyecto productivo y
-  requiere que el esquema esté en estado previo completo. Ejecutarlo solo
-  después de integrar esta migración en `main` y confirmar sus gates.
+- Producción: rectificación 2026-11-15 — el ledger remoto consultado ahora
+  registra `20261106100000`; el estado anterior de este bloque queda supersedido.
+  No repetir la migración ni ejecutar el workflow histórico
+  `.github/workflows/supabase-production-agent-revocation.yml` para esta versión.
 - La prueba SQL del contrato es `supabase/tests/agent_role_revocation_local.sql`;
   ejecución alojada de revocación con usuario sintético aún pendiente.
 

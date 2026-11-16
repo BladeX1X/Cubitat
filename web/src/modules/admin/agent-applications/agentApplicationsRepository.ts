@@ -18,6 +18,14 @@ export type AgentApplicationDocumentLinks = {
   expires_in: number
 }
 
+export type RejectedAgentApplicationEvent = {
+  application_id: string
+  to_status: 'rejected'
+  reason: string | null
+  created_at: string
+  agent_applications: { education_title: string; province: string }
+}
+
 export type ActiveAgent = {
   agent_id: string
   full_name: string
@@ -95,6 +103,19 @@ export async function fetchPendingAgentApplications(page: number): Promise<{ ite
     .range(from, to)
   if (error) throw new Error('No se pudieron cargar las postulaciones.')
   return { items: (data ?? []) as PendingAgentApplication[], total: count ?? 0 }
+}
+
+export async function fetchRejectedAgentApplicationEvents(page: number): Promise<{ items: RejectedAgentApplicationEvent[]; total: number }> {
+  const from = page * AGENT_APPLICATIONS_PAGE_SIZE
+  const to = from + AGENT_APPLICATIONS_PAGE_SIZE - 1
+  const { data, error, count } = await supabase
+    .from('agent_application_events')
+    .select('application_id,to_status,reason,created_at,agent_applications!inner(education_title,province)', { count: 'exact' })
+    .eq('to_status', 'rejected')
+    .order('created_at', { ascending: false })
+    .range(from, to)
+  if (error) throw new Error('No se pudo cargar el historial de rechazos.')
+  return { items: (data ?? []) as unknown as RejectedAgentApplicationEvent[], total: count ?? 0 }
 }
 
 export async function fetchActiveAgentsForModeration(): Promise<ActiveAgent[]> {

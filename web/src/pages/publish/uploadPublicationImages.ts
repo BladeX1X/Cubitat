@@ -1,31 +1,39 @@
 import { dataUrlToBlob } from './imageDataUrl'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { isOwnedPropertyImageReference } from '../../modules/properties/utils/privateImagePreviews'
+import { normalizePropertyImageReference } from '../../modules/properties/utils/images'
 
 type ImageStorage = {
-  upload: (path: string, blob: Blob, options: { contentType: string }) => PromiseLike<{ error: unknown }>
   getPublicUrl: (path: string) => { data: { publicUrl: string } }
   remove: (paths: string[]) => PromiseLike<{ error: unknown }>
 }
+type UploadImage = (blob: Blob) => Promise<string>
 
 /** A failed batch never reaches the property write; existing URLs are never deleted. */
 export async function uploadPublicationImages(
   userId: string,
   images: ReadonlyArray<{ dataUrl: string }>,
   storage: ImageStorage,
+  uploadImage: UploadImage,
 ): Promise<string[]> {
   const createdPaths: string[] = []
   const urls: string[] = []
   try {
     for (const image of images) {
+      const isPropertyImageReference = /\/storage\/v1\/object\/(?:public\/)?property_images\//i.test(image.dataUrl)
+      if (isPropertyImageReference) {
+        if (!isOwnedPropertyImageReference(image.dataUrl, userId)) throw new Error('unowned_property_image_reference')
+        urls.push(normalizePropertyImageReference(image.dataUrl))
+        continue
+      }
       if (image.dataUrl.startsWith('https://') || image.dataUrl.startsWith('http://')) {
         urls.push(image.dataUrl)
         continue
       }
-      const path = `${userId}/${crypto.randomUUID()}.webp`
-      const { error } = await storage.upload(path, dataUrlToBlob(image.dataUrl), { contentType: 'image/webp' })
-      if (error) throw error
+      const path = await uploadImage(dataUrlToBlob(image.dataUrl))
+      if (!path.startsWith(`${userId}/`)) throw new Error('invalid_property_image_owner_path')
       createdPaths.push(path)
-      const url = storage.getPublicUrl(path).data.publicUrl
+      const url = normalizePropertyImageReference(storage.getPublicUrl(path).data.publicUrl)
       if (!url) throw new Error('missing_image_url')
       urls.push(url)
     }

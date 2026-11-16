@@ -1,66 +1,95 @@
-import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, Phone, ShieldCheck, X } from 'lucide-react'
-import { fetchMarketplaceContact, type MarketplaceContact, type MarketplaceListingType } from '../lib/marketplaceContact'
+import { useState } from 'react'
+import { MessageCircle, Phone } from 'lucide-react'
+import { fetchMarketplaceContact, getMarketplaceContactUrl, type MarketplaceListingType } from '../lib/marketplaceContact'
 import { Button } from './button'
-import { TurnstileWidget } from './TurnstileWidget'
 
 type MarketplaceContactActionsProps = {
   listingId: string
   listingType: MarketplaceListingType
-  label?: string
+  listingTitle: string
+  listingLocation: string
+  onMissing?: () => void
+  onChannelOpen?: (channel: 'phone' | 'whatsapp') => void
+  layout?: 'card' | 'detail' | 'property-hero' | 'property-mobile'
 }
 
-export function MarketplaceContactActions({ listingId, listingType, label = 'Ver contacto' }: MarketplaceContactActionsProps) {
-  const [open, setOpen] = useState(false)
-  const [token, setToken] = useState('')
-  const [contact, setContact] = useState<MarketplaceContact | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const dialogRef = useRef<HTMLDialogElement>(null)
+/** Opens a seller's phone or WhatsApp only after an explicit channel click. */
+export function MarketplaceContactActions({
+  listingId,
+  listingType,
+  listingTitle,
+  listingLocation,
+  onMissing,
+  onChannelOpen,
+  layout = 'detail',
+}: MarketplaceContactActionsProps) {
+  const isPropertyCard = layout === 'card' && listingType === 'property'
+  const isPropertyHero = layout === 'property-hero'
+  const isPropertyMobile = layout === 'property-mobile'
+  const [loadingChannel, setLoadingChannel] = useState<'phone' | 'whatsapp' | null>(null)
+  const [error, setError] = useState<'missing' | 'phone-missing' | 'whatsapp-missing' | 'unavailable' | null>(null)
 
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
-  }, [open])
+  async function openChannel(channel: 'phone' | 'whatsapp') {
+    if (loadingChannel) return
+    setError(null)
+    setLoadingChannel(channel)
+    // Reserve the WhatsApp tab while the user gesture is still active. This
+    // avoids popup blockers after the private contact lookup completes.
+    const whatsappWindow = channel === 'whatsapp' ? window.open('about:blank', '_blank') : null
+    try {
+      if (whatsappWindow) {
+        try { whatsappWindow.opener = null } catch { /* Browser window proxies may expose a read-only opener. */ }
+      }
+      const contact = await fetchMarketplaceContact(listingType, listingId)
+      const phone = channel === 'phone' ? contact.phone : contact.whatsapp
+      if (!phone) {
+        whatsappWindow?.close()
+        if (isPropertyMobile) {
+          onMissing?.()
+          return
+        }
+        setError(channel === 'phone' ? 'phone-missing' : 'whatsapp-missing')
+        return
+      }
+      const url = getMarketplaceContactUrl(channel, phone, listingTitle, listingLocation)
+      if (!url) {
+        whatsappWindow?.close()
+        setError('unavailable')
+        return
+      }
+      onChannelOpen?.(channel)
+      if (channel === 'phone') window.location.assign(url)
+      else if (whatsappWindow) whatsappWindow.location.replace(url)
+      else setError('unavailable')
+    } catch (cause) {
+      whatsappWindow?.close()
+      const reason = typeof cause === 'object' && cause !== null && 'reason' in cause
+        && (cause.reason === 'missing' || cause.reason === 'unavailable')
+        ? cause.reason
+        : 'unavailable'
+      setError(reason)
+    } finally {
+      setLoadingChannel(null)
+    }
+  }
 
-  useEffect(() => {
-    if (!open || !token || contact) return
-    let active = true
-    setLoading(true)
-    setError(false)
-    void fetchMarketplaceContact(listingType, listingId, token)
-      .then((result) => { if (active) setContact(result) })
-      .catch(() => { if (active) setError(true) })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
-  }, [contact, listingId, listingType, open, token])
-
-  const close = () => { setOpen(false); setToken(''); setError(false) }
-  const whatsapp = contact?.whatsapp || contact?.phone
-  const digits = (value: string) => value.replace(/\D/g, '')
-
+  const buttonClass = isPropertyCard
+    ? 'property-contact-btn min-h-11'
+    : isPropertyHero ? 'detail-desktop-primary-cta'
+      : isPropertyMobile ? 'mobile-detail-cta-icon'
+        : layout === 'card' ? 'min-h-11 w-full' : 'min-h-11'
   return (
-    <>
-      <Button type="button" onClick={() => setOpen(true)} className="min-h-11">
-        <ShieldCheck size={17} aria-hidden="true" />{label}
-      </Button>
-      <dialog ref={dialogRef} onCancel={(event) => { event.preventDefault(); close() }} className="w-[min(92vw,30rem)] rounded-2xl border border-neutral-200 bg-white p-0 text-neutral-900 shadow-2xl backdrop:bg-neutral-950/50">
-        <div className="flex items-start justify-between gap-4 border-b border-neutral-100 p-5">
-          <div><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Contacto protegido</p><h2 className="mt-1 text-xl font-bold">Contactar anunciante</h2><p className="mt-1 text-sm text-neutral-600">Completa la verificación para ver los datos de contacto.</p></div>
-          <button type="button" aria-label="Cerrar" onClick={close} className="inline-flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100"><X size={19} /></button>
-        </div>
-        <div className="space-y-4 p-5">
-          {!contact && <TurnstileWidget action="marketplace-contact" onVerify={setToken} onExpire={() => setToken('')} onError={() => { setToken(''); setError(true) }} />}
-          {loading && <p role="status" className="text-sm text-neutral-600">Verificando y consultando el contacto…</p>}
-          {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">No se pudo obtener el contacto. Cierra y vuelve a intentarlo.</p>}
-          {contact && <div className="flex flex-wrap gap-2">
-            {whatsapp && <a className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-700 px-4 font-semibold text-white" href={`https://wa.me/${digits(whatsapp)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} />Abrir WhatsApp</a>}
-            {contact.phone && <a className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-neutral-300 px-4 font-semibold" href={`tel:${contact.phone}`}><Phone size={17} />Llamar</a>}
-          </div>}
-        </div>
-      </dialog>
-    </>
+    <div className={isPropertyCard ? 'property-actions' : isPropertyHero ? 'detail-desktop-cta-row' : isPropertyMobile ? 'contents' : layout === 'card' ? 'border-t border-neutral-100 p-4' : 'mt-6'}>
+      <div className={isPropertyCard || isPropertyHero || isPropertyMobile ? 'contents' : 'grid grid-cols-2 gap-2'}>
+        <Button type="button" variant="outline" className={buttonClass} aria-label={isPropertyMobile ? 'Llamar al anunciante' : undefined} disabled={loadingChannel !== null} onClick={(event) => { event.stopPropagation(); void openChannel('phone') }}>
+          <Phone aria-hidden="true" />{isPropertyMobile ? <span className="sr-only">Contactar</span> : loadingChannel === 'phone' ? 'Abriendo…' : 'Contactar'}
+        </Button>
+        <Button type="button" className={isPropertyCard ? 'property-whatsapp-btn min-h-11' : isPropertyHero ? 'detail-desktop-secondary-cta' : isPropertyMobile ? 'mobile-detail-cta-primary' : buttonClass} disabled={loadingChannel !== null} onClick={(event) => { event.stopPropagation(); void openChannel('whatsapp') }}>
+          <MessageCircle aria-hidden="true" />{isPropertyMobile ? 'Consultar' : loadingChannel === 'whatsapp' ? 'Abriendo…' : 'Consultar'}
+        </Button>
+      </div>
+      {(error === 'missing' || error === 'phone-missing' || error === 'whatsapp-missing') && <div className="mt-2 space-y-1 text-xs text-amber-900"><p role="status">{error === 'phone-missing' ? 'El anunciante no ha asociado un teléfono a este anuncio.' : error === 'whatsapp-missing' ? 'El anunciante no ha asociado WhatsApp a este anuncio.' : 'El anunciante no ha añadido teléfono ni WhatsApp a este anuncio.'}</p>{onMissing && <button type="button" className="font-semibold underline" onClick={onMissing}>Abrir anuncio y enviar una consulta</button>}</div>}
+      {error === 'unavailable' && <p role="alert" className="mt-2 text-xs text-red-700">No se pudo abrir el contacto. Inténtalo de nuevo en unos momentos.</p>}
+    </div>
   )
 }

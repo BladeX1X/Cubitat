@@ -58,11 +58,13 @@ const databaseMetrics = {
   reports_count: 3,
 }
 
-const { mockRpc, mockGetSession, mockGetAal, mockListFactors } = vi.hoisted(() => ({
+const { mockRpc, mockGetSession, mockGetAal, mockListFactors, mockUpdate, mockEq } = vi.hoisted(() => ({
   mockRpc: vi.fn(),
   mockGetSession: vi.fn(),
   mockGetAal: vi.fn(),
   mockListFactors: vi.fn(),
+  mockUpdate: vi.fn(),
+  mockEq: vi.fn(),
 }))
 
 const mockFrom = vi.fn().mockImplementation((table: string) => {
@@ -82,6 +84,8 @@ const mockFrom = vi.fn().mockImplementation((table: string) => {
           return Promise.resolve(resolve({ data: [], error: null }))
         }
       }
+      if (prop === 'update') return (values: unknown) => { mockUpdate(table, values); return proxy }
+      if (prop === 'eq') return (...args: unknown[]) => { mockEq(table, ...args); return proxy }
       return () => proxy
     }
   })
@@ -104,6 +108,8 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
 
 describe('AdminPage - Panel de Moderacion y Reportes', () => {
   beforeEach(() => {
+    mockUpdate.mockReset()
+    mockEq.mockReset()
     mockRpc.mockReset().mockResolvedValue({ data: databaseMetrics, error: null })
     mockGetSession.mockReset().mockResolvedValue({
       data: { session: { access_token: 'admin-test-token' } },
@@ -183,10 +189,10 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     fireEvent.click(hideButton)
 
     await waitFor(() => {
-      // Debe actualizar el estado de la propiedad a 'paused'
-      expect(mockFrom).toHaveBeenCalledWith('properties')
-      // Debe actualizar el estado del reporte a 'resolved'
-      expect(mockFrom).toHaveBeenCalledWith('property_reports')
+      expect(mockRpc).toHaveBeenCalledWith('resolve_property_report', {
+        p_report_id: 'report-1',
+        p_property_id: 'prop-1',
+      })
     })
   })
 
@@ -205,8 +211,8 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     fireEvent.click(dismissButton)
 
     await waitFor(() => {
-      // Debe actualizar el estado del reporte a 'dismissed'
-      expect(mockFrom).toHaveBeenCalledWith('property_reports')
+      expect(mockUpdate).toHaveBeenCalledWith('property_reports', { status: 'dismissed' })
+      expect(mockEq).toHaveBeenCalledWith('property_reports', 'id', 'report-1')
     })
   })
 

@@ -4,6 +4,7 @@ import { AgentApplicationsModerationTab } from './AgentApplicationsModerationTab
 
 const repository = vi.hoisted(() => ({
   fetchPendingAgentApplications: vi.fn(),
+  fetchRejectedAgentApplicationEvents: vi.fn(),
   fetchActiveAgentsForModeration: vi.fn(),
   revokeAgentAccess: vi.fn(),
   fetchAgentApplicationDocumentLinks: vi.fn(),
@@ -33,6 +34,7 @@ describe('AgentApplicationsModerationTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     repository.fetchPendingAgentApplications.mockResolvedValue({ items: [application], total: 1 })
+    repository.fetchRejectedAgentApplicationEvents.mockResolvedValue({ items: [], total: 0 })
     repository.fetchActiveAgentsForModeration.mockResolvedValue([activeAgent])
     repository.revokeAgentAccess.mockResolvedValue(undefined)
     repository.fetchAgentApplicationDocumentLinks.mockResolvedValue({
@@ -124,5 +126,26 @@ describe('AgentApplicationsModerationTab', () => {
       'rejected',
       'No cumple el requisito de formación.',
     ))
+  })
+
+  it('shows rejection notes in the private moderation history only', async () => {
+    repository.fetchPendingAgentApplications.mockResolvedValue({ items: [], total: 0 })
+    repository.fetchRejectedAgentApplicationEvents.mockResolvedValue({
+      items: [{
+        application_id: application.id,
+        to_status: 'rejected',
+        reason: 'Falta acreditar el título requerido.',
+        created_at: '2026-11-04T18:00:00.000Z',
+        agent_applications: { education_title: 'Licenciatura en Derecho', province: 'La Habana' },
+      }],
+      total: 1,
+    })
+    render(<AgentApplicationsModerationTab />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }))
+
+    expect(await screen.findByText('Falta acreditar el título requerido.')).toBeInTheDocument()
+    expect(repository.fetchRejectedAgentApplicationEvents).toHaveBeenCalledWith(0)
+    expect(screen.getByText(/Los motivos solo son visibles para moderación autorizada/)).toBeInTheDocument()
   })
 })

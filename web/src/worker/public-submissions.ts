@@ -14,7 +14,7 @@ export interface PublicSubmissionEnv {
   }
 }
 
-type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation' | 'marketplace-contact'
+type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation'
 
 type TurnstileResult = {
   success?: boolean
@@ -39,10 +39,11 @@ type ReportPayload = {
 }
 
 type MarketplaceContactPayload = {
-  turnstile_token?: unknown
   listing_type?: unknown
   listing_id?: unknown
 }
+
+type PropertyContactPayload = { property_id?: unknown }
 
 type MarketplaceContactTarget = 'service' | 'material'
 
@@ -163,8 +164,10 @@ async function callTrustedRpc(env: PublicSubmissionEnv, rpcName: string, body: u
   return true
 }
 
-async function callTrustedRpcForJson(env: PublicSubmissionEnv, rpcName: string, body: unknown): Promise<unknown | null> {
-  if (!env.SUPABASE_SERVICE_ROLE_KEY) return null
+type TrustedJsonRpcResult = { ok: true; value: unknown } | { ok: false }
+
+async function callTrustedRpcForJson(env: PublicSubmissionEnv, rpcName: string, body: unknown): Promise<TrustedJsonRpcResult> {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 6000)
   try {
@@ -181,13 +184,14 @@ async function callTrustedRpcForJson(env: PublicSubmissionEnv, rpcName: string, 
     })
     if (!response.ok) {
       if (response.body) void response.body.cancel().catch(() => undefined)
-      return null
+      console.warn('public_submission_json_rpc_failed', { rpcName, status: response.status })
+      return { ok: false }
     }
     const bytes = await readBoundedStreamBytes(response.body, response.headers.get('content-length'), 4096, 6000)
-    if (!bytes.ok) return null
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.value)) as unknown
+    if (!bytes.ok) return { ok: false }
+    return { ok: true, value: JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.value)) as unknown }
   } catch {
-    return null
+    return { ok: false }
   } finally {
     clearTimeout(timeout)
   }
@@ -300,21 +304,43 @@ export async function handlePublicMarketplaceContact(
     return json({ error: status === 413 ? 'Solicitud demasiado grande.' : 'Solicitud no valida.' }, status)
   }
   const body = parsed.value
-  const token = normalizedString(body.turnstile_token)
   const listingType = body.listing_type
   const listingId = normalizedString(body.listing_id)
   if ((listingType !== 'service' && listingType !== 'material') || !UUID_PATTERN.test(listingId)) {
     return json({ error: 'Los datos del contacto no son validos.' }, 400)
   }
 
-  const verification = await verifyTurnstile(request, env, token, 'marketplace-contact')
-  if (verification !== 'valid') return turnstileFailure(verification)
-
   const result = await callTrustedRpcForJson(env, 'get_public_marketplace_contact', {
     p_listing_type: listingType as MarketplaceContactTarget,
     p_listing_id: listingId,
   })
-  const row = Array.isArray(result) ? result[0] : null
+  if (!result.ok) return json({ error: 'El contacto no esta disponible temporalmente.' }, 503)
+  const row = Array.isArray(result.value) ? result.value[0] : null
+  if (!isRecord(row)) return json({ error: 'No se encontro un contacto publico para este anuncio.' }, 404)
+  const phone = typeof row.phone === 'string' && validatePhone(row.phone) ? normalizePhoneForStorage(row.phone) : null
+  const whatsapp = typeof row.whatsapp === 'string' && validatePhone(row.whatsapp) ? normalizePhoneForStorage(row.whatsapp) : null
+  if (!phone && !whatsapp) return json({ error: 'No se encontro un contacto publico para este anuncio.' }, 404)
+  return json({ phone, whatsapp }, 200)
+}
+
+export async function handlePublicPropertyContact(
+  request: Request,
+  env: PublicSubmissionEnv,
+): Promise<Response> {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'El contacto no esta disponible.' }, 503)
+  const parsed = await readBoundedJsonObject<PropertyContactPayload>(request, 4096, 6000)
+  if (!parsed.ok) {
+    const status = parsed.status
+    return json({ error: status === 413 ? 'Solicitud demasiado grande.' : 'Solicitud no valida.' }, status)
+  }
+  const propertyId = normalizedString(parsed.value.property_id)
+  if (!UUID_PATTERN.test(propertyId)) return json({ error: 'Los datos del contacto no son validos.' }, 400)
+
+  const result = await callTrustedRpcForJson(env, 'get_public_property_contact', {
+    p_property_id: propertyId,
+  })
+  if (!result.ok) return json({ error: 'El contacto no esta disponible temporalmente.' }, 503)
+  const row = Array.isArray(result.value) ? result.value[0] : null
   if (!isRecord(row)) return json({ error: 'No se encontro un contacto publico para este anuncio.' }, 404)
   const phone = typeof row.phone === 'string' && validatePhone(row.phone) ? normalizePhoneForStorage(row.phone) : null
   const whatsapp = typeof row.whatsapp === 'string' && validatePhone(row.whatsapp) ? normalizePhoneForStorage(row.whatsapp) : null

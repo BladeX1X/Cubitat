@@ -189,6 +189,8 @@ El sistema MUST dejar trazabilidad atómica de acciones administrativas sensible
 - WHEN existen eventos de moderación
 - THEN el sistema MUST mostrar acción, propiedad, actor, transición, motivo y fecha
 - AND MUST manejar carga, error, vacío, filtros y paginación de forma aislada
+- AND la vista MUST usar `security_invoker` y depender de RLS con AAL2 en las tablas fuente
+- AND la vista MUST ser de solo lectura para `authenticated` y no estar disponible para `anon`
 - AND MUST conservar una presentación legible en móvil sin desplazamiento horizontal obligatorio
 
 ### Requirement: Métricas administrativas

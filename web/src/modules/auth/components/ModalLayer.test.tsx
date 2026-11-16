@@ -33,12 +33,14 @@ describe('capas de autenticacion', () => {
     expect(MODAL_LAYER_Z_INDEX).toBeGreaterThan(MAP_FULLSCREEN_LAYER_Z_INDEX)
   })
 
-  it('monta la invitacion de favorito sobre el mapa y directamente en body', () => {
+  it('monta la invitacion genérica de favoritos sobre el mapa y directamente en body', () => {
     render(<SavePromptModal onClose={vi.fn()} />)
 
-    const dialog = screen.getByRole('dialog', { name: 'Guardar propiedad' })
+    const dialog = screen.getByRole('dialog', { name: 'Guardar favorito' })
     expect(dialog.parentElement).toBe(document.body)
     expect(dialog).toHaveStyle({ zIndex: String(MODAL_LAYER_Z_INDEX) })
+    expect(screen.getByRole('heading', { name: 'Inicia sesión para guardar tus favoritos' })).toBeInTheDocument()
+    expect(screen.getByText('Así podrás consultarlos en cualquier dispositivo.')).toBeInTheDocument()
   })
 
   it('mantiene el login sobre el mapa', () => {

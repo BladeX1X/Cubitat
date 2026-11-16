@@ -22,7 +22,7 @@ export function SavePromptModal({ onClose }: SavePromptModalProps) {
       style={MODAL_LAYER_STYLE}
       role="dialog"
       aria-modal="true"
-      aria-label="Guardar propiedad"
+      aria-label="Guardar favorito"
     >
       <div 
         className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm transition-opacity"
@@ -43,10 +43,10 @@ export function SavePromptModal({ onClose }: SavePromptModalProps) {
             <Heart size={32} className="text-red-500 fill-red-500 animate-[pulse_2s_infinite]" />
           </div>
           <h2 className="text-2xl font-extrabold text-neutral-900 mb-2">
-            Inicia sesión para guardar propiedades
+            Inicia sesión para guardar tus favoritos
           </h2>
           <p className="text-sm text-neutral-500 max-w-[280px] mx-auto">
-            Así podrás ver tus inmuebles favoritos en cualquier dispositivo.
+            Así podrás consultarlos en cualquier dispositivo.
           </p>
         </div>
 

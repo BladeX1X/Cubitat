@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import migrationSql from '../supabase/dev-migrations/20261013150000_phase4_materials_private_storage.sql?raw'
+import ownerUploadRepairSql from '../supabase/dev-migrations/20261114150000_phase4_material_owner_photo_upload.sql?raw'
+import canonicalOwnerUploadRepairSql from '../supabase/migrations/20261114170000_fix_material_photo_storage_policy_privileges.sql?raw'
 
 describe('F4-MAT private storage security contract', () => {
   it('creates a private bucket with server-enforced image limits', () => {
@@ -23,5 +25,18 @@ describe('F4-MAT private storage security contract', () => {
 
   it('does not allow owners to delete objects still referenced by a listing', () => {
     expect(migrationSql).toMatch(/material_photos_owner_delete_unreferenced[\s\S]*FOR DELETE TO authenticated[\s\S]*NOT EXISTS[\s\S]*name = ANY\(listing\.photo_urls\)/i)
+  })
+
+  it('restores owner uploads using the existing full-path validator without changing its signature', () => {
+    expect(ownerUploadRepairSql).toMatch(/REVOKE ALL ON FUNCTION public\.can_upload_material_photo\(text\) FROM PUBLIC, anon/i)
+    expect(ownerUploadRepairSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.can_upload_material_photo\(text\) TO authenticated/i)
+    expect(ownerUploadRepairSql).toMatch(/material_photos_owner_upload[\s\S]*FOR INSERT TO authenticated[\s\S]*foldername\(name\)\)\[1\] = \(SELECT auth\.uid\(\)\)::text[\s\S]*can_upload_material_photo\(name\)/i)
+    expect(ownerUploadRepairSql).not.toMatch(/CREATE OR REPLACE FUNCTION public\.can_upload_material_photo/i)
+    expect(ownerUploadRepairSql).not.toMatch(/can_upload_material_photo\(\(storage\.foldername\(name\)\)\[2\]\)/i)
+  })
+
+  it('keeps the canonical repair aligned with the canonical listing-id helper and photo limit', () => {
+    expect(canonicalOwnerUploadRepairSql).toMatch(/FUNCTION public\.can_upload_material_photo\(p_listing_id text\)[\s\S]*SECURITY DEFINER[\s\S]*listing\.id::text = p_listing_id[\s\S]*listing\.owner_id = \(SELECT auth\.uid\(\)\)/i)
+    expect(canonicalOwnerUploadRepairSql).toMatch(/material_photos_owner_upload[\s\S]*can_upload_material_photo\(\(storage\.foldername\(name\)\)\[2\]\)[\s\S]*count_owned_material_photo_objects[\s\S]*\) < 20/i)
   })
 })
