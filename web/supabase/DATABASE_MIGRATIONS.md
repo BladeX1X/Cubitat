@@ -1126,3 +1126,15 @@ terminó `quality` y `database-security` PASS, incluidos perfiles F2/F3/F4.
 Cloudflare Workers Builds falló para `4d44a71c-e7fa-4517-8172-09d4a7734ad7`
 sin log de causa visible desde GitHub. No desplegar ni ejecutar `db push` global
 hasta resolver ese check y cerrar la allowlist incremental.
+
+El sondeo de datos agregado preparado en
+`supabase/preflight/phase34-production-data-preflight.sql` devuelve solamente
+conteos para auditoría, retención KYC, forma del JSON de contacto, bucket de
+fotos y cantidad de filas de push. Se comprobó sintácticamente en una instancia
+local mínima y no se ha ejecutado en producción. Cualquier valor fuera de los
+criterios descritos debe investigarse antes de ejecutar la migración asociada.
+
+La CLI del entorno de trabajo no tiene `projects_read` (403). No se enlazó el
+proyecto ni se intentó escritura remota; falta ejecutar el sondeo mediante un
+canal de solo lectura con el secreto de conexión de producción y revisar los
+conteos resultantes.

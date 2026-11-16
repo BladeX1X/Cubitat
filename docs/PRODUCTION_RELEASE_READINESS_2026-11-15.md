@@ -272,6 +272,21 @@ falló otra vez (`4d44a71c-e7fa-4517-8172-09d4a7734ad7`) y GitHub solo expone el
 enlace al detalle, no el log de causa. El PR #228 sigue draft y producción no
 ha recibido DDL/DML ni bundle.
 
+Se preparó
+[`web/supabase/preflight/phase34-production-data-preflight.sql`](../web/supabase/preflight/phase34-production-data-preflight.sql),
+un sondeo de solo lectura que informa 16 conteos/indicadores para estas
+operaciones y no devuelve valores de contactos, documentos ni endpoints. La
+consulta pasó sintaxis sobre un esquema local mínimo con las columnas
+observadas en el snapshot; esa comprobación no sustituye su ejecución contra
+producción. El resultado productivo se debe revisar y guardar como evidencia
+agregada antes de fijar la allowlist.
+
+La CLI autenticada local sigue sin permiso `projects_read` (403); no se enlazó
+ni se ejecutó contra producción. El workflow de snapshot dispone del secreto de
+conexión usado para consultas de solo lectura, pero aún no incluye este sondeo.
+El build Cloudflare más reciente es
+`54f0a52f-cbce-4457-b312-a1ccb99acc84`; el detalle continúa pendiente.
+
 ### Revalidación de CI del release — 2026-11-16
 
 La primera CI posterior al merge de `main` encontró un error no manejado de
