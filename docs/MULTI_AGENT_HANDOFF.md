@@ -1,5 +1,20 @@
 # Relevo y coordinación multiagente de Cubitat
 
+## Estado vigente tras release de Fases 3/4 — 2026-11-16
+
+- Producción: 64 migraciones reconciliadas/aplicadas por workflow 43916761042;
+  PR #228 integrado y Worker `cubitat1` en producción. Las notas posteriores
+  de este archivo y el informe de readiness deben leerse con la corrección
+  fechada al final de `docs/PRODUCTION_RELEASE_READINESS_2026-11-15.md`.
+- Después del release, PR #235 corrigió el ancho de Comprar/Rentar en pantallas
+  grandes y PR #236 impidió cachear fotos privadas de propiedades. Worker
+  productivo actual: `7f0ec071`, 100%; smoke HTTP 200 en portada, venta, renta,
+  servicios, materiales y `/sw.js`.
+- Pendiente: QA autenticado de publicación/edición e imágenes en producción,
+  confirmar que clientes existentes activen el nuevo service worker y decidir
+  qué hacer con el anuncio de prueba `TEST PROPERTY FOR ALERTS TRIGGER` visible
+  en Rentas. No se modificaron publicaciones de producción.
+
 ## Diagnóstico de capas vectoriales del mapa — 2026-10-12
 
 - Producción muestra el relieve raster y marcadores de respaldo, pero no se aprecian calles ni etiquetas. CSP permite `tiles.openfreemap.org`; TileJSON, tesela versionada, relieve y glifos responden HTTP 200 desde la inspección. El endpoint vectorial sin versión no devuelve contenido, mientras el TileJSON publica rutas fechadas.
