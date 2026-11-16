@@ -1080,6 +1080,7 @@ function ImageGallery({
               <DetailLocationMap
                 latitude={property.coordinates.latitude}
                 longitude={property.coordinates.longitude}
+                location={publicPropertyLocation(property.location)}
               />
             </div>
           )}
@@ -1089,13 +1090,13 @@ function ImageGallery({
   )
 }
 
-function DetailLocationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
+function DetailLocationMap({ latitude, longitude, location }: { latitude: number; longitude: number; location: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [mapLoading, setMapLoading] = useState(true)
   const [mapUnavailable, setMapUnavailable] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
-  const coordinates = approximatePropertyCoordinates({ latitude, longitude })
+  const coordinates = approximatePropertyCoordinates({ latitude, longitude }, location)
   const approximateLatitude = coordinates?.latitude
   const approximateLongitude = coordinates?.longitude
 

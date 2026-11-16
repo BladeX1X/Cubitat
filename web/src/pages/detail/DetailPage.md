@@ -50,6 +50,10 @@ La migración `20260912010000_private_property_coordinates.sql` conserva el punt
 
 La ficha indica cuándo el mapa está cargando y muestra un aviso con botón de reintento si falla el estilo/los recursos antes de completar la carga o si MapLibre no emite `load` en 15 segundos. El mapa puede reintentarse sin cerrar la ficha; la ubicación continúa señalada como aproximada. `DetailPage.test.tsx` cubre error recuperable, reintento y vencimiento.
 
+## Validación de coordenadas frente a zona pública — 2026-11-16
+
+La ubicación aproximada del mapa contrasta el punto público con el municipio y provincia visibles. Si una coordenada queda claramente lejos de un centro conocido, la ficha utiliza el centro aproximado de esa localidad. La regla compartida con los mapas de resultados no modifica datos de Supabase ni consulta o expone la coordenada privada del anunciante.
+
 ## Comprobación de ficha pública en Worker DEV — 2026-11-13
 
 Con Chromium automatizado en modo de solo lectura, abrí tres fichas públicas servidas por `cubitat1-phase2-dev` (Cienfuegos, Vedado y Playa) y pulsé `Mapa`. En las tres el canvas MapLibre quedó visible (894 × 648 px), desapareció el estado de carga y no apareció el aviso de error. En total, las teselas vectoriales, fuentes y sprites consultados respondieron con HTTP 200. No se modificaron anuncios. Esto confirma el render en el Worker DEV desde este navegador automatizado, pero no sustituye la comprobación manual en Chrome/móvil del usuario.

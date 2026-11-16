@@ -24,6 +24,7 @@ const {
   mockTurnstileMount: vi.fn(),
   mockRpc: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
   mockMapInstances: [] as Array<{
+    options?: unknown
     handlers: Record<string, (event?: { error?: Error }) => void>
     emit: (event: string, payload?: { error?: Error }) => void
   }>,
@@ -40,8 +41,9 @@ vi.mock('../../shared/lib/marketplaceContact', () => ({
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
+    options?: unknown
     handlers: Record<string, (event?: { error?: Error }) => void> = {}
-    constructor() { mockMapInstances.push(this) }
+    constructor(options?: unknown) { this.options = options; mockMapInstances.push(this) }
     once(event: string, handler: (event?: { error?: Error }) => void) { this.handlers[event] = handler; return this }
     on(event: string, handler: (event?: { error?: Error }) => void) { this.handlers[event] = handler; return this }
     emit(event: string, payload?: { error?: Error }) { this.handlers[event]?.(payload) }
@@ -401,6 +403,27 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getAllByText('Ubicación aproximada').length).toBeGreaterThan(0)
     expect(screen.getAllByText(/el marcador no representa la dirección exacta/i).length).toBeGreaterThan(0)
+  })
+
+  it('corrige el centro del mapa si las coordenadas públicas contradicen la localidad declarada', async () => {
+    const misplacedProperty = {
+      ...mockProperty,
+      location: 'Santiago de Cuba, Santiago de Cuba',
+      coordinates: { latitude: 23.12, longitude: -82.36 },
+    }
+
+    render(
+      <DetailPage
+        property={misplacedProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mapa' })[0])
+    await waitFor(() => expect(mockMapInstances.length).toBeGreaterThan(0))
+    expect(mockMapInstances.at(-1)?.options).toEqual(expect.objectContaining({ center: [-75.82, 20.02] }))
   })
 
   it('muestra un error recuperable si el mapa falla antes de cargar y permite reintentarlo', async () => {

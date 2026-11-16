@@ -10,7 +10,7 @@ export function createPropertySourceData(
   return {
     type: 'FeatureCollection',
     features: properties.flatMap((property) => {
-      const coordinates = approximatePropertyCoordinates(property.coordinates)
+      const coordinates = approximatePropertyCoordinates(property.coordinates, property.location)
       if (!coordinates) return []
 
       return [
