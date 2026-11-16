@@ -224,3 +224,20 @@ respaldo. La clasificación objeto por objeto de las 63 fuentes, el análisis de
 duplicados/overlays históricos, las pruebas de un conjunto forward aislado y la
 recuperación de respaldo verificable siguen pendientes. **Decisión:** no
 desplegar aún el bundle ni ejecutar migraciones en producción.
+
+### Revalidación de CI del release — 2026-11-16
+
+La primera CI posterior al merge de `main` encontró un error no manejado de
+Vitest durante teardown: la ficha lanzaba su registro de vistas contra un
+Worker local inexistente y el aviso asíncrono sobrevivía al cierre del entorno.
+Se aisló `fetch` en `DetailPage.test.tsx` para que la suite no dependa de ese
+servicio. En el commit `d39f28873e51e4cda57015c3fc34fbee55905695`, workflow
+[`43834765207`](https://github.com/BladeX1X/Cubitat/actions/runs/43834765207)
+terminó `quality` PASS (5m43s) y `database-security` PASS (2m42s). Localmente
+también pasaron lint, 238 archivos/1,088 pruebas/1 omitida y build base.
+
+El check externo de Cloudflare Workers Builds sigue en FAILURE, build
+`734bb872-1f06-4e30-8794-aec26d81025b`; GitHub solo devuelve el enlace, no el
+motivo del error. La consulta de versiones del Worker DEV confirma que no hubo
+despliegue: sigue activa `36efd098-375e-46d0-b0e7-a38d6f8ff83e` del 2026-11-15.
+El PR #228 permanece abierto y no desplegado.
