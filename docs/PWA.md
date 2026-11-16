@@ -219,6 +219,21 @@ El aviso offline no promete que todas las acciones funcionen. El texto indica qu
 
 ## Estado validado
 
+### Privacidad de fotos de propiedades — producción — 2026-11-16
+
+- PR #236 integrado en `main` (`5b78c1d`) y Worker `cubitat1` desplegado al
+  100% como versión `7f0ec071`.
+- El `/sw.js` de producción responde HTTP 200, se entrega sin caché y contiene
+  la exclusión de `property_images` junto con la rutina de purga de URLs
+  heredadas.
+- Portada, resultados de venta/renta y catálogos de servicios/materiales
+  respondieron HTTP 200 después del despliegue.
+- El despliegue implementa la limpieza al activarse el nuevo service worker;
+  no se midió cuántos dispositivos ya recibieron/activaron esa versión.
+- No requiere migración de base de datos. La regresión local específica pasó
+  (7 pruebas); CI previo al merge pasó; lint, 1,098 pruebas (1 omitida) y build
+  local correctos.
+
 Ultima validacion local (2026-09-11):
 
 - `npm run build`: correcto.

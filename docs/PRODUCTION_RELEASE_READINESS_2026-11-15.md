@@ -436,3 +436,31 @@ Los faltantes funcionales incluyen el helper de moderación AI, cuotas/guard de 
 Conteos agregados adicionales para evaluar `20261025230000_private_property_image_access.sql`: 40/40 objetos del bucket tienen una carpeta inicial con UUID y propietario en Auth; 36/40 coinciden además con el `user_id` de alguna propiedad. Hay 28 referencias de portada/galería en propiedades de todos los estados: cero sin objeto y cero con ruta de otro propietario. Catorce objetos aparecen referenciados y 26 no aparecen hoy en esas referencias, pero los 40 conservan propietario Auth válido y lectura del dueño por ruta. La migración mantiene lectura pública solo para objetos exactos enlazados a propiedades publicadas. Estos conteos respaldan la matriz de rutas; no comprueban los grants/policies vigentes ni la función final del Worker.
 
 La escritura de cada migración requiere su propia guarda: auditoría y retención KYC tienen cero filas pendientes de backfill; separación de contacto movería los 315 JSON válidos; `push_endpoint_owners` tiene seis filas y hoy no tiene `registered_at`, por lo que la migración asignaría deliberadamente una fecha histórica común; el bucket nuevo de Servicios se crea por upsert y sus tablas de negocio están vacías. No aplicar el conjunto hasta revisar el significado de esa fecha Push y cerrar postchecks.
+
+## Corrección de estado posterior al release — 2026-11-16
+
+Las secciones de preparación anteriores conservan el estado y las dudas que
+existían cuando se redactaron; sus frases «producción intacta» quedaron
+superadas por los despliegues posteriores del mismo día:
+
+- La conciliación y aplicación de las 64 migraciones de Fases 3/4 quedó
+  completada por el workflow [43916761042](https://github.com/BladeX1X/Cubitat/actions/runs/43916761042),
+  con postcondiciones aprobadas.
+- El release de Fases 3/4 se integró como PR #228 (`db033141`) y el Worker
+  `cubitat1` quedó en producción al 100% en `3e8d0279`.
+- Después se desplegaron en producción PR #235 (centrado de Comprar/Rentar,
+  Worker `98555043`) y PR #236 (privacidad del caché de fotos, Worker
+  `7f0ec071`). Este último impide volver a guardar `property_images` en el
+  caché PWA y purga las URLs antiguas al activarse.
+- Verificación posterior: `/`, resultados de venta, resultados de renta,
+  `/servicios`, `/materiales` y `/sw.js` respondieron HTTP 200. El `sw.js`
+  entregado a producción incluye la exclusión de `property_images` y se envía
+  sin caché HTTP.
+- No se requirió una migración de base para PR #236. No se cambió el estado de
+  ninguna publicación durante esta verificación.
+
+Esto acredita el release de código y migraciones y el smoke público; no declara
+completado el QA autenticado de publicación/edición ni mide la activación del
+nuevo service worker en cada dispositivo. En la revisión de Rentas también se
+observó una publicación de pruebas llamada `TEST PROPERTY FOR ALERTS TRIGGER`;
+su ocultamiento queda pendiente de decisión del propietario.
