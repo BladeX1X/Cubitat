@@ -4,7 +4,35 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
+## Moneda declarada en anuncios inmobiliarios — candidata local — 2026-11-16
+
+- `migrations/20261116140000_property_price_currency.sql` agrega `price_currency`
+  (USD por defecto para filas históricas, con USD/CUP/MLC), los grants de lectura,
+  inserción y edición y la validación del valor.
+- La migración limita comparables de valoración y alertas con rangos antiguos a
+  USD, porque esos contratos comparan importes sin moneda. Las alertas sin rango
+  pueden seguir coincidiendo con anuncios de cualquier moneda. Los rangos del
+  catálogo se expresan en USD.
+- Estado: candidata local validada en la base aislada de Supabase local el
+  2026-11-16. El cambio añadió el campo, ajustó comparables y alertas, comprobó
+  permisos, aceptó CUP y rechazó EUR en una transacción de prueba. No está
+  aplicada en DEV alojado ni producción. Producción requiere el workflow exacto
+  `.github/workflows/supabase-production-property-currency.yml`, backup reciente
+  y ledger idéntico a las 165 fuentes registradas; nunca ejecutar `db push`
+  global desde este checkout.
+
 Última revisión documental: 2026-11-16.
+
+## Moneda declarada en propiedades — candidata local — 2026-11-16
+
+- `migrations/20261116140000_property_price_currency.sql` agrega
+  `properties.price_currency` con `USD` por defecto para mantener la
+  interpretación de todos los anuncios existentes; permite `USD`, `CUP` y
+  `MLC` y otorga solo lectura pública y escritura autenticada de esa columna.
+- El importe permanece en `price_usd` por compatibilidad histórica, pero se
+  interpreta exclusivamente junto a `price_currency`; no se convierte.
+- Estado: archivo local; validado en Supabase local aislado, todavía no aplicado
+  a DEV alojado ni producción.
 
 ## Aplicación de migraciones de producción Fases 3/4 — 2026-11-16
 
