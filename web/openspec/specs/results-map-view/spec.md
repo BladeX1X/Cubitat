@@ -95,6 +95,13 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - THEN la lista MUST mostrar todas las propiedades dentro del area visible del mapa
 - AND si `onViewportChange` aun no se ha disparado (carga inicial), MUST mostrar todas las propiedades
 
+#### Scenario: Cluster seleccionado permanece estable al cambiar el zoom
+- GIVEN la lista muestra las propiedades de un cluster seleccionado
+- WHEN el usuario acerca, aleja o redimensiona el mapa
+- THEN la lista MUST conservar exactamente las propiedades seleccionadas
+- AND los límites del viewport MUST NOT sustituir ese grupo por otros resultados visibles
+- AND mover el mapa sin una selección activa MUST seguir filtrando por el área visible
+
 #### Scenario: Viewport change filtra lista
 - GIVEN el usuario desplaza o acerca el mapa desktop
 - WHEN el viewport cambia

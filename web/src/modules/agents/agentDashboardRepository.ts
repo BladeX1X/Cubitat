@@ -6,6 +6,7 @@ export interface AgentDashboardProperty {
   title: string
   location: string
   price_usd: number
+  price_currency?: 'USD' | 'CUP' | 'MLC' | null
   cover_image: string | null
   status: PropertyStatus
   created_at: string
@@ -36,7 +37,7 @@ export async function loadAgentDashboard(ownerId: string): Promise<AgentDashboar
 
   const propertiesResult = await supabase
     .from('properties')
-    .select('id, title, location, price_usd, cover_image, status, created_at, user_id, view_count')
+    .select('id, title, location, price_usd, price_currency, cover_image, status, created_at, user_id, view_count')
     .eq('user_id', ownerId)
     .order('created_at', { ascending: false })
   if (propertiesResult.error) throw new Error('agent_dashboard_load_failed')

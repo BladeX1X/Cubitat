@@ -6,6 +6,7 @@ import { fetchAgentProfile, fetchAgentProperties } from '../../modules/agents/ag
 import type { AgentProfile, AgentPropertySummary } from '../../modules/agents/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { getPropertyCoverImage } from '../../modules/properties/utils/images'
+import { formatPrice } from '../../shared/lib/formatPrice'
 
 type AgentProfilePageProps = {
   agentId: string
@@ -189,7 +190,7 @@ export function AgentProfilePage({ agentId, onBack, onSelectProperty }: AgentPro
                       </div>
                     )}
                     <span className="absolute top-3 right-3 bg-neutral-900/80 text-white font-bold text-xs px-2.5 py-1 rounded-md backdrop-blur-xs">
-                      ${prop.priceUsd?.toLocaleString('en-US') || 0} USD
+                      {formatPrice(prop.priceUsd, prop.priceCurrency)}
                     </span>
                   </div>
                   <div className="p-4">

@@ -11,6 +11,7 @@ type AgentPropertyRow = {
   title: string
   location: string
   price_usd: number | string | null
+  price_currency?: 'USD' | 'CUP' | 'MLC' | null
   cover_image: string | null
   status: 'published'
 }
@@ -85,7 +86,7 @@ export async function fetchAgentProperties(agentId: string): Promise<AgentProper
   try {
     const { data, error } = await supabase
       .from('properties')
-      .select('id, title, location, price_usd, cover_image, status')
+      .select('id, title, location, price_usd, price_currency, cover_image, status')
       .eq('user_id', agentId)
       .eq('status', 'published')
       .order('created_at', { ascending: false })
@@ -102,6 +103,7 @@ export async function fetchAgentProperties(agentId: string): Promise<AgentProper
       title: row.title,
       location: row.location,
       priceUsd: row.price_usd == null ? undefined : Number(row.price_usd),
+      priceCurrency: row.price_currency ?? 'USD',
       coverImage: row.cover_image ?? '',
       status: 'published',
     }))

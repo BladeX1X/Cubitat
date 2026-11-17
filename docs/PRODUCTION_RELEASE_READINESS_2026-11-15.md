@@ -1,6 +1,6 @@
 # Preparación de release de producción — 2026-11-15
 
-## Actualización de moneda — 2026-11-16
+## Actualización de moneda — 2026-11-17
 
 La migración `20261116140000_property_price_currency.sql` pasó una validación
 aislada en la base local de Supabase: campo y funciones creados, permisos
@@ -8,10 +8,13 @@ revisados, inserción CUP aceptada e inserción EUR rechazada; ambas filas de
 prueba se revirtieron. Se preparó
 `.github/workflows/supabase-production-property-currency.yml`, limitado a esa
 migración, con backup reciente obligatorio, comparación exacta del ledger de
-165 fuentes, preflight de esquema, dry-run y postchecks. El workflow aún debe
-integrarse en `main` y ejecutarse; producción no recibió DDL de moneda. No se
-usa el permiso de lectura de API Keys para esta ruta, que emplea el secreto
-protegido `SUPABASE_DB_URL`.
+165 fuentes, preflight de esquema, dry-run y postchecks. El run
+[44024846650](https://github.com/BladeX1X/Cubitat/actions/runs/44024846650)
+aplicó y verificó la migración en producción: ledger, campo/default USD,
+constraint USD/CUP/MLC, índice, funciones, trigger y grants PASS. Se utilizó
+`SUPABASE_DB_URL` protegido; no se enlazó la CLI ni se modificó el historial
+manualmente. El código de UI que consulta `price_currency` todavía espera su
+integración y despliegue.
 
 ## Estado
 

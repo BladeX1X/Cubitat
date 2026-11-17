@@ -28,6 +28,7 @@ export type ModerationProperty = {
   location: string
   description: string
   price_usd: number | null
+  price_currency?: 'USD' | 'CUP' | 'MLC' | null
   cover_image: string | null
   images: string[] | null
   created_at: string
@@ -52,6 +53,7 @@ export type ModerationProperty = {
     title: string
     location?: string
     price_usd?: number | null
+    price_currency?: 'USD' | 'CUP' | 'MLC' | null
     cover_image?: string | null
     images?: string[] | null
     created_at?: string

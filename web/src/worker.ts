@@ -924,6 +924,9 @@ export function createWorker(options: WorkerOptions = {}) {
         price_usd: typeof moderationRequest.price_usd === 'string' || typeof moderationRequest.price_usd === 'number'
           ? moderationRequest.price_usd
           : undefined,
+        price_currency: moderationRequest.price_currency === 'CUP' || moderationRequest.price_currency === 'MLC'
+          ? moderationRequest.price_currency
+          : 'USD',
         property_type: typeof moderationRequest.property_type === 'string' ? moderationRequest.property_type : undefined,
         images: Array.isArray(moderationRequest.images) ? moderationRequest.images : undefined,
       }, env));
@@ -1443,7 +1446,7 @@ export function createWorker(options: WorkerOptions = {}) {
 
           // Consultar la propiedad de manera asíncrona usando la API REST pública de Supabase
           const supabaseResponse = await fetch(
-            `${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=title,description,cover_image,price_usd`,
+            `${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=title,description,cover_image,price_usd,price_currency`,
             {
               headers: {
                 'apikey': supabaseKey,
@@ -1461,7 +1464,7 @@ export function createWorker(options: WorkerOptions = {}) {
               const property = properties[0];
               const priceValue = property.price_usd;
               const price = (typeof priceValue === 'number' || typeof priceValue === 'string') && priceValue
-                ? `USD ${priceValue.toLocaleString('en-US')}`
+                ? `${property.price_currency === 'CUP' || property.price_currency === 'MLC' ? property.price_currency : 'USD'} ${priceValue.toLocaleString('en-US')}`
                 : 'Precio no informado';
 
               const titleValue = typeof property.title === 'string' ? property.title : 'Propiedad en Cubitat';

@@ -13,6 +13,7 @@ export interface AiModerationRequest {
   location?: string
   description?: string
   price_usd?: string | number
+  price_currency?: 'USD' | 'CUP' | 'MLC'
   property_type?: string
   images?: unknown[]
 }
@@ -142,7 +143,7 @@ Responde Únicamente con un objeto JSON válido, sin texto adicional, con exacta
 
     const userContent: GroqContentPart[] = [{
       type: 'text',
-      text: `${systemPrompt}\n\nAnuncio a moderar:\nTítulo: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} USD\nTipo: ${body.property_type}`,
+      text: `${systemPrompt}\n\nAnuncio a moderar:\nTítulo: ${body.title}\nUbicación: ${body.location}\nDescripción: ${body.description}\nPrecio: ${body.price_usd} ${body.price_currency ?? 'USD'}\nTipo: ${body.property_type}`,
     }]
 
     for (const image of Array.isArray(body.images) ? body.images.slice(0, 3) : []) {

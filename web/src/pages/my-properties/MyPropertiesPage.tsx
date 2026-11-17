@@ -37,6 +37,7 @@ type Property = {
   title: string
   location: string
   price_usd: number | null
+  price_currency?: 'USD' | 'CUP' | 'MLC' | null
   cover_image: string | null
   cover_preview_url?: string | null
   status: PropertyStatus
@@ -86,8 +87,11 @@ export type MyPropertiesPageProps = {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function formatPrice(value: number | null | undefined): string {
+function formatPrice(value: number | null | undefined, currency: 'USD' | 'CUP' | 'MLC' = 'USD'): string {
   if (value == null || Number.isNaN(value)) return 'Valor no indicado'
+  if (currency !== 'USD') {
+    return `${currency} ${value.toLocaleString('es-MX', { maximumFractionDigits: 0 })}`
+  }
 
   return value.toLocaleString('en-US', {
     style: 'currency',
@@ -177,7 +181,7 @@ export function PropertyCard({
         </div>
 
         <p className="text-lg font-extrabold text-[#035f53]">
-          {formatPrice(property.price_usd)}
+          {formatPrice(property.price_usd ?? undefined, property.price_currency ?? 'USD')}
         </p>
 
         <div className="flex items-center justify-between text-neutral-400 text-xs">
@@ -347,7 +351,7 @@ export function MyPropertiesPage({
 
         const { data, error } = await supabase
           .from('properties')
-          .select('id,title,location,price_usd,cover_image,status,moderation_message,created_at,user_id,view_count')
+          .select('id,title,location,price_usd,price_currency,cover_image,status,moderation_message,created_at,user_id,view_count')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
@@ -380,6 +384,9 @@ export function MyPropertiesPage({
                 title: draftTitle,
                 location,
                 price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
+                price_currency: parsed.priceCurrency === 'CUP' || parsed.priceCurrency === 'MLC'
+                  ? parsed.priceCurrency
+                  : 'USD',
                 cover_image: null,
                 status: 'local_draft',
                 moderation_message: null,

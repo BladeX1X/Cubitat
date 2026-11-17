@@ -1,5 +1,10 @@
 # PublishPage
 
+El paso de precio conserva cantidad y moneda de forma independiente. Al crear o
+editar se puede declarar USD, CUP o MLC; las propiedades antiguas se interpretan
+como USD. La interfaz y las fichas muestran la moneda declarada y nunca
+convierten el importe automáticamente.
+
 Formulario guiado de publicación y edición con ocho pasos, compresión WebP y guardado pendiente de revisión.
 
 ## Preferencias estructuradas de permuta — 2026-09-13

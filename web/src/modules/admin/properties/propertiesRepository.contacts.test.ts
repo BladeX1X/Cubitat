@@ -56,7 +56,7 @@ describe('moderation property contact loading', () => {
     const result = await fetchModerationProperties('pending_review', 0)
 
     expect(properties.select).toHaveBeenCalledWith(
-      'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message',
+      'id,title,location,description,price_usd,price_currency,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message',
       { count: 'exact' },
     )
     expect(rpcMock).toHaveBeenCalledWith('get_admin_property_contact_details', {

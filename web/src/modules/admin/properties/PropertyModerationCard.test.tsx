@@ -77,6 +77,19 @@ describe('PropertyModerationCard visibility actions', () => {
     expect(screen.getByText(/espera recibir hasta USD 5,000/i)).toBeInTheDocument()
   })
 
+  it('shows the declared currency instead of treating CUP as USD', () => {
+    const cupProperty = property('pending_review')
+    cupProperty.price_usd = 125000
+    cupProperty.price_currency = 'CUP'
+    render(<PropertyModerationCard
+      property={cupProperty} expanded={false} actionLoading={false}
+      onToggle={vi.fn()} onApprove={vi.fn()} onReject={vi.fn()} onHide={vi.fn()}
+      onRestore={vi.fn()} onReevaluate={vi.fn()} onDelete={vi.fn()}
+    />)
+
+    expect(screen.getByText('CUP 125,000')).toBeInTheDocument()
+  })
+
   it('shows the related publication when the DEV duplicate flag is present', () => {
     const duplicateProperty = property('pending_review')
     duplicateProperty.duplicate_of = 'related-property'

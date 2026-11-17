@@ -9,6 +9,12 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 
 ### Catálogo
 
+- **WHEN** una persona filtra anuncios en escritorio o móvil
+- **THEN** la barra conserva el estilo compacto de los filtros de Comprar
+- **AND** los cambios se aplican en el catálogo sin recargar ni navegar
+- **AND** móvil permite abrir y cerrar filtros en una hoja, limpiar filtros y
+  conservar visible el total de resultados
+
 - **WHEN** un visitante explora o filtra por texto, categoría, provincia o
   disponibilidad
 - **THEN** ve solamente anuncios `published` con disponibilidad activa

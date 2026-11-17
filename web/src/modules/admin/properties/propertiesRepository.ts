@@ -3,14 +3,14 @@ import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/featu
 import { PAGE_SIZE } from '../core/constants'
 import type { ModerationFilter, ModerationProperty, PropertyModerationFilters, StatusCounts, StatusFilter } from '../core/types'
 
-const PROPERTY_SELECT = 'id,title,location,description,price_usd,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message'
+const PROPERTY_SELECT = 'id,title,location,description,price_usd,price_currency,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message'
 
 type ProfileSummary = { id: string; full_name: string | null; email: string | null }
 type DuplicateFlag = { property_id: string; duplicate_of: string }
 type ImageDuplicateFlag = { property_id: string; duplicate_of: string; hamming_distance: number }
 type DuplicateProperty = { id: string; title: string }
 type ImageDuplicateProperty = Pick<ModerationProperty,
-  'id' | 'title' | 'location' | 'price_usd' | 'cover_image' | 'images' | 'created_at' | 'operation' | 'property_type' | 'status' | 'description' | 'bedrooms' | 'bathrooms' | 'area_m2'
+  'id' | 'title' | 'location' | 'price_usd' | 'price_currency' | 'cover_image' | 'images' | 'created_at' | 'operation' | 'property_type' | 'status' | 'description' | 'bedrooms' | 'bathrooms' | 'area_m2'
 >
 type ImageHashStatus = {
   property_id: string
@@ -190,7 +190,7 @@ export async function fetchModerationProperties(
       if (relatedIds.length > 0) {
         const { data: relatedProperties, error: relatedError } = await supabase
           .from('properties')
-          .select('id, title, location, price_usd, cover_image, images, created_at, operation, property_type, status, description, bedrooms, bathrooms, area_m2')
+          .select('id, title, location, price_usd, price_currency, cover_image, images, created_at, operation, property_type, status, description, bedrooms, bathrooms, area_m2')
           .in('id', relatedIds)
         if (relatedError) throw relatedError
 
@@ -298,6 +298,7 @@ export async function requestAiReevaluation(property: ModerationProperty) {
       location: property.location || '',
       description: property.description || '',
       price_usd: property.price_usd,
+      price_currency: property.price_currency,
       property_type: property.property_type,
       images: [property.cover_image, ...(property.images ?? [])].filter(Boolean),
     }),

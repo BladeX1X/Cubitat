@@ -23,6 +23,11 @@ Debe incluir:
 - Grid de `PropertyCard`.
 - Estado de seleccion de propiedad.
 - Entrada opcional al detalle.
+
+En mapa de escritorio, la selección de un cluster mantiene esos IDs en la lista
+al acercar o alejar el mapa. El filtrado por área visible se reanuda cuando no
+hay un grupo seleccionado; cambiar los filtros o volver a lista limpia la
+selección anterior.
 - Reutilizacion de `PopularLocations` como bloque de exploracion secundaria, si se mantiene.
 
 No debe incluir:

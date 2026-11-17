@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-## Moneda declarada en anuncios inmobiliarios — candidata local — 2026-11-16
+## Moneda declarada en anuncios inmobiliarios — aplicada en producción — 2026-11-17
 
 - `migrations/20261116140000_property_price_currency.sql` agrega `price_currency`
   (USD por defecto para filas históricas, con USD/CUP/MLC), los grants de lectura,
@@ -13,13 +13,14 @@ orden y propósito, pero no sustituye la lectura del SQL.
   USD, porque esos contratos comparan importes sin moneda. Las alertas sin rango
   pueden seguir coincidiendo con anuncios de cualquier moneda. Los rangos del
   catálogo se expresan en USD.
-- Estado: candidata local validada en la base aislada de Supabase local el
-  2026-11-16. El cambio añadió el campo, ajustó comparables y alertas, comprobó
-  permisos, aceptó CUP y rechazó EUR en una transacción de prueba. No está
-  aplicada en DEV alojado ni producción. Producción requiere el workflow exacto
-  `.github/workflows/supabase-production-property-currency.yml`, backup reciente
-  y ledger idéntico a las 165 fuentes registradas; nunca ejecutar `db push`
-  global desde este checkout.
+- Validación local aislada (2026-11-16): campo y funciones creados, permisos
+  comprobados, CUP aceptado y EUR rechazado; las filas de prueba se revirtieron.
+- Producción (2026-11-17): aplicada por el workflow dedicado en run
+  [44024846650](https://github.com/BladeX1X/Cubitat/actions/runs/44024846650).
+  Backup reciente, target productivo, ledger exacto de 165 versiones antes del
+  cambio, preflight y dry-run pasaron; el postcheck confirmó ledger de la nueva
+  versión, campo/default USD, constraint USD/CUP/MLC, índice, funciones y
+  privilegios. No usar `db push` global ni `migration repair`.
 
 Última revisión documental: 2026-11-16.
 
@@ -31,8 +32,9 @@ orden y propósito, pero no sustituye la lectura del SQL.
   `MLC` y otorga solo lectura pública y escritura autenticada de esa columna.
 - El importe permanece en `price_usd` por compatibilidad histórica, pero se
   interpreta exclusivamente junto a `price_currency`; no se convierte.
-- Estado: archivo local; validado en Supabase local aislado, todavía no aplicado
-  a DEV alojado ni producción.
+- Estado: validado en Supabase local aislado y aplicado/verificado en producción
+  por el run [44024846650](https://github.com/BladeX1X/Cubitat/actions/runs/44024846650).
+  No se aplicó en DEV alojado.
 
 ## Aplicación de migraciones de producción Fases 3/4 — 2026-11-16
 

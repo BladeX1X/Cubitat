@@ -130,6 +130,9 @@ El sistema MUST capturar precios, tipo de moneda (USD, CUP, MLC) y contacto del 
 - GIVEN un usuario en el paso comercial
 - WHEN selecciona la moneda (USD, CUP o MLC) e ingresa el precio
 - THEN el sistema MUST validar que el precio sea positivo
+- AND MUST guardar la moneda seleccionada junto al importe sin conversión
+- AND al editar MUST recuperar la moneda guardada, interpretando registros históricos como USD
+- AND las tarjetas y la ficha pública MUST presentar el código de moneda del importe
 - AND el sistema MUST requerir al menos un canal de contacto válido (teléfono o WhatsApp)
 
 #### Scenario: Usar un teléfono de cualquier país

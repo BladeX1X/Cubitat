@@ -1,5 +1,8 @@
-export function formatPrice(value: number | null): string {
+export function formatPrice(value: number | null, currency: 'USD' | 'CUP' | 'MLC' = 'USD'): string {
   if (!value) return 'Precio no informado'
+  if (currency !== 'USD') {
+    return `${currency} ${value.toLocaleString('es-MX', { maximumFractionDigits: 0 })}`
+  }
   return value.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',

@@ -1,6 +1,6 @@
 import { supabase } from '../../shared/lib/supabaseClient'
 
-const EDITABLE_PROPERTY_SELECT = 'id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,features,user_id,moderation_message,view_count,created_at,updated_at,property_private_addresses(location),property_private_coordinates(coordinates),property_contact_details(name,phone,email)'
+const EDITABLE_PROPERTY_SELECT = 'id,title,location,description,zone_id,operation,property_type,price_usd,price_currency,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,features,user_id,moderation_message,view_count,created_at,updated_at,property_private_addresses(location),property_private_coordinates(coordinates),property_contact_details(name,phone,email)'
 
 function relationRecord(value: unknown): Record<string, unknown> | null {
   const record = Array.isArray(value) ? value[0] : value

@@ -272,6 +272,7 @@ export function FilterBar({
             </Button>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} className="w-64 p-3 flex flex-col gap-2 bg-white border border-neutral-200 shadow-lg rounded-md">
+            <p className="px-2 text-xs text-neutral-500">Los rangos de precio se expresan en USD.</p>
             <div className="flex flex-col gap-1">
               {(isRent ? rentPriceOptions : purchasePriceOptions).map((item, idx) => (
                 <div
