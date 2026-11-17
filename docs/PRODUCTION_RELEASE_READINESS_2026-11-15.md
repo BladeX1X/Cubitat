@@ -13,12 +13,18 @@ migración, con backup reciente obligatorio, comparación exacta del ledger de
 aplicó y verificó la migración en producción: ledger, campo/default USD,
 constraint USD/CUP/MLC, índice, funciones, trigger y grants PASS. Se utilizó
 `SUPABASE_DB_URL` protegido; no se enlazó la CLI ni se modificó el historial
-manualmente. El código de UI que consulta `price_currency` todavía espera su
-integración y despliegue.
+manualmente. Actualización posterior: PR #241 integró la UI de moneda y la
+corrección de selección del mapa en `main` (commit
+`bdbc0b2bf2f3b56a2c4c67617f99d43124579b58`). Cloudflare informó el Worker
+`cubitat1` en producción con build `b7bb7c74-e66e-4b15-b443-7f978225e3b3`;
+el sitio público responde HTTP 200. Lint, pruebas unitarias, build, perfiles
+productivos Fases 2–4 y seguridad de base pasaron en el run
+[44025802173](https://github.com/BladeX1X/Cubitat/actions/runs/44025802173).
+La validación visual interactiva del clúster en el sitio queda pendiente.
 
 ## Estado
 
-**No listo para desplegar.** Este documento prepara la promoción de los cambios
+**Estado del corte original (2026-11-15): no listo para desplegar.** Este documento prepara la promoción de los cambios
 posteriores al último release de Fases 1–4. No autoriza ni ejecuta despliegues,
 DDL, cambios de datos, secretos ni configuración hosted.
 
