@@ -88,7 +88,7 @@ jobs:
           candidate='20261116140000_property_price_currency.sql'
           [[ "${files[*]}" == *"$candidate"* ]] || { echo 'Reviewed currency migration is missing.'; exit 1; }
           actual_hash=$(sha256sum "web/supabase/migrations/$candidate" | cut -d' ' -f1)
-          [[ "$actual_hash" == '6d7faea28b0cc1bd066f042e47279503e3be9da2bb69942a1ed384dde4aa7ec9' ]] || {
+          [[ "$actual_hash" == 'b218debe7c8cddca72dfc662eb1ea1e4c4c091da97aa822672b853f419a9130e' ]] || {
             echo 'Currency migration differs from the locally validated source; stopping.'; exit 1;
           }
           cp web/supabase/migrations/*.sql "$root/supabase/migrations/"
