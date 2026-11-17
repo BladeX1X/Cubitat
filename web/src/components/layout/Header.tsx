@@ -74,13 +74,19 @@ export function Header({
         <a
           className="brand"
           href="/"
+          aria-label="Inicio de tuGao"
           onClick={(event) => {
             event.preventDefault()
             handleNavigation(navigateHome)
           }}
         >
-          <span className="brand-mark">c</span>
-          <span>Cubitat</span>
+          <img
+            className="brand-logo"
+            src="/brand/tugao/logo-horizontal.png"
+            alt="tuGao · atrapa tu sueño"
+            width={1160}
+            height={330}
+          />
         </a>
         <nav className="primary-nav" aria-label="Navegacion principal">
           <a

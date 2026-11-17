@@ -1082,10 +1082,15 @@ export function CubitatApp() {
   return (
     <main className={appShellClass}>
       {isRecoveryPage ? (
-        <header className="flex h-[68px] items-center justify-center border-b border-[#dce6e2] bg-white" aria-label="Cubitat">
-          <div className="flex items-center gap-2.5 text-xl font-extrabold text-[#10231f]">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#007d6d] text-white">c</span>
-            <span>Cubitat</span>
+        <header className="recovery-brand-header" aria-label="tuGao">
+          <div className="recovery-brand">
+            <img
+              className="recovery-brand-logo"
+              src="/brand/tugao/logo-horizontal.png"
+              alt="tuGao · atrapa tu sueño"
+              width={1160}
+              height={330}
+            />
           </div>
         </header>
       ) : (

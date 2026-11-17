@@ -27,7 +27,7 @@ type LoginModalProps = {
 El modal se compone de dos zonas principales:
 
 - **Panel lateral de marca (Desktop):**
-  - Logotipo e identidad de Cubitat.
+  - Logotipo horizontal tuGao, decorativo, con ancho adaptable.
   - Mensaje de valor e indicadores de confianza (verificación de usuario y roles de vendedor/agente).
   - Fondo con overlay verde sobre `src/assets/hero.png`.
 

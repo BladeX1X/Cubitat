@@ -5,6 +5,10 @@ Define el comportamiento de rutas, deep links y navegacion protegida.
 
 ## Requirements
 
+### Requirement: Marca visible del encabezado
+El sistema MUST mostrar el logotipo horizontal de tuGao como identidad visual del encabezado público y en tamaños adaptables a escritorio y móvil.
+AND MUST conservar el nombre Cubitat en títulos del producto, rutas y navegación.
+
 ### Requirement: Rutas principales
 El sistema MUST resolver rutas principales desde carga directa y navegacion interna.
 

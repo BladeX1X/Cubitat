@@ -108,24 +108,15 @@ textarea:focus-visible {
   display: flex;
   min-height: 44px;
   align-items: center;
-  gap: 9px;
-  color: var(--ink);
-  font-size: 21px;
-  font-weight: 850;
+  min-width: 0;
   text-decoration: none;
 }
 
-.brand-mark {
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: var(--green);
-  font-size: 24px;
-  font-weight: 950;
-  line-height: 1;
+.brand-logo {
+  display: block;
+  width: min(178px, 24vw);
+  height: auto;
+  object-fit: contain;
 }
 
 .primary-nav {
@@ -1940,12 +1931,31 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 22px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
 }
 
-.login-modal-brand .brand-mark {
-  color: var(--green-dark);
+.login-modal-logo {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+}
+
+.recovery-brand-header {
+  display: flex;
+  height: 68px;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #dce6e2;
   background: #fff;
+}
+
+.recovery-brand-logo {
+  display: block;
+  width: min(178px, 52vw);
+  height: auto;
+  object-fit: contain;
 }
 
 .login-modal-copy {
@@ -3857,22 +3867,18 @@ h2 {
 
   .brand {
     min-height: 44px;
-    font-size: 18px;
-    gap: 8px;
   }
 
-  .brand-mark {
-    width: 28px;
-    height: 28px;
-    font-size: 21px;
+  .brand-logo {
+    width: min(150px, 42vw);
   }
 
   .is-detail-page .brand {
     flex: 0 0 auto;
   }
 
-  .is-detail-page .brand span:last-child {
-    display: none;
+  .is-detail-page .brand-logo {
+    width: min(142px, 36vw);
   }
 
   .mobile-header-search {

@@ -554,14 +554,8 @@
     padding: 8px 16px;
   }
 
-  .app-shell.is-results-page .brand span:last-child {
-    display: none;
-  }
-
-  .app-shell.is-results-page .brand-mark {
-    width: 26px;
-    height: 26px;
-    font-size: 20px;
+  .app-shell.is-results-page .brand-logo {
+    width: min(140px, 40vw);
   }
 
   .app-shell.is-results-page .mobile-header-actions {

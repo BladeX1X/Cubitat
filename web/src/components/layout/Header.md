@@ -1,7 +1,7 @@
 # Header
 
 ## Propósito
-Mantener la marca, las acciones de la cuenta y los accesos principales de Cubitat visibles en escritorio, ventanas medianas y móvil.
+Mantener el logotipo de tuGao, las acciones de la cuenta y los accesos principales de Cubitat visibles en escritorio, ventanas medianas y móvil. El nombre del producto, las rutas y las etiquetas de navegación siguen usando Cubitat.
 
 ## Comportamiento responsive
 - Más de 1180 px: marca, navegación principal y acciones en una fila.
