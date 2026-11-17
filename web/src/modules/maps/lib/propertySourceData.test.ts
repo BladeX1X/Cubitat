@@ -49,4 +49,19 @@ describe('createPropertySourceData', () => {
     const source = createPropertySourceData([misplacedProperty])
     expect(source.features[0]?.geometry.coordinates).toEqual([-75.82, 20.02])
   })
+
+  it('marks every property in a selected nine-result cluster so child clusters of four and five stay highlighted', () => {
+    const properties = Array.from({ length: 9 }, (_, index) => ({
+      ...baseProperty,
+      id: `property-${index + 1}`,
+    }))
+    const selectedIds = properties.map((property) => property.id)
+    const source = createPropertySourceData(properties, undefined, selectedIds)
+    const selectedCount = (features: typeof source.features) =>
+      features.filter((feature) => feature.properties?.isSelected).length
+
+    expect(selectedCount(source.features)).toBe(9)
+    expect(selectedCount(source.features.slice(0, 4))).toBe(4)
+    expect(selectedCount(source.features.slice(4))).toBe(5)
+  })
 })

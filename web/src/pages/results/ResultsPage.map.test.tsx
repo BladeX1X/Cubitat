@@ -12,14 +12,16 @@ vi.mock('../../modules/results-map-view', () => ({
     <button type="button" onClick={() => onViewModeChange('map')}>Abrir mapa</button>
   ),
   ResultsDesktopMapPanel: ({
-    onSelectCluster, onViewportChange,
+    onSelectCluster, onViewportChange, selectedPropertyIds,
   }: {
     onSelectCluster: (ids: string[]) => void
     onViewportChange: (ids: string[]) => void
+    selectedPropertyIds?: string[]
   }) => (
     <div>
-      <button type="button" onClick={() => onSelectCluster(Array.from({ length: 8 }, (_, index) => `property-${index + 1}`))}>Seleccionar grupo de 8</button>
-      <button type="button" onClick={() => onViewportChange(['property-9'])}>Cambiar zoom</button>
+      <button type="button" onClick={() => onSelectCluster(Array.from({ length: 9 }, (_, index) => `property-${index + 1}`))}>Seleccionar grupo de 9</button>
+      <button type="button" onClick={() => onViewportChange(['property-1', 'property-2', 'property-3', 'property-4'])}>Acercar y dividir en 4 + 5</button>
+      <output data-testid="map-selected-property-ids">{selectedPropertyIds?.join(',') ?? ''}</output>
     </div>
   ),
 }))
@@ -58,21 +60,26 @@ describe('ResultsPage map selection', () => {
     })
   })
 
-  it('shows all eight properties selected from a cluster and keeps them after zoom', async () => {
+  it('keeps the full nine-property selection on the map when zoom splits it into clusters of four and five', async () => {
     const { ResultsPage } = await import('./ResultsPage')
     render(<ResultsPage filters={filters} properties={properties} onSelectProperty={vi.fn()} onClearFilters={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Abrir mapa' }))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Seleccionar grupo de 8' })).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar grupo de 8' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Seleccionar grupo de 9' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar grupo de 9' }))
 
-    expect(screen.getByRole('heading', { name: '8 propiedades en Cuba' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /^Ver Casa [1-8]$/ })).toHaveLength(8)
+    expect(screen.getByRole('heading', { name: '9 propiedades en Cuba' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Ver Casa [1-9]$/ })).toHaveLength(9)
+    expect(screen.getByTestId('map-selected-property-ids')).toHaveTextContent(
+      Array.from({ length: 9 }, (_, index) => `property-${index + 1}`).join(','),
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cambiar zoom' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Acercar y dividir en 4 + 5' }))
 
-    expect(screen.getByRole('heading', { name: '8 propiedades en Cuba' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /^Ver Casa [1-8]$/ })).toHaveLength(8)
-    expect(screen.queryByRole('button', { name: 'Ver Casa 9' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '9 propiedades en Cuba' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Ver Casa [1-9]$/ })).toHaveLength(9)
+    expect(screen.getByTestId('map-selected-property-ids')).toHaveTextContent(
+      Array.from({ length: 9 }, (_, index) => `property-${index + 1}`).join(','),
+    )
   })
 })

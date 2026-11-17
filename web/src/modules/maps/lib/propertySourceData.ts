@@ -6,7 +6,9 @@ import { approximatePropertyCoordinates } from './propertyCoordinates'
 export function createPropertySourceData(
   properties: Property[],
   selectedPropertyId?: string,
+  selectedPropertyIds: readonly string[] = [],
 ): FeatureCollection<Point> {
+  const selectedIds = new Set(selectedPropertyIds)
   return {
     type: 'FeatureCollection',
     features: properties.flatMap((property) => {
@@ -27,7 +29,7 @@ export function createPropertySourceData(
               property.operation === 'permuta'
                 ? 'Permuta'
                 : formatPrice(property.priceUsd, property.priceCurrency),
-            isSelected: property.id === selectedPropertyId,
+            isSelected: property.id === selectedPropertyId || selectedIds.has(property.id),
           },
         },
       ]

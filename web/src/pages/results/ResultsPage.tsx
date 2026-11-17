@@ -531,6 +531,9 @@ export function ResultsPage({
             <ResultsDesktopMapPanel
               properties={sortedProperties}
               selectedPropertyId={desktopMapPropertyId}
+              selectedPropertyIds={mapResultScope.source === 'selection'
+                ? mapResultScope.propertyIds ?? undefined
+                : undefined}
               onSelectProperty={handleDesktopMapPropertySelect}
               onSelectCluster={handleDesktopMapClusterSelect}
               onViewportChange={handleDesktopMapViewportChange}

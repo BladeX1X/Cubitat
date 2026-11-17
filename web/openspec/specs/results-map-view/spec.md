@@ -99,6 +99,8 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - GIVEN la lista muestra las propiedades de un cluster seleccionado
 - WHEN el usuario acerca, aleja o redimensiona el mapa
 - THEN la lista MUST conservar exactamente las propiedades seleccionadas
+- AND cada cluster visible formado por propiedades seleccionadas MUST conservar el resaltado de selección
+- AND el conteo total de los clusters seleccionados MUST representar el mismo grupo (por ejemplo, 4 + 5 = 9)
 - AND los límites del viewport MUST NOT sustituir ese grupo por otros resultados visibles
 - AND mover el mapa sin una selección activa MUST seguir filtrando por el área visible
 

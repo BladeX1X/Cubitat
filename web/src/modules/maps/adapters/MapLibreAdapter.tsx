@@ -23,6 +23,7 @@ const PROPERTY_LABEL_LAYER_ID = 'property-labels'
 export function MapLibreAdapter({
   properties,
   selectedPropertyId,
+  selectedPropertyIds,
   onSelectProperty,
   onSelectCluster,
   onViewportChange,
@@ -51,8 +52,8 @@ export function MapLibreAdapter({
   }, [onViewportChange])
 
   const sourceData = useMemo(
-    () => createPropertySourceData(properties, selectedPropertyId),
-    [properties, selectedPropertyId],
+    () => createPropertySourceData(properties, selectedPropertyId, selectedPropertyIds),
+    [properties, selectedPropertyId, selectedPropertyIds],
   )
 
   useEffect(() => {
@@ -524,6 +525,7 @@ export function MapLibreAdapter({
       clearFallbackMarkers()
 
       fallbackMarkersRef.current = [...groups.values()].flatMap((features) => {
+        const selectedCount = features.filter((feature) => feature.properties?.isSelected).length
         const entries = features.flatMap((feature) => {
           const id = feature.properties?.id as string | undefined
           return id ? [{
@@ -539,13 +541,17 @@ export function MapLibreAdapter({
         element.type = 'button'
         const isCluster = entries.length > 1
         element.className = isCluster
-          ? 'maplibre-property-marker maplibre-cluster-marker'
-          : 'maplibre-property-marker'
+          ? `maplibre-property-marker maplibre-cluster-marker${selectedCount > 0 ? ' is-selected' : ''}`
+          : `maplibre-property-marker${selectedCount > 0 ? ' is-selected' : ''}`
         element.textContent = isCluster ? String(entries.length) : entries[0].label
         element.setAttribute(
           'aria-label',
           isCluster
-            ? `${entries.length} propiedades agrupadas. Ver resultados del grupo`
+            ? selectedCount === entries.length
+              ? `${entries.length} propiedades seleccionadas`
+              : selectedCount > 0
+                ? `${selectedCount} de ${entries.length} propiedades seleccionadas`
+                : `${entries.length} propiedades agrupadas. Ver resultados del grupo`
             : `Ver ${entries[0].title}`,
         )
         element.addEventListener('click', () => {
