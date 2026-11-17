@@ -42,6 +42,7 @@ export type ResultsMapViewProps = {
 export type ResultsDesktopMapPanelProps = {
   properties: Property[]
   selectedPropertyId?: string
+  selectedPropertyIds?: string[]
   onSelectProperty: (propertyId: string) => void
   onSelectCluster?: (propertyIds: string[]) => void
   onViewportChange?: (propertyIds: string[]) => void
@@ -289,6 +290,7 @@ function MapOverlay({
 export function ResultsDesktopMapPanel({
   properties,
   selectedPropertyId,
+  selectedPropertyIds,
   onSelectProperty,
   onSelectCluster,
   onViewportChange,
@@ -299,6 +301,7 @@ export function ResultsDesktopMapPanel({
         <PropertyMap
           properties={properties}
           selectedPropertyId={selectedPropertyId}
+          selectedPropertyIds={selectedPropertyIds}
           onSelectProperty={onSelectProperty}
           onSelectCluster={onSelectCluster}
           onViewportChange={onViewportChange}

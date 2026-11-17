@@ -25,9 +25,11 @@ Debe incluir:
 - Entrada opcional al detalle.
 
 En mapa de escritorio, la selección de un cluster mantiene esos IDs en la lista
-al acercar o alejar el mapa. El filtrado por área visible se reanuda cuando no
-hay un grupo seleccionado; cambiar los filtros o volver a lista limpia la
-selección anterior.
+al acercar o alejar el mapa y también se los pasa al mapa para que los clusters
+hijos sigan resaltados. Si el grupo de 9 se divide en clusters de 4 y 5, ambos
+marcadores aparecen seleccionados y las nueve tarjetas permanecen en la lista.
+El filtrado por área visible se reanuda cuando no hay un grupo seleccionado;
+cambiar los filtros o volver a lista limpia la selección anterior.
 - Reutilizacion de `PopularLocations` como bloque de exploracion secundaria, si se mantiene.
 
 No debe incluir:

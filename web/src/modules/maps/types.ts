@@ -15,6 +15,7 @@ export type MapAdapterProps = {
   properties: Property[]
   selectedZoneId?: string
   selectedPropertyId?: string
+  selectedPropertyIds?: string[]
   onSelectZone?: (zoneId: string) => void
   onSelectProperty: (propertyId: string) => void
   onSelectCluster?: (propertyIds: string[]) => void
