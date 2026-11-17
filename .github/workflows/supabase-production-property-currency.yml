@@ -1,0 +1,153 @@
+name: Apply property currency migration to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type APPLY PROPERTY CURRENCY TO PRODUCTION to confirm
+        required: true
+        type: string
+      backup_run_id:
+        description: Successful production backup workflow run ID from the last 24 hours
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cubitat-production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  apply-property-currency:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the reviewed main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Confirm explicit approval and recent production backup
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRMATION" != 'APPLY PROPERTY CURRENCY TO PRODUCTION' ]]; then
+            echo 'Confirmation phrase mismatch; production was not changed.'
+            exit 1
+          fi
+          if [[ ! "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo 'Backup run ID must contain digits only.'
+            exit 1
+          fi
+          run_json=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID")
+          conclusion=$(jq -r '.conclusion' <<<"$run_json")
+          created=$(jq -r '.created_at' <<<"$run_json")
+          workflow=$(jq -r '.name' <<<"$run_json")
+          if [[ "$conclusion" != success || "$workflow" != 'Supabase Backup' ]]; then
+            echo 'The selected run is not a successful Supabase production backup.'
+            exit 1
+          fi
+          age_seconds=$(( $(date -u +%s) - $(date -u -d "$created" +%s) ))
+          if (( age_seconds < 0 || age_seconds > 86400 )); then
+            echo 'The verified backup must be less than 24 hours old.'
+            exit 1
+          fi
+          artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name == "supabase-database-backup" and .expired == false) | .id' | head -n 1)
+          if [[ -z "$artifact" ]]; then
+            echo 'The selected backup artifact is missing or expired.'
+            exit 1
+          fi
+          echo 'Recent successful production backup confirmed.'
+
+      - name: Stage all recorded migration sources and the one reviewed candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/cubitat-property-currency-production"
+          mkdir -p "$root/supabase/migrations"
+          cp web/supabase/config.toml "$root/supabase/config.toml"
+          mapfile -t files < <(find web/supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)
+          [[ "${#files[@]}" -eq 166 ]] || { echo 'Migration source inventory changed; stopping.'; exit 1; }
+          version_count=$(printf '%s\n' "${files[@]}" | sed -E 's/^([0-9]+)_.*/\1/' | sort -u | wc -l)
+          [[ "$version_count" -eq 166 ]] || { echo 'Migration versions are not unique; stopping.'; exit 1; }
+          candidate='20261116140000_property_price_currency.sql'
+          [[ "${files[*]}" == *"$candidate"* ]] || { echo 'Reviewed currency migration is missing.'; exit 1; }
+          actual_hash=$(sha256sum "web/supabase/migrations/$candidate" | cut -d' ' -f1)
+          [[ "$actual_hash" == '6d7faea28b0cc1bd066f042e47279503e3be9da2bb69942a1ed384dde4aa7ec9' ]] || {
+            echo 'Currency migration differs from the locally validated source; stopping.'; exit 1;
+          }
+          cp web/supabase/migrations/*.sql "$root/supabase/migrations/"
+          echo "MIGRATION_WORKDIR=$root" >> "$GITHUB_ENV"
+          echo "CURRENCY_MIGRATION=$candidate" >> "$GITHUB_ENV"
+          echo 'Staged the exact reviewed source inventory.'
+
+      - name: Verify production target, exact ledger, and pre-migration schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *'postgres.tohjzoncoosvjbjcakdl'* ]]; then
+            echo 'Database URL does not identify the intended production project.'
+            exit 1
+          fi
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c 'select version from supabase_migrations.schema_migrations order by version')
+          local_versions=$(find "$MIGRATION_WORKDIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          expected_recorded=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' '20261116140000'))
+          [[ "$(wc -l <<<"$remote_versions")" -eq 165 ]] || { echo 'Production ledger count differs from the reviewed baseline.'; exit 1; }
+          [[ "$remote_versions" == "$expected_recorded" ]] || { echo 'Production ledger differs from the exact reviewed source set.'; exit 1; }
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 -f web/supabase/preflight/property-currency-production-preflight.sql
+          echo 'Production target, ledger, and schema guards passed.'
+
+      - name: Dry-run exactly the reviewed currency migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          set +e
+          output=$(supabase db push --workdir "$MIGRATION_WORKDIR" --db-url "$SUPABASE_DB_URL" --dry-run --include-all --yes 2>&1)
+          status=$?
+          set -e
+          safe=$(printf '%s\n' "$output" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          printf '%s\n' "$safe"
+          [[ "$status" -eq 0 ]] || { echo 'Dry-run failed; production was not changed.'; exit "$status"; }
+          versions=$(grep -Eo '202[0-9]{11}' <<<"$output" | sort -u || true)
+          [[ "$versions" == '20261116140000' ]] || { echo 'Dry-run did not select exactly the reviewed currency migration.'; exit 1; }
+
+      - name: Apply the reviewed currency migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$MIGRATION_WORKDIR" --db-url "$SUPABASE_DB_URL" --include-all --yes
+
+      - name: Verify currency schema, grants, functions, and ledger
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 -f web/supabase/preflight/property-currency-production-postcheck.sql
