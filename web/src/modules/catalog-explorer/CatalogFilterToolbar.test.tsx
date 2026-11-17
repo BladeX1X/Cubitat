@@ -16,6 +16,15 @@ describe('CatalogFilterToolbar', () => {
     expect(toolbar).not.toHaveStyle({ overflowX: 'auto' })
   })
 
+  it('offers a quick clear action when filters are active', () => {
+    let cleared = false
+    render(<CatalogFilterToolbar label="Filtros de materiales" search={<input aria-label="Buscar material" />} filters={filters} activeFiltersCount={2} resultCount={4} resultLabel="anuncios" onClearFilters={() => { cleared = true }} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /limpiar filtros/i }))
+
+    expect(cleared).toBe(true)
+  })
+
   it('opens the filter sheet, applies filters in place, clears, and closes on Escape', () => {
     let cleared = false
     render(<CatalogFilterToolbar label="Filtros de materiales" search={<input aria-label="Buscar material" />} filters={filters} activeFiltersCount={1} resultCount={2} resultLabel="anuncios" onClearFilters={() => { cleared = true }} />)

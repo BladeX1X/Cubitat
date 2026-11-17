@@ -19,6 +19,7 @@ export type AgentPropertySummary = {
   title: string
   location: string
   priceUsd?: number
+  priceCurrency?: 'USD' | 'CUP' | 'MLC'
   coverImage: string
   status: 'published'
 }

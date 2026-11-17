@@ -67,6 +67,7 @@ export type PublishFormData = {
   propertyType: CanonicalPropertyType
   description: string
   priceUsd: string
+  priceCurrency: 'USD' | 'CUP' | 'MLC'
   exchangePreferences: ExchangePreferencesForm
   
   // Dirección Estructurada
@@ -124,6 +125,7 @@ const initialFormState: PublishFormData = {
   propertyType: 'casa',
   description: '',
   priceUsd: '',
+  priceCurrency: 'USD',
   exchangePreferences: { ...emptyExchangePreferencesForm },
   
   streetAddress: '',
@@ -542,6 +544,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
             propertyType: data.property_type || 'casa',
             description: data.description || '',
             priceUsd: data.price_usd ? String(data.price_usd) : '',
+            priceCurrency: data.price_currency === 'CUP' || data.price_currency === 'MLC' ? data.price_currency : 'USD',
             exchangePreferences: exchangePreferencesToForm(features),
             streetAddress,
             noStreetNumber: streetAddress === 'Calle s/n',
@@ -911,6 +914,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
         operation: formData.operation,
         property_type: formData.propertyType,
         price_usd: formData.priceUsd ? Number(formData.priceUsd) : null,
+        price_currency: formData.priceCurrency,
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
         parking: formData.parking,
@@ -970,6 +974,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
             location: publicPropertyLocation(formData.location),
             description: formData.description || '',
             price_usd: formData.priceUsd,
+            price_currency: formData.priceCurrency,
             property_type: formData.propertyType,
             images: images.map(img => img.dataUrl)
           })
@@ -1291,13 +1296,14 @@ function PublishSidebarSteps({
       substeps: [
         { stepVal: 7, label: 'Valor venta/renta', validate: () => {
           const val = parseFloat(formData.priceUsd)
+          const isForeignCurrency = formData.priceCurrency !== 'USD'
+          const minimum = isForeignCurrency ? 1 : formData.operation === 'alquiler' ? 100 : 1000
           if (formData.operation === 'permuta') {
-            const validOptionalPrice = !formData.priceUsd || (!isNaN(val) && val >= 1000 && val <= 5000000)
+            const validOptionalPrice = !formData.priceUsd || (!isNaN(val) && val >= minimum && val <= 5000000)
             return validOptionalPrice && isExchangePreferencesFormValid(formData.exchangePreferences)
           }
           if (isNaN(val)) return false
-          const min = formData.operation === 'alquiler' ? 100 : 1000
-          return val >= min && val <= 5000000
+          return val >= minimum && val <= 5000000
         }},
       ],
     },
@@ -2173,7 +2179,7 @@ function StepImages({
   )
 }
 
-/* Paso 7: Precio (Moneda USD + validaciones de límites) */
+/* Paso 7: Precio y moneda declarados por el anunciante. */
 function StepPrice({
   formData,
   onChange,
@@ -2188,7 +2194,7 @@ function StepPrice({
   const priceVal = parseFloat(formData.priceUsd)
   const isRental = formData.operation === 'alquiler'
   const isExchange = formData.operation === 'permuta'
-  const minPrice = isRental ? 100 : 1000
+  const minPrice = formData.priceCurrency === 'USD' ? (isRental ? 100 : 1000) : 1
   const maxPrice = 5000000
 
   // Validaciones
@@ -2219,29 +2225,44 @@ function StepPrice({
 
       <div className="space-y-2">
         <label htmlFor="price-usd" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-          {isExchange ? 'Valor estimado del inmueble en USD (opcional)' : 'Precio en USD *'}
+          {isExchange ? `Valor estimado (${formData.priceCurrency}, opcional)` : `Precio en ${formData.priceCurrency} *`}
         </label>
-        <div className="relative">
-          <Input
-            id="price-usd"
-            required={!isExchange}
-            type="number"
-            placeholder={isRental ? "Ej: 250" : "Ej: 45000"}
-            value={formData.priceUsd}
-            onChange={(e) => onChange({ priceUsd: e.target.value })}
-            className={`h-11 text-xs pr-12 ${hasError && formData.priceUsd ? 'border-red-500 focus-visible:ring-red-500/20' : 'border-neutral-200'}`}
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">USD</span>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px]">
+          <div className="relative">
+            <Input
+              id="price-usd"
+              required={!isExchange}
+              type="number"
+              min={minPrice}
+              max={maxPrice}
+              step="any"
+              placeholder={isRental ? 'Ej: 250' : 'Ej: 45000'}
+              value={formData.priceUsd}
+              onChange={(e) => onChange({ priceUsd: e.target.value })}
+              className={`h-11 text-xs pr-12 ${hasError && formData.priceUsd ? 'border-red-500 focus-visible:ring-red-500/20' : 'border-neutral-200'}`}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">{formData.priceCurrency}</span>
+          </div>
+          <Select value={formData.priceCurrency} onValueChange={(value) => onChange({ priceCurrency: value as PublishFormData['priceCurrency'] })}>
+            <SelectTrigger className="h-11 border-neutral-200 text-xs" aria-label="Moneda del precio">
+              <SelectValue placeholder="Moneda" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">USD · Dólares</SelectItem>
+              <SelectItem value="CUP">CUP · Pesos cubanos</SelectItem>
+              <SelectItem value="MLC">MLC</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Mensaje de error personalizado en base a la operación */}
         {hasError && formData.priceUsd && (
           <div className="text-[10px] text-red-500 font-bold space-y-0.5">
             {priceVal < minPrice && (
-              <span>El valor mínimo permitido es de ${minPrice} USD.</span>
+              <span>El valor mínimo permitido es {minPrice} {formData.priceCurrency}.</span>
             )}
             {priceVal > maxPrice && (
-              <span>El precio máximo permitido es de $5,000,000 USD (verifica que no haya ceros adicionales).</span>
+              <span>El precio máximo permitido es 5,000,000 {formData.priceCurrency} (verifica que no haya ceros adicionales).</span>
             )}
           </div>
         )}
@@ -2250,7 +2271,7 @@ function StepPrice({
           <strong>{isExchange ? 'Valor de referencia:' : 'Regla de mercado:'}</strong>{' '}
           {isExchange
             ? 'Puedes indicar cuánto estimas que vale la propiedad que ofreces. El dinero adicional de la permuta se especifica por separado.'
-            : 'Las propiedades en Cuba se cotizan y comercializan mayoritariamente en dólares norteamericanos (USD) o euros. Introduce el valor correspondiente en USD.'}
+            : 'Selecciona la moneda declarada por el anunciante. El importe se mostrará en esa moneda y no se convierte automáticamente.'}
         </div>
       </div>
 

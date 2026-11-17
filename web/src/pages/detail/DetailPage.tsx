@@ -202,7 +202,7 @@ export function DetailPage({
 
   // Dynamic document title and description for this property detail page
   useSEO({
-    title: property ? `${property.title} - ${formatPrice(property.priceUsd)}` : 'Cargando Propiedad',
+    title: property ? `${property.title} - ${formatPrice(property.priceUsd, property.priceCurrency)}` : 'Cargando Propiedad',
     description: property ? `${property.description.slice(0, 150)}... Contacto en Cubitat.` : undefined,
     image: property?.coverImage || undefined,
     url: typeof window !== 'undefined' ? window.location.href : undefined,
@@ -453,7 +453,7 @@ export function DetailPage({
               <strong>
                 {property.operation === 'permuta'
                   ? 'Permuta'
-                  : formatPrice(property.priceUsd)}
+                  : formatPrice(property.priceUsd, property.priceCurrency)}
               </strong>
               {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
             </div>
@@ -551,7 +551,7 @@ export function DetailPage({
                 <p className="detail-price-line text-3xl font-black text-[#035f53]">
                   {property.operation === 'permuta'
                     ? 'Permuta'
-                    : formatPrice(property.priceUsd)}
+                    : formatPrice(property.priceUsd, property.priceCurrency)}
                 </p>
               </div>
             </div>
@@ -1583,6 +1583,7 @@ function SimilarProperties({ currentProperty }: { currentProperty: Property }) {
             operation: item.operation,
             propertyType: item.property_type,
             priceUsd: item.price_usd ? Number(item.price_usd) : undefined,
+            priceCurrency: item.price_currency === 'CUP' || item.price_currency === 'MLC' ? item.price_currency : 'USD',
             bedrooms: Number(item.bedrooms),
             bathrooms: Number(item.bathrooms),
             parking: Number(item.parking),

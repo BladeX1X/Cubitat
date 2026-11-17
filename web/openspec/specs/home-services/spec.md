@@ -11,6 +11,12 @@ calidad del trabajo.
 
 ### Listado y detalle públicos
 
+- **WHEN** una persona filtra el directorio desde escritorio o móvil
+- **THEN** la barra usa el estilo compacto de los filtros de Comprar
+- **AND** aplica los cambios al catálogo sin recargar ni navegar
+- **AND** móvil ofrece una hoja de filtros con opción para limpiar y el total
+  actualizado de resultados
+
 - **WHEN** un visitante abre el directorio o filtra por texto,
   categoría/provincia/municipio
 - **THEN** solo ve perfiles con estado `published`

@@ -25,7 +25,7 @@ describe('getEditableProperty', () => {
     await getEditableProperty('property-123', 'owner-456')
 
     expect(from).toHaveBeenCalledWith('properties')
-    expect(select).toHaveBeenCalledWith('id,title,location,description,zone_id,operation,property_type,price_usd,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,features,user_id,moderation_message,view_count,created_at,updated_at,property_private_addresses(location),property_private_coordinates(coordinates),property_contact_details(name,phone,email)')
+    expect(select).toHaveBeenCalledWith('id,title,location,description,zone_id,operation,property_type,price_usd,price_currency,bedrooms,bathrooms,parking,area_m2,age_years,amenities,badge,status,cover_tone,cover_image,images,coordinates,features,user_id,moderation_message,view_count,created_at,updated_at,property_private_addresses(location),property_private_coordinates(coordinates),property_contact_details(name,phone,email)')
     expect(eqPropertyId).toHaveBeenCalledWith('id', 'property-123')
     expect(eqUserId).toHaveBeenCalledWith('user_id', 'owner-456')
     expect(maybeSingle).toHaveBeenCalledOnce()

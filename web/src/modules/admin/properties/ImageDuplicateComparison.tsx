@@ -11,12 +11,13 @@ type Props = {
 }
 
 function ComparisonListing({
-  title, location, price, image, imageCount, propertyType, operation, createdAt, status,
+  title, location, price, currency, image, imageCount, propertyType, operation, createdAt, status,
   description, bedrooms, bathrooms, areaM2, role,
 }: {
   title: string
   location: string
   price: number | null
+  currency?: 'USD' | 'CUP' | 'MLC' | null
   image: string | null
   imageCount: number
   propertyType: string
@@ -50,7 +51,7 @@ function ComparisonListing({
         <p className="flex items-start gap-1.5 text-xs text-neutral-600">
           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />{location || 'Ubicación no informada'}
         </p>
-        <p className="text-sm font-extrabold text-[#035f53]">{formatPrice(price)}</p>
+        <p className="text-sm font-extrabold text-[#035f53]">{formatPrice(price, currency ?? 'USD')}</p>
         <p className="text-xs text-neutral-500">
           <span className="capitalize">{propertyType}</span> · <span className="capitalize">{operation}</span>
         </p>
@@ -92,6 +93,7 @@ export function ImageDuplicateComparison({ property, match }: Props) {
           title={property.title}
           location={property.location}
           price={property.price_usd}
+          currency={property.price_currency}
           image={property.cover_image || property.images?.[0] || null}
           imageCount={new Set([property.cover_image, ...(property.images ?? [])].filter(Boolean)).size}
           propertyType={property.property_type}
@@ -108,6 +110,7 @@ export function ImageDuplicateComparison({ property, match }: Props) {
           title={match.title}
           location={match.location || 'Ubicación no informada'}
           price={match.price_usd ?? null}
+          currency={match.price_currency}
           image={match.cover_image || match.images?.[0] || null}
           imageCount={new Set([match.cover_image, ...(match.images ?? [])].filter(Boolean)).size}
           propertyType={match.property_type || 'Tipo no informado'}

@@ -50,7 +50,7 @@ export function PropertyModerationCard({
             <MapPin className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{property.location}</span>
           </div>
-          <p className="text-lg font-extrabold text-[#035f53]">{formatPrice(property.price_usd)}</p>
+          <p className="text-lg font-extrabold text-[#035f53]">{formatPrice(property.price_usd, property.price_currency ?? 'USD')}</p>
           <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
             <span className="capitalize">{property.property_type}</span><span>·</span>
             <span className="capitalize">{property.operation}</span><span>·</span>

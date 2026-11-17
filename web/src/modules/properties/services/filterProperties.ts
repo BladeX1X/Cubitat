@@ -37,6 +37,8 @@ export function filterProperties(
 
     // Filter price range
     if (filters.priceRange && filters.priceRange !== 'all') {
+      // Existing ranges and alert contracts are USD-based; never compare CUP/MLC raw amounts to USD bounds.
+      if ((property.priceCurrency ?? 'USD') !== 'USD') return false
       const [minStr, maxStr] = filters.priceRange.split('-')
       const minPrice = minStr ? Number(minStr) : 0
       const maxPrice = maxStr ? Number(maxStr) : Infinity

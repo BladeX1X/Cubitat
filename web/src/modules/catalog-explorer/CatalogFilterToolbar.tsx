@@ -47,6 +47,11 @@ export function CatalogFilterToolbar({
         <div className="marketplace-filter-toolbar__content">
           <div className="marketplace-filter-toolbar__search">{search}</div>
           <div className="marketplace-filter-toolbar__desktop-filters">{filters}</div>
+          {activeFiltersCount > 0 ? (
+            <Button type="button" variant="ghost" className="marketplace-filter-clear" onClick={onClearFilters}>
+              Limpiar filtros<span className="sr-only"> ({activeFiltersCount} activos)</span>
+            </Button>
+          ) : null}
           <Button
             ref={triggerRef}
             type="button"

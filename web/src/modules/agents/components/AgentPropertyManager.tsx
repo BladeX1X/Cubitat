@@ -5,6 +5,7 @@ import { Input } from '../../../shared/ui/input'
 import type { AgentDashboardProperty } from '../agentDashboardRepository'
 import type { AgentStatusFilter } from '../hooks/useAgentDashboard'
 import { getPropertyCoverImage } from '../../properties/utils/images'
+import { formatPrice } from '../../../shared/lib/formatPrice'
 
 interface AgentPropertyManagerProps {
   properties: AgentDashboardProperty[]
@@ -19,12 +20,6 @@ interface AgentPropertyManagerProps {
   onToggleVisibility: (property: AgentDashboardProperty) => void
   onEditProperty?: (propertyId: string) => void
   onSelectProperty?: (propertyId: string) => void
-}
-
-function formatPrice(value: number): string {
-  return value.toLocaleString('en-US', {
-    style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0,
-  })
 }
 
 export function AgentPropertyManager(props: AgentPropertyManagerProps) {
@@ -106,7 +101,7 @@ export function AgentPropertyManager(props: AgentPropertyManagerProps) {
                       </div></div></td>
                     <td className="block p-0 font-extrabold text-[#035f53] lg:table-cell lg:whitespace-nowrap lg:px-4 lg:py-4">
                       <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 lg:hidden">Precio</span>
-                      {formatPrice(property.price_usd)}
+                      {formatPrice(property.price_usd, property.price_currency ?? 'USD')}
                     </td>
                     <td className="block p-0 lg:table-cell lg:whitespace-nowrap lg:px-4 lg:py-4">
                       <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 lg:hidden">Estado</span>

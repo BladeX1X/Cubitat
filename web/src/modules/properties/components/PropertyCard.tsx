@@ -261,7 +261,7 @@ function getPriceLabel(property: Property) {
     return 'Permuta'
   }
 
-  const formattedPrice = formatPrice(property.priceUsd)
+  const formattedPrice = formatPrice(property.priceUsd, property.priceCurrency)
 
   if (property.operation === 'alquiler') {
     return `${formattedPrice} / mes`

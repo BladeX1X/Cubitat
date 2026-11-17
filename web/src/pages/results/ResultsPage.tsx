@@ -13,6 +13,7 @@ import { Button } from '../../shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../shared/ui/popover'
 import { ResultsDesktopMapPanel, ResultsMapView } from '../../modules/results-map-view'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+import { EMPTY_MAP_RESULT_SCOPE, selectMapResultGroup, updateMapViewportResults } from './mapResultScope'
 import './ResultsPage.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'area-desc'
@@ -39,12 +40,12 @@ const sortOptions: Array<{ value: SortOption; label: string; helper: string }> =
   {
     value: 'price-asc',
     label: 'Menor precio',
-    helper: 'Primero las opciones mas economicas',
+    helper: 'Agrupa por moneda y ordena cada grupo de menor a mayor',
   },
   {
     value: 'price-desc',
     label: 'Mayor precio',
-    helper: 'Primero las propiedades de mayor valor',
+    helper: 'Agrupa por moneda y ordena cada grupo de mayor a menor',
   },
   {
     value: 'area-desc',
@@ -89,7 +90,7 @@ export function ResultsPage({
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false)
   const [isAlertError, setIsAlertError] = useState(false)
   const [viewMode, setViewMode] = useState<ResultsViewMode>(getInitialViewMode)
-  const [mapScopedPropertyIds, setMapScopedPropertyIds] = useState<string[] | null>(null)
+  const [mapResultScope, setMapResultScope] = useState(EMPTY_MAP_RESULT_SCOPE)
   const [desktopMapPropertyId, setDesktopMapPropertyId] = useState<string | undefined>(selectedPropertyId)
   const [isDesktopViewport, setIsDesktopViewport] = useState(false)
   const pendingAlertProcessedRef = useRef(false)
@@ -116,7 +117,11 @@ export function ResultsPage({
   // Reset to first page when properties (filters) change
   useEffect(() => {
     setCurrentPage(1)
-  }, [properties, sortBy, mapScopedPropertyIds])
+  }, [properties, sortBy, mapResultScope])
+
+  useEffect(() => {
+    setMapResultScope(EMPTY_MAP_RESULT_SCOPE)
+  }, [properties])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1021px)')
@@ -129,7 +134,7 @@ export function ResultsPage({
 
   useEffect(() => {
     if (viewMode === 'list') {
-      setMapScopedPropertyIds(null)
+      setMapResultScope(EMPTY_MAP_RESULT_SCOPE)
     }
   }, [viewMode])
 
@@ -208,10 +213,16 @@ export function ResultsPage({
 
     return [...list].sort((a, b) => {
       if (sortBy === 'price-asc') {
+        if ((a.priceCurrency ?? 'USD') !== (b.priceCurrency ?? 'USD')) {
+          return (a.priceCurrency ?? 'USD').localeCompare(b.priceCurrency ?? 'USD')
+        }
         return (a.priceUsd ?? Number.MAX_SAFE_INTEGER) - (b.priceUsd ?? Number.MAX_SAFE_INTEGER)
       }
 
       if (sortBy === 'price-desc') {
+        if ((a.priceCurrency ?? 'USD') !== (b.priceCurrency ?? 'USD')) {
+          return (a.priceCurrency ?? 'USD').localeCompare(b.priceCurrency ?? 'USD')
+        }
         return (b.priceUsd ?? 0) - (a.priceUsd ?? 0)
       }
 
@@ -221,12 +232,12 @@ export function ResultsPage({
 
   const activeSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? 'Ordenar'
   const listedProperties = useMemo(() => {
-    if (!isDesktopViewport || viewMode !== 'map' || mapScopedPropertyIds === null) return sortedProperties
+    if (!isDesktopViewport || viewMode !== 'map' || mapResultScope.propertyIds === null) return sortedProperties
 
-    const visibleIds = new Set(mapScopedPropertyIds)
+    const visibleIds = new Set(mapResultScope.propertyIds)
     return sortedProperties.filter((property) => visibleIds.has(property.id))
-  }, [isDesktopViewport, mapScopedPropertyIds, sortedProperties, viewMode])
-  const heading = seoRoute?.heading ?? `${viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? listedProperties.length : properties.length} propiedades en Cuba`
+  }, [isDesktopViewport, mapResultScope.propertyIds, sortedProperties, viewMode])
+  const heading = seoRoute?.heading ?? `${viewMode === 'map' && isDesktopViewport && mapResultScope.propertyIds !== null ? listedProperties.length : properties.length} propiedades en Cuba`
   const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
   const paginatedProperties = listedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
@@ -262,17 +273,17 @@ export function ResultsPage({
   }
 
   const handleDesktopMapPropertySelect = (propertyId: string) => {
-    setMapScopedPropertyIds([propertyId])
+    setMapResultScope(selectMapResultGroup([propertyId]))
     setDesktopMapPropertyId(propertyId)
   }
 
   const handleDesktopMapClusterSelect = (propertyIds: string[]) => {
-    setMapScopedPropertyIds(propertyIds)
+    setMapResultScope(selectMapResultGroup(propertyIds))
     setDesktopMapPropertyId(propertyIds[0])
   }
 
   const handleDesktopMapViewportChange = (propertyIds: string[]) => {
-    setMapScopedPropertyIds(propertyIds)
+    setMapResultScope((scope) => updateMapViewportResults(scope, propertyIds))
   }
 
   const getPageNumbers = () => {
@@ -395,7 +406,11 @@ export function ResultsPage({
 
           <p className="results-summary">
             {seoRoute?.intro ?? 'Encuentra viviendas por zona, compara precios y contacta al anunciante desde una busqueda clara y rapida.'}
-            {viewMode === 'map' && isDesktopViewport && mapScopedPropertyIds !== null ? ` Mostrando ${listedProperties.length} en el area visible del mapa.` : ''}
+            {viewMode === 'map' && isDesktopViewport && mapResultScope.propertyIds !== null
+              ? mapResultScope.source === 'selection'
+                ? ` Mostrando las ${listedProperties.length} propiedades seleccionadas en el mapa.`
+                : ` Mostrando ${listedProperties.length} en el area visible del mapa.`
+              : ''}
           </p>
 
           <div className="property-catalog-grid">

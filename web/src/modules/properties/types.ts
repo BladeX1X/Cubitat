@@ -8,6 +8,7 @@ export type OperationType = CanonicalOperation
 export type PropertyType = CanonicalPropertyType
 
 export type PropertyStatus = 'published' | 'pending_review' | 'paused' | 'owner_hidden' | 'ai_approved' | 'ai_rejected'
+export type PropertyPriceCurrency = 'USD' | 'CUP' | 'MLC'
 
 export type PropertyFeatures = {
   floorLevel?: number
@@ -25,6 +26,7 @@ export type Property = {
   operation: OperationType
   propertyType: PropertyType
   priceUsd?: number
+  priceCurrency?: PropertyPriceCurrency
   bedrooms: number
   bathrooms: number
   parking: number

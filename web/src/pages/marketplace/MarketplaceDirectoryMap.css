@@ -92,8 +92,8 @@
   z-index: 130;
   margin-bottom: 20px;
   padding: 10px;
-  border: 1px solid #d8e3df;
-  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   background: #fff;
   box-shadow: 0 5px 18px rgba(15, 45, 37, 0.07);
 }
@@ -183,9 +183,9 @@
 .catalog-filter-sheet__body > label select {
   box-sizing: border-box;
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   border: 1px solid #d4d4d4;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fff;
   padding: 0 14px;
   color: #1f2937;
@@ -312,6 +312,16 @@
   flex: initial;
   width: 100%;
   min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .marketplace-filter-toolbar__search > label input,
+  .marketplace-filter-toolbar__search > label select {
+    min-height: 42px;
+    border: 0;
+  }
+
+  .marketplace-filter-clear { display: none; }
 }
 
 .marketplace-filter-toolbar__desktop-filters > label select:disabled {

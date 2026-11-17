@@ -44,7 +44,7 @@ export function getPriceLabel(filters: SearchFilters) {
   const option = (isRent ? rentPriceOptions : purchasePriceOptions)
     .find((item) => item.value === filters.priceRange)
 
-  if (option) return option.label
+  if (option) return `${option.label} USD`
 
   const [minStr, maxStr] = filters.priceRange.split('-')
   const minVal = minStr ? Number(minStr) : 0

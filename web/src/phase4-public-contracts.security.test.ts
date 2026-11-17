@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import contactSql from '../supabase/migrations/20261105170000_phase4_private_marketplace_contact.sql?raw'
 import valuationSql from '../supabase/migrations/20261105180000_phase4_valuation.sql?raw'
+import currencySql from '../supabase/migrations/20261116140000_property_price_currency.sql?raw'
 
 describe('Fase 4 production privacy contracts', () => {
   it('does not grant browser roles access to seller contact columns', () => {
@@ -25,5 +26,11 @@ describe('Fase 4 production privacy contracts', () => {
     expect(valuationSql).not.toMatch(/RETURNS TABLE \([^)]*(?:owner_id|phone|whatsapp|address)/i)
     expect(valuationSql).toMatch(/REVOKE ALL ON FUNCTION public\.get_property_value_comparables\(text, text, text, numeric\)[\s\S]*FROM PUBLIC, anon/i)
     expect(valuationSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.get_property_value_comparables\(text, text, text, numeric\)[\s\S]*TO authenticated/i)
+  })
+
+  it('keeps valuation and legacy price alerts from treating CUP amounts as USD', () => {
+    expect(currencySql).toMatch(/property\.price_currency = 'USD'/i)
+    expect(currencySql).toMatch(/NEW\.price_currency <> 'USD'[\s\S]*matches_alert := false/i)
+    expect(currencySql).toMatch(/GRANT INSERT \(price_currency\)[\s\S]*GRANT UPDATE \(price_currency\)/i)
   })
 })

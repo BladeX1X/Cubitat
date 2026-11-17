@@ -26,7 +26,7 @@ export function createPropertySourceData(
             label:
               property.operation === 'permuta'
                 ? 'Permuta'
-                : formatPrice(property.priceUsd),
+                : formatPrice(property.priceUsd, property.priceCurrency),
             isSelected: property.id === selectedPropertyId,
           },
         },
