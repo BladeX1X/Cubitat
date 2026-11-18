@@ -32,6 +32,8 @@ type FavoritesPageProps = {
   onGoMaterials: () => void
 }
 
+type FavoriteFilter = 'all' | 'properties' | 'services' | 'materials'
+
 export function FavoritesPage({
   properties,
   onNavigateAccount,
@@ -68,6 +70,7 @@ export function FavoritesPage({
   const [marketplaceError, setMarketplaceError] = useState(false)
   const [marketplaceItemsLoading, setMarketplaceItemsLoading] = useState(marketplaceFavoritesEnabled)
   const [marketplaceItemsRetry, setMarketplaceItemsRetry] = useState(0)
+  const [activeFilter, setActiveFilter] = useState<FavoriteFilter>('all')
   const favoriteProperties = properties.filter((property) =>
     savedPropertyIds.has(property.id),
   )
@@ -108,6 +111,18 @@ export function FavoritesPage({
   }
 
   const totalFavorites = favoriteProperties.length + savedServices.length + savedMaterials.length
+  const visibleProperties = activeFilter === 'all' || activeFilter === 'properties' ? favoriteProperties : []
+  const visibleServices = activeFilter === 'all' || activeFilter === 'services' ? savedServices : []
+  const visibleMaterials = activeFilter === 'all' || activeFilter === 'materials' ? savedMaterials : []
+  const visibleFavoriteCount = visibleProperties.length + visibleServices.length + visibleMaterials.length
+  const visibleCountLabel = activeFilter === 'all'
+    ? (visibleFavoriteCount === 1 ? 'anuncio guardado' : 'anuncios guardados')
+    : ({
+        properties: visibleFavoriteCount === 1 ? 'propiedad guardada' : 'propiedades guardadas',
+        services: visibleFavoriteCount === 1 ? 'servicio guardado' : 'servicios guardados',
+        materials: visibleFavoriteCount === 1 ? 'material guardado' : 'materiales guardados',
+        all: '',
+      } as const)[activeFilter]
 
   return (
     <AccountLayout
@@ -192,19 +207,26 @@ export function FavoritesPage({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
                 <p className="text-sm text-neutral-500">
                   <span className="font-bold text-neutral-800">
-                    {totalFavorites}
+                    {visibleFavoriteCount}
                   </span>{' '}
-                  {totalFavorites === 1 ? 'anuncio guardado' : 'anuncios guardados'}
+                  {visibleCountLabel}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoResults}>Propiedades</Button>
-                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoServices}>Servicios</Button>}
-                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoMaterials}>Materiales</Button>}
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar favoritos por tipo">
+                  <Button type="button" variant="outline" aria-pressed={activeFilter === 'all'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'all' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('all')}>Todos</Button>
+                  <Button type="button" variant="outline" aria-pressed={activeFilter === 'properties'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'properties' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('properties')}>Propiedades</Button>
+                  {marketplaceFavoritesEnabled && <Button type="button" variant="outline" aria-pressed={activeFilter === 'services'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'services' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('services')}>Servicios</Button>}
+                  {marketplaceFavoritesEnabled && <Button type="button" variant="outline" aria-pressed={activeFilter === 'materials'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'materials' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('materials')}>Materiales</Button>}
                 </div>
               </div>
 
-              <div className="property-catalog-grid">
-                {favoriteProperties.map((property, index) => (
+              {visibleFavoriteCount === 0 ? (
+                <p role="status" className="rounded-lg bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-600">
+                  No tienes {activeFilter === 'properties' ? 'propiedades' : activeFilter === 'services' ? 'servicios' : 'materiales'} guardados.
+                </p>
+              ) : null}
+
+              {visibleProperties.length > 0 && <div className="property-catalog-grid">
+                {visibleProperties.map((property, index) => (
                   <PropertyCard
                     key={property.id}
                     property={property}
@@ -213,11 +235,11 @@ export function FavoritesPage({
                     prioritizeImage={index < 4}
                   />
                 ))}
-              </div>
+              </div>}
 
-              {(savedServices.length > 0 || savedMaterials.length > 0) && (
+              {(visibleServices.length > 0 || visibleMaterials.length > 0) && (
                 <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-label="Servicios y materiales guardados">
-                  {savedServices.map((service, index) => (
+                  {visibleServices.map((service, index) => (
                     <article key={`service-${service.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenService(service.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
@@ -228,7 +250,7 @@ export function FavoritesPage({
                       </div>
                     </article>
                   ))}
-                  {savedMaterials.map((material, index) => (
+                  {visibleMaterials.map((material, index) => (
                     <article key={`material-${material.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenMaterial(material.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
