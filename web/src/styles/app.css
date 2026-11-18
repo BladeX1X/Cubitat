@@ -2761,8 +2761,8 @@ h2 {
   }
 
   .property-card .property-photo-dot {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     pointer-events: auto;
   }
 
@@ -3105,6 +3105,43 @@ h2 {
     border: 1px solid var(--green-dark);
     color: #fff;
     background: var(--green-dark);
+  }
+}
+
+@media (any-pointer: coarse) {
+  .header-actions > a,
+  .header-actions > button,
+  .primary-nav a,
+  .mobile-bottom-nav button,
+  .site-footer a,
+  .site-footer button {
+    min-height: 48px;
+  }
+
+  .primary-nav a,
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .property-save {
+    width: 48px;
+    height: 48px;
+  }
+
+  .property-photo-dot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .property-contact-btn,
+  .property-whatsapp-btn {
+    min-height: 48px !important;
+    height: 48px !important;
+  }
+
+  .property-photo-dots {
+    gap: 8px;
   }
 }
 
@@ -3860,6 +3897,10 @@ h2 {
     box-shadow: 0 1px 0 rgba(16, 35, 31, 0.08);
   }
 
+  .is-directory-page .site-header {
+    position: relative;
+  }
+
   .is-detail-page .site-header {
     gap: 9px;
     padding: 8px 14px;
@@ -3894,7 +3935,7 @@ h2 {
   }
 
   .mobile-catalog-shortcuts button {
-    min-height: 38px;
+    min-height: 48px;
     border: 1px solid #dcebe7;
     border-radius: 999px;
     background: #f7fbfa;
@@ -3926,8 +3967,8 @@ h2 {
     position: relative;
     display: inline-grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border: 0;
     border-radius: 999px;
     color: #006b5d;

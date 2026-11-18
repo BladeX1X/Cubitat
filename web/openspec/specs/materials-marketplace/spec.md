@@ -14,6 +14,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - **AND** los cambios se aplican en el catálogo sin recargar ni navegar
 - **AND** móvil permite abrir y cerrar filtros en una hoja, limpiar filtros y
   conservar visible el total de resultados
+- En dispositivos táctiles, los botones del encabezado, filtros, acciones del
+  catálogo, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
+  campos de texto móviles MUST usar fuente de al menos 16 px.
 
 - **WHEN** un visitante explora o filtra por texto, categoría, provincia o
   disponibilidad
@@ -116,7 +119,10 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   categoría, provincia y disponibilidad; cambiar filtros actualiza la consulta
   actual, y la hoja permite limpiar o volver a resultados. En escritorio se
   muestran búsqueda y filtros en la barra compacta, con cualquier
-  desbordamiento contenido dentro de la barra sticky.
+  desbordamiento contenido dentro de la barra sticky. En viewports de hasta
+  620 px el encabezado se desplaza con la página y la búsqueda sticky permanece
+  a 8 px del borde superior, visible y sin quedar cubierta. Entre 621 y 768 px,
+  el encabezado de dos filas permanece sticky y la barra queda debajo a 104 px.
 - Aplicar, cambiar o limpiar filtros actualiza los resultados en la misma vista,
   sin recargar el documento. Durante la consulta, la barra y el mapa permanecen
   montados; los resultados visibles se conservan hasta que llega la respuesta

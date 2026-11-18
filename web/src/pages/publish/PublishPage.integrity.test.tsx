@@ -507,16 +507,19 @@ describe('publication integrity', () => {
     expect(globalThis.alert).not.toHaveBeenCalled()
   })
 
-  it('confirms and removes the local draft before leaving without saving', async () => {
+  it('preserves the saved draft snapshot before leaving without saving', async () => {
     const onBack = vi.fn()
     const { container } = render(<PublishPage userId="A" onBack={onBack} onSubmitSuccess={vi.fn()} />)
-    await screen.findByDisplayValue('Ana')
+    const contactName = await screen.findByDisplayValue('Ana')
+    fireEvent.change(contactName, { target: { value: 'Cambio temporal' } })
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenCalledWith('A', expect.objectContaining({ formData: expect.objectContaining({ contactName: 'Cambio temporal' }) }), undefined))
     const exitButton = await screen.findByRole('button', { name: 'Salir sin guardar' })
     await waitFor(() => expect(exitButton).toBeEnabled())
     fireEvent.click(exitButton)
 
     expect(globalThis.confirm).toHaveBeenCalledWith(expect.stringMatching(/anuncio publicado no se modificará.*se descartarán/i))
-    await waitFor(() => expect(removeCompleteDraft).toHaveBeenCalledWith('A', undefined))
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenLastCalledWith('A', saved, undefined))
+    expect(removeCompleteDraft).not.toHaveBeenCalledWith('A', undefined)
     expect(onBack).toHaveBeenCalledOnce()
     expect(container.querySelector('form')).not.toBeNull()
     expect(mocks.from).not.toHaveBeenCalledWith('properties')

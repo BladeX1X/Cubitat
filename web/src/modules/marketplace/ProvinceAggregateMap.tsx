@@ -84,7 +84,7 @@ export function ProvinceAggregateMap({
         })
         map.addLayer({ id: CLUSTERS_ID, type: 'circle', source: SOURCE_ID, filter: ['has', 'point_count'], paint: { 'circle-color': accent, 'circle-radius': ['step', ['get', 'point_count'], 24, 4, 30, 8, 36], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } })
         map.addLayer({ id: CLUSTER_LABEL_ID, type: 'symbol', source: SOURCE_ID, filter: ['has', 'point_count'], layout: { 'text-field': ['to-string', ['get', 'total_count']], 'text-size': 13, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } })
-        map.addLayer({ id: PROVINCES_ID, type: 'circle', source: SOURCE_ID, filter: ['!', ['has', 'point_count']], paint: { 'circle-color': accent, 'circle-radius': 19, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } })
+        map.addLayer({ id: PROVINCES_ID, type: 'circle', source: SOURCE_ID, filter: ['!', ['has', 'point_count']], paint: { 'circle-color': accent, 'circle-radius': 24, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } })
         map.addLayer({ id: PROVINCE_LABEL_ID, type: 'symbol', source: SOURCE_ID, filter: ['!', ['has', 'point_count']], layout: { 'text-field': ['to-string', ['get', 'count']], 'text-size': 12, 'text-font': ['Noto Sans Bold'], 'text-allow-overlap': true }, paint: { 'text-color': '#ffffff' } })
         const interactiveLayers = [CLUSTER_LABEL_ID, CLUSTERS_ID, PROVINCE_LABEL_ID, PROVINCES_ID]
         map.on('click', (event) => {
@@ -130,22 +130,22 @@ export function ProvinceAggregateMap({
     const map = mapRef.current
     if (!map?.getLayer(PROVINCES_ID)) return
     map.setPaintProperty(PROVINCES_ID, 'circle-color', accent)
-    map.setPaintProperty(PROVINCES_ID, 'circle-radius', ['case', ['==', ['get', 'province'], selectedProvince], 23, 19])
-    map.setLayoutProperty(PROVINCE_LABEL_ID, 'text-size', ['case', ['==', ['get', 'province'], selectedProvince], 14, 12])
+    map.setPaintProperty(PROVINCES_ID, 'circle-radius', ['case', ['==', ['get', 'province'], selectedProvince], 28, 24])
+    map.setLayoutProperty(PROVINCE_LABEL_ID, 'text-size', ['case', ['==', ['get', 'province'], selectedProvince], 14, 13])
   }, [selectedProvince, accent, mapReady])
 
-  const panel = <section className={`z-[9999] flex min-h-0 flex-col overflow-hidden border border-neutral-200 bg-white ${isDesktopMap ? 'sticky top-4 h-[calc(100dvh-2rem)] rounded-2xl' : 'fixed inset-0 h-[100dvh] w-screen border-0 pt-[env(safe-area-inset-top)]'}`} role={isDesktopMap ? undefined : 'dialog'} aria-modal={isDesktopMap ? undefined : true} aria-label={`Mapa de ${resultLabel} por provincia`}>
+  const panel = <section className={`marketplace-province-map z-[9999] flex min-h-0 flex-col overflow-hidden border border-neutral-200 bg-white ${isDesktopMap ? 'sticky top-4 h-[calc(100dvh-2rem)] rounded-2xl' : 'fixed inset-0 h-[100dvh] w-screen border-0 pt-[env(safe-area-inset-top)]'}`} role={isDesktopMap ? undefined : 'dialog'} aria-modal={isDesktopMap ? undefined : true} aria-label={`Mapa de ${resultLabel} por provincia`}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
       <div><h2 className="flex items-center gap-2 font-bold text-neutral-900"><MapPin size={18} aria-hidden="true" />Mapa por provincia</h2><p className="text-sm text-neutral-600">Las cifras son resultados disponibles en cada provincia; no muestran direcciones exactas.</p></div>
       <div className="flex items-center gap-2">
         {selectedProvince && <button type="button" className="min-h-10 rounded-lg px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50" onClick={() => onSelectProvince('')}>Ver toda Cuba</button>}
-        {!isDesktopMap && <button type="button" aria-label="Cerrar mapa" className="inline-flex size-11 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-100" onClick={onClose}><X size={20} /></button>}
+        {!isDesktopMap && <button type="button" aria-label="Cerrar mapa" className="marketplace-map-close inline-flex size-11 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-100" onClick={onClose}><X size={20} /></button>}
       </div>
     </div>
     <div className="relative min-h-[300px] flex-1">
       <div ref={containerRef} className="absolute inset-0 h-full w-full" role="application" aria-label={`Mapa interactivo. Selecciona una provincia para filtrar ${resultLabel}.`} />
       {(!mapReady || mapError) && <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/90 px-6 text-center"><div><p className="font-semibold text-neutral-800">{mapError ? 'No se pudo cargar el mapa' : 'Cargando mapa…'}</p>{mapError && <><p className="mt-1 text-sm text-neutral-600">Puedes seguir usando los filtros de provincia.</p><button type="button" className="mt-4 min-h-11 rounded-lg bg-emerald-700 px-5 font-bold text-white hover:bg-emerald-800" onClick={() => { mapReadyRef.current = false; setMapReady(false); setMapError(false); setRetryAttempt((attempt) => attempt + 1) }}>Reintentar mapa</button></>}</div></div>}
-      <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-neutral-700 shadow">Selecciona una marca para filtrar por provincia</div>
+      <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-neutral-700 shadow">Selecciona un grupo para acercarte; una provincia para filtrar</div>
     </div>
   </section>
 

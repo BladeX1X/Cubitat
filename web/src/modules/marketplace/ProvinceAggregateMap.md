@@ -23,7 +23,9 @@ la paginación del catálogo.
   ofrece «Reintentar mapa» para recrear el mapa sin cerrar el panel.
 - Pulsar el número o el círculo de un cluster lo acerca para separar las
   provincias; pulsar el número o el círculo de una provincia aplica esa
-  provincia como filtro del catálogo. “Ver toda
+  provincia como filtro del catálogo. La instrucción móvil diferencia ambas
+  acciones y los marcadores provinciales, los controles de zoom y el botón de
+  cierre miden al menos 48 px. “Ver toda
   Cuba” retira la provincia sin perder los demás filtros.
 - Los conteos respetan los filtros de texto, categoría y disponibilidad o
   municipio, según el catálogo; se consultan sin aplicar la provincia activa.
@@ -54,3 +56,12 @@ permanecer visible mientras MapLibre esperaba todas las fuentes/teselas, y que
 el fallback diferido aún no era un diálogo accesible. Corregido localmente:
 véase la entrada de avance del 2026-11-14; falta desplegar y repetir el E2E
 frío en DEV antes de considerar el comportamiento móvil verificado.
+
+Verificación manual de producción — 2026-11-17: en Chrome con viewport móvil,
+tocar una provincia en Materiales aplicó el filtro y, al cerrar el mapa, mostró
+2 anuncios de Pinar del Río; el mismo toque en Servicios mostró 7 profesionales
+de esa provincia. El mapa abrió y cargó las marcas en ambos catálogos. Los
+círculos con cifras mayores a 1 son grupos: primero acercan el mapa y luego se
+debe tocar la provincia para filtrar. Se aclaró el texto de ayuda y se ampliaron
+los marcadores y controles de zoom a 48 px en el código local; falta repetir la
+revisión tras el despliegue.

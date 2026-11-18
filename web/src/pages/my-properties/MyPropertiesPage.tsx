@@ -13,12 +13,13 @@ import {
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { readPublicationDraft } from '../publish/draftStorage'
-import { removeCompleteDraft } from '../publish/completeDraftStorage'
+import { readCompleteDraft, removeCompleteDraft } from '../publish/completeDraftStorage'
 import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/properties/propertyStatus'
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
 import { hideOwnProperty, restoreOwnProperty } from './visibilityRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { createOwnedPropertyCoverPreviews, revokePrivateImagePreviewUrls } from '../../modules/properties/utils/privateImagePreviews'
+import { getLocalDraftCoverImage } from './localDraftCover'
 
 const PropertyVerificationPanel = import.meta.env.DEV
   || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
@@ -369,6 +370,18 @@ export function MyPropertiesPage({
         try {
           const parsed = readPublicationDraft(userId)
           if (parsed) {
+              let localDraftCover: string | null = null
+              try {
+                const completeDraft = await readCompleteDraft(userId)
+                localDraftCover = getLocalDraftCoverImage(completeDraft?.images)
+              } catch (error) {
+                logSafeEvent({
+                  module: 'my_properties',
+                  action: 'load_local_draft_cover',
+                  level: 'warn',
+                  code: sanitizeErrorReason(error),
+                })
+              }
               const municipality = typeof parsed.municipality === 'string' ? parsed.municipality : ''
               const neighborhood = typeof parsed.neighborhood === 'string' ? parsed.neighborhood : ''
               const province = typeof parsed.province === 'string' ? parsed.province : 'Cuba'
@@ -387,7 +400,7 @@ export function MyPropertiesPage({
                 price_currency: parsed.priceCurrency === 'CUP' || parsed.priceCurrency === 'MLC'
                   ? parsed.priceCurrency
                   : 'USD',
-                cover_image: null,
+                cover_image: localDraftCover,
                 status: 'local_draft',
                 moderation_message: null,
                 created_at: new Date().toISOString(),

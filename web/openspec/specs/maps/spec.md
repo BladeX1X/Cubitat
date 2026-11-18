@@ -31,6 +31,8 @@ debe cargarse bajo demanda para no retrasar los catálogos.
 - GIVEN varias provincias están agrupadas en un cluster
 - WHEN el usuario pulsa el número o el círculo del cluster
 - THEN el mapa acerca la vista para separar los marcadores
+- AND en móvil el texto de ayuda MUST distinguir grupos (acercar) de provincias (filtrar)
+- AND las marcas provinciales y controles de zoom MUST ofrecer objetivos táctiles de al menos 48 × 48 px
 
 #### Scenario: Mapa cerrado o con error
 - GIVEN el mapa está cerrado o su estilo no carga
@@ -108,6 +110,8 @@ El sistema MUST representar muchas propiedades con clusters y pines comprensible
 - WHEN el mapa se renderiza a un nivel de zoom bajo
 - THEN el sistema MUST agruparlas en clusters
 - AND al pulsar un cluster MUST hacer zoom hacia ese grupo
+- AND en móvil, al acercar un grupo seleccionado, la selección del carrusel y el resaltado de sus propiedades MUST permanecer aunque el cluster se divida
+- AND los controles de zoom, cierre, carrusel y acciones del mapa MUST ofrecer objetivos táctiles de al menos 48 × 48 px
 
 #### Scenario: Pin de propiedad
 - GIVEN una propiedad visible no esta agrupada

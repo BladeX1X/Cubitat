@@ -205,11 +205,28 @@ El sistema MUST proteger el progreso del usuario mediante borradores locales aut
 - THEN el usuario MUST poder reintentar la lectura sin salir ni borrar el borrador
 - AND ante un reintento exitoso MUST volver al paso y a los datos guardados
 
+#### Scenario: Salir de un borrador guardado sin perderlo
+- GIVEN el usuario reanuda un borrador local existente y hace cambios en esta sesión
+- WHEN elige «Salir sin guardar» y confirma
+- THEN el sistema MUST esperar a que terminen las escrituras locales en curso
+- AND MUST restaurar la instantánea que existía al abrir el borrador
+- AND MUST mantener disponible el borrador para reanudarlo después
+- AND MUST NOT crear, actualizar ni eliminar una propiedad remota
+- WHEN el usuario cancela la confirmación
+- THEN el formulario MUST permanecer abierto y conservar los cambios de esta sesión
+
 #### Scenario: Visualización de banner de borrador en Dashboard
 - GIVEN un usuario con sesión activa ingresa a su panel de usuario
 - WHEN el sistema detecta que existe un borrador local no guardado en base de datos
 - THEN el sistema MUST mostrar un banner destacado con la opción: "Tienes un borrador de publicación pendiente. ¿Deseas reanudarlo?"
 - AND si el usuario hace clic, MUST cargar los datos en el formulario de publicación y borrar la alerta.
+
+#### Scenario: Mostrar portada de un borrador local en Mis publicaciones
+- GIVEN existe un borrador local con fotos guardadas en IndexedDB
+- WHEN el anunciante abre `/mis-propiedades`
+- THEN la tarjeta del borrador MUST mostrar su primera foto local como portada
+- AND si el borrador no tiene una imagen disponible MUST mostrar el placeholder de forma accesible
+- AND MUST NOT solicitar una URL remota para una foto almacenada como dato local
 
 #### Scenario: No asignar borradores antiguos sin propietario
 - GIVEN el navegador contiene la clave heredada global `cubitat_publish_draft` sin un UID asociado

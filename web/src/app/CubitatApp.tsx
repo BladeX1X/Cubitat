@@ -1074,6 +1074,7 @@ export function CubitatApp() {
   const appShellClass = [
     'app-shell',
     pageMode === 'results' ? 'is-results-page' : '',
+    pageMode === 'services' || pageMode === 'materials' ? 'is-directory-page' : '',
     pageMode === 'detail' ? 'is-detail-page' : '',
     pageMode === 'publish' || pageMode === 'edit' ? 'is-publish-page' : '',
   ].filter(Boolean).join(' ')
@@ -1120,7 +1121,7 @@ export function CubitatApp() {
             <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
             <p className="text-[11px] text-red-500">{error}</p>
             <Button 
-              className="mt-2 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs" 
+              className="mt-2 min-h-12 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs"
               onClick={() => window.location.reload()}
             >
               Reintentar

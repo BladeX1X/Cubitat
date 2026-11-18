@@ -565,8 +565,8 @@
   .app-shell.is-results-page .mobile-notification-button,
   .app-shell.is-results-page .mobile-menu-button,
   .app-shell.is-results-page .mobile-notifications .notification-trigger {
-    width: 30px;
-    height: 30px;
+    width: 48px;
+    height: 48px;
   }
 
   .app-shell.is-results-page .mobile-bottom-nav {
@@ -649,7 +649,7 @@
     width: auto;
     max-width: none;
     min-width: 0;
-    height: 44px;
+    height: 48px;
     padding-inline: 0 44px;
     border: 0;
     border-radius: 0;
@@ -657,16 +657,16 @@
   }
 
   .app-shell.is-results-page .filter-search-field input {
-    height: 44px;
+    height: 48px;
     color: var(--ink);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 900;
   }
 
   .app-shell.is-results-page .filter-search-clear {
     display: inline-flex;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     align-items: center;
     justify-content: center;
   }
@@ -688,10 +688,10 @@
   .app-shell.is-results-page .filter-more-control {
     order: 2;
     display: inline-flex;
-    flex: 0 0 42px;
-    width: 42px;
-    max-width: 42px;
-    height: 42px;
+    flex: 0 0 48px;
+    width: 48px;
+    max-width: 48px;
+    height: 48px;
     padding-inline: 0;
     border: 0;
     border-radius: 999px;
@@ -1045,7 +1045,7 @@
   }
 
   .app-shell.is-results-page .sort-button {
-    height: 34px;
+    min-height: 48px;
     padding-inline: 13px;
     border-radius: 999px;
     font-size: 12px;
@@ -1132,8 +1132,8 @@
   .app-shell.is-results-page .property-save {
     top: 8px;
     right: 8px;
-    width: 38px;
-    height: 38px;
+    width: 48px;
+    height: 48px;
   }
 
   .app-shell.is-results-page .property-photo-arrow {
@@ -1141,7 +1141,7 @@
   }
 
   .app-shell.is-results-page .property-photo-dots {
-    bottom: 6px;
+    bottom: 2px;
     display: flex;
   }
 
@@ -1195,7 +1195,8 @@
 
   .app-shell.is-results-page .property-contact-btn,
   .app-shell.is-results-page .property-whatsapp-btn {
-    height: 32px !important;
+    min-height: 48px !important;
+    height: 48px !important;
     font-size: 11px !important;
   }
 }
@@ -1227,7 +1228,7 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 42px;
+  min-height: 48px;
   padding: 0 16px;
   border: 0;
   border-radius: 999px;
@@ -1753,7 +1754,7 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
     width: auto;
     max-width: none;
     min-width: 0;
-    height: 38px;
+    height: 48px;
     padding-inline: 0 6px;
     border: 0;
     border-radius: 0;
@@ -1762,7 +1763,8 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 
   .map-overlay-filterbar .filter-search-field input {
     color: var(--ink);
-    font-size: 13px;
+    min-height: 48px;
+    font-size: 16px;
     font-weight: 900;
   }
 
@@ -1779,10 +1781,10 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   .map-overlay-filterbar .filter-more-control {
     order: 2;
     display: inline-flex;
-    flex: 0 0 42px;
-    width: 42px;
-    max-width: 42px;
-    height: 42px;
+    flex: 0 0 48px;
+    width: 48px;
+    max-width: 48px;
+    height: 48px;
     padding-inline: 0;
     border: 0;
     border-radius: 999px;
@@ -1831,18 +1833,21 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 
   .map-fullscreen-overlay .map-bottom-bar {
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
-    gap: 6px;
+    gap: 8px;
   }
 
   .map-fullscreen-overlay .map-bottom-bar button {
+    min-width: 48px;
+    min-height: 48px;
+    height: 48px;
     padding: 8px 12px;
-    font-size: 10px;
-    gap: 4px;
+    font-size: 12px;
+    gap: 6px;
   }
 
   .map-fullscreen-overlay .map-bottom-bar button svg {
-    width: 13px;
-    height: 13px;
+    width: 16px;
+    height: 16px;
   }
 
   .map-fullscreen-overlay .map-carousel-card {
@@ -1854,6 +1859,103 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   }
 
   .map-fullscreen-overlay .map-carousel-card__price {
+    font-size: 16px;
+  }
+}
+
+@media (any-pointer: coarse) {
+  .map-fullscreen-overlay .maplibregl-ctrl-group button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .map-fullscreen-overlay .map-bottom-bar button {
+    min-width: 48px;
+    min-height: 48px;
+    height: 48px;
+  }
+
+  .map-fullscreen-overlay .map-carousel-close {
+    width: 48px;
+    height: 48px;
+  }
+
+  .map-fullscreen-overlay .map-bottom-bar {
+    gap: 8px;
+  }
+
+  .map-fullscreen-overlay .maplibregl-ctrl-top-right {
+    top: calc(132px + env(safe-area-inset-top));
+    right: 12px;
+  }
+
+  .app-shell.is-results-page .mobile-menu-button,
+  .app-shell.is-results-page .mobile-notification-button,
+  .app-shell.is-results-page .mobile-notifications .notification-trigger {
+    width: 48px;
+    height: 48px;
+  }
+
+  .app-shell.is-results-page .sort-button,
+  .app-shell.is-results-page .filter-more-control,
+  .app-shell.is-results-page .results-floating-actions button,
+  .app-shell.is-results-page .results-pagination > button,
+  .app-shell.is-results-page .property-contact-btn,
+  .app-shell.is-results-page .property-whatsapp-btn {
+    min-height: 48px !important;
+    height: 48px !important;
+  }
+
+  .app-shell.is-results-page .property-save {
+    width: 48px;
+    height: 48px;
+  }
+
+  .app-shell.is-results-page .filter-more-control {
+    flex-basis: 48px;
+    width: 48px;
+    max-width: 48px;
+    height: 48px;
+  }
+
+  .app-shell.is-results-page .property-photo-dot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .app-shell.is-results-page .results-pagination > div button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .app-shell.is-results-page .results-pagination > div {
+    gap: 8px;
+  }
+
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-sheet__close,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-segment button,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-price-mode button,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-chips button,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-location,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-price-grid input,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-apply-price,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-sheet__footer button,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-check {
+    min-height: 48px;
+  }
+
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-sheet__close {
+    width: 48px;
+  }
+
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-location input,
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-price-grid input {
+    font-size: 16px;
+  }
+
+  .app-shell.is-results-page .filter-search-field input,
+  .map-overlay-filterbar .filter-search-field input {
+    min-height: 48px;
     font-size: 16px;
   }
 }

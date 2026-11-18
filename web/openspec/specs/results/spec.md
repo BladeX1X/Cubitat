@@ -34,7 +34,9 @@ El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y
 - THEN MUST mostrar skeletons o estado de carga estable
 - AND MUST evitar layout shift excesivo al llegar los datos
 - AND el contenedor principal MUST reservar al menos el alto visible bajo la cabecera para mantener el footer fuera del viewport durante transiciones de carga
-- AND los controles tactiles de busqueda, limpieza y carrusel MUST conservar un area minima de 44x44 px en movil
+- AND los controles tactiles de busqueda, limpieza y carrusel MUST conservar un area minima de 48x48 px en dispositivos tactiles
+- AND en pantallas tactiles, los controles accionables MUST ofrecer objetivos de al menos 48x48 px y aproximadamente 8 px de separacion cuando son adyacentes
+- AND los campos de texto en movil MUST usar un tamano de fuente de al menos 16 px para evitar zoom inesperado al enfocar
 - AND una propiedad sin portada MUST usar un fallback local inmediato en vez de iniciar una descarga remota generica
 
 ### Requirement: Ordenamiento
@@ -61,6 +63,8 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - GIVEN el mapa movil muestra clusters
 - WHEN el usuario toca un cluster o su numero
 - THEN el sistema MUST acercar el mapa a ese grupo
+- AND si el acercamiento divide el grupo en clusters hijos MUST conservar la selección y resaltarlos
+- AND MUST mantener el carrusel de las propiedades seleccionadas mientras el usuario acerca el mapa
 - AND cuando el usuario toca un pin MUST mostrar carrusel de preview inferior
 - AND tocar un pin MUST permanecer en `/resultados`
 - AND solo tocar una card del carrusel MUST navegar al detalle
