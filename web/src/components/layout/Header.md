@@ -3,7 +3,7 @@
 ## Propósito
 Mantener el logotipo de tuGao, las acciones de la cuenta y los accesos principales de Cubitat visibles en escritorio, ventanas medianas y móvil. El nombre del producto, las rutas y las etiquetas de navegación siguen usando Cubitat.
 
-- El logotipo transparente se entrega como WebP de 464×132 px para cabecera, fallback de aplicación y login; conserva proporción y transparencia.
+- El logotipo transparente se entrega en WebP de 300×85 y 356×101 px para la cabecera; `srcset`/`sizes` permiten que el navegador elija según densidad y viewport. El fallback de aplicación y el login conservan la imagen WebP de 464×132 px. Todas las variantes mantienen proporción y transparencia.
 
 ## Comportamiento responsive
 - Más de 1180 px: marca, navegación principal y acciones en una fila.
