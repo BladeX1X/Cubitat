@@ -79,6 +79,8 @@ Clases principales en `app.css`:
 - `.property-actions`
 - `.property-contact-action`
 
+En dispositivos táctiles, las flechas de la galería se amplían a 48 × 48 px; en móviles estrechos se ocultan porque los indicadores de fotos permiten cambiar de imagen.
+
 ## Estados Visuales
 
 - Hover/focus:

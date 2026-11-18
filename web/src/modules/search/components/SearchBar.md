@@ -141,6 +141,10 @@ Se verifico:
 - Si cambia la altura del header, actualizar el calculo del hero.
 - Si se modifica la UI del select, volver a verificar que no se solape con `Limpiar busqueda` ni con resultados.
 
+## Diseño táctil
+
+- En dispositivos con puntero táctil, cada pestaña de operación mantiene una altura mínima de 48 px para facilitar su selección.
+
 ## Cambios Recientes (2026-07-01)
 
 - **Operacion exclusiva:** Los tabs de operacion ahora son de seleccion exclusiva (solo uno activo). Hacer clic en un tab activo lo deselecciona; hacer clic en otro tab cambia la seleccion. Ya no es posible tener "Venta + Renta" activos simultaneamente.

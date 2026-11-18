@@ -97,7 +97,7 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - AND MUST NOT cubrir tarjetas ni controles de paginación mientras se desplaza
 
 #### Scenario: Resultados en un viewport estrecho
-- GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
+- GIVEN el usuario abre `/resultados` con un viewport de 320 a 400 px de ancho
 - WHEN se muestran el encabezado, las tarjetas y la paginación
 - THEN el documento MUST NOT tener desbordamiento horizontal
 - AND los controles MUST conservarse visibles y utilizables

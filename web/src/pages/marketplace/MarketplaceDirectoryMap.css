@@ -358,6 +358,15 @@
     height: 48px;
   }
 
+  .catalog-pagination > button,
+  .catalog-pagination__page {
+    min-height: 48px;
+  }
+
+  .catalog-pagination__page {
+    width: 48px;
+  }
+
   .marketplace-filter-toolbar__search > label input {
     font-size: 16px;
   }
