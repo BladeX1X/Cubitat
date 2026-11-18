@@ -90,7 +90,7 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
 - En movil, `/resultados` usa un layout compacto inspirado en portales inmobiliarios: header mas bajo, filtros en una fila, sin resumen descriptivo y con tarjetas reducidas para que se vea mas contenido desde el primer viewport.
 - Los controles móviles en dispositivos táctiles (menú, filtros, orden, acciones de tarjeta, carrusel, mapa y paginación) usan objetivos de al menos 48×48 px; las cajas de búsqueda usan fuente de 16 px para evitar zoom automático al enfocarlas.
 - En la vista de mapa móvil, acercar o mover el mapa no cierra el carrusel ni pierde la selección; los clusters descendientes conservan el resaltado. Zoom, cierre del carrusel y acciones inferiores tienen objetivos táctiles de 48×48 px.
-- En lista móvil, `Mostrar mapa` y `Crear alerta` permanecen en el flujo antes del catálogo; no flotan sobre las tarjetas. En anchos de 320 px, el encabezado y la paginación pueden ajustarse para evitar scroll horizontal.
+- En lista móvil, `Mostrar mapa` y `Crear alerta` permanecen en el flujo antes del catálogo; no flotan sobre las tarjetas. Hasta 400 px, el encabezado y la paginación se ajustan para evitar scroll horizontal. Los controles de filtros y alerta alcanzan 48 px en dispositivos táctiles.
 - En movil, la bottom nav se oculta solo en `/resultados` para no tapar las tarjetas y maximizar el espacio de exploracion.
 - El modo visual `list|map` se conserva en `window.history.state` de la entrada
   actual. Así, abrir un detalle desde la preview y volver con `Atrás` restaura el
