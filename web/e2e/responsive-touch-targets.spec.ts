@@ -43,6 +43,37 @@ for (const width of [390, 400]) {
   })
 }
 
+for (const width of [320, 360, 390]) {
+  test(`la hoja de filtros cabe en el panel a ${width} px`, async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    })
+    const page = await context.newPage()
+
+    await page.goto('/resultados?operacion=venta')
+    await page.getByRole('button', { name: /filtros/i }).first().click()
+    const sheet = page.getByRole('dialog', { name: 'Filtros de búsqueda' })
+    await expect(sheet).toBeVisible()
+    await expect.poll(() => sheet.locator('.mobile-filter-sheet__panel').evaluate((panel) => {
+      const body = panel.querySelector<HTMLElement>('.mobile-filter-sheet__body')
+      const footer = panel.querySelector<HTMLElement>('.mobile-filter-sheet__footer')
+      if (!body || !footer) return false
+      const panelRect = panel.getBoundingClientRect()
+      const footerRect = footer.getBoundingClientRect()
+      return body.scrollWidth <= body.clientWidth
+        && footer.scrollWidth <= footer.clientWidth
+        && footerRect.right <= panelRect.right + 1
+    })).toBe(true)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+
+    await sheet.getByRole('button', { name: 'Cerrar filtros' }).click()
+    await expect(sheet).toBeHidden()
+    await context.close()
+  })
+}
+
 test('los filtros y las flechas de fotos son cómodos en pantallas táctiles medianas', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 1024, height: 900 },

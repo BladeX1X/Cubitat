@@ -112,6 +112,7 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
 - WHEN abre y cierra la hoja de filtros
 - THEN MUST poder usar los filtros sin desbordamiento horizontal
+- AND los controles internos y las acciones inferiores MUST permanecer dentro del panel
 - AND las tarjetas de resultados MUST seguir visibles al cerrar los filtros
 
 ### Requirement: Crear alerta desde resultados

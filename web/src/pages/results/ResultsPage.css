@@ -1997,6 +1997,13 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   }
 }
 
+@media (max-width: 360px) {
+  :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-sheet__panel {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
 @keyframes map-preview-in {
   from {
     opacity: 0;

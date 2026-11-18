@@ -10,6 +10,10 @@ describe('Results mobile touch targets', () => {
     expect(styles).toMatch(/\.app-shell\.is-results-page \.results-toolbar-full\s*\{[^}]*?position:\s*sticky;[^}]*?top:\s*8px;/)
   })
 
+  it('uses the full viewport for the filter sheet on the narrowest phones', () => {
+    expect(styles).toMatch(/@media\s*\(max-width:\s*360px\)[\s\S]*?\.mobile-filter-sheet__panel\s*\{[^}]*?width:\s*100vw;[^}]*?max-width:\s*100vw;/)
+  })
+
   it('uses 48px targets for the primary mobile actions', () => {
     expect(styles).toMatch(/\.map-fullscreen-overlay \.maplibregl-ctrl-group button\s*\{\s*width:\s*48px;\s*height:\s*48px;/)
     expect(styles).toMatch(/\.map-fullscreen-overlay \.maplibregl-ctrl-top-right\s*\{\s*top:\s*calc\(132px \+ env\(safe-area-inset-top\)\);/)
