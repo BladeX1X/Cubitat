@@ -47,6 +47,28 @@ afterEach(() => {
 })
 
 describe('Cloudflare Worker security contract', () => {
+  it('precarga el hero solo en la portada y no en catálogos SPA', async () => {
+    const html = '<!doctype html><html><head></head><body></body></html>'
+    const homeResponse = await worker.fetch(
+      new Request('https://cubitathome.com/'),
+      createEnv(new Response(html, { headers: { 'Content-Type': 'text/html' } })),
+      createContext(),
+    )
+    const catalogResponse = await worker.fetch(
+      new Request('https://cubitathome.com/servicios'),
+      createEnv(new Response(html, { headers: { 'Content-Type': 'text/html' } })),
+      createContext(),
+    )
+
+    const homeHtml = await homeResponse.text()
+    const catalogHtml = await catalogResponse.text()
+    expect(homeHtml).toContain('rel="preload"')
+    expect(homeHtml).toContain('imagesrcset=')
+    expect(homeHtml).toContain('imagesizes="100vw"')
+    expect(catalogHtml).not.toContain('rel="preload"')
+    expect(catalogHtml).not.toContain('photo-1600607687939-ce8a6c25118c')
+  })
+
   it('counts public property views through the server-only RPC with per-IP limiting', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)

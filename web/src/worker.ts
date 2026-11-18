@@ -122,6 +122,13 @@ function canonicalUrl(url: URL): string {
   return `${url.origin}${url.pathname}`
 }
 
+const HOME_HERO_PRELOAD = '<link rel="preload" as="image" fetchpriority="high" href="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=768&amp;q=40" imagesrcset="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=480&amp;q=38 480w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=768&amp;q=40 768w, https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=1200&amp;q=45 1200w" imagesizes="100vw" />'
+
+function addHomepageHeroPreload(html: string, url: URL): string {
+  if (url.pathname !== '/' || html.includes('photo-1600607687939-ce8a6c25118c')) return html
+  return html.replace(/<\/head>/i, `${HOME_HERO_PRELOAD}</head>`)
+}
+
 async function rewriteCanonicalLink(
   response: Response,
   url: URL,
@@ -132,11 +139,12 @@ async function rewriteCanonicalLink(
   const canonicalPattern = /<link\b[^>]*rel=["']canonical["'][^>]*>/i
   const html = await response.text()
   const canonicalTag = `<link rel="canonical" href="${canonicalUrl(url)}" />`
-  const body = indexable
+  const canonicalizedBody = indexable
     ? canonicalPattern.test(html)
       ? html.replace(canonicalPattern, canonicalTag)
       : html.replace('</head>', `${canonicalTag}</head>`)
     : html.replace(canonicalPattern, '')
+  const body = indexable ? addHomepageHeroPreload(canonicalizedBody, url) : canonicalizedBody
 
   return new Response(body, {
     status: response.status,

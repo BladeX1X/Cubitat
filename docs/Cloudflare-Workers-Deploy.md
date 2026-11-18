@@ -76,6 +76,11 @@ El archivo `web/wrangler.jsonc` define:
 
 Esto es necesario para que rutas internas como `/publicar`, `/resultados`, `/mi-cuenta` o `/propiedad/...` carguen `index.html` y no den 404.
 
+El Worker añade la precarga responsive de la imagen LCP solo al HTML de `/`.
+Como las rutas de la app son SPA y comparten el mismo `index.html`, la precarga
+no debe quedar estática en ese archivo: hacerlo descargaría la foto del hero
+también en Resultados, Servicios y Materiales.
+
 ## Variables De Entorno
 
 En Cloudflare, configurar variables para producción:
