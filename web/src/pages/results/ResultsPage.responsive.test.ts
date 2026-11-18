@@ -6,6 +6,10 @@ const styles = readFileSync(resolve(process.cwd(), 'src/pages/results/ResultsPag
 const appStyles = readFileSync(resolve(process.cwd(), 'src/styles/app.css'), 'utf8')
 
 describe('Results mobile touch targets', () => {
+  it('sticks the mobile search toolbar near the viewport top after the header scrolls away', () => {
+    expect(styles).toMatch(/\.app-shell\.is-results-page \.results-toolbar-full\s*\{[^}]*?position:\s*sticky;[^}]*?top:\s*8px;/)
+  })
+
   it('uses 48px targets for the primary mobile actions', () => {
     expect(styles).toMatch(/\.map-fullscreen-overlay \.maplibregl-ctrl-group button\s*\{\s*width:\s*48px;\s*height:\s*48px;/)
     expect(styles).toMatch(/\.map-fullscreen-overlay \.maplibregl-ctrl-top-right\s*\{\s*top:\s*calc\(132px \+ env\(safe-area-inset-top\)\);/)

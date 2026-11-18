@@ -102,6 +102,12 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - THEN el documento MUST NOT tener desbordamiento horizontal
 - AND los controles MUST conservarse visibles y utilizables
 
+#### Scenario: Barra de búsqueda móvil al desplazarse
+- GIVEN el usuario está en `/resultados` en un viewport móvil
+- WHEN desplaza la página y el encabezado global sale del viewport
+- THEN la barra de filtros MUST quedar fija cerca del borde superior
+- AND MUST NOT reservar un espacio para un encabezado que ya no está visible
+
 #### Scenario: Filtros móviles en un viewport estrecho
 - GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
 - WHEN abre y cierra la hoja de filtros
