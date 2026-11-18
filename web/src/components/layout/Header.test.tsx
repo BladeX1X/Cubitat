@@ -33,7 +33,7 @@ describe('Header mobile menu', () => {
     render(<Header user={null} {...callbacks} />)
 
     const logo = screen.getByRole('img', { name: 'tuGao · atrapa tu sueño' })
-    expect(logo).toHaveAttribute('src', '/brand/tugao/logo-horizontal.png')
+    expect(logo).toHaveAttribute('src', '/brand/tugao/logo-horizontal.webp')
     expect(logo.closest('a')).toHaveAttribute('aria-label', 'Inicio de tuGao')
   })
 
