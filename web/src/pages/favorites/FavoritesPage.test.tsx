@@ -19,8 +19,17 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
-  useSavedProperties: () => mocks.savedPropertyState,
+  useSavedProperties: () => ({
+    ...mocks.savedPropertyState,
+    sessionReady: true,
+    isSaved: (id: string) => mocks.savedPropertyState.savedPropertyIds.has(id),
+    toggleSave: vi.fn(),
+  }),
 }))
+vi.mock('../../shared/config/features', async () => {
+  const actual = await vi.importActual<typeof import('../../shared/config/features')>('../../shared/config/features')
+  return { ...actual, PHASE_FOUR_SVC_ENABLED: true, PHASE_FOUR_MAT_ENABLED: true }
+})
 vi.mock('../../modules/marketplace/hooks/useSavedMarketplaceListings', () => ({
   useSavedMarketplaceListings: () => mocks.savedMarketplaceState,
 }))
@@ -94,6 +103,60 @@ describe('FavoritesPage', () => {
       expect(onOpenService).toHaveBeenCalledWith('electricista')
       expect(onOpenMaterial).toHaveBeenCalledWith('cemento')
     })
+  })
+
+  it('filtra localmente propiedades, servicios y materiales sin navegar a los catálogos', async () => {
+    const onGoResults = vi.fn()
+    const onGoServices = vi.fn()
+    const onGoMaterials = vi.fn()
+    mocks.savedPropertyState.savedPropertyIds = new Set(['property-1'])
+    render(
+      <FavoritesPage
+        properties={[{
+          id: 'property-1', title: 'Casa guardada', location: 'Playa, La Habana',
+          description: 'Casa de prueba', zoneId: 'playa', operation: 'venta',
+          propertyType: 'casa', bedrooms: 2, bathrooms: 1, parking: 0, areaM2: 80,
+          amenities: [], status: 'published', coverTone: '#eee', coverImage: '',
+          mapPoint: { x: 0, y: 0 }, coordinates: { latitude: 0, longitude: 0 },
+        }]}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+        onSelectProperty={vi.fn()}
+        onGoResults={onGoResults}
+        onOpenService={vi.fn()}
+        onOpenMaterial={vi.fn()}
+        onGoServices={onGoServices}
+        onGoMaterials={onGoMaterials}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Casa guardada' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cemento' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Servicios' }))
+    expect(screen.getByText('servicio guardado')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cemento' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Casa guardada' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Materiales' }))
+    expect(screen.getByRole('heading', { name: 'Cemento' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Electricista' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Propiedades' }))
+    expect(screen.getByText('propiedad guardada')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Casa guardada' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cemento' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Propiedades' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Todos' }))
+    expect(screen.getByText('anuncios guardados')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cemento' })).toBeInTheDocument()
+    expect(onGoResults).not.toHaveBeenCalled()
+    expect(onGoServices).not.toHaveBeenCalled()
+    expect(onGoMaterials).not.toHaveBeenCalled()
   })
 
   it('no confunde un fallo al cargar IDs guardados con una lista vacía y permite reintentar', async () => {

@@ -45,6 +45,13 @@ El sistema MUST permitir guardar propiedades desde catalogo, detalle y previews 
 ### Requirement: Consultar favoritos
 El sistema MUST mostrar una pagina privada con propiedades guardadas.
 
+Cuando la cuenta tenga favoritos de Servicios o Materiales habilitados, `/favoritos`
+MUST ofrecer filtros locales para Todos, Propiedades, Servicios y Materiales.
+Cambiar el filtro MUST actualizar las tarjetas visibles y el conteo sin navegar a
+otro catálogo ni recargar la página. El filtro activo MUST exponerse con
+`aria-pressed`; si una categoría no tiene elementos, MUST mostrarse un estado
+vacío para esa categoría y el usuario MUST poder regresar a Todos.
+
 #### Scenario: Abrir favoritos
 - GIVEN un usuario autenticado
 - WHEN abre `/favoritos`
@@ -52,6 +59,14 @@ El sistema MUST mostrar una pagina privada con propiedades guardadas.
 - AND cada propiedad MUST conservar acciones principales de ver detalle y contactar
 - AND si no existen favoritos MUST mostrar un estado vacio con accion para ver mas propiedades
 - AND la ilustracion decorativa del estado vacio MUST permanecer fuera del arbol accesible
+
+#### Scenario: Filtrar favoritos por tipo
+- GIVEN el usuario tiene favoritos de más de una categoría
+- WHEN selecciona Propiedades, Servicios o Materiales
+- THEN `/favoritos` MUST conservar la ruta y mostrar solo elementos de esa categoría
+- AND MUST actualizar el conteo visible y marcar el filtro activo
+- WHEN selecciona Todos
+- THEN MUST volver a mostrar juntos sus favoritos guardados
 
 #### Scenario: Error al cargar favoritos
 - GIVEN un usuario autenticado abre `/favoritos` y falla la consulta
