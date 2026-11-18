@@ -211,7 +211,7 @@ export function FavoritesPage({
                   </span>{' '}
                   {visibleCountLabel}
                 </p>
-                <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar favoritos por tipo">
+                <div className="favorites-filter flex flex-wrap gap-2" role="group" aria-label="Filtrar favoritos por tipo">
                   <Button type="button" variant="outline" aria-pressed={activeFilter === 'all'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'all' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('all')}>Todos</Button>
                   <Button type="button" variant="outline" aria-pressed={activeFilter === 'properties'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'properties' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('properties')}>Propiedades</Button>
                   {marketplaceFavoritesEnabled && <Button type="button" variant="outline" aria-pressed={activeFilter === 'services'} className={`rounded-full h-9 px-4 text-xs font-bold ${activeFilter === 'services' ? 'border-[#035f53] bg-[#035f53] text-white hover:bg-[#024a41] hover:text-white' : ''}`} onClick={() => setActiveFilter('services')}>Servicios</Button>}

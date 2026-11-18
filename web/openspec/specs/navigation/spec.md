@@ -18,6 +18,15 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN el sistema MUST inicializar la pantalla correcta
 - AND MUST restaurar estado desde path, query string o slug cuando aplique
 
+### Requirement: Idioma de la aplicación instalada
+El manifiesto PWA MUST declarar el idioma principal de `name` y `short_name`
+igual al idioma predeterminado de la interfaz.
+
+#### Scenario: Instalar la aplicación en español
+- GIVEN el usuario instala Cubitat desde un navegador compatible
+- WHEN el sistema lee `manifest.webmanifest`
+- THEN `lang` MUST ser `es`, igual al idioma del documento principal
+
 #### Scenario: Navegacion desde menu movil
 - GIVEN un usuario usa el menu movil
 - WHEN selecciona Inicio, Favoritos, Publicar, Cuenta, Mis publicaciones o Moderar

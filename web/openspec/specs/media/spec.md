@@ -43,6 +43,18 @@ El sistema MUST optimizar URLs y atributos de imagen segun contexto de uso.
 - THEN solo la imagen del hero MUST conservar prioridad alta
 - AND las tarjetas de provincias MUST usar lazy loading y prioridad de red baja
 
+#### Scenario: Descubrir pronto la imagen LCP de la portada
+- GIVEN la portada incluye una imagen responsive de hero como elemento LCP
+- WHEN el navegador lee el documento inicial
+- THEN el HTML MUST precargar la imagen con variantes y tamaños compatibles con el `srcset` del hero
+- AND MUST conservar una sola imagen con prioridad de red alta en la portada
+
+#### Scenario: Logotipo optimizado
+- GIVEN el logotipo se muestra en cabecera, fallback o login
+- WHEN se descarga en navegadores modernos
+- THEN MUST servirse en un formato moderno y dimensiones adecuadas al tamaño visual
+- AND MUST conservar proporción y transparencia
+
 ### Requirement: Resiliencia ante imagenes faltantes
 El sistema MUST mostrar placeholders o fondos seguros cuando falten imagenes.
 

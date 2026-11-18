@@ -327,10 +327,10 @@ export function LoginModal({ onClose }: LoginModalProps) {
           <div className="login-modal-brand">
             <img
               className="login-modal-logo"
-              src="/brand/tugao/logo-horizontal.png"
+              src="/brand/tugao/logo-horizontal.webp"
               alt=""
-              width={1160}
-              height={330}
+              width={464}
+              height={132}
             />
           </div>
           <div className="login-modal-copy">

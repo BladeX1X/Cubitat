@@ -6,7 +6,7 @@ Cubitat funciona como Progressive Web App para que el usuario pueda instalar el 
 
 ## Capacidades actuales
 
-- Manifest generado por `vite-plugin-pwa` con nombre, colores, iconos y `display: standalone`.
+- Manifest generado por `vite-plugin-pwa` con nombre, idioma español (`lang: es`), colores, iconos y `display: standalone`.
 - El manifiesto y los iconos del navegador usan la identidad visual tuGao; el nombre de la aplicación instalada permanece como Cubitat.
 - Service worker propio compilado por Workbox mediante `VitePWA` en modo
   `injectManifest`.

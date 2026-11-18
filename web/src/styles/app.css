@@ -4985,4 +4985,9 @@ h2 {
   .brand {
     min-height: 48px;
   }
+
+  .favorites-filter > button {
+    min-height: 48px;
+    height: 48px;
+  }
 }

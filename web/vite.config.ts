@@ -432,6 +432,7 @@ Tipo: ${body.property_type}`;
         manifest: {
           id: '/',
           scope: '/',
+          lang: 'es',
           name: 'Cubitat Inmobiliaria',
           short_name: 'Cubitat',
           description: 'El portal de propiedades para Cuba',

@@ -125,7 +125,13 @@ npm run lint
 ## Hardening de imágenes 2026-07-13
 
 - El hero usa variantes responsive más ligeras de 480, 768 y 1200 px y conserva `fetchPriority="high"` como único recurso visual prioritario de la portada.
+- El HTML inicial precarga las mismas variantes responsive del hero con `imagesrcset`/`imagesizes`, para que el navegador pueda descubrir la imagen LCP antes de descargar e iniciar el módulo principal.
 - Las 16 tarjetas de provincias usan `loading="lazy"`, prioridad baja y variantes Unsplash de 420 px con calidad 45.
+
+### Optimización de marca y LCP — 2026-11-18
+
+- El logotipo conserva su diseño y transparencia en WebP de 464×132 px; se usa en cabecera, fallback y login. El PNG original se conserva como fuente.
+- Se añadió una precarga responsive del hero en `index.html`; mantener sincronizados `imagesrcset`/`imagesizes` con `HomePage.tsx`.
 
 ## Navegación en ventanas medianas — 2026-11-04
 

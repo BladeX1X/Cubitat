@@ -1087,10 +1087,10 @@ export function CubitatApp() {
           <div className="recovery-brand">
             <img
               className="recovery-brand-logo"
-              src="/brand/tugao/logo-horizontal.png"
+              src="/brand/tugao/logo-horizontal.webp"
               alt="tuGao · atrapa tu sueño"
-              width={1160}
-              height={330}
+              width={464}
+              height={132}
             />
           </div>
         </header>

@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { HomePage } from './HomePage'
 import type { SearchFilters } from '../../modules/search/types'
@@ -11,6 +13,16 @@ const filters: SearchFilters = {
 }
 
 describe('HomePage', () => {
+  it('preloads the responsive hero image from the document head', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+
+    expect(html).toContain('rel="preload"')
+    expect(html).toContain('as="image"')
+    expect(html).toContain('fetchpriority="high"')
+    expect(html).toContain('imagesizes="100vw"')
+    expect(html).toContain('w=768&amp;q=40 768w')
+  })
+
   it('reserva la prioridad de red para el hero y difiere las provincias', () => {
     const { container } = render(
       <HomePage
