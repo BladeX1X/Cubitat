@@ -13,14 +13,10 @@ const filters: SearchFilters = {
 }
 
 describe('HomePage', () => {
-  it('preloads the responsive hero image from the document head', () => {
+  it('keeps the shared SPA document free of a global hero preload', () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
 
-    expect(html).toContain('rel="preload"')
-    expect(html).toContain('as="image"')
-    expect(html).toContain('fetchpriority="high"')
-    expect(html).toContain('imagesizes="100vw"')
-    expect(html).toContain('w=768&amp;q=40 768w')
+    expect(html).not.toContain('photo-1600607687939-ce8a6c25118c')
   })
 
   it('reserva la prioridad de red para el hero y difiere las provincias', () => {
