@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FavoritesPage } from './FavoritesPage'
+
+const appCss = readFileSync(resolve(process.cwd(), 'src/styles/app.css'), 'utf8')
 
 const mocks = vi.hoisted(() => ({
   savedPropertyState: {
@@ -157,6 +161,12 @@ describe('FavoritesPage', () => {
     expect(onGoResults).not.toHaveBeenCalled()
     expect(onGoServices).not.toHaveBeenCalled()
     expect(onGoMaterials).not.toHaveBeenCalled()
+  })
+
+  it('mantiene objetivos táctiles de 48 px para los filtros de favoritos', () => {
+    expect(
+      /@media \(any-pointer: coarse\) \{[\s\S]*?\.favorites-filter > button \{\s*min-height: 48px;\s*height: 48px;\s*\}/.test(appCss),
+    ).toBe(true)
   })
 
   it('no confunde un fallo al cargar IDs guardados con una lista vacía y permite reintentar', async () => {

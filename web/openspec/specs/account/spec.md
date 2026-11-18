@@ -38,6 +38,13 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - AND MUST mantener visible la navegación lateral desde el breakpoint md
 - AND MUST permitir alcanzar los destinos sin desplazamiento horizontal de toda la página
 
+#### Scenario: Filtros de favoritos táctiles
+- GIVEN un usuario autenticado abre Favoritos en un dispositivo táctil
+- WHEN aparecen los filtros Todos, Propiedades, Servicios y Materiales
+- THEN cada filtro MUST tener un objetivo táctil de al menos 48 px de alto
+- AND los filtros MUST poder saltar de fila en pantallas estrechas sin desbordar la página
+- AND seleccionar una categoría MUST filtrar los elementos en `/favoritos` sin navegar al catálogo
+
 #### Scenario: Mostrar acceso al panel de agente
 - GIVEN un usuario autenticado está en el área privada
 - WHEN su rol canónico en `profiles` es `agent`

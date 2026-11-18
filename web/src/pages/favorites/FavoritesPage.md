@@ -14,6 +14,9 @@ category-specific empty message when no records match. `Todos` restores the
 combined list. The “Explorar” actions in the overall empty state remain catalog
 navigation actions.
 
+On touch devices, each category filter has a 48 px minimum height and may wrap
+to another row on narrow screens; selecting a category still filters in place.
+
 ## Regression coverage
 
 `FavoritesPage.test.tsx` verifies each category filter, the return to `Todos`,
