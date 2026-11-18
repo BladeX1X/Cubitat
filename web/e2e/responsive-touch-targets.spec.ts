@@ -53,9 +53,11 @@ for (const width of [320, 360, 390]) {
     const page = await context.newPage()
 
     await page.goto('/resultados?operacion=venta')
-    await page.getByRole('button', { name: /filtros/i }).first().click()
-    const sheet = page.getByRole('dialog', { name: 'Filtros de búsqueda' })
-    await expect(sheet).toBeVisible()
+    const trigger = page.locator('.filter-more-control')
+    await expect(trigger).toBeVisible()
+    await trigger.click()
+    const sheet = page.locator('.mobile-filter-sheet')
+    await expect(sheet).toHaveClass(/is-open/)
     await expect.poll(() => sheet.locator('.mobile-filter-sheet__panel').evaluate((panel) => {
       const body = panel.querySelector<HTMLElement>('.mobile-filter-sheet__body')
       const footer = panel.querySelector<HTMLElement>('.mobile-filter-sheet__footer')
@@ -69,7 +71,7 @@ for (const width of [320, 360, 390]) {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
 
     await sheet.getByRole('button', { name: 'Cerrar filtros' }).click()
-    await expect(sheet).toBeHidden()
+    await expect(sheet).not.toHaveClass(/is-open/)
     await context.close()
   })
 }
