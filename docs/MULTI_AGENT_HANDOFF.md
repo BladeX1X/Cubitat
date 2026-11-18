@@ -4218,3 +4218,11 @@ npm run build había corrido después de build:phase2-dev; F3 no quedaba en la a
 ## Actualización de gate y builds — 2026-11-18
 
 GitHub retiró `GHSA-fc5q-39xc-vjpf` el 2026-11-18, pero el registro npm aún lo muestra y `picomatch` latest sigue en 4.0.7. CI ahora permite solo ese URL retirado, exige `npm audit --omit=dev --audit-level=high` limpio y mantiene cualquier otro advisory alto/crítico como bloqueo. El filtro falla cerrado ante problemas de red o JSON inválido. Código: `web/scripts/audit-withdrawn-advisories.mjs`; regresiones 3/3. Gates locales completos PASS: lint, suite 248 archivos/1,131 PASS/1 omitida, build estándar y perfiles DEV/producción F2/F3/F4. Auditoría runtime producción: cero hallazgos. Rerun del PR #246 antes del cambio siguió fallando en auditoría; base de datos PASS. Falta enviar cambios y obtener CI actualizado; no hay despliegue nuevo.
+
+## Favoritos filtrables — release manual producción — 2026-11-18
+
+- El Worker `cubitat1` está al 100 % en `f85c0e18-81b2-4059-8001-43e4dab5f823`, construido desde el commit `8867dd4` de PR #247 con el perfil `phase4-production:ci` y el procedimiento manual protegido de Wrangler.
+- Se preservó el sitemap productivo vigente de 446 URLs y `robots.txt`; smoke HTTP de home, Favoritos, Resultados, Servicios, Materiales, `sw.js` y sitemap: 200.
+- QA autenticado de solo lectura: «Todos» 5; Propiedades 5; Servicios y Materiales 0 con estado vacío; filtrar no cambia `/favoritos` y «Todos» restaura la lista.
+- No hubo cambios de base de datos ni escrituras de anuncios. PR #247 sigue abierto porque GitHub Actions no inició `quality` ni `database-security` por el bloqueo de facturación. La validación local y el deploy manual no se presentan como CI verde ni integración del PR.
+- Evidencia: `docs/FAVORITES_FILTERS_PRODUCTION_2026-11-18.md`.
