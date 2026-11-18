@@ -19,6 +19,10 @@ pantalla. No se exponen tokens ni rutas privadas en errores.
 Las referencias externas ya permitidas conservan su comportamiento actual. Las
 fotos que no pasan por el proxy o no corresponden al dueño no se descargan.
 
+## Portada del borrador local
+
+La tarjeta del borrador local toma su primera imagen desde IndexedDB (`data:image/...`), donde el formulario conserva las fotos preparadas. La miniatura no genera una solicitud remota. Si IndexedDB o la foto no están disponibles, se conserva el placeholder y el anuncio local sigue apareciendo.
+
 ## Filtro de publicaciones
 
 La lista permite filtrar en memoria por todas, en revisión, publicadas,

@@ -93,7 +93,7 @@ test('Mis publicaciones reintenta Storage temporal y muestra la portada privada'
   })
 
   await page.goto('/')
-  await page.evaluate(ownerId => {
+  await page.evaluate(async ownerId => {
     const expiresAt = Math.floor(Date.now() / 1000) + 3600
     window.localStorage.setItem('cubitat-auth-token', JSON.stringify({
       access_token: 'dummy-token',
@@ -103,6 +103,27 @@ test('Mis publicaciones reintenta Storage temporal y muestra la portada privada'
       refresh_token: 'dummy-refresh',
       user: { id: ownerId, email: 'qa@example.com', user_metadata: { full_name: 'QA local' } },
     }))
+    window.localStorage.setItem(`cubitat_publish_draft:${ownerId}`, JSON.stringify({
+      propertyType: 'casa', operation: 'venta', municipality: 'Playa', province: 'La Habana',
+      location: 'Playa, La Habana', priceUsd: '100',
+    }))
+    const request = indexedDB.open('cubitat-publication-drafts', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onupgradeneeded = () => request.result.createObjectStore('drafts')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const tx = db.transaction('drafts', 'readwrite')
+    tx.objectStore('drafts').put({
+      formData: { propertyType: 'casa', operation: 'venta' },
+      images: [{ dataUrl: 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA', size: 40, name: 'draft.webp' }],
+      step: 6, existingAmenities: [],
+    }, JSON.stringify([ownerId, null]))
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+    db.close()
   }, ownerId)
   await page.goto('/mis-propiedades')
 
@@ -115,6 +136,11 @@ test('Mis publicaciones reintenta Storage temporal y muestra la portada privada'
   await expect.poll(() => cover.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
   await expect(cover).toHaveAttribute('src', /^blob:/)
   await expect(page.getByText('Sin imagen')).toHaveCount(0)
+
+  const localDraftCover = page.getByRole('img', { name: 'Casa en venta en Playa (Borrador)' })
+  await expect(localDraftCover).toBeVisible()
+  await expect(localDraftCover).toHaveAttribute('src', /^data:image\/webp;base64,/)
+  await expect.poll(() => localDraftCover.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
 
   const filters = page.getByRole('group', { name: 'Filtrar publicaciones por estado' })
   await filters.getByRole('button', { name: /En revisión/ }).click()

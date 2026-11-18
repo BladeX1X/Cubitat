@@ -458,10 +458,10 @@ Tipo: ${body.property_type}`;
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: '/brand/tugao/pwa-icon-reverse-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'maskable'
             }
           ]
         },

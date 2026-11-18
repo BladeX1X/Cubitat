@@ -325,8 +325,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
       <div className="login-modal-shell animate-in zoom-in-95 fade-in duration-300 ease-out">
         <aside className="login-modal-aside" aria-hidden="true">
           <div className="login-modal-brand">
-            <span className="brand-mark">c</span>
-            <strong>Cubitat</strong>
+            <img
+              className="login-modal-logo"
+              src="/brand/tugao/logo-horizontal.png"
+              alt=""
+              width={1160}
+              height={330}
+            />
           </div>
           <div className="login-modal-copy">
             <span>Cuenta Cubitat</span>

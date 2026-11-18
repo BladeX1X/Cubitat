@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MyPropertiesEmptyState, PropertyCard } from './MyPropertiesPage'
+import { getLocalDraftCoverImage } from './localDraftCover'
 import { getPropertyStatusConfig } from '../../modules/properties/propertyStatus'
 
 describe('getPropertyStatusConfig', () => {
@@ -128,5 +129,31 @@ describe('getPropertyStatusConfig', () => {
     expect(viewButton).toBeInTheDocument()
     viewButton.click()
     expect(onViewMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('local publication draft cover', () => {
+  it('uses the first locally stored image as the draft card cover', () => {
+    const cover = getLocalDraftCoverImage([
+      { dataUrl: 'data:image/webp;base64,YQ==' },
+      { dataUrl: 'data:image/webp;base64,Yg==' },
+    ])
+    expect(cover).toBe('data:image/webp;base64,YQ==')
+  })
+
+  it('does not use non-image values or a remote URL as a local draft cover', () => {
+    expect(getLocalDraftCoverImage([{ dataUrl: 'https://example.com/image.webp' }])).toBeNull()
+    expect(getLocalDraftCoverImage([])).toBeNull()
+    expect(getLocalDraftCoverImage(null)).toBeNull()
+  })
+
+  it('renders the selected draft cover in the publication card', () => {
+    const cover = getLocalDraftCoverImage([{ dataUrl: 'data:image/webp;base64,YQ==' }])
+    render(<PropertyCard property={{
+      id: 'local_draft_id', title: 'Borrador QA', location: 'La Habana', price_usd: 0,
+      cover_image: cover, status: 'local_draft', moderation_message: null,
+      created_at: new Date().toISOString(), user_id: 'user-456',
+    }} onEdit={vi.fn()} onDelete={vi.fn()} onHide={vi.fn()} onRestore={vi.fn()} actionLoading={false} />)
+    expect(screen.getByRole('img', { name: 'Borrador QA' })).toHaveAttribute('src', cover)
   })
 })

@@ -37,7 +37,9 @@ jobs:
         run: npm ci
 
       - name: Dependency audit
-        run: npm audit --audit-level=high --registry=https://registry.npmjs.org
+        run: |
+          npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
+          node scripts/audit-withdrawn-advisories.mjs
 
       - name: Lint
         run: npm run lint

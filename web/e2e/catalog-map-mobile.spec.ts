@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+
 for (const { path, name } of [
   { path: '/servicios', name: 'Servicios' },
   { path: '/materiales', name: 'Materiales' },
@@ -12,7 +14,6 @@ for (const { path, name } of [
         mapResponses.push({ url: response.url(), status: response.status() })
       }
     })
-    await page.setViewportSize({ width: 390, height: 844 })
     await page.route('**/rest/v1/home_service_providers**', async route => {
       if (new URL(route.request().url()).hostname === '127.0.0.1') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
@@ -24,6 +25,18 @@ for (const { path, name } of [
       } else await route.continue()
     })
     await page.goto(path)
+
+    const siteHeader = page.locator('.site-header')
+    const filterToolbar = page.locator('.marketplace-filter-toolbar')
+    await expect(siteHeader).toBeVisible()
+    await expect(filterToolbar).toBeVisible()
+    await expect(siteHeader).toHaveCSS('position', 'relative')
+    await page.evaluate(() => {
+      document.body.style.minHeight = '200vh'
+      window.scrollTo(0, 500)
+    })
+    await expect.poll(() => filterToolbar.evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(8)
+    await expect.poll(() => siteHeader.evaluate((element) => element.getBoundingClientRect().bottom < 0)).toBe(true)
 
     const openButton = page.getByRole('button', { name: 'Mostrar mapa' })
     await expect(openButton).toBeVisible({ timeout: 30_000 })

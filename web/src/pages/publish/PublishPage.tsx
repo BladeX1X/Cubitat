@@ -628,7 +628,8 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
     if (!shouldDiscard) return
 
     try {
-      await draft.discard()
+      if (isEditMode || !restoreDraft) await draft.discard()
+      else await draft.restoreSavedDraft()
       onBack()
     } catch (err) {
       logSafeEvent({
@@ -637,7 +638,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
         level: 'error',
         code: sanitizeErrorReason(err),
       })
-      alert('No se pudieron descartar los cambios. El borrador sigue disponible; inténtalo de nuevo.')
+      alert('No se pudieron cancelar los cambios. El borrador sigue disponible; inténtalo de nuevo.')
     }
   }
 

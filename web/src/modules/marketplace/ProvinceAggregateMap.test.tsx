@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProvinceCount } from './provinceAggregates'
+import type { ProvinceMapFeatureLike } from './provinceMapInteractions'
 
 const mocks = vi.hoisted(() => ({
   getStyle: vi.fn(),
@@ -10,9 +11,11 @@ const mocks = vi.hoisted(() => ({
     addSource: vi.fn(),
     getCanvas: vi.fn(() => ({ style: {} })),
     getLayer: vi.fn(() => true),
-    getSource: vi.fn(() => ({ setData: vi.fn() })),
+    getSource: vi.fn(() => ({ setData: vi.fn(), getClusterExpansionZoom: vi.fn().mockResolvedValue(7) })),
+    queryRenderedFeatures: vi.fn((): ProvinceMapFeatureLike[] => []),
     on: vi.fn(),
     once: vi.fn(),
+    easeTo: vi.fn(),
     remove: vi.fn(),
     setLayoutProperty: vi.fn(),
     setPaintProperty: vi.fn(),
@@ -77,5 +80,81 @@ describe('ProvinceAggregateMap', () => {
     await waitFor(() => expect(screen.queryByText('Cargando mapa…')).not.toBeInTheDocument())
     expect(mocks.map.addSource).toHaveBeenCalled()
     expect(mocks.map.addLayer).toHaveBeenCalled()
+    expect(mocks.map.setPaintProperty).toHaveBeenCalledWith(
+      'cubitat-marketplace-province-points',
+      'circle-radius',
+      ['case', ['==', ['get', 'province'], ''], 28, 24],
+    )
+  })
+
+  it('applies a province selection from a tap on the mobile map', async () => {
+    mocks.getStyle.mockResolvedValue({ version: 8, sources: {}, layers: [] })
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    const onSelectProvince = vi.fn()
+
+    render(<ProvinceAggregateMap counts={counts} selectedProvince="" onSelectProvince={onSelectProvince} onClose={vi.fn()} />)
+    await waitFor(() => expect(mocks.map.once).toHaveBeenCalledWith('style.load', expect.any(Function)))
+    const styleLoadHandler = mocks.map.once.mock.calls.find(([event]) => event === 'style.load')?.[1]
+    await act(async () => (styleLoadHandler as () => void)())
+    await waitFor(() => expect(screen.queryByText('Cargando mapa…')).not.toBeInTheDocument())
+
+    mocks.map.queryRenderedFeatures.mockReturnValue([{
+      properties: { province: 'La Habana', count: 3 },
+      geometry: { type: 'Point', coordinates: [-82.36, 23.1] },
+    }])
+    const clickHandler = mocks.map.on.mock.calls.find(([event]) => event === 'click')?.[1]
+    expect(clickHandler).toEqual(expect.any(Function))
+
+    act(() => (clickHandler as (event: { point: { x: number; y: number } }) => void)({ point: { x: 20, y: 30 } }))
+
+    expect(onSelectProvince).toHaveBeenCalledWith('La Habana')
+  })
+
+  it('zooms into a tapped group, then filters when the province marker is tapped', async () => {
+    mocks.getStyle.mockResolvedValue({ version: 8, sources: {}, layers: [] })
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    const onSelectProvince = vi.fn()
+    render(<ProvinceAggregateMap counts={counts} selectedProvince="" onSelectProvince={onSelectProvince} onClose={vi.fn()} />)
+    await waitFor(() => expect(mocks.map.once).toHaveBeenCalledWith('style.load', expect.any(Function)))
+    const styleLoadHandler = mocks.map.once.mock.calls.find(([event]) => event === 'style.load')?.[1]
+    await act(async () => (styleLoadHandler as () => void)())
+    await waitFor(() => expect(screen.queryByText('Cargando mapa…')).not.toBeInTheDocument())
+
+    mocks.map.queryRenderedFeatures
+      .mockReturnValueOnce([{
+        properties: { cluster_id: 42, point_count: 2 },
+        geometry: { type: 'Point', coordinates: [-80, 22] },
+      }])
+      .mockReturnValueOnce([{
+        properties: { province: 'La Habana', count: 3 },
+        geometry: { type: 'Point', coordinates: [-82.36, 23.1] },
+      }])
+    const clickHandler = mocks.map.on.mock.calls.find(([event]) => event === 'click')?.[1]
+    const click = (x: number) => act(() => (clickHandler as (event: { point: { x: number; y: number } }) => void)({ point: { x, y: 30 } }))
+
+    click(20)
+    await waitFor(() => expect(mocks.map.easeTo).toHaveBeenCalledWith({ center: [-80, 22], zoom: 7 }))
+    expect(onSelectProvince).not.toHaveBeenCalled()
+
+    click(21)
+    expect(onSelectProvince).toHaveBeenCalledWith('La Habana')
   })
 })

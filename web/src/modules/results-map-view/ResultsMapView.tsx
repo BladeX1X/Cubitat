@@ -66,7 +66,6 @@ type MapOverlayProps = {
   onClusterClick: (ids: string[]) => void
   onCloseCarousel: () => void
   onCardSelect: (id: string) => void
-  onMapViewportChange: (propertyIds: string[]) => void
 }
 
 function getPropertyTypeLabel(type: PropertyType): string {
@@ -177,7 +176,6 @@ function MapOverlay({
   onClusterClick,
   onCloseCarousel,
   onCardSelect,
-  onMapViewportChange,
 }: MapOverlayProps) {
   const carouselRef = useRef<HTMLDivElement>(null)
 
@@ -222,9 +220,9 @@ function MapOverlay({
         <PropertyMap
           properties={properties}
           selectedPropertyId={activeCarouselId}
+          selectedPropertyIds={carouselPropertyIds}
           onSelectProperty={onPinClick}
           onSelectCluster={onClusterClick}
-          onViewportChange={onMapViewportChange}
         />
 
         <div className="map-bottom-bar">
@@ -415,7 +413,6 @@ export function ResultsMapView({
           onClusterClick={handleClusterClick}
           onCloseCarousel={handleCloseCarousel}
           onCardSelect={handleCardSelect}
-          onMapViewportChange={handleCloseCarousel}
         />
       ) : null}
     </>

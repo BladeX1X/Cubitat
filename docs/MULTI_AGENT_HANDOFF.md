@@ -4214,3 +4214,7 @@ npm run build había corrido después de build:phase2-dev; F3 no quedaba en la a
 - Migración `20261106100000_agent_access_revocation.sql`: aplicada en DEV según consulta de objetos, pero sin versión remota registrada; producción aún no modificada.
 - Se prepara promoción por PR y un workflow manual de producción que aborta si el destino no es `tohjzoncoosvjbjcakdl`, hay esquema parcial, o el dry-run no enumera únicamente esta migración.
 - Lint, suite completa y build Fase 4 de producción se están repitiendo antes de abrir PR. Despliegue Worker y migración productiva siguen pendientes hasta integrar CI verde.
+
+## Actualización de gate y builds — 2026-11-18
+
+GitHub retiró `GHSA-fc5q-39xc-vjpf` el 2026-11-18, pero el registro npm aún lo muestra y `picomatch` latest sigue en 4.0.7. CI ahora permite solo ese URL retirado, exige `npm audit --omit=dev --audit-level=high` limpio y mantiene cualquier otro advisory alto/crítico como bloqueo. El filtro falla cerrado ante problemas de red o JSON inválido. Código: `web/scripts/audit-withdrawn-advisories.mjs`; regresiones 3/3. Gates locales completos PASS: lint, suite 248 archivos/1,131 PASS/1 omitida, build estándar y perfiles DEV/producción F2/F3/F4. Auditoría runtime producción: cero hallazgos. Rerun del PR #246 antes del cambio siguió fallando en auditoría; base de datos PASS. Falta enviar cambios y obtener CI actualizado; no hay despliegue nuevo.

@@ -29,6 +29,14 @@ describe('Header mobile menu', () => {
     vi.clearAllMocks()
   })
 
+  it('shows the tuGao logo as the home link brand', () => {
+    render(<Header user={null} {...callbacks} />)
+
+    const logo = screen.getByRole('img', { name: 'tuGao · atrapa tu sueño' })
+    expect(logo).toHaveAttribute('src', '/brand/tugao/logo-horizontal.png')
+    expect(logo.closest('a')).toHaveAttribute('aria-label', 'Inicio de tuGao')
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
     document.body.classList.remove('has-mobile-menu-open')

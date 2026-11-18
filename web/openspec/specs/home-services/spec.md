@@ -51,6 +51,9 @@ actualiza el perfil antes de completar el lote.
 
 - Las páginas deben ser utilizables en móvil, por teclado y con lector de
   pantalla; contemplan carga, error, estado vacío y reintento.
+- En dispositivos táctiles, los botones del encabezado, filtros, acciones del
+  directorio, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
+  campos de texto móviles MUST usar fuente de al menos 16 px.
 - Al abrir “Mostrar mapa” en escritorio, filtros y resultados permanecen en una
   columna izquierda y el mapa aparece simultáneamente a la derecha, como en
   Comprar/Rentar; en móvil el mapa ocupa la pantalla y se puede cerrar. El
@@ -62,8 +65,9 @@ actualiza el perfil antes de completar el lote.
   actual, y la hoja permite limpiar o volver a resultados. En escritorio se
   muestran búsqueda y filtros en la barra compacta, con cualquier
   desbordamiento contenido dentro de la barra sticky. En viewports de hasta
-  768 px el encabezado se desplaza con la página y la barra sticky permanece a
-  64 px del viewport, como en Comprar.
+  620 px el encabezado se desplaza con la página y la búsqueda sticky permanece
+  a 8 px del borde superior, visible y sin quedar cubierta. Entre 621 y 768 px,
+  el encabezado de dos filas permanece sticky y la barra queda debajo a 104 px.
 - Aplicar, cambiar o limpiar filtros actualiza los resultados en la misma vista,
   sin recargar el documento. Durante la consulta, la barra y el mapa permanecen
   montados; los resultados visibles se conservan hasta que llega la respuesta

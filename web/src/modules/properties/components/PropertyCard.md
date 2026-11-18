@@ -31,7 +31,7 @@ type PropertyCardProps = {
   - Incluye flechas laterales solo cuando existen varias imagenes reales.
   - Incluye boton visual de guardar con icono de corazon.
 - El favorito compartido espera a que Supabase confirme la sesión; durante esa comprobación permanece deshabilitado con estado accesible para evitar abrir el inicio de sesión a una cuenta ya activa.
-  - Las flechas y el boton de guardar deben conservar area tactil minima de `44x44 px`.
+  - En dispositivos táctiles, guardar, contacto y los controles del carrusel deben ofrecer un objetivo de `48x48 px`, con espacio entre controles adyacentes.
 - Informacion:
   - Titulo y precio en la primera linea.
   - Ubicacion con icono.
@@ -98,8 +98,8 @@ Clases principales en `app.css`:
 - La seleccion funciona con click, `Enter` y `Space`.
 - Guardar y flechas tienen `aria-label`.
 - El grupo de caracteristicas usa `aria-label`.
-- Guardar y flechas deben tener minimo `44x44 px` de area interactiva para usabilidad tactil.
-- Los puntos del carrusel conservan un indicador visual pequeno dentro de un area tactil de `44x44 px` en movil.
+- En dispositivos táctiles, guardar, contacto y los puntos del carrusel ofrecen un área interactiva mínima de `48x48 px`.
+- Los puntos del carrusel conservan un indicador visual pequeño dentro del área táctil ampliada.
 
 ## Pendientes Recomendados
 

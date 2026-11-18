@@ -75,7 +75,7 @@
 
 @media (max-width: 620px) {
   .marketplace-map-floating-toggle {
-    min-height: 44px;
+    min-height: 48px;
     padding-inline: 18px;
     font-size: 0.875rem;
   }
@@ -232,7 +232,7 @@
   }
 
   .marketplace-filter-toolbar__search > label input {
-    min-height: 42px;
+    min-height: 48px;
     border: 0;
     padding-inline: 8px;
     font-size: 0.9rem;
@@ -241,10 +241,10 @@
   .marketplace-filter-toolbar__trigger {
     position: relative;
     display: inline-flex;
-    flex: 0 0 42px;
-    width: 42px;
-    height: 42px;
-    min-height: 42px;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
     padding: 0;
     border-radius: 999px;
     background: #f4f6f5;
@@ -267,6 +267,21 @@
     line-height: 1;
   }
 
+}
+
+/* MapLibre's default +/- controls are smaller than Google's 48 px touch
+   target guidance. Keep the same minimum as the catalog's other mobile actions. */
+@media (any-pointer: coarse) {
+  .marketplace-province-map .maplibregl-ctrl-group button,
+  .map-fullscreen-overlay .maplibregl-ctrl-group button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .marketplace-province-map .marketplace-map-close {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -317,11 +332,46 @@
 @media (max-width: 768px) {
   .marketplace-filter-toolbar__search > label input,
   .marketplace-filter-toolbar__search > label select {
-    min-height: 42px;
+    min-height: 48px;
     border: 0;
   }
 
   .marketplace-filter-clear { display: none; }
+}
+
+@media (any-pointer: coarse) {
+  .marketplace-map-floating-toggle,
+  .marketplace-directory-heading__actions button,
+  .marketplace-filter-toolbar__trigger,
+  .marketplace-filter-toolbar__search > label input,
+  .marketplace-filter-toolbar__search > label select,
+  .catalog-filter-sheet__header button,
+  .catalog-filter-sheet__footer button,
+  .catalog-filter-sheet__body > label input,
+  .catalog-filter-sheet__body > label select {
+    min-height: 48px !important;
+  }
+
+  .marketplace-filter-toolbar__trigger {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .marketplace-filter-toolbar__search > label input {
+    font-size: 16px;
+  }
+
+  .catalog-filter-sheet__body > label input {
+    font-size: 16px;
+  }
+
+  .marketplace-contact-actions > .grid.grid-cols-2 > button,
+  .border-t.border-neutral-100.p-4 > .grid.grid-cols-2 > button,
+  .marketplace-contact-actions__buttons > button {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
 }
 
 .marketplace-filter-toolbar__desktop-filters > label select:disabled {
@@ -468,9 +518,28 @@
     margin-right: 10px;
   }
 
+  .marketplace-contact-actions > .grid.grid-cols-2 > button,
+  .border-t.border-neutral-100.p-4 > .grid.grid-cols-2 > button,
+  .marketplace-contact-actions__buttons > button,
+  .catalog-pagination > button,
+  .catalog-pagination__page {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .catalog-pagination__page {
+    width: 48px;
+  }
+
   .catalog-filter-sheet__footer > button:last-child {
     min-height: 44px;
     flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .marketplace-filter-toolbar {
+    top: 8px;
   }
 }
 

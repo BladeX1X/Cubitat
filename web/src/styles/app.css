@@ -108,24 +108,15 @@ textarea:focus-visible {
   display: flex;
   min-height: 44px;
   align-items: center;
-  gap: 9px;
-  color: var(--ink);
-  font-size: 21px;
-  font-weight: 850;
+  min-width: 0;
   text-decoration: none;
 }
 
-.brand-mark {
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: var(--green);
-  font-size: 24px;
-  font-weight: 950;
-  line-height: 1;
+.brand-logo {
+  display: block;
+  width: min(178px, 24vw);
+  height: auto;
+  object-fit: contain;
 }
 
 .primary-nav {
@@ -1940,12 +1931,31 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 22px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
 }
 
-.login-modal-brand .brand-mark {
-  color: var(--green-dark);
+.login-modal-logo {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+}
+
+.recovery-brand-header {
+  display: flex;
+  height: 68px;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #dce6e2;
   background: #fff;
+}
+
+.recovery-brand-logo {
+  display: block;
+  width: min(178px, 52vw);
+  height: auto;
+  object-fit: contain;
 }
 
 .login-modal-copy {
@@ -2751,8 +2761,8 @@ h2 {
   }
 
   .property-card .property-photo-dot {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     pointer-events: auto;
   }
 
@@ -3095,6 +3105,43 @@ h2 {
     border: 1px solid var(--green-dark);
     color: #fff;
     background: var(--green-dark);
+  }
+}
+
+@media (any-pointer: coarse) {
+  .header-actions > a,
+  .header-actions > button,
+  .primary-nav a,
+  .mobile-bottom-nav button,
+  .site-footer a,
+  .site-footer button {
+    min-height: 48px;
+  }
+
+  .primary-nav a,
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .property-save {
+    width: 48px;
+    height: 48px;
+  }
+
+  .property-photo-dot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .property-contact-btn,
+  .property-whatsapp-btn {
+    min-height: 48px !important;
+    height: 48px !important;
+  }
+
+  .property-photo-dots {
+    gap: 8px;
   }
 }
 
@@ -3850,6 +3897,10 @@ h2 {
     box-shadow: 0 1px 0 rgba(16, 35, 31, 0.08);
   }
 
+  .is-directory-page .site-header {
+    position: relative;
+  }
+
   .is-detail-page .site-header {
     gap: 9px;
     padding: 8px 14px;
@@ -3857,22 +3908,18 @@ h2 {
 
   .brand {
     min-height: 44px;
-    font-size: 18px;
-    gap: 8px;
   }
 
-  .brand-mark {
-    width: 28px;
-    height: 28px;
-    font-size: 21px;
+  .brand-logo {
+    width: min(150px, 42vw);
   }
 
   .is-detail-page .brand {
     flex: 0 0 auto;
   }
 
-  .is-detail-page .brand span:last-child {
-    display: none;
+  .is-detail-page .brand-logo {
+    width: min(142px, 36vw);
   }
 
   .mobile-header-search {
@@ -3888,7 +3935,7 @@ h2 {
   }
 
   .mobile-catalog-shortcuts button {
-    min-height: 38px;
+    min-height: 48px;
     border: 1px solid #dcebe7;
     border-radius: 999px;
     background: #f7fbfa;
@@ -3920,8 +3967,8 @@ h2 {
     position: relative;
     display: inline-grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border: 0;
     border-radius: 999px;
     color: #006b5d;

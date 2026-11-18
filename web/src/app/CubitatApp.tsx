@@ -1074,6 +1074,7 @@ export function CubitatApp() {
   const appShellClass = [
     'app-shell',
     pageMode === 'results' ? 'is-results-page' : '',
+    pageMode === 'services' || pageMode === 'materials' ? 'is-directory-page' : '',
     pageMode === 'detail' ? 'is-detail-page' : '',
     pageMode === 'publish' || pageMode === 'edit' ? 'is-publish-page' : '',
   ].filter(Boolean).join(' ')
@@ -1082,10 +1083,15 @@ export function CubitatApp() {
   return (
     <main className={appShellClass}>
       {isRecoveryPage ? (
-        <header className="flex h-[68px] items-center justify-center border-b border-[#dce6e2] bg-white" aria-label="Cubitat">
-          <div className="flex items-center gap-2.5 text-xl font-extrabold text-[#10231f]">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#007d6d] text-white">c</span>
-            <span>Cubitat</span>
+        <header className="recovery-brand-header" aria-label="tuGao">
+          <div className="recovery-brand">
+            <img
+              className="recovery-brand-logo"
+              src="/brand/tugao/logo-horizontal.png"
+              alt="tuGao · atrapa tu sueño"
+              width={1160}
+              height={330}
+            />
           </div>
         </header>
       ) : (
@@ -1115,7 +1121,7 @@ export function CubitatApp() {
             <p className="text-xs font-bold text-red-700">Error al cargar datos</p>
             <p className="text-[11px] text-red-500">{error}</p>
             <Button 
-              className="mt-2 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs" 
+              className="mt-2 min-h-12 bg-red-700 hover:bg-red-800 text-white rounded-full px-4 py-1.5 text-xs"
               onClick={() => window.location.reload()}
             >
               Reintentar

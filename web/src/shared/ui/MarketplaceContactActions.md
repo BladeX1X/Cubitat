@@ -3,6 +3,11 @@
 Acciones compartidas de teléfono y WhatsApp para anuncios de propiedades,
 Servicios y Materiales, tanto en tarjetas como en la ficha.
 
+En tarjetas de Servicios y Materiales, el bloque usa `.marketplace-contact-actions`
+y en dispositivos táctiles ambos botones tienen un objetivo de al menos
+48×48 px, con separación entre Contactar y Consultar. Las acciones de propiedad
+usan el estilo compartido de `PropertyCard` y el mismo objetivo táctil mínimo.
+
 Al pulsar “Contactar” o “Consultar”, la interfaz solicita al Worker el canal
 privado del anuncio. El teléfono no aparece en el catálogo ni se descarga antes
 de una acción explícita. El Worker valida el tipo e ID, aplica límite por IP y

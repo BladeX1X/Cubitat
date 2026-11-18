@@ -79,8 +79,8 @@ export function MarketplaceContactActions({
       : isPropertyMobile ? 'mobile-detail-cta-icon'
         : layout === 'card' ? 'min-h-11 w-full' : 'min-h-11'
   return (
-    <div className={isPropertyCard ? 'property-actions' : isPropertyHero ? 'detail-desktop-cta-row' : isPropertyMobile ? 'contents' : layout === 'card' ? 'border-t border-neutral-100 p-4' : 'mt-6'}>
-      <div className={isPropertyCard || isPropertyHero || isPropertyMobile ? 'contents' : 'grid grid-cols-2 gap-2'}>
+    <div className={isPropertyCard ? 'property-actions' : isPropertyHero ? 'detail-desktop-cta-row' : isPropertyMobile ? 'contents' : layout === 'card' ? 'marketplace-contact-actions border-t border-neutral-100 p-4' : 'mt-6'}>
+      <div className={isPropertyCard || isPropertyHero || isPropertyMobile ? 'contents' : layout === 'card' ? 'marketplace-contact-actions__buttons grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-2'}>
         <Button type="button" variant="outline" className={buttonClass} aria-label={isPropertyMobile ? 'Llamar al anunciante' : undefined} disabled={loadingChannel !== null} onClick={(event) => { event.stopPropagation(); void openChannel('phone') }}>
           <Phone aria-hidden="true" />{isPropertyMobile ? <span className="sr-only">Contactar</span> : loadingChannel === 'phone' ? 'Abriendo…' : 'Contactar'}
         </Button>

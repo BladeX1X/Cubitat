@@ -15,6 +15,7 @@ export function usePublicationDraft(
   const [loadAttempt, setLoadAttempt] = useState(0)
   const stopped = useRef(false)
   const pendingSaves = useRef(new Set<Promise<void>>())
+  const savedAtEntry = useRef<CompletePublicationDraft | null>(null)
   const restoreRef = useRef(restore)
   const latest = useRef(value)
 
@@ -36,6 +37,7 @@ export function usePublicationDraft(
     let cancelled = false
     readCompleteDraft(userId, propertyId).then(draft => {
       if (cancelled) return
+      savedAtEntry.current = draft
       if (draft) restoreRef.current(draft)
       setError(null)
       setReady(true)
@@ -83,5 +85,18 @@ export function usePublicationDraft(
     }
   }, [userId, propertyId])
 
-  return { ready, error, save, discard, retry }
+  const restoreSavedDraft = useCallback(async () => {
+    const wasStopped = stopped.current
+    stopped.current = true
+    try {
+      await Promise.allSettled([...pendingSaves.current])
+      if (savedAtEntry.current) await saveCompleteDraft(userId, savedAtEntry.current, propertyId)
+      else await removeCompleteDraft(userId, propertyId)
+    } catch (cause) {
+      stopped.current = wasStopped
+      throw cause
+    }
+  }, [userId, propertyId])
+
+  return { ready, error, save, discard, restoreSavedDraft, retry }
 }

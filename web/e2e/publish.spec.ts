@@ -168,6 +168,83 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     await expect(page.locator('span:has-text("¡Borrador guardado!")')).toBeVisible()
   })
 
+  test('sale de un borrador reanudado y conserva la instantánea guardada', async ({ page }) => {
+    const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
+    let propertyWrites = 0
+    await mockDirectSupabaseReads(page)
+    await page.route('**/auth/v1/user', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: ownerId, email: 'test@example.com', role: 'authenticated', aud: 'authenticated' }),
+    }))
+    await page.route('**/rest/v1/properties*', async route => {
+      if (['POST', 'PATCH', 'DELETE'].includes(route.request().method())) propertyWrites++
+      await route.continue()
+    })
+    await page.goto('/')
+    await page.evaluate(async userId => {
+      const expiresAt = Math.floor(Date.now() / 1000) + 3600
+      localStorage.setItem('cubitat-auth-token', JSON.stringify({
+        access_token: 'dummy-token', token_type: 'bearer', expires_in: 3600, expires_at: expiresAt,
+        refresh_token: 'dummy-refresh', user: { id: userId, email: 'test@example.com' },
+      }))
+      const request = indexedDB.open('cubitat-publication-drafts', 1)
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        request.onupgradeneeded = () => request.result.createObjectStore('drafts')
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const tx = db.transaction('drafts', 'readwrite')
+      tx.objectStore('drafts').put({
+        formData: { contactName: 'Ana QA', contactPhone: '+525512345678', description: 'Borrador conservado' },
+        images: [], step: 8, existingAmenities: [],
+      }, JSON.stringify([userId, null]))
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+      })
+      db.close()
+    }, ownerId)
+
+    await page.goto('/publicar?load_draft=true')
+    const contactName = page.locator('input[placeholder*="Ej: Alejandro"]')
+    await expect(contactName).toHaveValue('Ana QA')
+    await contactName.fill('Cambio temporal QA')
+    await expect.poll(async () => page.evaluate(async userId => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('cubitat-publication-drafts', 1)
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const value = await new Promise<{ formData?: { contactName?: string } }>((resolve, reject) => {
+        const request = db.transaction('drafts').objectStore('drafts').get(JSON.stringify([userId, null]))
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      db.close()
+      return value.formData?.contactName
+    }, ownerId)).toBe('Cambio temporal QA')
+
+    page.once('dialog', dialog => dialog.accept())
+    await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect.poll(async () => page.evaluate(async userId => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('cubitat-publication-drafts', 1)
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const value = await new Promise<{ formData?: { contactName?: string } }>((resolve, reject) => {
+        const request = db.transaction('drafts').objectStore('drafts').get(JSON.stringify([userId, null]))
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      db.close()
+      return value.formData?.contactName
+    }, ownerId)).toBe('Ana QA')
+    expect(propertyWrites).toBe(0)
+  })
+
   test('sale de editar sin guardar y no envía una escritura de la propiedad', async ({ page }) => {
     const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
     const propertyId = 'qa-edit-without-save'
