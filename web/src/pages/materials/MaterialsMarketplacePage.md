@@ -63,6 +63,9 @@ intermedio.
   visibles y accesibles. Si Storage no puede firmar una o más fotos privadas,
   el anuncio permanece disponible y muestra un aviso accesible de fotos no
   disponibles temporalmente; no se confunde con un anuncio sin imágenes.
+- Cuando un anuncio no tiene referencias de fotos, su ficha muestra “Este
+  anuncio no incluye fotos.”; conserva el mensaje temporal para fotos existentes
+  cuya firma privada falla.
 - Los teléfonos no aparecen en el catálogo; la tarjeta los consulta al Worker
   solo tras una acción explícita. Si falta el canal, ofrece abrir la ficha para
   usar el formulario de consulta.
@@ -110,6 +113,8 @@ muestra). La aplicación usa miniaturas transformadas y fallback al original;
 pendiente desplegar y comprobar el catálogo con este cambio.
 
 Retest DEV público — 2026-11-14: catálogo de Materiales (20 anuncios), página 2 mostró los 5 restantes y un conjunto distinto; regresar a página 1 restauró la lista sin recargar el documento. El filtro Cemento devolvió 3 anuncios de esa categoría y Limpiar restauró los 20 y el paginador. Solo lectura.
+
+QA de producción y DEV — 2026-11-18: los anuncios sintéticos “DEMO QA · Cemento con galería” y “DEMO QA · Tubería PVC para prueba” tienen la misma ausencia de fotos en ambos entornos; no se perdieron fotos durante la copia a producción. La ficha mostraba solo el icono cuando `photo_urls` estaba vacío. Cambio implementado y validado localmente para distinguir ese caso de una falla temporal al firmar referencias existentes; falta desplegar y verificar en producción.
 
 Regresión de carga de ficha — 2026-11-15: al abrir desde un catálogo ya cargado,
 la pantalla podía mostrar “Anuncio no disponible” antes de que comenzara la

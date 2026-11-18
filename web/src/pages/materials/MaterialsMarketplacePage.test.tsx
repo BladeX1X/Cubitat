@@ -66,6 +66,24 @@ describe('MaterialsMarketplacePage filter loading', () => {
     pushState.mockRestore()
   })
 
+  it('explains when a published material listing has no photos', async () => {
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: /Cemento gris/ }))
+
+    expect(await screen.findByRole('heading', { name: 'Cemento gris' })).toBeInTheDocument()
+    expect(screen.getByText('Este anuncio no incluye fotos.')).toBeInTheDocument()
+  })
+
+  it('keeps the temporary-unavailable message when stored photos cannot be signed', async () => {
+    vi.mocked(fetchMaterialListing).mockResolvedValueOnce({ ...listing, photoUnavailable: true })
+    vi.mocked(fetchMaterialListings).mockResolvedValueOnce({ items: [{ ...listing, photoUnavailable: true }], total: 1 })
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: /Cemento gris/ }))
+
+    expect(await screen.findByText('Las fotos no están disponibles temporalmente.')).toBeInTheDocument()
+    expect(screen.queryByText('Este anuncio no incluye fotos.')).not.toBeInTheDocument()
+  })
+
   it('keeps filters, map, and current results mounted while refreshing', async () => {
     render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()

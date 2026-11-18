@@ -167,6 +167,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - Si una firma falla, el catálogo conserva el anuncio y muestra un estado
   accesible de foto temporalmente no disponible, en vez de esconder el fallo
   detrás de un espacio vacío.
+- Si el anuncio no contiene referencias de fotos, la ficha lo indica claramente
+  como anuncio sin fotos; este estado no se confunde con un fallo temporal de
+  Storage al firmar fotos existentes.
 - Los enlaces HTTPS previos a esta migración se conservan si ya están en la fila,
   pero no se admiten como imágenes nuevas. Su migración a Storage se hará sin
   borrado automático de archivos anteriores.
