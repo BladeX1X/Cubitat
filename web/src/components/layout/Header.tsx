@@ -82,10 +82,12 @@ export function Header({
         >
           <img
             className="brand-logo"
-            src="/brand/tugao/logo-horizontal.webp"
+            src="/brand/tugao/logo-horizontal-356.webp"
+            srcSet="/brand/tugao/logo-horizontal-178.webp 178w, /brand/tugao/logo-horizontal-300.webp 300w, /brand/tugao/logo-horizontal-356.webp 356w"
+            sizes="(max-width: 620px) 150px, 178px"
             alt="tuGao · atrapa tu sueño"
-            width={464}
-            height={132}
+            width={356}
+            height={101}
           />
         </a>
         <nav className="primary-nav" aria-label="Navegacion principal">

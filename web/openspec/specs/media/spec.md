@@ -25,6 +25,12 @@ El sistema MUST normalizar imagenes de propiedades para que catalogo y detalle u
 ### Requirement: Optimizacion de carga
 El sistema MUST optimizar URLs y atributos de imagen segun contexto de uso.
 
+#### Scenario: Logotipo responsive en la cabecera
+- GIVEN la cabecera muestra el logotipo a 150 px en móvil o hasta 178 px en escritorio
+- WHEN el navegador selecciona un recurso de imagen
+- THEN MUST escoger una variante WebP adecuada a su viewport y densidad de píxeles
+- AND MUST conservar una variante de respaldo para navegadores sin `srcset`
+
 #### Scenario: Cargar catalogo
 - GIVEN una propiedad aparece en resultados
 - WHEN la tarjeta esta fuera de las primeras posiciones

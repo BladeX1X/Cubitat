@@ -33,7 +33,9 @@ describe('Header mobile menu', () => {
     render(<Header user={null} {...callbacks} />)
 
     const logo = screen.getByRole('img', { name: 'tuGao · atrapa tu sueño' })
-    expect(logo).toHaveAttribute('src', '/brand/tugao/logo-horizontal.webp')
+    expect(logo).toHaveAttribute('src', '/brand/tugao/logo-horizontal-356.webp')
+    expect(logo).toHaveAttribute('srcset', '/brand/tugao/logo-horizontal-178.webp 178w, /brand/tugao/logo-horizontal-300.webp 300w, /brand/tugao/logo-horizontal-356.webp 356w')
+    expect(logo).toHaveAttribute('sizes', '(max-width: 620px) 150px, 178px')
     expect(logo.closest('a')).toHaveAttribute('aria-label', 'Inicio de tuGao')
   })
 
