@@ -169,7 +169,7 @@ El sistema MUST consultar y renderizar solo propiedades publicas en experiencias
 La gestión de publicaciones MUST mostrar las fotos privadas del propietario usando su sesión autenticada y MUST NOT depender de la URL pública de Storage.
 
 #### Scenario: Mostrar portada propia
-- GIVEN la propiedad contiene una referencia canónica a una foto WebP de `property_images` bajo la carpeta UUID del propietario autenticado
+- GIVEN la propiedad contiene una referencia a una foto WebP de `property_images` bajo la carpeta UUID del propietario autenticado, con nombre UUID o el formato heredado `<timestamp de 13 dígitos>-<índice de 0 a 19>.webp`
 - WHEN el propietario abre Mis Publicaciones
 - THEN el cliente MUST descargar la portada con Storage y crear una URL temporal `blob:` para la tarjeta
 - AND MUST revocar la URL temporal al sustituir la lista o abandonar la pantalla
