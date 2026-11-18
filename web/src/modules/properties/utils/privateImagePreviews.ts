@@ -2,7 +2,8 @@ import { supabase } from '../../../shared/lib/supabaseClient'
 import { PROPERTY_IMAGE_FALLBACK } from './images'
 
 const IMAGE_UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-const PROPERTY_IMAGE_PATH = new RegExp(`^/(?:api/supabase/)?storage/v1/object/(?:public/)?property_images/(${IMAGE_UUID})/(${IMAGE_UUID}\\.webp)$`, 'i')
+const IMAGE_FILENAME = `(?:${IMAGE_UUID}|[0-9]{13}-(?:[0-9]|1[0-9]))\\.webp`
+const PROPERTY_IMAGE_PATH = new RegExp(`^/(?:api/supabase/)?storage/v1/object/(?:public/)?property_images/(${IMAGE_UUID})/(${IMAGE_FILENAME})$`, 'i')
 const MAX_PRIVATE_IMAGE_BYTES = 5 * 1024 * 1024
 const MAX_CONCURRENT_DOWNLOADS = 4
 const PREVIEW_BATCH_TIMEOUT_MS = 8_000

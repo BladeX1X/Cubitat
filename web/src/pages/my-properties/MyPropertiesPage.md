@@ -7,8 +7,9 @@ privadas.
 ## Portadas privadas
 
 `createOwnedPropertyCoverPreviews` acepta solo referencias canónicas del proxy
-del Worker para `property_images/<UUID del dueño>/<UUID>.webp`, confirma que la
-carpeta coincide con la sesión y descarga con `Storage.download`. La tarjeta usa
+del Worker para `property_images/<UUID del dueño>/<UUID>.webp` y el nombre
+heredado `<13 dígitos de timestamp>-<índice de 0 a 19>.webp`; confirma
+que la carpeta coincide con la sesión y descarga con `Storage.download`. La tarjeta usa
 una URL `blob:` temporal. La lista limita concurrencia, espera un máximo de ocho
 segundos, rechaza archivos mayores de 5 MiB o que no sean WebP y muestra el
 placeholder si la descarga falla. Los errores transitorios de red, 408, 429 y
@@ -84,3 +85,26 @@ Consulta agregada sin devolver nombres, rutas ni IDs: los 26 objetos actuales de
 - El fallo visual de la cuenta propietaria sigue abierto: no se observó aún la respuesta real de Storage en Chrome. Esta mejora cubre fallos transitorios, no demuestra que sea la causa original. Producción intacta.
 Retest posterior del Worker DEV `36efd098-375e-46d0-b0e7-a38d6f8ff83e`: `my-properties.spec.ts` pasó 2/2 en Chromium. El E2E usa autenticación y Storage interceptados; confirma la interfaz publicada y ausencia de escrituras, no la descarga real con la cuenta del propietario.
 El retest de Chromium se reforzó: la primera descarga de portada responde 503 y la segunda entrega la imagen; naturalWidth confirma que decodificó. 2/2 E2E PASS contra el Worker DEV con respuestas simuladas, sin escrituras. La descarga de Storage con JWT propietario real sigue pendiente.
+
+## Incidencia productiva observada — 2026-11-18
+
+En una publicación rechazada de la cuenta autenticada, la referencia privada existente de portada no cargó en el editor; el estado mostró «No se pudo cargar esta foto» y `0.0 KB` incluso tras un reintento manual. La miniatura vacía en Mis publicaciones puede corresponder a una descarga fallida, no solo a la ausencia de referencia. La causa aún no está confirmada porque no se capturó la respuesta autenticada de Storage. No se guardó ni alteró la publicación durante esta inspección.
+
+Contraste de datos productivos (solo lectura, 2026-11-18): para el caso observado, la referencia de portada y la de galería apuntan a objetos presentes en el bucket privado, ambos con propietario/carpeta coincidentes, `image/webp` y 26,540 bytes. La política autenticada de propietario existe. El error del navegador permanece abierto; falta capturar la respuesta real del `Storage.download` con la sesión del usuario para saber por qué falla pese a esos datos correctos.
+
+### Causa confirmada: nombres heredados de fotos — 2026-11-18
+
+La comparación de referencias de la publicación con el validador confirmó que
+portada y galería usan el patrón legado de archivo `<timestamp>-<índice>.webp`,
+mientras el helper solo admitía nombres UUID. Por eso devolvía `null` antes de
+pedir la imagen a Storage; no era un fallo de permiso ni un objeto ausente. El
+helper admite ahora ambos nombres, pero mantiene la carpeta UUID del propietario,
+el bucket/host permitido y el límite de tamaño y MIME. La prueba focal local
+confirma que se descarga el patrón legado y rechaza nombres arbitrarios, índices
+fuera de rango y carpetas ajenas. El E2E del editor también reanuda un borrador
+con una referencia timestamp-índice, conserva esa foto al guardar y agrega otra;
+usa APIs simuladas y no verifica una escritura remota. El cambio se desplegó a
+producción el 2026-11-18 como Worker `cubitat1`, versión
+`379dc861-e684-45b1-a557-b81c9ceb113d`; el bundle del helper responde HTTP 200.
+La verificación final de la foto con sesión propietaria queda pendiente porque
+Chrome no permitió controlar la pestaña.
