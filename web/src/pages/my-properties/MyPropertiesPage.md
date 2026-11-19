@@ -90,7 +90,7 @@ El retest de Chromium se reforzó: la primera descarga de portada responde 503 y
 
 En una publicación rechazada de la cuenta autenticada, la referencia privada existente de portada no cargó en el editor; el estado mostró «No se pudo cargar esta foto» y `0.0 KB` incluso tras un reintento manual. La miniatura vacía en Mis publicaciones puede corresponder a una descarga fallida, no solo a la ausencia de referencia. La causa aún no está confirmada porque no se capturó la respuesta autenticada de Storage. No se guardó ni alteró la publicación durante esta inspección.
 
-Contraste de datos productivos (solo lectura, 2026-11-18): para el caso observado, la referencia de portada y la de galería apuntan a objetos presentes en el bucket privado, ambos con propietario/carpeta coincidentes, `image/webp` y 26,540 bytes. La política autenticada de propietario existe. El error del navegador permanece abierto; falta capturar la respuesta real del `Storage.download` con la sesión del usuario para saber por qué falla pese a esos datos correctos.
+Contraste de datos productivos (solo lectura, 2026-11-18): para el caso observado, la referencia de portada y la de galería apuntan a objetos presentes en el bucket privado, ambos con propietario/carpeta coincidentes, `image/webp` y 26,540 bytes. La política autenticada de propietario existe. Ese contraste por sí solo no probaba la descarga del navegador; la causa se confirmó después comparando el nombre de archivo con el validador.
 
 ### Causa confirmada: nombres heredados de fotos — 2026-11-18
 
@@ -105,6 +105,19 @@ fuera de rango y carpetas ajenas. El E2E del editor también reanuda un borrador
 con una referencia timestamp-índice, conserva esa foto al guardar y agrega otra;
 usa APIs simuladas y no verifica una escritura remota. El cambio se desplegó a
 producción el 2026-11-18 como Worker `cubitat1`, versión
-`379dc861-e684-45b1-a557-b81c9ceb113d`; el bundle del helper responde HTTP 200.
-La verificación final de la foto con sesión propietaria queda pendiente porque
-Chrome no permitió controlar la pestaña.
+`379dc861-e684-45b1-a557-b81c9ceb113d`; despliegues posteriores desde una rama
+sin el arreglo volvieron a servir el validador UUID-only. En ese momento, Chrome
+no permitió abrir la pestaña para la verificación final; el retest posterior se
+documenta abajo.
+
+### Retest tras el despliegue actual — 2026-11-18
+
+Actualización de estado: el Worker `cubitat1` versión
+`db52d8f6-3753-4544-8067-a6ae4f211682` sirve el helper con compatibilidad para
+los nombres heredados y quedó al 100 %. En el editor autenticado, la foto fallida
+cargó y mostró 25.9 KB tras `Ctrl+Shift+R`, que obtuvo el bundle nuevo después
+de que una recarga normal mantuviera la copia PWA anterior. No se guardó ni
+modificó la publicación ni Supabase. Lint PASS; Vitest 248 archivos, 1,138 PASS/
+1 omitida; E2E focal 1/1 y build `phase4-production` con sitemap dinámico de
+446 URLs y guards PASS. PR #256 abierta; preview DEV PASS; Actions no asignó
+runners por el bloqueo de pagos/límite de gasto.

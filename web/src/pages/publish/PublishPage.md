@@ -210,9 +210,20 @@ del propietario con nombre UUID o con el formato anterior de carga
 `<timestamp de 13 dígitos>-<índice de 0 a 19>.webp`. El helper descarga ambos
 formatos con la sesión autenticada; no acepta nombres libres ni rutas de otra
 carpeta. La regresión se valida en `privateImagePreviews.test.ts` y
-`edit-property-photo-retry.spec.ts`. Desplegado a producción el 2026-11-18 como
-Worker `cubitat1`, versión `379dc861-e684-45b1-a557-b81c9ceb113d`; el bundle
-privado responde HTTP 200. Falta verificar la foto en el navegador autenticado.
+`edit-property-photo-retry.spec.ts`. Desplegado primero a producción el
+2026-11-18 como Worker `cubitat1`, versión `379dc861-e684-45b1-a557-b81c9ceb113d`;
+despliegues posteriores desde una rama sin esa corrección volvieron a servir el
+validador UUID-only.
+
+### Retest productivo tras el despliegue actual — 2026-11-18
+
+El helper productivo admite UUID y nombres heredados `<timestamp de 13
+dígitos>-<índice 0–19>.webp`, siempre bajo la carpeta del propietario. Worker
+`cubitat1` versión `db52d8f6-3753-4544-8067-a6ae4f211682` quedó al 100 %. En el
+editor autenticado, la foto antes fallida cargó y mostró 25.9 KB tras
+`Ctrl+Shift+R`; la recarga normal había conservado el bundle PWA anterior. No se
+guardó la publicación. PR #256 conserva el fix en `main`; preview DEV PASS y
+GitHub Actions no asignó runners por pagos/límite de gasto.
 
 ### Salida del editor — prueba E2E local — 2026-11-13
 
