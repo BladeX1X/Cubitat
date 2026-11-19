@@ -128,6 +128,7 @@ Estado actual (2026-07-01):
 - "Mis Propiedades" vive en `src/pages/my-properties/MyPropertiesPage.tsx`.
 - "Mi cuenta" vive en `src/pages/account/AccountPage.tsx`.
 - "Favoritos" vive en `src/pages/favorites/FavoritesPage.tsx`.
+- Favoritos muestra juntos los guardados y permite filtrarlos localmente por Todos, Propiedades, Servicios y Materiales sin navegar fuera de `/favoritos`.
 - `Mi cuenta`, `Favoritos` y `Ver mis contenidos` comparten `src/pages/account/AccountLayout.tsx`; solo debe cambiar el contenido derecho.
 - La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.

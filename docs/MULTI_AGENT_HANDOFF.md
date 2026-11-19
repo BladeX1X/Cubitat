@@ -4218,3 +4218,10 @@ npm run build había corrido después de build:phase2-dev; F3 no quedaba en la a
 ## Actualización de gate y builds — 2026-11-18
 
 GitHub retiró `GHSA-fc5q-39xc-vjpf` el 2026-11-18, pero el registro npm aún lo muestra y `picomatch` latest sigue en 4.0.7. CI ahora permite solo ese URL retirado, exige `npm audit --omit=dev --audit-level=high` limpio y mantiene cualquier otro advisory alto/crítico como bloqueo. El filtro falla cerrado ante problemas de red o JSON inválido. Código: `web/scripts/audit-withdrawn-advisories.mjs`; regresiones 3/3. Gates locales completos PASS: lint, suite 248 archivos/1,131 PASS/1 omitida, build estándar y perfiles DEV/producción F2/F3/F4. Auditoría runtime producción: cero hallazgos. Rerun del PR #246 antes del cambio siguió fallando en auditoría; base de datos PASS. Falta enviar cambios y obtener CI actualizado; no hay despliegue nuevo.
+
+## Filtros de categoría de Favoritos — retest productivo — 2026-11-18
+
+- El retest autenticado reprodujo que tocar «Servicios» en `/favoritos` navega a `/servicios`, en vez de filtrar los elementos guardados. No se alteraron favoritos.
+- La corrección local separa los filtros de navegación, añade «Todos», actualiza el conteo y mantiene estados vacíos por categoría. Rama `bugfix/favorites-category-filter-20261118`.
+- Verificación local: lint PASS; suite 248 archivos, 1,138 PASS/1 omitida; E2E marketplace 5/5; build estándar PASS. Build estricto `phase4-production:ci` requiere `VITE_SUPABASE_ANON_KEY`, ausente en este entorno. No se desplegó.
+- Siguiente paso: publicar una PR y correr build/review del release con la configuración productiva aprobada; después repetir el flujo en `/favoritos` de producción. Evidencia: [[Cubitat - Filtros de categorías en Favoritos producción 2026-11-18]].
