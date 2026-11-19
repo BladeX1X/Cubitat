@@ -138,13 +138,13 @@ export function ProvinceAggregateMap({
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
       <div><h2 className="flex items-center gap-2 font-bold text-neutral-900"><MapPin size={18} aria-hidden="true" />Mapa por provincia</h2><p className="text-sm text-neutral-600">Las cifras son resultados disponibles en cada provincia; no muestran direcciones exactas.</p></div>
       <div className="flex items-center gap-2">
-        {selectedProvince && <button type="button" className="min-h-10 rounded-lg px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50" onClick={() => onSelectProvince('')}>Ver toda Cuba</button>}
-        {!isDesktopMap && <button type="button" aria-label="Cerrar mapa" className="marketplace-map-close inline-flex size-11 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-100" onClick={onClose}><X size={20} /></button>}
+        {selectedProvince && <button type="button" className="inline-flex min-h-12 items-center justify-center rounded-lg px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50" onClick={() => onSelectProvince('')}>Ver toda Cuba</button>}
+        {!isDesktopMap && <button type="button" aria-label="Cerrar mapa" className="marketplace-map-close inline-flex size-12 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-100" onClick={onClose}><X size={20} /></button>}
       </div>
     </div>
     <div className="relative min-h-[300px] flex-1">
       <div ref={containerRef} className="absolute inset-0 h-full w-full" role="application" aria-label={`Mapa interactivo. Selecciona una provincia para filtrar ${resultLabel}.`} />
-      {(!mapReady || mapError) && <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/90 px-6 text-center"><div><p className="font-semibold text-neutral-800">{mapError ? 'No se pudo cargar el mapa' : 'Cargando mapa…'}</p>{mapError && <><p className="mt-1 text-sm text-neutral-600">Puedes seguir usando los filtros de provincia.</p><button type="button" className="mt-4 min-h-11 rounded-lg bg-emerald-700 px-5 font-bold text-white hover:bg-emerald-800" onClick={() => { mapReadyRef.current = false; setMapReady(false); setMapError(false); setRetryAttempt((attempt) => attempt + 1) }}>Reintentar mapa</button></>}</div></div>}
+      {(!mapReady || mapError) && <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/90 px-6 text-center"><div><p className="font-semibold text-neutral-800">{mapError ? 'No se pudo cargar el mapa' : 'Cargando mapa…'}</p>{mapError && <><p className="mt-1 text-sm text-neutral-600">Puedes seguir usando los filtros de provincia.</p><button type="button" className="mt-4 min-h-12 rounded-lg bg-emerald-700 px-5 font-bold text-white hover:bg-emerald-800" onClick={() => { mapReadyRef.current = false; setMapReady(false); setMapError(false); setRetryAttempt((attempt) => attempt + 1) }}>Reintentar mapa</button></>}</div></div>}
       <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-neutral-700 shadow">Selecciona un grupo para acercarte; una provincia para filtrar</div>
     </div>
   </section>

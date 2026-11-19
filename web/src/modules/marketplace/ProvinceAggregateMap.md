@@ -24,9 +24,9 @@ la paginación del catálogo.
 - Pulsar el número o el círculo de un cluster lo acerca para separar las
   provincias; pulsar el número o el círculo de una provincia aplica esa
   provincia como filtro del catálogo. La instrucción móvil diferencia ambas
-  acciones y los marcadores provinciales, los controles de zoom y el botón de
-  cierre miden al menos 48 px. “Ver toda
-  Cuba” retira la provincia sin perder los demás filtros.
+  acciones. Los círculos provinciales, los controles de zoom, el cierre, el
+  reintento y «Ver toda Cuba» ofrecen objetivos de al menos 48 px en pantallas
+  táctiles. «Ver toda Cuba» retira la provincia sin perder los demás filtros.
 - Los conteos respetan los filtros de texto, categoría y disponibilidad o
   municipio, según el catálogo; se consultan sin aplicar la provincia activa.
 
