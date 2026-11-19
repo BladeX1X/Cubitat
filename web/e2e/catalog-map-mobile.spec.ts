@@ -47,7 +47,18 @@ for (const { path, name } of [
     await expect(mapDialog.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 })
     await expect(mapDialog.getByText('Cargando mapa…')).toBeHidden({ timeout: 20_000 })
     await expect(mapDialog.getByText('No se pudo cargar el mapa')).toBeHidden()
-    await expect(mapDialog.getByRole('button', { name: 'Cerrar mapa' })).toBeVisible()
+    const closeMapButton = mapDialog.getByRole('button', { name: 'Cerrar mapa' })
+    await expect(closeMapButton).toBeVisible()
+    await expect.poll(() => closeMapButton.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return Math.min(rect.width, rect.height)
+    })).toBeGreaterThanOrEqual(48)
+    for (const control of ['.maplibregl-ctrl-zoom-in', '.maplibregl-ctrl-zoom-out']) {
+      await expect.poll(() => mapDialog.locator(control).evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        return Math.min(rect.width, rect.height)
+      })).toBeGreaterThanOrEqual(48)
+    }
     await expect.poll(() => mapResponses.some(response => /maplibre-gl-worker/.test(response.url) && response.status === 200), { timeout: 30_000 }).toBe(true)
     await expect.poll(() => mapResponses.some(response => /tiles\.openfreemap\.org\/(?:planet|natural_earth)\//.test(response.url) && response.status === 200), { timeout: 60_000 }).toBe(true)
     expect(mapResponses.filter(response => response.status >= 400)).toEqual([])

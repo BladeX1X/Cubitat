@@ -3109,6 +3109,11 @@ h2 {
 }
 
 @media (any-pointer: coarse) {
+  .marketplace-province-map .maplibregl-ctrl-group button {
+    width: 48px;
+    height: 48px;
+  }
+
   .header-actions > a,
   .header-actions > button,
   .primary-nav a,
