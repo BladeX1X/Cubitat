@@ -11,7 +11,9 @@ import type { HomeServiceProvider } from '../../modules/home-services/types'
 import { fetchMaterialListingsByIds } from '../../modules/materials/materialRepository'
 import type { MaterialListing } from '../../modules/materials/types'
 import { HOME_SERVICE_CATEGORY_LABELS } from '../../modules/home-services/types'
+import { getHomeServicePhotoBucket } from '../../modules/home-services/homeServicePhotos'
 import { MATERIAL_CATEGORY_LABELS } from '../../modules/materials/types'
+import { isMaterialPhotoPath, MATERIAL_PHOTO_BUCKET } from '../../modules/materials/materialPhotos'
 import { MarketplaceCardImage } from '../../shared/ui/MarketplaceCardImage'
 import { SaveMarketplaceListingButton } from '../../shared/ui/SaveMarketplaceListingButton'
 import { PHASE_FOUR_MAT_ENABLED, PHASE_FOUR_SVC_ENABLED } from '../../shared/config/features'
@@ -243,7 +245,7 @@ export function FavoritesPage({
                     <article key={`service-${service.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenService(service.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
-                          <div className="h-48 bg-emerald-50"><MarketplaceCardImage src={service.galleryUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-emerald-800"><BriefcaseBusiness size={36} /></div>} /></div>
+                          <div className="h-48 bg-emerald-50"><MarketplaceCardImage src={service.galleryUrls[0]} storageBucket={getHomeServicePhotoBucket(service.galleryUrls[0] ?? '') ?? undefined} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-emerald-800"><BriefcaseBusiness size={36} /></div>} failureFallback={<div role="status" className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-emerald-900"><BriefcaseBusiness size={36} />Foto no disponible temporalmente</div>} /></div>
                           <div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Servicio · {HOME_SERVICE_CATEGORY_LABELS[service.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{service.displayName}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{service.municipalities.length ? `${service.municipalities.join(', ')} · ` : ''}{service.province}</p></div>
                         </button>
                         <SaveMarketplaceListingButton listingType="service" listingId={service.id} listingTitle={service.displayName} />
@@ -254,7 +256,7 @@ export function FavoritesPage({
                     <article key={`material-${material.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenMaterial(material.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
-                          <div className="h-48 bg-amber-50"><MarketplaceCardImage src={material.photoUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /></div>} /></div>
+                          <div className="h-48 bg-amber-50"><MarketplaceCardImage src={material.photoUrls[0]} storageBucket={material.photoUrls[0] && isMaterialPhotoPath(material.photoUrls[0]) ? MATERIAL_PHOTO_BUCKET : undefined} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /></div>} failureFallback={<div role="status" className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-amber-900"><Boxes size={36} />Foto no disponible temporalmente</div>} /></div>
                           <div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Material · {MATERIAL_CATEGORY_LABELS[material.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{material.title}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{material.province}</p></div>
                         </button>
                         <SaveMarketplaceListingButton listingType="material" listingId={material.id} listingTitle={material.title} />

@@ -51,6 +51,9 @@ actualiza el perfil antes de completar el lote.
 
 - Las páginas deben ser utilizables en móvil, por teclado y con lector de
   pantalla; contemplan carga, error, estado vacío y reintento.
+- Las fotos privadas de tarjetas se firman solo para las dos primeras tarjetas
+  prioritarias y las demás al acercarse al viewport; las galerías de detalle
+  conservan sus URLs firmadas temporales. No hacer públicos los buckets.
 - En dispositivos táctiles, los botones del encabezado, filtros, acciones del
   directorio, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
   campos de texto móviles MUST usar fuente de al menos 16 px.

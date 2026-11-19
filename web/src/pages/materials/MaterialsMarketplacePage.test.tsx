@@ -148,6 +148,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
     const { container } = render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
 
     await screen.findByText('Material 0')
+    await waitFor(() => expect(container.querySelectorAll('img')).toHaveLength(3))
     const images = Array.from(container.querySelectorAll('img'))
     expect(images).toHaveLength(3)
     expect(images[0]).toHaveAttribute('loading', 'eager')
