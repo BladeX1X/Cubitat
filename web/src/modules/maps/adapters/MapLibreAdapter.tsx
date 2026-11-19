@@ -6,7 +6,11 @@ import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
-import { createPropertySourceData, getSelectedMapFeatures } from '../lib/propertySourceData'
+import {
+  createPropertySourceData,
+  getSelectedMapFeatures,
+  groupMapFeaturesByScreenCell,
+} from '../lib/propertySourceData'
 import { observeElementResize } from '../lib/observeElementResize'
 import { shouldFitInitialBounds } from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
@@ -517,24 +521,21 @@ export function MapLibreAdapter({
       // Rebuild from the latest filtered source each time. Keeping the old
       // markers here made sale pins persist after switching to rentals and
       // prevented fallback markers from ever grouping.
-      const groups = new Map<string, typeof sourceDataRef.current.features>()
-      const cellSize = 65
       const markerFeatures = hasSelectedResults ? selectedFeatures : sourceDataRef.current.features
-      for (const feature of markerFeatures) {
+      const groups = groupMapFeaturesByScreenCell(markerFeatures, (feature) => {
         const pixel = map.project(feature.geometry.coordinates as [number, number])
-        const key = `${Math.floor(pixel.x / cellSize)}:${Math.floor(pixel.y / cellSize)}`
-        groups.set(key, [...(groups.get(key) ?? []), feature])
-      }
+        return [pixel.x, pixel.y]
+      })
 
-      const signature = [...groups.entries()]
-        .map(([cell, features]) => `${cell}:${features.map((feature) => feature.properties?.id).join(',')}`)
+      const signature = groups
+        .map(({ key, features }) => `${key}:${features.map((feature) => feature.properties?.id).join(',')}`)
         .sort()
         .join('|')
       if (signature === lastFallbackSignature) return
       lastFallbackSignature = signature
       clearFallbackMarkers()
 
-      fallbackMarkersRef.current = [...groups.values()].flatMap((features) => {
+      fallbackMarkersRef.current = groups.flatMap(({ features }) => {
         const selectedCount = features.filter((feature) => feature.properties?.isSelected).length
         const entries = features.flatMap((feature) => {
           const id = feature.properties?.id as string | undefined

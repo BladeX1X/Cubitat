@@ -43,3 +43,17 @@ export function getSelectedMapFeatures<T extends { properties?: { isSelected?: b
 ): T[] {
   return features.filter((feature) => feature.properties?.isSelected === true)
 }
+
+export function groupMapFeaturesByScreenCell<T>(
+  features: readonly T[],
+  project: (feature: T) => readonly [number, number],
+  cellSize = 65,
+): Array<{ key: string; features: T[] }> {
+  const groups = new Map<string, T[]>()
+  for (const feature of features) {
+    const [x, y] = project(feature)
+    const key = `${Math.floor(x / cellSize)}:${Math.floor(y / cellSize)}`
+    groups.set(key, [...(groups.get(key) ?? []), feature])
+  }
+  return [...groups.entries()].map(([key, groupedFeatures]) => ({ key, features: groupedFeatures }))
+}
