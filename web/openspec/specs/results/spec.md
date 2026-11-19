@@ -102,6 +102,13 @@ El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de re
 - THEN el documento MUST NOT tener desbordamiento horizontal
 - AND los controles MUST conservarse visibles y utilizables
 
+#### Scenario: Paginación móvil sin desplazamiento horizontal
+- GIVEN el usuario abre resultados con un viewport táctil de 320 a 640 px
+- WHEN hay varias páginas y se muestra la paginación
+- THEN los números de página y los controles anterior/siguiente MUST reorganizarse dentro del viewport
+- AND el documento MUST NOT desbordarse horizontalmente
+- AND MUST mantener objetivos táctiles de al menos 48×48 px
+
 #### Scenario: Filtros móviles en un viewport estrecho
 - GIVEN el usuario abre `/resultados` con un viewport de 320 px de ancho
 - WHEN abre y cierra la hoja de filtros
