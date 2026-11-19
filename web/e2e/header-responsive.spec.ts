@@ -22,6 +22,17 @@ test('conserva el menú compacto en un viewport móvil', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: 'Operaciones' }).getByRole('button', { name: 'Comprar' })).toBeVisible()
 })
 
+test('la marca del encabezado conserva un objetivo táctil de 48px en móvil', async ({ page }) => {
+  for (const width of [320, 390, 620]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/')
+
+    const brand = page.getByRole('link', { name: 'Inicio de tuGao' })
+    await expect(brand).toBeVisible()
+    await expect.poll(() => brand.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(48)
+  }
+})
+
 test('Ser agente no aparece en la navegación pública ni en el menú móvil', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
