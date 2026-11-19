@@ -30,6 +30,9 @@ y también se los pasa al mapa para que los clusters hijos sigan resaltados. Si
 el grupo de 9 se divide en clusters de 4 y 5, ambos marcadores aparecen
 seleccionados y las nueve tarjetas permanecen visibles. En móvil, mover el mapa
 no cierra el carrusel seleccionado; el usuario puede cerrarlo explícitamente.
+Si un zoom deja puntos del grupo seleccionado fuera de los límites visibles, el
+mapa reajusta el centro para conservar el grupo completo en pantalla, sin
+ampliar más allá del nivel elegido.
 El filtrado por área visible se reanuda cuando no hay un grupo seleccionado;
 cambiar los filtros o volver a lista limpia la selección anterior.
 - Reutilizacion de `PopularLocations` como bloque de exploracion secundaria, si se mantiene.

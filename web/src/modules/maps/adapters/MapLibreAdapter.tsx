@@ -8,7 +8,12 @@ import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
 import { observeElementResize } from '../lib/observeElementResize'
-import { shouldFitInitialBounds } from '../lib/mapCamera'
+import {
+  getSelectionPadding,
+  isPointInsideSelectionViewport,
+  shouldFitInitialBounds,
+  shouldRecenterSelection,
+} from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
@@ -401,6 +406,59 @@ export function MapLibreAdapter({
       onViewportChangeRef.current?.(getVisiblePropertyIds())
     }
 
+    const getSelectionCameraPadding = () => {
+      const mapContainer = map.getContainer()
+      const mapRect = mapContainer.getBoundingClientRect()
+      const overlay = mapContainer.closest('.map-fullscreen-overlay')
+      if (!overlay) return getSelectionPadding()
+
+      const filterBar = overlay.querySelector('.map-overlay-filterbar')
+      const carousel = overlay.querySelector('.map-property-carousel')
+      const bottomBar = overlay.querySelector('.map-bottom-bar')
+      const filterBarRect = filterBar?.getBoundingClientRect()
+      const carouselRect = carousel?.getBoundingClientRect()
+      const bottomBarRect = bottomBar?.getBoundingClientRect()
+      const carouselVisible = !!carouselRect
+        && carouselRect.width > 0
+        && carouselRect.height > 0
+        && carouselRect.top < mapRect.bottom
+        && carouselRect.bottom > mapRect.top
+      const bottomOverlayTop = carouselVisible
+        ? carouselRect.top
+        : bottomBarRect?.top
+
+      return getSelectionPadding({
+        top: filterBarRect ? Math.max(0, filterBarRect.bottom - mapRect.top) : 0,
+        bottom: bottomOverlayTop === undefined
+          ? 0
+          : Math.max(0, mapRect.bottom - bottomOverlayTop),
+      })
+    }
+
+    const handleZoomEnd = () => {
+      const selectedCoordinates = sourceDataRef.current.features
+        .filter((feature) => feature.properties?.isSelected === true)
+        .map((feature) => feature.geometry.coordinates as [number, number])
+      const padding = getSelectionCameraPadding()
+      const mapContainer = map.getContainer()
+      const viewport = { width: mapContainer.clientWidth, height: mapContainer.clientHeight }
+
+      if (shouldRecenterSelection(selectedCoordinates, (coordinate) => {
+        const point = map.project(coordinate)
+        return isPointInsideSelectionViewport(point, viewport, padding)
+      })) {
+        const selectionBounds = new maplibregl.LngLatBounds()
+        selectedCoordinates.forEach((coordinate) => selectionBounds.extend(coordinate))
+        map.fitBounds(selectionBounds, {
+          padding,
+          maxZoom: map.getZoom(),
+          duration: 300,
+        })
+      }
+
+      handleViewportChange()
+    }
+
     map.on('click', handleMapClick)
     map.on('mouseenter', CLUSTER_SELECTED_HALO_LAYER_ID, handleMouseEnter)
     map.on('mouseenter', CLUSTER_LAYER_ID, handleMouseEnter)
@@ -415,7 +473,7 @@ export function MapLibreAdapter({
     map.on('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
     map.on('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
     map.on('dragend', handleViewportChange)
-    map.on('zoomend', handleViewportChange)
+    map.on('zoomend', handleZoomEnd)
     map.on('rotateend', handleViewportChange)
     map.on('pitchend', handleViewportChange)
 
@@ -445,7 +503,7 @@ export function MapLibreAdapter({
       map.off('mouseleave', PROPERTY_POINT_LAYER_ID, handleMouseLeave)
       map.off('mouseleave', PROPERTY_LABEL_LAYER_ID, handleMouseLeave)
       map.off('dragend', handleViewportChange)
-      map.off('zoomend', handleViewportChange)
+      map.off('zoomend', handleZoomEnd)
       map.off('rotateend', handleViewportChange)
       map.off('pitchend', handleViewportChange)
       stopObservingResize()
