@@ -33,7 +33,9 @@ intermedio.
   reutiliza Comprar: en pantallas de hasta 768 px presenta búsqueda y
   botón circular de filtros; el botón abre una hoja inferior con categoría,
   provincia y disponibilidad. Los cambios se aplican en la vista actual y la
-  hoja ofrece limpiar y ver resultados. En escritorio, filtros y búsqueda
+  hoja ofrece limpiar y ver resultados; durante una consulta el botón no muestra
+  el total anterior y recupera el conteo exacto al completar. En escritorio,
+  filtros y búsqueda
   aparecen en la barra; el desbordamiento de controles se contiene dentro de
   ella. La barra sticky queda bajo el encabezado (76 px escritorio, 104 px
   tablet y 64 px móvil); el encabezado conserva las acciones compactas.

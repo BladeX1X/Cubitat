@@ -12,5 +12,7 @@ controls apply changes immediately without navigating or reloading.
 The sheet locks body scrolling while open, closes on Escape, backdrop, close
 button, or “Ver resultados”, and returns focus to the trigger. Filters remain
 controlled by their catalog page and apply immediately through its existing
-query state. The shared toolbar owns only presentation, active filter count,
-clear action, and result summary.
+query state. While a query is refreshing, the sheet replaces its result count
+with the neutral “Ver resultados” action so it never presents a stale total.
+Once the response arrives, it displays the updated total. The shared toolbar
+owns only presentation, active filter count, clear action, and result summary.

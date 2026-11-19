@@ -8,6 +8,7 @@ export type CatalogFilterToolbarProps = {
   filters: ReactNode
   activeFiltersCount: number
   resultCount: number
+  isResultCountLoading: boolean
   resultLabel: string
   onClearFilters: () => void
 }
@@ -18,6 +19,7 @@ export function CatalogFilterToolbar({
   filters,
   activeFiltersCount,
   resultCount,
+  isResultCountLoading,
   resultLabel,
   onClearFilters,
 }: CatalogFilterToolbarProps) {
@@ -83,7 +85,7 @@ export function CatalogFilterToolbar({
             <div className="catalog-filter-sheet__body">{filters}</div>
             <footer className="catalog-filter-sheet__footer">
               <Button type="button" variant="ghost" onClick={onClearFilters}>Limpiar filtros</Button>
-              <Button type="button" onClick={() => setIsOpen(false)}>Ver {resultCount} {resultLabel}</Button>
+              <Button type="button" onClick={() => setIsOpen(false)}>{isResultCountLoading ? 'Ver resultados' : `Ver ${resultCount} ${resultLabel}`}</Button>
             </footer>
           </section>
         </div>

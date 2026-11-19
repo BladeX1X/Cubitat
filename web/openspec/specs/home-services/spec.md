@@ -15,7 +15,9 @@ calidad del trabajo.
 - **THEN** la barra usa el estilo compacto de los filtros de Comprar
 - **AND** aplica los cambios al catálogo sin recargar ni navegar
 - **AND** móvil ofrece una hoja de filtros con opción para limpiar y el total
-  actualizado de resultados
+  actualizado de resultados; durante una consulta muestra una acción neutral
+  («Ver resultados») y nunca presenta el total de la consulta anterior como si
+  correspondiera a los filtros nuevos
 
 - **WHEN** un visitante abre el directorio o filtra por texto,
   categoría/provincia/municipio
