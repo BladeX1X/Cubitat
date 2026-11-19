@@ -13,7 +13,8 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - **THEN** la barra conserva el estilo compacto de los filtros de Comprar
 - **AND** los cambios se aplican en el catálogo sin recargar ni navegar
 - **AND** móvil permite abrir y cerrar filtros en una hoja, limpiar filtros y
-  conservar visible el total de resultados
+  ver el total actualizado; mientras se consulta, muestra «Ver resultados» sin
+  presentar como vigente el total de los filtros anteriores
 - En dispositivos táctiles, los botones del encabezado, filtros, acciones del
   catálogo, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
   campos de texto móviles MUST usar fuente de al menos 16 px.
@@ -117,7 +118,8 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - Los filtros se presentan con el patrón visual de Comprar. Hasta 768 px se
   muestra búsqueda y un botón de filtros que abre una hoja inferior con
   categoría, provincia y disponibilidad; cambiar filtros actualiza la consulta
-  actual, y la hoja permite limpiar o volver a resultados. En escritorio se
+  actual, y la hoja permite limpiar o volver a resultados. Mientras llega la
+  respuesta usa una acción neutral en vez de un conteo obsoleto. En escritorio se
   muestran búsqueda y filtros en la barra compacta, con cualquier
   desbordamiento contenido dentro de la barra sticky. En viewports de hasta
   620 px el encabezado se desplaza con la página y la búsqueda sticky permanece

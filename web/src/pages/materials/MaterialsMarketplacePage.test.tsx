@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MaterialsMarketplacePage } from './MaterialsMarketplacePage'
 import { fetchMaterialListing, fetchMaterialListings } from '../../modules/materials/materialRepository'
@@ -88,6 +88,22 @@ describe('MaterialsMarketplacePage filter loading', () => {
     nextRequest.resolve({ items: [listing], total: 1 })
     await waitFor(() => expect(screen.getByText('Cemento gris')).toBeInTheDocument())
     pushState.mockRestore()
+  })
+
+  it('shows no stale result count in the mobile filter sheet during a province refresh', async () => {
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
+    const nextRequest = deferred<{ items: Array<typeof listing>; total: number }>()
+    vi.mocked(fetchMaterialListings).mockReturnValueOnce(nextRequest.promise)
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar filtros de anuncios' }))
+    const dialog = screen.getByRole('dialog', { name: 'Filtros de materiales' })
+    fireEvent.change(within(dialog).getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+
+    expect(within(dialog).getByRole('button', { name: 'Ver resultados' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Ver 1 anuncios' })).not.toBeInTheDocument()
+
+    nextRequest.resolve({ items: [listing], total: 6 })
+    expect(await within(dialog).findByRole('button', { name: 'Ver 6 anuncios' })).toBeInTheDocument()
   })
 
   it('fetches a numbered server page instead of appending more listings', async () => {

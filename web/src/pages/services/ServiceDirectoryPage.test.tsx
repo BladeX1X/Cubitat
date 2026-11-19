@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServiceDirectoryPage } from './ServiceDirectoryPage'
 import { fetchHomeServiceProvider, fetchHomeServiceProviders } from '../../modules/home-services/homeServiceRepository'
@@ -86,6 +86,22 @@ describe('ServiceDirectoryPage filter loading', () => {
     nextRequest.resolve({ items: [provider], total: 1 })
     await waitFor(() => expect(screen.getByText('Fontanero del Centro')).toBeInTheDocument())
     pushState.mockRestore()
+  })
+
+  it('shows no stale result count in the mobile filter sheet during a province refresh', async () => {
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
+    const nextRequest = deferred<{ items: typeof provider[]; total: number }>()
+    vi.mocked(fetchHomeServiceProviders).mockReturnValueOnce(nextRequest.promise)
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar filtros de profesionales' }))
+    const dialog = screen.getByRole('dialog', { name: 'Filtros de profesionales' })
+    fireEvent.change(within(dialog).getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+
+    expect(within(dialog).getByRole('button', { name: 'Ver resultados' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Ver 1 profesionales' })).not.toBeInTheDocument()
+
+    nextRequest.resolve({ items: [provider], total: 10 })
+    expect(await within(dialog).findByRole('button', { name: 'Ver 10 profesionales' })).toBeInTheDocument()
   })
 
   it('fetches a numbered server page instead of appending more professionals', async () => {

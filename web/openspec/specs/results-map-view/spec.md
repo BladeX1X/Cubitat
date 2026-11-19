@@ -102,6 +102,8 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - AND cada cluster visible formado por propiedades seleccionadas MUST conservar el resaltado de selección
 - AND el conteo total de los clusters seleccionados MUST representar el mismo grupo (por ejemplo, 4 + 5 = 9)
 - AND los límites del viewport MUST NOT sustituir ese grupo por otros resultados visibles
+- AND si el zoom desplaza fuera del mapa cualquier anuncio del grupo, el mapa MUST reajustar el centro para mantener el grupo seleccionado dentro del encuadre
+- AND en móvil el área de encuadre MUST excluir el espacio tapado por el buscador, los controles y el carrusel
 - AND mover el mapa sin una selección activa MUST seguir filtrando por el área visible
 
 #### Scenario: Viewport change filtra lista
