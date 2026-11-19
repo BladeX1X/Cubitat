@@ -65,6 +65,11 @@ El sistema MUST resolver rutas principales desde carga directa y navegacion inte
 - THEN MUST mostrar botones directos «Servicios» y «Materiales» debajo de la marca sin abrir el menú
 - AND cada botón MUST navegar al catálogo correspondiente
 
+#### Scenario: Objetivo táctil de la marca móvil
+- GIVEN el viewport tiene hasta 620 px
+- WHEN el encabezado muestra el enlace del logotipo
+- THEN el enlace MUST medir al menos 48 px de alto para facilitar el toque
+
 #### Scenario: Postulación de agente disponible desde Mi cuenta
 - GIVEN la interfaz de Fase 3 está habilitada
 - WHEN se renderiza la navegación pública o se abre el menú móvil

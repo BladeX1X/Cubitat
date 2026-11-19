@@ -8,6 +8,7 @@ Mantener el logotipo de tuGao, las acciones de la cuenta y los accesos principal
 - Entre 621 y 1180 px: marca y acciones arriba; navegación principal en una segunda fila horizontal y desplazable si el ancho disponible no alcanza.
 - Hasta 620 px: se ocultan los enlaces de escritorio y se usa el botón «Abrir menú» con el panel móvil.
 - En móvil, los accesos «Servicios» y «Materiales» también permanecen visibles como botones directos bajo la marca, sin abrir el menú.
+- El enlace del logotipo tiene una altura mínima de 48 px en viewports de hasta 620 px para facilitar la interacción táctil.
 - El panel móvil muestra Servicios y Materiales inmediatamente debajo del encabezado del menú, antes de las opciones de cuenta; sus botones usan las etiquetas visibles «Servicios» y «Materiales».
 - La postulación «Ser agente» se inicia desde Mi cuenta y no aparece en la navegación pública ni en el menú móvil.
 
