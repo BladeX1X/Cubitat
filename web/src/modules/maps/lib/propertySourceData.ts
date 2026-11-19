@@ -36,3 +36,10 @@ export function createPropertySourceData(
     }),
   }
 }
+
+/** Return only the currently selected results when a map cluster is selected. */
+export function getSelectedMapFeatures<T extends { properties?: { isSelected?: boolean } | null }>(
+  features: readonly T[],
+): T[] {
+  return features.filter((feature) => feature.properties?.isSelected === true)
+}

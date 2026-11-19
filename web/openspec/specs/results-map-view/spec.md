@@ -104,6 +104,13 @@ El modulo MUST exponer un panel aislado para vista dividida desktop (lista + map
 - AND los límites del viewport MUST NOT sustituir ese grupo por otros resultados visibles
 - AND mover el mapa sin una selección activa MUST seguir filtrando por el área visible
 
+#### Scenario: La selección móvil conserva el resaltado al reagruparse
+- GIVEN el usuario seleccionó un cluster con nueve propiedades en el mapa móvil
+- WHEN acerca el mapa y ese grupo se divide en subgrupos de cuatro y cinco
+- THEN ambos subgrupos MUST permanecer resaltados
+- AND el mapa MUST mostrar únicamente los nueve resultados seleccionados mientras la selección esté activa
+- AND el conteo de ambos subgrupos MUST sumar nueve
+
 #### Scenario: Viewport change filtra lista
 - GIVEN el usuario desplaza o acerca el mapa desktop
 - WHEN el viewport cambia

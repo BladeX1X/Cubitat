@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Property } from '../../properties/types'
-import { createPropertySourceData } from './propertySourceData'
+import { createPropertySourceData, getSelectedMapFeatures } from './propertySourceData'
 
 const baseProperty: Property = {
   id: 'valid-property',
@@ -63,5 +63,20 @@ describe('createPropertySourceData', () => {
     expect(selectedCount(source.features)).toBe(9)
     expect(selectedCount(source.features.slice(0, 4))).toBe(4)
     expect(selectedCount(source.features.slice(4))).toBe(5)
+  })
+
+  it('keeps every selected result visible as selected when the map regroups after zoom', () => {
+    const properties = Array.from({ length: 14 }, (_, index) => ({
+      ...baseProperty,
+      id: `property-${index + 1}`,
+    }))
+    const selectedIds = properties.slice(0, 9).map((property) => property.id)
+    const source = createPropertySourceData(properties, undefined, selectedIds)
+    const selectedFeatures = getSelectedMapFeatures(source.features)
+
+    expect(selectedFeatures).toHaveLength(9)
+    expect(selectedFeatures.map((feature) => feature.properties?.id)).toEqual(selectedIds)
+    expect(selectedFeatures.slice(0, 4).every((feature) => feature.properties?.isSelected)).toBe(true)
+    expect(selectedFeatures.slice(4).every((feature) => feature.properties?.isSelected)).toBe(true)
   })
 })
