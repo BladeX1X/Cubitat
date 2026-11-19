@@ -32,6 +32,8 @@ type FavoritesPageProps = {
   onGoMaterials: () => void
 }
 
+type FavoriteCategory = 'all' | 'properties' | 'services' | 'materials'
+
 export function FavoritesPage({
   properties,
   onNavigateAccount,
@@ -68,6 +70,7 @@ export function FavoritesPage({
   const [marketplaceError, setMarketplaceError] = useState(false)
   const [marketplaceItemsLoading, setMarketplaceItemsLoading] = useState(marketplaceFavoritesEnabled)
   const [marketplaceItemsRetry, setMarketplaceItemsRetry] = useState(0)
+  const [activeCategory, setActiveCategory] = useState<FavoriteCategory>('all')
   const favoriteProperties = properties.filter((property) =>
     savedPropertyIds.has(property.id),
   )
@@ -108,6 +111,12 @@ export function FavoritesPage({
   }
 
   const totalFavorites = favoriteProperties.length + savedServices.length + savedMaterials.length
+  const visibleProperties = activeCategory === 'all' || activeCategory === 'properties' ? favoriteProperties : []
+  const visibleServices = activeCategory === 'all' || activeCategory === 'services' ? savedServices : []
+  const visibleMaterials = activeCategory === 'all' || activeCategory === 'materials' ? savedMaterials : []
+  const visibleFavoritesCount = visibleProperties.length + visibleServices.length + visibleMaterials.length
+  const categoryButtonClass = (category: FavoriteCategory) =>
+    `rounded-full h-9 px-4 text-xs font-bold ${activeCategory === category ? 'border-emerald-800 bg-emerald-50 text-emerald-900' : ''}`
 
   return (
     <AccountLayout
@@ -192,19 +201,20 @@ export function FavoritesPage({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
                 <p className="text-sm text-neutral-500">
                   <span className="font-bold text-neutral-800">
-                    {totalFavorites}
+                    {visibleFavoritesCount}
                   </span>{' '}
-                  {totalFavorites === 1 ? 'anuncio guardado' : 'anuncios guardados'}
+                  {visibleFavoritesCount === 1 ? 'anuncio guardado' : 'anuncios guardados'}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoResults}>Propiedades</Button>
-                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoServices}>Servicios</Button>}
-                  {marketplaceFavoritesEnabled && <Button variant="outline" className="rounded-full h-9 px-4 text-xs font-bold" onClick={onGoMaterials}>Materiales</Button>}
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar favoritos por categoría">
+                  <Button type="button" variant="outline" className={categoryButtonClass('all')} aria-pressed={activeCategory === 'all'} onClick={() => setActiveCategory('all')}>Todos</Button>
+                  <Button type="button" variant="outline" className={categoryButtonClass('properties')} aria-pressed={activeCategory === 'properties'} onClick={() => setActiveCategory('properties')}>Propiedades</Button>
+                  {marketplaceFavoritesEnabled && <Button type="button" variant="outline" className={categoryButtonClass('services')} aria-pressed={activeCategory === 'services'} onClick={() => setActiveCategory('services')}>Servicios</Button>}
+                  {marketplaceFavoritesEnabled && <Button type="button" variant="outline" className={categoryButtonClass('materials')} aria-pressed={activeCategory === 'materials'} onClick={() => setActiveCategory('materials')}>Materiales</Button>}
                 </div>
               </div>
 
               <div className="property-catalog-grid">
-                {favoriteProperties.map((property, index) => (
+                {visibleProperties.map((property, index) => (
                   <PropertyCard
                     key={property.id}
                     property={property}
@@ -215,9 +225,9 @@ export function FavoritesPage({
                 ))}
               </div>
 
-              {(savedServices.length > 0 || savedMaterials.length > 0) && (
+              {(visibleServices.length > 0 || visibleMaterials.length > 0) && (
                 <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-label="Servicios y materiales guardados">
-                  {savedServices.map((service, index) => (
+                  {visibleServices.map((service, index) => (
                     <article key={`service-${service.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenService(service.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
@@ -228,7 +238,7 @@ export function FavoritesPage({
                       </div>
                     </article>
                   ))}
-                  {savedMaterials.map((material, index) => (
+                  {visibleMaterials.map((material, index) => (
                     <article key={`material-${material.id}`} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
                       <div className="relative">
                         <button type="button" onClick={() => onOpenMaterial(material.slug)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
@@ -240,6 +250,11 @@ export function FavoritesPage({
                     </article>
                   ))}
                 </div>
+              )}
+              {visibleFavoritesCount === 0 && (
+                <p role="status" className="mt-6 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-600">
+                  No tienes {activeCategory === 'services' ? 'servicios' : activeCategory === 'materials' ? 'materiales' : 'propiedades'} guardados.
+                </p>
               )}
             </>
           )}

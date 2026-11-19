@@ -45,6 +45,14 @@ El sistema MUST permitir guardar propiedades desde catalogo, detalle y previews 
 ### Requirement: Consultar favoritos
 El sistema MUST mostrar una pagina privada con propiedades guardadas.
 
+#### Scenario: Filtrar favoritos por categoría
+- GIVEN el usuario tiene guardados de una o más categorías
+- WHEN abre `/favoritos`
+- THEN MUST poder filtrar la lista por Todos, Propiedades, Servicios o Materiales
+- AND seleccionar una categoría MUST mantener al usuario en `/favoritos`
+- AND el conteo MUST corresponder a los elementos visibles
+- AND una categoría sin elementos MUST mostrar un estado vacío propio sin alterar guardados
+
 #### Scenario: Abrir favoritos
 - GIVEN un usuario autenticado
 - WHEN abre `/favoritos`

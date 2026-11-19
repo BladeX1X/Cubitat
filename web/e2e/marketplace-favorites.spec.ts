@@ -158,3 +158,32 @@ for (const listing of [
     expect(savedRows).toHaveLength(0)
   })
 }
+
+test('los botones de Favoritos filtran por categoría sin abrir los catálogos', async ({ page }) => {
+  const savedRows = await prepareMarketplaceFavorites(page)
+  savedRows.push(
+    { user_id: ownerId, service_provider_id: service.id, material_listing_id: null },
+    { user_id: ownerId, service_provider_id: null, material_listing_id: material.id },
+  )
+
+  await page.goto('/favoritos')
+  await expect(page.getByRole('heading', { name: service.display_name })).toBeVisible()
+  await expect(page.getByRole('heading', { name: material.title })).toBeVisible()
+  const filters = page.getByRole('group', { name: 'Filtrar favoritos por categoría' })
+
+  await filters.getByRole('button', { name: 'Servicios' }).click()
+  await expect(page).toHaveURL(/\/favoritos$/)
+  await expect(page.getByRole('heading', { name: service.display_name })).toBeVisible()
+  await expect(page.getByRole('heading', { name: material.title })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Servicios' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText('1', { exact: true })).toBeVisible()
+
+  await filters.getByRole('button', { name: 'Materiales' }).click()
+  await expect(page).toHaveURL(/\/favoritos$/)
+  await expect(page.getByRole('heading', { name: service.display_name })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: material.title })).toBeVisible()
+
+  await filters.getByRole('button', { name: 'Todos' }).click()
+  await expect(page.getByRole('heading', { name: service.display_name })).toBeVisible()
+  await expect(page.getByRole('heading', { name: material.title })).toBeVisible()
+})

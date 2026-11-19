@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FavoritesPage } from './FavoritesPage'
 
@@ -23,6 +23,11 @@ vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
 }))
 vi.mock('../../modules/marketplace/hooks/useSavedMarketplaceListings', () => ({
   useSavedMarketplaceListings: () => mocks.savedMarketplaceState,
+}))
+vi.mock('../../shared/config/features', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../shared/config/features')>(),
+  PHASE_FOUR_MAT_ENABLED: true,
+  PHASE_FOUR_SVC_ENABLED: true,
 }))
 vi.mock('../../modules/home-services/homeServiceRepository', () => ({
   fetchHomeServiceProvidersByIds: vi.fn(async (ids: string[]) => ids.includes('service-1') ? [{
@@ -69,6 +74,45 @@ describe('FavoritesPage', () => {
     expect(screen.getByRole('heading', { name: /cemento/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /quitar electricista de favoritos/i })).toBeInTheDocument()
     expect(container.querySelector('svg')).not.toBeNull()
+  })
+
+  it('filtra favoritos por categoría sin navegar a los catálogos', async () => {
+    const onGoServices = vi.fn()
+    const onGoMaterials = vi.fn()
+    render(
+      <FavoritesPage
+        properties={[]}
+        onNavigateAccount={vi.fn()}
+        onNavigateFavorites={vi.fn()}
+        onNavigateMyProperties={vi.fn()}
+        onSelectProperty={vi.fn()}
+        onGoResults={vi.fn()}
+        onOpenService={vi.fn()}
+        onOpenMaterial={vi.fn()}
+        onGoServices={onGoServices}
+        onGoMaterials={onGoMaterials}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.getByText('2', { selector: 'span' })).toBeInTheDocument()
+
+    const categoryFilters = within(screen.getByRole('group', { name: 'Filtrar favoritos por categoría' }))
+    fireEvent.click(categoryFilters.getByRole('button', { name: 'Servicios' }))
+    expect(screen.getByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cemento' })).not.toBeInTheDocument()
+    expect(screen.getByText('1', { selector: 'span' })).toBeInTheDocument()
+    expect(categoryFilters.getByRole('button', { name: 'Servicios' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(categoryFilters.getByRole('button', { name: 'Materiales' }))
+    expect(screen.queryByRole('heading', { name: 'Electricista' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cemento' })).toBeInTheDocument()
+
+    fireEvent.click(categoryFilters.getByRole('button', { name: 'Todos' }))
+    expect(screen.getByRole('heading', { name: 'Electricista' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cemento' })).toBeInTheDocument()
+    expect(onGoServices).not.toHaveBeenCalled()
+    expect(onGoMaterials).not.toHaveBeenCalled()
   })
 
   it('abre el detalle del servicio o material seleccionado', async () => {
