@@ -6,7 +6,11 @@ import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
 import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
-import { createPropertySourceData } from '../lib/propertySourceData'
+import {
+  createPropertySourceData,
+  getSelectedMapFeatures,
+  groupMapFeaturesByScreenCell,
+} from '../lib/propertySourceData'
 import { observeElementResize } from '../lib/observeElementResize'
 import { shouldFitInitialBounds } from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
@@ -462,10 +466,9 @@ export function MapLibreAdapter({
     }
   }, [mapReady, sourceData])
 
-  // MapLibre 6 can finish the style without painting the GeoJSON layers when
-  // an external style/source update races the first idle event. Keep a DOM
-  // marker fallback isolated to that case so the map remains usable while the
-  // canvas layers continue to provide clustering whenever they render.
+  // Use DOM markers for selected results so regrouping on zoom cannot lose
+  // their selected state. Also keep a fallback for MapLibre styles that fail
+  // to paint their GeoJSON layers.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !mapReady) return
@@ -482,20 +485,30 @@ export function MapLibreAdapter({
     const renderFallbackMarkers = () => {
       if (cancelled) return
 
+      const selectedFeatures = getSelectedMapFeatures(sourceDataRef.current.features)
+      const hasSelectedResults = selectedFeatures.length > 0
+      const mapLayers = [
+        CLUSTER_SELECTED_HALO_LAYER_ID,
+        CLUSTER_LAYER_ID,
+        CLUSTER_COUNT_LAYER_ID,
+        PROPERTY_SELECTED_HALO_LAYER_ID,
+        PROPERTY_POINT_LAYER_ID,
+        PROPERTY_LABEL_LAYER_ID,
+      ]
+      const visibility = hasSelectedResults ? 'none' : 'visible'
+      mapLayers.forEach((layerId) => {
+        if (map.getLayer(layerId) && map.getLayoutProperty(layerId, 'visibility') !== visibility) {
+          map.setLayoutProperty(layerId, 'visibility', visibility)
+        }
+      })
+
       let renderedFeatureCount = 0
-      try {
-        renderedFeatureCount = map.queryRenderedFeatures({
-          layers: [
-            CLUSTER_SELECTED_HALO_LAYER_ID,
-            CLUSTER_LAYER_ID,
-            CLUSTER_COUNT_LAYER_ID,
-            PROPERTY_SELECTED_HALO_LAYER_ID,
-            PROPERTY_POINT_LAYER_ID,
-            PROPERTY_LABEL_LAYER_ID,
-          ],
-        }).length
-      } catch {
-        renderedFeatureCount = 0
+      if (!hasSelectedResults) {
+        try {
+          renderedFeatureCount = map.queryRenderedFeatures({ layers: mapLayers }).length
+        } catch {
+          renderedFeatureCount = 0
+        }
       }
 
       if (renderedFeatureCount > 0) {
@@ -508,23 +521,21 @@ export function MapLibreAdapter({
       // Rebuild from the latest filtered source each time. Keeping the old
       // markers here made sale pins persist after switching to rentals and
       // prevented fallback markers from ever grouping.
-      const groups = new Map<string, typeof sourceDataRef.current.features>()
-      const cellSize = 65
-      for (const feature of sourceDataRef.current.features) {
+      const markerFeatures = hasSelectedResults ? selectedFeatures : sourceDataRef.current.features
+      const groups = groupMapFeaturesByScreenCell(markerFeatures, (feature) => {
         const pixel = map.project(feature.geometry.coordinates as [number, number])
-        const key = `${Math.floor(pixel.x / cellSize)}:${Math.floor(pixel.y / cellSize)}`
-        groups.set(key, [...(groups.get(key) ?? []), feature])
-      }
+        return [pixel.x, pixel.y]
+      })
 
-      const signature = [...groups.entries()]
-        .map(([cell, features]) => `${cell}:${features.map((feature) => feature.properties?.id).join(',')}`)
+      const signature = groups
+        .map(({ key, features }) => `${key}:${features.map((feature) => feature.properties?.id).join(',')}`)
         .sort()
         .join('|')
       if (signature === lastFallbackSignature) return
       lastFallbackSignature = signature
       clearFallbackMarkers()
 
-      fallbackMarkersRef.current = [...groups.values()].flatMap((features) => {
+      fallbackMarkersRef.current = groups.flatMap(({ features }) => {
         const selectedCount = features.filter((feature) => feature.properties?.isSelected).length
         const entries = features.flatMap((feature) => {
           const id = feature.properties?.id as string | undefined

@@ -140,10 +140,10 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - Las tarjetas usan el cargador compartido de miniaturas: prioriza las dos
   primeras fotos visibles, carga las siguientes bajo demanda y decodifica en
   segundo plano. Las URLs de Unsplash se limitan a 420 px y calidad 45; para
-  Storage privado, el repositorio firma miniaturas de 420×192, recorte `cover`,
-  calidad 65 y usa una firma del original si la transformación falla. La ficha
-  conserva originales para la galería. Las URLs firmadas de Storage conservan
-  su firma y tienen fallback visible.
+  Storage privado, las tarjetas firman miniaturas de 420×192, recorte `cover` y
+  calidad 65 solo cuando se acercan al viewport. La ficha conserva originales
+  para la galería. Las URLs firmadas de Storage conservan su firma y tienen
+  fallback visible.
 - `material-listings` es un bucket privado. Las rutas tienen la forma
   `<owner_uuid>/<listing_uuid>/<object_uuid>.webp` para cargas nuevas.
 - El cliente no tiene una ruta de INSERT directa a Storage: el trigger de DEV
@@ -161,9 +161,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   objetos por carpeta de anuncio para soportar reemplazos y limpieza de cargas
   huérfanas, ya que la credencial `service_role` omite RLS.
 - La lectura pública de Storage requiere que el objeto esté en `photo_urls` de
-  un anuncio publicado y no agotado. La app crea URLs firmadas de una hora al
-  renderizar el catálogo/ficha; Storage privado nunca se configura como bucket
-  público ni se almacena la URL firmada en la fila.
+  un anuncio publicado y no agotado. La app crea URLs firmadas temporales cuando
+  la tarjeta se acerca al viewport o se abre una ficha; Storage privado nunca
+  se configura como bucket público ni se almacena la URL firmada en la fila.
 - Si una firma falla, el catálogo conserva el anuncio y muestra un estado
   accesible de foto temporalmente no disponible, en vez de esconder el fallo
   detrás de un espacio vacío.

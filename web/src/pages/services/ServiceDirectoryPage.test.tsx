@@ -150,6 +150,7 @@ describe('ServiceDirectoryPage filter loading', () => {
     const { container } = render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
 
     await screen.findByText('Profesional 0')
+    await waitFor(() => expect(container.querySelectorAll('img')).toHaveLength(3))
     const images = Array.from(container.querySelectorAll('img'))
     expect(images).toHaveLength(3)
     expect(images[0]).toHaveAttribute('loading', 'eager')

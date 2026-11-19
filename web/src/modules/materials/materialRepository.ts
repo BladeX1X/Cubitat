@@ -173,7 +173,8 @@ export async function fetchMaterialListings(filters: {
     const { data, error, count } = await query
     if (error) return throwLoadError('fetch_material_list', error)
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return { items: await signMaterialPhotos(listings, { coverOnly: true, transformCover: true }), total: count ?? listings.length }
+    // Card thumbnails are signed by MarketplaceCardImage when they approach the viewport.
+    return { items: listings, total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
   }
@@ -232,7 +233,8 @@ export async function fetchMaterialListingsByIds(ids: readonly string[]): Promis
       .in('id', listingIds).eq('status', 'published').neq('availability', 'out_of_stock')
     if (error) throw error
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return signMaterialPhotos(listings, { coverOnly: true, transformCover: true })
+    // Favorites cards use the same viewport-aware signing as the catalog.
+    return listings
   } catch (error) {
     return throwLoadError('fetch_saved_material_listings', error)
   }

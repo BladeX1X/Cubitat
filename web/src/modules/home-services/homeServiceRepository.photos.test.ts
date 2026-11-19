@@ -47,33 +47,13 @@ describe('fetchHomeServiceProviders gallery references', () => {
     }))
   })
 
-  it('signs only the cover photos for directory cards', async () => {
+  it('retains private photo paths so directory cards can sign near the viewport', async () => {
     const result = await fetchHomeServiceProviders()
 
-    expect(storageFrom).toHaveBeenCalledWith('home-service-profiles')
+    expect(storageFrom).not.toHaveBeenCalled()
     expect(storageFrom).not.toHaveBeenCalledWith('home-service-photos')
-    expect(createSignedUrl).toHaveBeenCalledWith('home-service-profiles', legacyPath, 3600, {
-      transform: { width: 420, height: 192, resize: 'cover', quality: 65 },
-    })
-    expect(result.items[0]?.galleryUrls).toEqual([
-      `https://signed.invalid/home-service-profiles/${encodeURIComponent(legacyPath)}`,
-    ])
-    expect(result.items[0]?.photoUnavailable).toBe(false)
-  })
-
-  it('marks a legacy photo unavailable when its private object cannot be signed', async () => {
-    storageFrom.mockImplementation((_bucket: string) => ({
-      createSignedUrl: vi.fn(async () => ({ data: null, error: new Error('transform unavailable') })),
-      createSignedUrls: vi.fn(async (paths: string[]) => ({
-        data: paths.map(path => ({ path, signedUrl: null, error: { message: 'not accessible' } })),
-        error: null,
-      })),
-    }))
-
-    const result = await fetchHomeServiceProviders()
-
-    expect(result.items[0]?.galleryUrls).toEqual([])
-    expect(result.items[0]?.photoUnavailable).toBe(true)
+    expect(createSignedUrl).not.toHaveBeenCalled()
+    expect(result.items[0]?.galleryUrls).toEqual([legacyPath, currentPath])
   })
 
   it('still signs the full gallery when opening a provider detail', async () => {

@@ -43,34 +43,16 @@ describe('fetchMaterialListings filters and pagination', () => {
     expect(result).toMatchObject({ total: 37, items: [{ id: '1', title: 'Cemento gris' }] })
   })
 
-  it('marks a referenced private photo unavailable when Storage cannot sign it', async () => {
+  it('retains a private cover path so the card can sign only near the viewport', async () => {
     const photoPath = 'f7adba7c-367d-42a8-933a-af01f7f9155a/45c8e993-b64a-4d1c-9e58-20ad1a25eb6b/72b35ff4-8507-4950-ab14-ed1d9dd34042.webp'
     Object.assign(query, {
       data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [photoPath], updated_at: '2026-11-05T00:00:00Z' }],
     })
-    createSignedUrls.mockResolvedValue({ data: [{ path: photoPath, signedUrl: null, error: { message: 'storage unavailable' } }], error: null })
-    createSignedUrl.mockResolvedValue({ data: null, error: new Error('image transformation unavailable') })
-
     const result = await fetchMaterialListings()
 
-    expect(createSignedUrls).toHaveBeenCalledWith([photoPath], 3600)
-    expect(result.items[0]).toMatchObject({ photoUrls: [], photoUnavailable: true })
-  })
-
-  it('uses a transformed signed thumbnail for the material card cover', async () => {
-    const photoPath = 'f7adba7c-367d-42a8-933a-af01f7f9155a/45c8e993-b64a-4d1c-9e58-20ad1a25eb6b/72b35ff4-8507-4950-ab14-ed1d9dd34042.webp'
-    Object.assign(query, {
-      data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [photoPath], updated_at: '2026-11-05T00:00:00Z' }],
-    })
-    createSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.test/material-thumbnail' }, error: null })
-
-    const result = await fetchMaterialListings()
-
-    expect(createSignedUrl).toHaveBeenCalledWith(photoPath, 3600, {
-      transform: { width: 420, height: 192, resize: 'cover', quality: 65 },
-    })
     expect(createSignedUrls).not.toHaveBeenCalled()
-    expect(result.items[0]).toMatchObject({ photoUrls: ['https://example.test/material-thumbnail'], photoUnavailable: false })
+    expect(createSignedUrl).not.toHaveBeenCalled()
+    expect(result.items[0]).toMatchObject({ photoUrls: [photoPath], photoUnavailable: false })
   })
 
   it('signs only photo paths belonging to the current owner and edited listing', async () => {

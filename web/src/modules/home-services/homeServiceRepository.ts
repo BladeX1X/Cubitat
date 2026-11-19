@@ -156,7 +156,8 @@ export async function fetchHomeServiceProviders(filters: {
     const { data, error, count } = await query
     if (error) return logLoadFailure('fetch_provider_list', error)
     const items = (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
-    return { items: await signHomeServicePhotos(items, { coverOnly: true }), total: count ?? 0 }
+    // The card image signs its private photo only when it is near the viewport.
+    return { items, total: count ?? 0 }
   } catch (error) {
     return logLoadFailure('fetch_provider_list_exception', error)
   }
@@ -216,7 +217,8 @@ export async function fetchHomeServiceProvidersByIds(ids: readonly string[]): Pr
       .eq('status', 'published')
     if (error) throw error
     const providers = (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
-    return signHomeServicePhotos(providers, { coverOnly: true })
+    // Favorites cards use the same viewport-aware signing as the directory.
+    return providers
   } catch (error) {
     return logLoadFailure('fetch_saved_provider_profiles', error)
   }

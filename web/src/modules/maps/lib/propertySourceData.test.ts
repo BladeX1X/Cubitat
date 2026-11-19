@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { Property } from '../../properties/types'
-import { createPropertySourceData } from './propertySourceData'
+import {
+  createPropertySourceData,
+  getSelectedMapFeatures,
+  groupMapFeaturesByScreenCell,
+} from './propertySourceData'
 
 const baseProperty: Property = {
   id: 'valid-property',
@@ -63,5 +67,30 @@ describe('createPropertySourceData', () => {
     expect(selectedCount(source.features)).toBe(9)
     expect(selectedCount(source.features.slice(0, 4))).toBe(4)
     expect(selectedCount(source.features.slice(4))).toBe(5)
+  })
+
+  it('keeps every selected result highlighted when the map regroups into 4 and 5 after zoom', () => {
+    const properties = Array.from({ length: 14 }, (_, index) => ({
+      ...baseProperty,
+      id: `property-${index + 1}`,
+    }))
+    const selectedIds = properties.slice(0, 9).map((property) => property.id)
+    const source = createPropertySourceData(properties, undefined, selectedIds)
+    const selectedFeatures = getSelectedMapFeatures(source.features)
+    const coordinates = new Map(selectedFeatures.map((feature, index) => [
+      feature.properties?.id,
+      index < 4 ? [20 + index, 20] as const : [150 + index, 20] as const,
+    ]))
+    const groups = groupMapFeaturesByScreenCell(
+      selectedFeatures,
+      (feature) => coordinates.get(feature.properties?.id) ?? [0, 0],
+    )
+
+    expect(selectedFeatures).toHaveLength(9)
+    expect(selectedFeatures.map((feature) => feature.properties?.id)).toEqual(selectedIds)
+    const groupedFeatures = groups.flatMap((group) => group.features)
+    expect(groups.map((group) => group.features.length)).toEqual([4, 5])
+    expect(groupedFeatures).toHaveLength(9)
+    expect(groupedFeatures.every((feature) => feature.properties?.isSelected)).toBe(true)
   })
 })
