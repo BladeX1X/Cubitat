@@ -534,6 +534,36 @@
   min-height: 60px;
 }
 
+@media (max-width: 640px) {
+  .app-shell.is-results-page .results-pagination {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 8px;
+  }
+
+  .app-shell.is-results-page .results-pagination > div {
+    order: -1;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    margin-inline: 0;
+  }
+
+  .app-shell.is-results-page .results-pagination > div span {
+    padding-inline: 4px;
+  }
+
+  .app-shell.is-results-page .results-pagination > button {
+    flex: 0 1 auto;
+    padding-inline: 10px !important;
+  }
+}
+
 /* Disable sticky positioning for the main header on the search results page */
 .is-results-page .site-header {
   position: relative;
@@ -1967,20 +1997,6 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 
   .app-shell.is-results-page .results-heading h1 {
     overflow-wrap: anywhere;
-  }
-
-  .app-shell.is-results-page .results-pagination {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .app-shell.is-results-page .results-pagination > button {
-    padding-inline: 10px !important;
-  }
-
-  .app-shell.is-results-page .results-pagination > div {
-    gap: 2px;
-    margin-inline: 0;
   }
 }
 
