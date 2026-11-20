@@ -51,6 +51,9 @@ actualiza el perfil antes de completar el lote.
 
 - Las páginas deben ser utilizables en móvil, por teclado y con lector de
   pantalla; contemplan carga, error, estado vacío y reintento.
+- La hoja móvil de filtros se comporta como diálogo modal: al abrir mueve el
+  foco dentro, mantiene la navegación Tab y Shift+Tab en sus controles, y al
+  cerrarse devuelve el foco al botón que la abrió.
 - En dispositivos táctiles, los botones del encabezado, filtros, acciones del
   directorio, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
   campos de texto móviles MUST usar fuente de al menos 16 px.

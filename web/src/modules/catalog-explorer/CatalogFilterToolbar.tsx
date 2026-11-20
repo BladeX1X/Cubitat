@@ -23,14 +23,42 @@ export function CatalogFilterToolbar({
 }: CatalogFilterToolbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isOpen) return
     const trigger = triggerRef.current
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    const getFocusableElements = () => Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    ).filter((element) => element.getAttribute('aria-hidden') !== 'true')
+
+    getFocusableElements()[0]?.focus()
+
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      const focusableElements = getFocusableElements()
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements.at(-1)
+
+      if (!firstElement || !lastElement) {
+        event.preventDefault()
+      } else if (event.shiftKey && (document.activeElement === firstElement || !dialogRef.current?.contains(document.activeElement))) {
+        event.preventDefault()
+        lastElement.focus()
+      } else if (!event.shiftKey && (document.activeElement === lastElement || !dialogRef.current?.contains(document.activeElement))) {
+        event.preventDefault()
+        firstElement.focus()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
@@ -69,6 +97,7 @@ export function CatalogFilterToolbar({
       </aside>
       {isOpen ? (
         <div
+          ref={dialogRef}
           className="catalog-filter-sheet"
           role="dialog"
           aria-modal="true"

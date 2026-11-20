@@ -40,4 +40,23 @@ describe('CatalogFilterToolbar', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(document.body.style.overflow).toBe('')
   })
+
+  it('moves focus into the sheet, traps Tab navigation, and restores focus on close', () => {
+    render(<CatalogFilterToolbar label="Filtros de materiales" search={<input aria-label="Buscar material" />} filters={filters} activeFiltersCount={0} resultCount={13} resultLabel="anuncios" onClearFilters={() => {}} />)
+    const trigger = screen.getByRole('button', { name: 'Mostrar filtros de anuncios' })
+    fireEvent.click(trigger)
+
+    const dialog = screen.getByRole('dialog', { name: 'Filtros de materiales' })
+    const closeButton = within(dialog).getByRole('button', { name: 'Cerrar filtros' })
+    const showResultsButton = within(dialog).getByRole('button', { name: 'Ver 13 anuncios' })
+    expect(document.activeElement).toBe(closeButton)
+
+    fireEvent.keyDown(closeButton, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(showResultsButton)
+    fireEvent.keyDown(showResultsButton, { key: 'Tab' })
+    expect(document.activeElement).toBe(closeButton)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(document.activeElement).toBe(trigger)
+  })
 })

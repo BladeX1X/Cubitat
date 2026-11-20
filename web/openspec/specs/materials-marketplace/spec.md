@@ -14,6 +14,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - **AND** los cambios se aplican en el catálogo sin recargar ni navegar
 - **AND** móvil permite abrir y cerrar filtros en una hoja, limpiar filtros y
   conservar visible el total de resultados
+- La hoja móvil de filtros se comporta como diálogo modal: al abrir mueve el
+  foco dentro, mantiene la navegación Tab y Shift+Tab en sus controles, y al
+  cerrarse devuelve el foco al botón que la abrió.
 - En dispositivos táctiles, los botones del encabezado, filtros, acciones del
   catálogo, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
   campos de texto móviles MUST usar fuente de al menos 16 px.
