@@ -1000,7 +1000,9 @@ export function CubitatApp() {
   }
 
   function handleClearFilters() {
-    setFilters(initialFilters)
+    setFilters(pageMode === 'results'
+      ? { ...initialFilters, operations: filters.operations }
+      : initialFilters)
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
   }

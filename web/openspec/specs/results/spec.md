@@ -49,6 +49,16 @@ El sistema MUST permitir ordenar resultados sin perder filtros activos.
 - AND MUST volver a la primera pagina
 - AND MUST mantener filtros y URL de busqueda
 
+### Requirement: Limpiar filtros avanzados conserva la operación
+
+#### Scenario: Limpiar criterios de Rentar
+- GIVEN el usuario ve resultados de una operación como Rentar
+- AND aplica criterios avanzados como habitaciones, baños o precio
+- WHEN pulsa `Limpiar` en la hoja de filtros o `Limpiar filtros`
+- THEN el sistema MUST eliminar los criterios avanzados
+- AND MUST conservar la operación actual en los resultados y en la URL
+- AND MUST restablecer el catálogo de esa operación
+
 ### Requirement: Vista de mapa movil
 El sistema MUST ofrecer una vista de mapa en movil sin abandonar la pagina de resultados.
 

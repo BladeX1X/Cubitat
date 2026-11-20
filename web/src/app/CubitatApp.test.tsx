@@ -90,6 +90,21 @@ vi.mock('../components/layout/Header', () => ({
   Header: () => <div data-testid="header" />,
 }))
 
+vi.mock('../pages/results/ResultsPage', () => ({
+  ResultsPage: ({
+    filters,
+    onClearFilters,
+  }: {
+    filters: { operations: string[] }
+    onClearFilters: () => void
+  }) => (
+    <div>
+      <output data-testid="active-operations">{filters.operations.join(',')}</output>
+      <button type="button" onClick={onClearFilters}>Limpiar filtros</button>
+    </div>
+  ),
+}))
+
 vi.mock('../components/layout/SiteFooter', () => ({
   SiteFooter: () => <div data-testid="footer" />,
 }))
@@ -215,5 +230,20 @@ describe('CubitatApp', () => {
 
     expect(await screen.findByRole('button', { name: 'Publicar' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vender' })).not.toBeInTheDocument()
+  })
+
+  it('limpia los filtros avanzados de Rentar sin quitar la operación', async () => {
+    window.history.replaceState(null, '', '/resultados?operacion=alquiler')
+    render(<AuthModalProvider><CubitatApp /></AuthModalProvider>)
+
+    const operation = await screen.findByTestId('active-operations')
+    expect(operation).toHaveTextContent('alquiler')
+
+    fireEvent.click(screen.getByRole('button', { name: /limpiar filtros/i }))
+
+    await waitFor(() => {
+      expect(operation).toHaveTextContent('alquiler')
+      expect(window.location.search).toBe('?operacion=alquiler')
+    })
   })
 })
