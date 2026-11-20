@@ -27,11 +27,13 @@ export function MarketplaceContactActions({
   const isPropertyHero = layout === 'property-hero'
   const isPropertyMobile = layout === 'property-mobile'
   const [loadingChannel, setLoadingChannel] = useState<'phone' | 'whatsapp' | null>(null)
-  const [error, setError] = useState<'missing' | 'phone-missing' | 'whatsapp-missing' | 'unavailable' | null>(null)
+  const [error, setError] = useState<'missing' | 'phone-missing' | 'whatsapp-missing' | 'unavailable' | 'rate-limited' | null>(null)
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null)
 
   async function openChannel(channel: 'phone' | 'whatsapp') {
     if (loadingChannel) return
     setError(null)
+    setRetryAfterSeconds(null)
     setLoadingChannel(channel)
     // Reserve the WhatsApp tab while the user gesture is still active. This
     // avoids popup blockers after the private contact lookup completes.
@@ -64,10 +66,15 @@ export function MarketplaceContactActions({
     } catch (cause) {
       whatsappWindow?.close()
       const reason = typeof cause === 'object' && cause !== null && 'reason' in cause
-        && (cause.reason === 'missing' || cause.reason === 'unavailable')
+        && (cause.reason === 'missing' || cause.reason === 'unavailable' || cause.reason === 'rate-limited')
         ? cause.reason
         : 'unavailable'
+      const retryAfter = typeof cause === 'object' && cause !== null && 'retryAfterSeconds' in cause
+        && typeof cause.retryAfterSeconds === 'number' && Number.isFinite(cause.retryAfterSeconds)
+        ? Math.max(1, Math.ceil(cause.retryAfterSeconds))
+        : null
       setError(reason)
+      setRetryAfterSeconds(reason === 'rate-limited' ? retryAfter : null)
     } finally {
       setLoadingChannel(null)
     }
@@ -90,6 +97,7 @@ export function MarketplaceContactActions({
       </div>
       {(error === 'missing' || error === 'phone-missing' || error === 'whatsapp-missing') && <div className="mt-2 space-y-1 text-xs text-amber-900"><p role="status">{error === 'phone-missing' ? 'El anunciante no ha asociado un teléfono a este anuncio.' : error === 'whatsapp-missing' ? 'El anunciante no ha asociado WhatsApp a este anuncio.' : 'El anunciante no ha añadido teléfono ni WhatsApp a este anuncio.'}</p>{onMissing && <button type="button" className="font-semibold underline" onClick={onMissing}>Abrir anuncio y enviar una consulta</button>}</div>}
       {error === 'unavailable' && <p role="alert" className="mt-2 text-xs text-red-700">No se pudo abrir el contacto. Inténtalo de nuevo en unos momentos.</p>}
+      {error === 'rate-limited' && <p role="status" className="mt-2 text-xs text-amber-800">Alcanzaste el límite temporal de intentos. {retryAfterSeconds === null ? 'Inténtalo de nuevo más tarde.' : `Espera aproximadamente ${Math.max(1, Math.ceil(retryAfterSeconds / 60))} min y vuelve a intentarlo.`}</p>}
     </div>
   )
 }

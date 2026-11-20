@@ -58,6 +58,7 @@ El sistema MUST permitir enviar un mensaje estructurado al anunciante desde la p
 - AND el Worker MUST repetir la validacion antes de verificar Turnstile o escribir datos
 - AND MUST registrar o enviar la consulta por el canal configurado
 - AND MUST mostrar confirmacion o error entendible
+- AND el botón de envío MUST decir únicamente «Enviar mensaje» y no prometer que la consulta revelará el teléfono del anunciante
 
 #### Scenario: Vista previa de una propiedad pendiente
 - GIVEN un usuario autorizado visualiza una propiedad que no esta publicada
@@ -125,6 +126,13 @@ El sistema MUST evitar exponer datos sensibles innecesarios antes de una interac
 - AND la interfaz MUST ofrecer un mensaje de reintento distinto del aviso de que el anunciante no indicó teléfono
 - AND la interfaz MUST descartar el token Turnstile consumido y permitir completar un reto nuevo sin cerrar el diálogo
 - AND MUST NOT exponer el error interno, número ni datos de otro anuncio
+
+#### Scenario: Límite temporal de consultas de contacto
+- GIVEN una persona superó el límite temporal de consultas desde su red
+- WHEN el Worker responde HTTP 429 con `Retry-After`
+- THEN la interfaz MUST explicar que alcanzó el límite temporal y cuánto esperar
+- AND MUST NOT presentarlo como un teléfono inexistente ni como una caída genérica
+- AND MUST NOT revelar datos privados mientras el acceso está limitado
 
 #### Scenario: Reintentar contacto después de un fallo temporal
 - GIVEN la verificación Turnstile ya fue aceptada y el primer intento de consultar el contacto falla temporalmente

@@ -30,6 +30,17 @@ describe('fetchMarketplaceContact', () => {
     await expect(fetchMarketplaceContact('service', 'listing-id')).rejects.toMatchObject({ reason: 'missing' })
   })
 
+  it('preserves the retry delay when the protected lookup is rate limited', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'Demasiados intentos' }), {
+      status: 429,
+      headers: { 'Retry-After': '125' },
+    })))
+    await expect(fetchMarketplaceContact('material', 'listing-id')).rejects.toMatchObject({
+      reason: 'rate-limited',
+      retryAfterSeconds: 125,
+    })
+  })
+
   it('builds a phone link and contextual WhatsApp link like property cards', () => {
     expect(getMarketplaceContactUrl('phone', '+53 5123-4567', 'Pintura', 'Camagüey')).toBe('tel:+5351234567')
     expect(getMarketplaceContactUrl('whatsapp', '+53 5123-4567', 'Pintura', 'Camagüey')).toContain('https://wa.me/5351234567?text=')

@@ -21,6 +21,10 @@ que el teléfono también está registrado en WhatsApp. Si falta el canal, se
 informa cuál y la tarjeta permite abrir el formulario de consulta; los fallos
 temporales tienen un mensaje recuperable.
 
+Si el Worker responde HTTP 429, la interfaz explica que se alcanzó el límite
+temporal y muestra el tiempo aproximado indicado por `Retry-After`; no presenta
+el límite como un teléfono inexistente ni como una caída genérica.
+
 Pruebas: `MarketplaceContactActions.test.tsx` comprueba apertura directa de
 teléfono y WhatsApp, canal ausente y fallos recuperables. `marketplaceContact.test.ts`
 comprueba que el lookup no se cachea y que los enlaces se validan. El E2E

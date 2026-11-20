@@ -7,7 +7,7 @@ import {
   BedDouble,
   Car,
   MapPin,
-  Phone,
+  MessageCircle,
   Ruler,
   Share2,
   ChevronLeft,
@@ -1488,8 +1488,8 @@ function ContactCard({
                 </>
               ) : (
                 <>
-                  <Phone size={14} />
-                  Enviar mensaje y ver contacto
+                  <MessageCircle size={14} />
+                  Enviar mensaje
                 </>
               )}
             </Button>

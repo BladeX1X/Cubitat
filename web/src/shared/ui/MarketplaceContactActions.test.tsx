@@ -85,4 +85,13 @@ describe('MarketplaceContactActions', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo abrir el contacto/i)
   })
+
+  it('explains the retry window when the lookup is rate limited', async () => {
+    vi.mocked(fetchMarketplaceContact).mockRejectedValue({ reason: 'rate-limited', retryAfterSeconds: 125 })
+    render(<MarketplaceContactActions listingType="material" listingId="listing-6" listingTitle="Cemento" listingLocation="La Habana" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Contactar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/límite temporal de intentos.*espera aproximadamente 3 min/i)
+  })
 })

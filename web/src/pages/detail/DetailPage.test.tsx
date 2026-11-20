@@ -631,7 +631,9 @@ describe('DetailPage - Reportes y Visor', () => {
 
     fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Ana Pérez' } })
     fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51234567' } })
-    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+    expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /ver contacto/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }))
 
     await waitFor(() => {
       expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
@@ -657,7 +659,7 @@ describe('DetailPage - Reportes y Visor', () => {
 
     fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Ana Pérez' } })
     fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: 'abc---123' } })
-    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }))
 
     expect(await screen.findByText(/escribe un teléfono válido/i)).toBeInTheDocument()
     expect(mockSubmitPublicContact).not.toHaveBeenCalled()
@@ -674,7 +676,7 @@ describe('DetailPage - Reportes y Visor', () => {
     )
 
     expect(screen.getByText(/el contacto estará disponible cuando el anuncio sea publicado/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Enviar mensaje' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /reportar propiedad sospechosa/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^contactar$/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^consultar$/i })).not.toBeInTheDocument()
@@ -699,7 +701,7 @@ describe('DetailPage - Reportes y Visor', () => {
 
     fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Rodolfo QA' } })
     fireEvent.change(screen.getByLabelText(/teléfono o whatsapp/i), { target: { value: '+53 51111111' } })
-    fireEvent.click(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }))
 
     await waitFor(() => {
       expect(mockSubmitPublicContact).toHaveBeenCalledWith(expect.objectContaining({
@@ -726,7 +728,7 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent(/ya enviaste una consulta a esta publicación recientemente/i)
     expect(screen.queryByText(/¡Mensaje enviado!/i)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /enviar mensaje y ver contacto/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Enviar mensaje' })).not.toBeInTheDocument()
     expect(mockSubmitPublicContact).not.toHaveBeenCalled()
   })
 
@@ -740,6 +742,6 @@ describe('DetailPage - Reportes y Visor', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent(/ya enviaste una consulta/i)
     act(() => vi.advanceTimersByTime(60_001))
-    expect(screen.getByRole('button', { name: /enviar mensaje y ver contacto/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeInTheDocument()
   })
 })

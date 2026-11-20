@@ -18,6 +18,9 @@ abre WhatsApp con el título y ubicación pública. Si el canal no existe, se
 ofrece el formulario protegido como alternativa. Ninguna vista pública carga
 `contact_info` antes de la acción.
 
+El botón del formulario de la ficha dice «Enviar mensaje»; no promete mostrar
+los datos del anunciante después del envío.
+
 Pruebas: `DetailPage.test.tsx`, `PropertyCard.test.tsx` y `utils/contact.test.ts` cubren enfoque del formulario, contexto del mensaje y normalización segura de enlaces.
 
 ## Privacidad de dirección — 2026-09-11

@@ -6,12 +6,14 @@ export type MarketplaceContact = {
 }
 
 export class MarketplaceContactError extends Error {
-  readonly reason: 'missing' | 'unavailable'
+  readonly reason: 'missing' | 'unavailable' | 'rate-limited'
+  readonly retryAfterSeconds?: number
 
-  constructor(reason: 'missing' | 'unavailable') {
+  constructor(reason: 'missing' | 'unavailable' | 'rate-limited', retryAfterSeconds?: number) {
     super(reason === 'missing' ? 'MARKETPLACE_CONTACT_MISSING' : 'MARKETPLACE_CONTACT_FAILED')
     this.name = 'MarketplaceContactError'
     this.reason = reason
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -32,7 +34,17 @@ export async function fetchMarketplaceContact(
       ? { property_id: listingId }
       : { listing_type: listingType, listing_id: listingId }),
   })
-  if (!response.ok) throw new MarketplaceContactError(response.status === 404 ? 'missing' : 'unavailable')
+  if (!response.ok) {
+    if (response.status === 404) throw new MarketplaceContactError('missing')
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get('Retry-After'))
+      throw new MarketplaceContactError(
+        'rate-limited',
+        Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : undefined,
+      )
+    }
+    throw new MarketplaceContactError('unavailable')
+  }
   const value: unknown = await response.json()
   if (!isRecord(value)) throw new MarketplaceContactError('unavailable')
   const phone = typeof value.phone === 'string' ? value.phone : null
