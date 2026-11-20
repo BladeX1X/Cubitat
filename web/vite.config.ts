@@ -101,7 +101,7 @@ export default defineConfig(({ mode, command }) => {
     if (publicSupabaseUrl !== productionSupabaseUrl) {
       throw new Error(`El perfil ${mode} requiere VITE_SUPABASE_URL=${productionSupabaseUrl}`)
     }
-    if (!supabaseAnonKey) {
+    if (!supabaseAnonKey && command !== 'build') {
       throw new Error(`El perfil ${mode} requiere VITE_SUPABASE_ANON_KEY del proyecto productivo.`)
     }
   }

@@ -711,6 +711,10 @@
 :where(.app-shell.is-results-page, .map-overlay-filterbar) .mobile-filter-sheet {
   position: fixed;
   inset: 0;
+    inset-inline-end: auto;
+    width: 100vw;
+    width: 100dvw;
+    max-width: 100dvw;
   z-index: 260;
   display: flex;
   flex-direction: column;
@@ -1973,7 +1977,7 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 420px) {
   .app-shell.is-results-page .results-heading {
     gap: 6px;
   }

@@ -16,7 +16,7 @@ test('las acciones principales de inicio alcanzan 48 px en móvil táctil', asyn
   await context.close()
 })
 
-for (const width of [390, 400]) {
+for (const width of [390, 400, 401, 430]) {
   test(`la paginación de resultados no desborda a ${width} px`, async ({ browser }) => {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -43,7 +43,7 @@ for (const width of [390, 400]) {
   })
 }
 
-for (const width of [320, 360, 390]) {
+for (const width of [320, 360, 390, 401, 430]) {
   test(`la hoja de filtros cabe en el panel a ${width} px`, async ({ browser }) => {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -68,7 +68,13 @@ for (const width of [320, 360, 390]) {
         && footer.scrollWidth <= footer.clientWidth
         && footerRect.right <= panelRect.right + 1
     })).toBe(true)
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await expect.poll(() => page.evaluate((expectedWidth) => {
+      const panel = document.querySelector<HTMLElement>('.mobile-filter-sheet__panel')
+      if (!panel) return false
+      const visibleWidth = window.visualViewport?.width ?? expectedWidth
+      return document.documentElement.scrollWidth <= expectedWidth
+        && panel.getBoundingClientRect().right <= visibleWidth + 1
+    }, width)).toBe(true)
 
     await sheet.getByRole('button', { name: 'Cerrar filtros' }).click()
     await expect(sheet).not.toHaveClass(/is-open/)

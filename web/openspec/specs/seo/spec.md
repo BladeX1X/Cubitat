@@ -79,3 +79,13 @@ publicadas y landings SEO respaldadas por inventario publicado.
 - AND las rutas MUST estar ordenadas por URL canonica
 - AND `lastmod` MUST provenir de una fecha real de actualizacion, no de la
   fecha de ejecucion del build
+
+#### Scenario: Build sin credenciales locales de Supabase
+- GIVEN no hay configuradas ambas variables públicas de Supabase
+- WHEN se genera el sitemap de producción o DEV
+- THEN el generador MUST leer el inventario publicado por el proxy del mismo
+  sitio objetivo (`cubitathome.com` o el Worker de DEV)
+- AND MUST solicitar únicamente los campos públicos de propiedad y el estado
+  `published`
+- AND MUST fallar el build si el proxy devuelve error o una respuesta inválida
+- AND MUST NOT escribir el sitemap del entorno DEV sobre los archivos fuente

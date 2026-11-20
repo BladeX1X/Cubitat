@@ -1,10 +1,10 @@
 export function resolveSitemapMode({ requestedMode, supabaseUrl, supabaseAnonKey }) {
   if (requestedMode === 'static') return 'static'
   if (supabaseUrl && supabaseAnonKey) return 'dynamic'
-  if (requestedMode === 'dynamic') {
+  if (supabaseAnonKey && !supabaseUrl) {
     throw new Error('Both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for a dynamic sitemap.')
   }
-  if (!supabaseUrl && !supabaseAnonKey) return 'static'
+  if (!supabaseAnonKey) return 'proxy'
   throw new Error('Both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for a dynamic sitemap.')
 }
 

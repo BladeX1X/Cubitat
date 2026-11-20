@@ -44,6 +44,18 @@ git push
 
 Cloudflare volverá a desplegar.
 
+El generador usa la conexión directa cuando están disponibles ambas variables
+públicas de Supabase. Si no están, lee los campos públicos de propiedades
+publicadas mediante el proxy del mismo entorno objetivo (producción o DEV), sin
+necesitar permisos de API Keys ni incluir credenciales en el proceso de build.
+Si ese inventario no responde o devuelve datos inválidos, el build falla para
+evitar publicar un sitemap incompleto. `--static` se reserva para builds que
+explícitamente no deben incluir inventario dinámico.
+
+Los perfiles completos de producción también necesitan `VITE_SUPABASE_ANON_KEY`
+para inicializar el cliente público del navegador; el proxy es un fallback del
+generador del sitemap y no reemplaza esa configuración de la aplicación.
+
 ## Qué Debe Entrar Al Sitemap
 
 Sí incluir:

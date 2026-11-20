@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildSitemapDocument } from './sitemap-document.mjs'
 import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 import { resolveSitemapMode, shouldWriteSourceSitemap } from './sitemap-mode.mjs'
+import { readPublicSitemapProperties } from './sitemap-data.mjs'
 
 const isPhase2Dev = process.argv.includes('--phase2-dev')
 const requestedSitemapMode = process.argv.includes('--require-dynamic')
@@ -79,6 +80,10 @@ async function readPublishedProperties(mode) {
     return []
   }
 
+  if (mode === 'proxy') {
+    return readPublicSitemapProperties({ siteUrl: SITE_URL })
+  }
+
   const env = readEnv()
   const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
@@ -143,7 +148,7 @@ if (existsSync(resolve('dist'))) {
   writeFileSync(resolve('dist/robots.txt'), robots)
 }
 
-if (sitemapMode === 'static' && !requestedSitemapMode) {
-  console.warn('[sitemap] Supabase public configuration absent; generated a static-only sitemap fallback.')
+if (sitemapMode === 'proxy') {
+  console.warn(`[sitemap] Supabase public configuration absent; loaded public inventory through ${SITE_URL}.`)
 }
 console.log(`Generated ${routes.length} sitemap URLs for ${SITE_URL} (${sitemapMode})`)
