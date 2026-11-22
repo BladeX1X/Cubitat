@@ -190,6 +190,31 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  it('shows photo navigation on desktop, mobile and the fullscreen viewer', () => {
+    const property = {
+      ...mockProperty,
+      coverImage: 'https://images.unsplash.com/photo-cover',
+      images: ['https://images.unsplash.com/photo-second', 'https://images.unsplash.com/photo-third'],
+    }
+    render(<DetailPage property={property} onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    expect(screen.getAllByRole('button', { name: 'Foto siguiente' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Foto anterior' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Ver foto 2 de 3' })).toHaveLength(2)
+
+    fireEvent.click(screen.getAllByRole('button', { name: `Abrir galería: foto principal de ${property.title}` })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Foto siguiente' }).at(-1)!)
+
+    expect(screen.getByRole('img', { name: 'Detalle de propiedad' })).toHaveAttribute('src', property.images[0])
+  })
+
+  it('does not show photo navigation when a property has only one photo', () => {
+    render(<DetailPage property={mockProperty} onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    expect(screen.queryByRole('button', { name: 'Foto siguiente' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Foto anterior' })).not.toBeInTheDocument()
+  })
+
   it('does not expose a legacy street address in detail, contact text or SEO', () => {
     const { container } = render(<DetailPage
       property={{ ...mockProperty, location: 'Calle Sintética 999, apartamento 42, Playa, La Habana' }}
@@ -437,7 +462,7 @@ describe('DetailPage - Reportes y Visor', () => {
     )
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Mapa' })[0])
-    await waitFor(() => expect(mockMapInstances.length).toBeGreaterThan(1))
+    await waitFor(() => expect(mockMapInstances).toHaveLength(1))
     act(() => mockMapInstances.at(-1)!.emit('error', { error: new Error('style failed') }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cargar el mapa')
