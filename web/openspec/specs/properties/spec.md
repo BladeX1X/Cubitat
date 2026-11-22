@@ -34,6 +34,15 @@ El sistema MUST sustituir el catálogo por la ficha técnica extendida al selecc
 - AND en escritorio la portada MUST usar un contenedor centrado con ancho máximo de `1152 px` y columnas equilibradas para información e imagen
 - AND en móvil la portada MUST apilar información e imagen sin desbordamiento horizontal
 
+#### Scenario: Navegar las fotos de la ficha y del visor
+- GIVEN una propiedad tiene más de una foto válida
+- WHEN se muestra la galería de la ficha o el visor de fotos a pantalla completa
+- THEN MUST ofrecer controles accesibles para avanzar y retroceder entre fotos
+- AND MUST permitir navegar también con deslizamiento táctil y puntos de posición
+- AND seleccionar una miniatura MUST actualizar la foto activa
+- WHEN la propiedad solo tiene una foto
+- THEN MUST NOT mostrar controles de navegación que no tengan otra foto que recorrer
+
 #### Scenario: Contactar mantiene el mismo destino desde el catálogo y el detalle
 - GIVEN el usuario ve una propiedad publicada con datos de contacto
 - WHEN pulsa `Contactar` en la tarjeta o en la ficha

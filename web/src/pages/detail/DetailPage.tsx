@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode, type UIEvent } from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../../modules/maps/lib/configureMapLibreWorker'
@@ -51,6 +51,14 @@ import { Card, CardContent } from '../../shared/ui/card'
 import { Input } from '../../shared/ui/input'
 import { Textarea } from '../../shared/ui/textarea'
 import { TurnstileWidget } from '../../shared/ui/TurnstileWidget'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '../../shared/ui/carousel'
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
@@ -104,6 +112,7 @@ export function DetailPage({
   const shareInProgress = useRef(false)
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
   const [mediaModalTab, setMediaModalTab] = useState<'photos' | 'map'>('photos')
+  const [mediaImageIndex, setMediaImageIndex] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportDescription, setReportDescription] = useState('')
@@ -480,6 +489,8 @@ export function DetailPage({
               setIsOpenModal={setIsMediaModalOpen}
               activeTab={mediaModalTab}
               setActiveTab={setMediaModalTab}
+              activeIndex={mediaImageIndex}
+              setActiveIndex={setMediaImageIndex}
             />
             <div className="detail-desktop-media-actions">
               <button
@@ -641,9 +652,12 @@ export function DetailPage({
               <ImageGallery 
                 property={property} 
                 isOpenModal={isMediaModalOpen}
+                renderModal={false}
                 setIsOpenModal={setIsMediaModalOpen}
                 activeTab={mediaModalTab}
                 setActiveTab={setMediaModalTab}
+                activeIndex={mediaImageIndex}
+                setActiveIndex={setMediaImageIndex}
               />
             </div>
 
@@ -903,6 +917,8 @@ function ImageGallery({
   setIsOpenModal,
   activeTab,
   setActiveTab,
+  activeIndex,
+  setActiveIndex,
   renderModal = true,
 }: {
   property: Property
@@ -910,108 +926,98 @@ function ImageGallery({
   setIsOpenModal: (open: boolean) => void
   activeTab: 'photos' | 'map'
   setActiveTab: (tab: 'photos' | 'map') => void
+  activeIndex: number
+  setActiveIndex: (index: number) => void
   renderModal?: boolean
 }) {
-  const [activeImage, setActiveImage] = useState<string>(property.coverImage || '')
-  const [activeIndex, setActiveIndex] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
 
-  const images = getPropertyGalleryImages(property.coverImage, property.images)
+  const images = useMemo(
+    () => getPropertyGalleryImages(property.coverImage, property.images),
+    [property.coverImage, property.images],
+  )
 
-  function handleCarouselScroll(event: UIEvent<HTMLDivElement>) {
-    const { scrollLeft, clientWidth } = event.currentTarget
-    setActiveIndex(Math.round(scrollLeft / clientWidth))
-  }
+  const syncActiveIndex = useCallback((api: CarouselApi | undefined) => {
+    if (!api) return
+    setActiveIndex(api.selectedScrollSnap())
+  }, [setActiveIndex])
+
+  useEffect(() => {
+    if (!carouselApi) return
+    syncActiveIndex(carouselApi)
+    carouselApi.on('select', syncActiveIndex)
+    carouselApi.on('reInit', syncActiveIndex)
+    return () => {
+      carouselApi.off('select', syncActiveIndex)
+      carouselApi.off('reInit', syncActiveIndex)
+    }
+  }, [carouselApi, syncActiveIndex])
+
+  useEffect(() => {
+    carouselApi?.scrollTo(activeIndex)
+  }, [activeIndex, carouselApi])
 
   function goToSlide(index: number) {
-    const carousel = carouselRef.current
-    if (!carousel) return
-
-    carousel.scrollTo({ left: index * carousel.clientWidth, behavior: 'smooth' })
+    setActiveIndex(index)
+    carouselApi?.scrollTo(index)
   }
 
   return (
-      <div className="detail-gallery space-y-4">
-        {/* Grid de collage premium para pantallas grandes, fallback a slider en movil */}
-      <div className={`hidden md:grid grid-cols-4 grid-rows-2 gap-3 aspect-[21/9] rounded-2xl overflow-hidden shadow-md border border-neutral-100 ${images.length < 3 ? 'detail-gallery-grid--single' : ''}`}>
-        
-        {/* Foto principal grande */}
-        <div 
-          onClick={() => { setActiveImage(images[0]); setActiveTab('photos'); setIsOpenModal(true); }}
-          className="col-span-2 row-span-2 bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
-          style={{ backgroundImage: `url("${images[0]}")`, backgroundColor: property.coverTone || '#f3f4f6' }}
+      <div className="detail-gallery">
+        <Carousel
+          className="detail-property-carousel"
+          opts={{ loop: images.length > 1 }}
+          setApi={setCarouselApi}
+          aria-label={`Fotos de ${property.title}`}
         >
-          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-        </div>
-
-        {/* Fotos laterales */}
-        {images.slice(1, 5).map((img, idx) => (
-          <div 
-            key={idx}
-            onClick={() => { setActiveImage(img); setActiveTab('photos'); setIsOpenModal(true); }}
-            className="bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity relative group"
-            style={{ backgroundImage: `url("${img}")`, backgroundColor: property.coverTone || '#f3f4f6' }}
-          >
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-            {idx === 3 && images.length > 5 && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-sm font-black">
-                +{images.length - 4} fotos
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Slider movil */}
-      <div className="mobile-detail-gallery block md:hidden space-y-2">
-        <div
-          ref={carouselRef}
-          className="mobile-detail-gallery-track"
-          onScroll={handleCarouselScroll}
-        >
-          {images.map((img, idx) => (
-            <button
-              key={img}
-              type="button"
-              className="mobile-detail-gallery-slide"
-              onClick={() => {
-                setActiveImage(img)
-                setActiveIndex(idx)
-                setActiveTab('photos')
-                setIsOpenModal(true)
-              }}
-              aria-label={`Abrir foto ${idx + 1} de ${images.length}`}
-            >
-              <img
-                src={img}
-                alt={`Foto ${idx + 1} de la propiedad`}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                onError={(event) => {
-                  event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
-                }}
-              />
-            </button>
-          ))}
-        </div>
-        {images.length > 1 && (
-          <div className="mobile-detail-gallery-dots" aria-label="Fotos de la propiedad">
+          <CarouselContent className="detail-property-carousel-content">
             {images.map((img, idx) => (
-              <button
-                key={img}
-                type="button"
-                onClick={() => goToSlide(idx)}
-                className={`mobile-detail-gallery-dot ${
-                  activeIndex === idx ? 'is-active' : ''
-                }`}
-                aria-label={`Ver foto ${idx + 1}`}
-                aria-current={activeIndex === idx ? 'true' : undefined}
-              >
-                <span />
-              </button>
+              <CarouselItem key={img} className="detail-property-carousel-item">
+                <button
+                  type="button"
+                  className="detail-property-carousel-open"
+                  onClick={() => {
+                    setActiveIndex(idx)
+                    setActiveTab('photos')
+                    setIsOpenModal(true)
+                  }}
+                  aria-label={idx === 0
+                    ? `Abrir galería: foto principal de ${property.title}`
+                    : `Abrir foto ${idx + 1} de ${images.length}`}
+                >
+                  <img
+                    src={img}
+                    alt={`Foto ${idx + 1} de ${property.title}`}
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                    onError={(event) => {
+                      event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
+                    }}
+                  />
+                </button>
+              </CarouselItem>
             ))}
-          </div>
-        )}
-      </div>
+          </CarouselContent>
+          {images.length > 1 && (
+            <>
+              <CarouselPrevious aria-label="Foto anterior" />
+              <CarouselNext aria-label="Foto siguiente" />
+              <div className="detail-property-carousel-dots" aria-label="Fotos de la propiedad">
+                {images.map((img, idx) => (
+                  <button
+                    key={img}
+                    type="button"
+                    onClick={() => goToSlide(idx)}
+                    className={`property-photo-dot ${activeIndex === idx ? 'is-active' : ''}`}
+                    aria-label={`Ver foto ${idx + 1} de ${images.length}`}
+                    aria-current={activeIndex === idx ? 'true' : undefined}
+                  >
+                    <span />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </Carousel>
 
       {/* Modal visor de pantalla completa */}
       {renderModal && isOpenModal && (
@@ -1052,22 +1058,34 @@ function ImageGallery({
           
           {activeTab === 'photos' ? (
             <>
-              <img 
-                src={activeImage} 
+              <div className="detail-gallery-modal-photo">
+                {images.length > 1 && (
+                  <button type="button" aria-label="Foto anterior" onClick={() => goToSlide((activeIndex - 1 + images.length) % images.length)}>
+                    <ChevronLeft size={24} />
+                  </button>
+                )}
+                <img
+                src={images[activeIndex] ?? images[0]}
                 alt="Detalle de propiedad" 
                 className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-scaleUp"
                 onError={(event) => {
                   event.currentTarget.src = PROPERTY_IMAGE_FALLBACK
                 }}
               />
+                {images.length > 1 && (
+                  <button type="button" aria-label="Foto siguiente" onClick={() => goToSlide((activeIndex + 1) % images.length)}>
+                    <ChevronLeft size={24} className="rotate-180" />
+                  </button>
+                )}
+              </div>
 
               <div className="flex gap-2 mt-6 overflow-x-auto max-w-full py-2">
                 {images.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setActiveImage(img)}
+                    onClick={() => goToSlide(idx)}
                     className={`relative w-20 aspect-[4/3] rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
-                      activeImage === img ? 'border-emerald-500 scale-95 shadow' : 'border-transparent opacity-50'
+                      images[activeIndex] === img ? 'border-emerald-500 scale-95 shadow' : 'border-transparent opacity-50'
                     }`}
                   >
                     <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${img}")` }} />

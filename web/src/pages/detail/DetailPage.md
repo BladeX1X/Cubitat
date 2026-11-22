@@ -2,6 +2,14 @@
 
 La ficha pública muestra galería, datos técnicos, ubicación aproximada, contacto y propiedades similares.
 
+## Carrusel de fotos — 2026-11-22
+
+La galería reutiliza los controles Carousel compartidos con las tarjetas del
+catálogo. Con varias fotos muestra flechas accesibles y puntos de posición en
+escritorio y móvil; conserva el gesto táctil. El visor ampliado comparte el
+índice activo con ambas vistas y permite avanzar, retroceder y elegir
+miniaturas. Si hay una sola foto, no muestra controles vacíos.
+
 Las consultas de propiedades similares incluyen explícitamente `status = published` en la búsqueda principal y la consulta de relleno, porque las sesiones autenticadas también pueden leer sus propios anuncios privados. Se excluyen además la ficha actual y los anuncios ya seleccionados. Ambas usan la proyección pública compartida `PUBLIC_PROPERTY_SELECT`; no deben usar `SELECT *` porque columnas de contacto y moderación están revocadas a clientes.
 
 El mapa de ubicación y el mapa de dirección del formulario cargan el worker JavaScript de MapLibre mediante `modules/maps/lib/configureMapLibreWorker.ts`. Todas las entradas de mapa deben compartir esa configuración para evitar que el Worker sirva el fallback HTML al proceso de render.
