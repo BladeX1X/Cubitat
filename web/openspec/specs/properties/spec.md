@@ -124,6 +124,12 @@ El sistema MUST mantener controles tactiles suficientemente grandes en las tarje
 - AND las flechas de galeria MUST permanecer visibles en viewport movil aunque no exista estado `hover`
 - AND en escritorio las flechas MAY permanecer discretas y aparecer al pasar el cursor para reducir ruido visual
 
+#### Scenario: Favorito no deja flechas del carrusel activas
+- GIVEN una tarjeta de propiedad en escritorio
+- WHEN el usuario agrega o quita el favorito
+- THEN el puntero o el foco de teclado sobre el botón de favorito MUST NOT mantener visibles las flechas del carrusel
+- AND las flechas MUST mostrarse solo al interactuar con la imagen o al enfocarlas desde el teclado
+
 ### Requirement: Reporte de Propiedades Sospechosas
 El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar un anuncio sospechoso, fraudulento o con información incorrecta mediante un modal de informe estructurado.
 

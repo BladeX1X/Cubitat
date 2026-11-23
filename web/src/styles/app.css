@@ -941,8 +941,7 @@ h2 {
   transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
 
-.property-card:hover .property-photo-arrow,
-.property-card:focus-within .property-photo-arrow {
+.property-photo:has(.property-photo-arrow:focus-visible) .property-photo-arrow {
   opacity: 1;
   transform: translateY(-50%) scale(1);
 }
@@ -3470,6 +3469,16 @@ h2 {
 /* Slide arrow transition override */
 .property-photo:hover .property-photo-arrow {
   opacity: 1 !important;
+}
+
+.property-photo:has(.property-save:hover, .property-save:focus-visible) .property-photo-arrow {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.property-photo:has(.property-photo-arrow:focus-visible) .property-photo-arrow:not(:disabled) {
+  opacity: 1 !important;
+  pointer-events: auto;
 }
 
 .property-photo .property-photo-arrow {
