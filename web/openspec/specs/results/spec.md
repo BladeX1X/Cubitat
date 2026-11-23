@@ -19,6 +19,7 @@ El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y
 - GIVEN un usuario ejecuta una busqueda
 - WHEN llega a `/resultados`
 - THEN el sistema MUST mostrar total de propiedades, resumen, ordenamiento y tarjetas
+- AND las tarjetas de cada cuadrícula MUST conservar la misma altura y alinear las acciones al borde inferior, aunque varíe el número de características
 - AND MUST paginar resultados cuando excedan el tamano de pagina
 - AND MUST mostrar estado vacio cuando no haya coincidencias
 
