@@ -66,6 +66,8 @@ export type ResultsPageProps = {
   user?: User | null
   onRequireLogin?: () => void
   onGoToAccount?: () => void
+  recentlyHiddenTitle?: string
+  onUndoHideListing?: () => void
 }
 
 export function ResultsPage({
@@ -80,6 +82,8 @@ export function ResultsPage({
   user,
   onRequireLogin,
   onGoToAccount,
+  recentlyHiddenTitle,
+  onUndoHideListing,
 }: ResultsPageProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -412,6 +416,13 @@ export function ResultsPage({
                 : ` Mostrando ${listedProperties.length} en el area visible del mapa.`
               : ''}
           </p>
+
+          {recentlyHiddenTitle && onUndoHideListing && (
+            <div className="results-hidden-notice" role="status">
+              <span>Ocultaste «{recentlyHiddenTitle}».</span>
+              <button type="button" onClick={onUndoHideListing}>Deshacer</button>
+            </div>
+          )}
 
           <div className="property-catalog-grid">
             {loading ? (

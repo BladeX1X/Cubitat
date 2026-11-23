@@ -18,7 +18,9 @@ import {
   X,
   Loader2,
   Eye,
+  EyeOff,
   Building2,
+  StickyNote,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { createApproximateLocationArea } from '../../modules/maps/lib/approximateLocationArea'
@@ -62,6 +64,7 @@ import {
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
+import { getPersonalPropertyNote, setPersonalPropertyNote } from '../../modules/properties/utils/propertyLocalPreferences'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -84,6 +87,7 @@ type DetailPageProps = {
   userRole?: string
   onAdminHideProperty?: (propertyId: string) => void
   onAdminDeleteProperty?: (propertyId: string) => void
+  onHideListing?: (propertyId: string) => void
   onSelectAgent?: (agentId: string) => void
 }
 
@@ -105,6 +109,7 @@ export function DetailPage({
   userRole,
   onAdminHideProperty,
   onAdminDeleteProperty,
+  onHideListing,
   onSelectAgent,
 }: DetailPageProps) {
   const [copied, setCopied] = useState(false)
@@ -121,11 +126,21 @@ export function DetailPage({
   const [reportError, setReportError] = useState<string | null>(null)
   const [reportTurnstileToken, setReportTurnstileToken] = useState<string | null>(null)
   const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
+  const [detailActionDialog, setDetailActionDialog] = useState<'notes' | 'hide' | null>(null)
+  const [personalNote, setPersonalNote] = useState(() => getPersonalPropertyNote(property.id))
+  const [personalNoteDraft, setPersonalNoteDraft] = useState('')
+  const [personalNoteError, setPersonalNoteError] = useState<string | null>(null)
 
   const isAdmin = userRole === 'admin'
   const isPublished = property.status === 'published'
   const floorLevel = getNumericFeature(property, 'floorLevel')
   const levels = getNumericFeature(property, 'levels')
+
+  useEffect(() => {
+    setPersonalNote(getPersonalPropertyNote(property.id))
+    setDescriptionExpanded(false)
+  }, [property.id])
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
@@ -290,7 +305,7 @@ export function DetailPage({
       <div className="detail-shell max-w-7xl mx-auto px-4 py-3 md:py-5">
         
         {/* Navegacion y Acciones Superiores */}
-        <div className="detail-heading flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div className="detail-heading detail-aligned-content flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div className="detail-nav flex flex-col gap-1.5">
             <button
               type="button"
@@ -380,11 +395,13 @@ export function DetailPage({
           <div className="detail-actions flex items-center gap-2 w-full md:w-auto">
             <SavePropertyButton
               propertyId={property.id}
-              iconSize={14}
+              iconSize={16}
               showLabel
               labelClassName="detail-action-label"
-              className={(saved) => `detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold transition-colors duration-200 ${saved ? 'text-red-600 bg-red-50/50 border-red-100 hover:bg-red-50' : 'text-neutral-700'}`}
-              iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : 'text-neutral-500'}
+              unsavedLabel="Favorito"
+              savedLabel="Favorito"
+              className={(saved) => `detail-action-button ${saved ? 'is-active' : ''}`}
+              iconClassName={(saved) => saved ? 'fill-rose-600 text-rose-600' : ''}
             />
             <Button
               type="button"
@@ -393,11 +410,37 @@ export function DetailPage({
               aria-busy={sharing}
               disabled={sharing}
               onClick={handleShare}
-              className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors duration-200"
+              className="detail-action-button"
             >
-              <Share2 size={14} className="text-neutral-500" />
+              <Share2 size={16} />
               <span className="detail-action-label">{copied ? 'Copiado' : 'Compartir'}</span>
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Notas personales"
+              onClick={() => {
+                setPersonalNoteDraft(personalNote)
+                setPersonalNoteError(null)
+                setDetailActionDialog('notes')
+              }}
+              className="detail-action-button"
+            >
+              <StickyNote size={16} />
+              <span className="detail-action-label">Notas personales</span>
+            </Button>
+            {isPublished && onHideListing && (
+              <Button
+                type="button"
+                variant="outline"
+                aria-label="Ocultar aviso"
+                onClick={() => setDetailActionDialog('hide')}
+                className="detail-action-button"
+              >
+                <EyeOff size={16} />
+                <span className="detail-action-label">Ocultar aviso</span>
+              </Button>
+            )}
             {isAdmin && (
               <>
                 <Button
@@ -407,7 +450,7 @@ export function DetailPage({
                   onClick={() => onAdminHideProperty?.(property.id)}
                   className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-amber-200 hover:bg-amber-50 text-xs font-bold text-amber-700 transition-colors duration-200"
                 >
-                  <AlertTriangle size={14} />
+                  <AlertTriangle size={16} />
                   <span className="detail-action-label">Ocultar</span>
                 </Button>
                 <Button
@@ -417,7 +460,7 @@ export function DetailPage({
                   onClick={() => onAdminDeleteProperty?.(property.id)}
                   className="detail-action-button flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-red-200 hover:bg-red-50 text-xs font-bold text-red-700 transition-colors duration-200"
                 >
-                  <X size={14} />
+                  <X size={16} />
                   <span className="detail-action-label">Eliminar</span>
                 </Button>
               </>
@@ -425,7 +468,7 @@ export function DetailPage({
           </div>
         </div>
 
-        <div className="detail-desktop-hero">
+        <div className="detail-desktop-hero detail-aligned-content">
           <div className="detail-desktop-hero-copy">
             <div className="detail-badges flex items-center gap-2 mb-4">
               <span className="text-[10px] tracking-wider uppercase font-bold bg-white text-neutral-700 px-2.5 py-1 rounded">
@@ -466,6 +509,7 @@ export function DetailPage({
               </strong>
               {property.ageYears ? <small>Antigüedad: {property.ageYears} años</small> : null}
             </div>
+            <QuickPropertyFacts property={property} />
             {isPublished && (
               <MarketplaceContactActions
                 listingType="property"
@@ -516,7 +560,7 @@ export function DetailPage({
         </div>
 
         {/* Estructura Principal en 2 Columnas */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="detail-aligned-content grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Columna Izquierda: Informacion de Inmueble (Col-span 2) */}
           <div className="detail-main-column lg:col-span-2 space-y-6">
@@ -565,6 +609,7 @@ export function DetailPage({
                     : formatPrice(property.priceUsd, property.priceCurrency)}
                 </p>
               </div>
+              <QuickPropertyFacts property={property} />
             </div>
 
             {/* Media Viewer Container */}
@@ -691,8 +736,20 @@ export function DetailPage({
                   Descripción
                 </h2>
                 <p className="text-neutral-600 text-sm md:text-base leading-relaxed whitespace-pre-line max-w-3xl">
-                  {property.description}
+                  {descriptionExpanded || property.description.length <= 380
+                    ? property.description
+                    : `${property.description.slice(0, 380).trimEnd()}…`}
                 </p>
+                {property.description.length > 380 && (
+                  <button
+                    type="button"
+                    className="detail-description-toggle"
+                    aria-expanded={descriptionExpanded}
+                    onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+                  >
+                    {descriptionExpanded ? 'Mostrar menos' : 'Leer descripción completa'}
+                  </button>
+                )}
               </CardContent>
             </Card>
 
@@ -772,7 +829,7 @@ export function DetailPage({
 
 
       {/* Propiedades Similares */}
-      <div className="detail-similar-section max-w-7xl mx-auto px-4 pb-12 mt-8">
+      <div className="detail-similar-section detail-aligned-content pb-12 mt-8">
         <SimilarProperties currentProperty={property} />
       </div>
 
@@ -904,6 +961,71 @@ export function DetailPage({
               </form>
             )}
           </div>
+        </div>
+      )}
+
+      {detailActionDialog && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailActionDialog(null) }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detail-action-dialog-title"
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            {detailActionDialog === 'notes' ? (
+              <>
+                <h2 id="detail-action-dialog-title" className="text-xl font-bold text-neutral-900">Notas personales</h2>
+                <p className="mt-1 text-sm text-neutral-600">Guarda una nota privada sobre esta propiedad. Solo queda en este dispositivo.</p>
+                <Textarea
+                  autoFocus
+                  value={personalNoteDraft}
+                  onChange={(event) => setPersonalNoteDraft(event.target.value)}
+                  maxLength={2000}
+                  aria-label="Tu nota personal"
+                  className="mt-4 min-h-36"
+                  placeholder="Escribe una nota para recordar detalles…"
+                />
+                {personalNoteError && <p role="alert" className="mt-2 text-sm text-red-700">{personalNoteError}</p>}
+                <div className="mt-4 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setDetailActionDialog(null)}>Cancelar</Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!setPersonalPropertyNote(property.id, personalNoteDraft)) {
+                        setPersonalNoteError('No se pudo guardar la nota en este dispositivo.')
+                        return
+                      }
+                      setPersonalNote(personalNoteDraft)
+                      setDetailActionDialog(null)
+                    }}
+                  >
+                    Guardar nota
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="detail-action-dialog-title" className="text-xl font-bold text-neutral-900">¿Ocultar este aviso?</h2>
+                <p className="mt-1 text-sm text-neutral-600">Dejará de aparecer en tus resultados en este dispositivo. Puedes deshacerlo al regresar al catálogo.</p>
+                <div className="mt-5 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setDetailActionDialog(null)}>Cancelar</Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setDetailActionDialog(null)
+                      onHideListing?.(property.id)
+                      onBack()
+                    }}
+                  >
+                    Ocultar aviso
+                  </Button>
+                </div>
+              </>
+            )}
+          </section>
         </div>
       )}
 
@@ -1549,6 +1671,22 @@ function Feature({
         {label}
       </span>
     </div>
+  )
+}
+
+function QuickPropertyFacts({ property }: { property: Property }) {
+  const facts = [
+    property.bedrooms > 0 ? `${property.bedrooms} recámaras` : null,
+    property.bathrooms > 0 ? `${property.bathrooms} baños` : null,
+    property.parking > 0 ? `${property.parking} estacionamiento${property.parking === 1 ? '' : 's'}` : null,
+    property.areaM2 > 0 ? `${property.areaM2} m²` : null,
+  ].filter((fact): fact is string => Boolean(fact))
+
+  if (facts.length === 0) return null
+  return (
+    <ul className="detail-quick-facts" aria-label="Datos principales de la propiedad">
+      {facts.map((fact) => <li key={fact}>{fact}</li>)}
+    </ul>
   )
 }
 

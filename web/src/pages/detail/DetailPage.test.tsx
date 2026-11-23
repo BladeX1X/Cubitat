@@ -71,6 +71,7 @@ vi.mock('../../modules/properties/hooks/useSavedProperties', () => ({
   useSavedProperties: () => ({
     isSaved: () => false,
     toggleSave: vi.fn(),
+    sessionReady: true,
   }),
 }))
 
@@ -190,6 +191,58 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
+  it('presents the reference actions, saves a local note, and collapses long descriptions', () => {
+    const longDescription = 'Descripción útil. '.repeat(40)
+    render(<DetailPage
+      property={{ ...mockProperty, description: longDescription }}
+      onBack={vi.fn()}
+      onChangeFilters={vi.fn()}
+      filters={mockFilters}
+      onHideListing={vi.fn()}
+    />)
+
+    expect(screen.getAllByRole('button', { name: 'Compartir propiedad' }).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByRole('button', { name: 'Notas personales' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ocultar aviso' })).toBeInTheDocument()
+    expect(screen.getAllByRole('list', { name: 'Datos principales de la propiedad' })[0]).toHaveTextContent('3 recámaras')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notas personales' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tu nota personal' }), { target: { value: 'Llamar el viernes' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar nota' }))
+    expect(localStorage.getItem('cubitat:property-notes:v1')).toContain('Llamar el viernes')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leer descripción completa' }))
+    expect(screen.getByRole('button', { name: 'Mostrar menos' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('confirms hiding the listing and returns to results', () => {
+    const onBack = vi.fn()
+    const onHideListing = vi.fn()
+    render(<DetailPage property={mockProperty} onBack={onBack} onHideListing={onHideListing} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar aviso' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('este dispositivo')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ocultar aviso' }).at(-1)!)
+
+    expect(onHideListing).toHaveBeenCalledWith(mockProperty.id)
+    expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('uses one shared width container for the heading, hero, details and similar properties', () => {
+    const { container } = render(<DetailPage property={mockProperty} onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    const alignedSections = [
+      '.detail-heading',
+      '.detail-desktop-hero',
+      '.detail-shell > .grid',
+      '.detail-similar-section',
+    ]
+
+    for (const selector of alignedSections) {
+      expect(container.querySelector(selector)).toHaveClass('detail-aligned-content')
+    }
+  })
+
   it('shows photo navigation on desktop, mobile and the fullscreen viewer', () => {
     const property = {
       ...mockProperty,

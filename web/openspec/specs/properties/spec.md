@@ -34,6 +34,13 @@ El sistema MUST sustituir el catálogo por la ficha técnica extendida al selecc
 - AND en escritorio la portada MUST usar un contenedor centrado con ancho máximo de `1152 px` y columnas equilibradas para información e imagen
 - AND en móvil la portada MUST apilar información e imagen sin desbordamiento horizontal
 
+#### Scenario: Alinear el contenido de la ficha en escritorio
+- GIVEN una persona abre la ficha de una propiedad en una pantalla de escritorio
+- WHEN se muestran la navegación, la galería/resumen, las características y las propiedades similares
+- THEN esas secciones MUST compartir un contenedor centrado con el mismo ancho máximo de `1152 px`
+- AND MUST conservar márgenes laterales uniformes en anchos menores sin desbordar el viewport
+- AND la información de la propiedad y el contacto MUST permanecer en columnas dentro de ese mismo ancho
+
 #### Scenario: Navegar las fotos de la ficha y del visor
 - GIVEN una propiedad tiene más de una foto válida
 - WHEN se muestra la galería de la ficha o el visor de fotos a pantalla completa
@@ -267,3 +274,12 @@ La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selec
 - Al resolver un reporte pendiente, el sistema MUST marcar el reporte como resuelto y pausar su propiedad asociada en la misma transacción.
 - Si cualquiera de las dos actualizaciones falla, ambas MUST revertirse.
 - Un reporte ya resuelto/descartado, o que no corresponda a la propiedad enviada, MUST rechazarse sin modificar la propiedad.
+
+### Requirement: Acciones y resumen legibles en la ficha pública
+- GIVEN una propiedad publicada abierta en su ficha
+- WHEN se muestran las acciones superiores
+- THEN MUST presentar Favorito, Compartir, Notas personales y Ocultar aviso con separadores discretos y acceso usable en móvil
+- AND las notas personales MUST quedar en el almacenamiento local del navegador y mostrar claramente esa limitación
+- AND ocultar un aviso MUST retirarlo de los resultados en ese navegador y ofrecer deshacer al regresar al catálogo
+- AND la portada MUST resumir las características disponibles sin inventar datos ausentes
+- AND las descripciones largas MUST poder expandirse y contraerse

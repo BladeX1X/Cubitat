@@ -2,6 +2,21 @@
 
 La ficha pública muestra galería, datos técnicos, ubicación aproximada, contacto y propiedades similares.
 
+## Ancho común del detalle — 2026-11-22
+
+En escritorio, navegación, portada con galería/resumen, contenido técnico y
+propiedades similares comparten un contenedor centrado de hasta `1152 px`. La
+fila de contenido ya no reduce su ancho con gutters propios; el panel de
+contacto sigue en su columna junto a las características. En viewports de
+escritorio estrechos se reservan márgenes laterales de 16 px.
+
+La barra de acciones sigue el estilo de acciones de referencia: Favorito,
+Compartir, Notas personales y Ocultar aviso, con divisores discretos y scroll
+horizontal en móvil. Las notas y los anuncios ocultos se guardan solo en el
+navegador actual; al ocultar desde una ficha, el catálogo ofrece deshacer.
+La portada resume recámaras, baños, estacionamiento y área; la ficha conserva
+las características completas. Las descripciones largas se pueden expandir.
+
 ## Carrusel de fotos — 2026-11-22
 
 La galería reutiliza los controles Carousel compartidos con las tarjetas del
