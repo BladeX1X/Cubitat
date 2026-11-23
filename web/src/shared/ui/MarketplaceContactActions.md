@@ -19,7 +19,10 @@ WhatsApp solo con el número declarado como WhatsApp, precompleta una consulta
 con el título y la zona pública del anuncio y no envía el mensaje. No se asume
 que el teléfono también está registrado en WhatsApp. Si falta el canal, se
 informa cuál y la tarjeta permite abrir el formulario de consulta; los fallos
-temporales tienen un mensaje recuperable.
+temporales tienen un mensaje recuperable. La pestaña de WhatsApp se abre solo
+después de confirmar que existe un número válido; nunca se reserva una pestaña
+vacía durante la consulta. Si el navegador bloquea la apertura, se presenta un
+enlace directo de respaldo.
 
 Pruebas: `MarketplaceContactActions.test.tsx` comprueba apertura directa de
 teléfono y WhatsApp, canal ausente y fallos recuperables. `marketplaceContact.test.ts`

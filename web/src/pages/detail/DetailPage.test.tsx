@@ -423,7 +423,7 @@ describe('DetailPage - Reportes y Visor', () => {
   })
 
   it('abre WhatsApp con el contexto de la publicación desde el detalle', async () => {
-    const popup = { location: { replace: vi.fn() }, opener: {} as Window | null, close: vi.fn() } as unknown as Window
+    const popup = { opener: {} as Window | null } as unknown as Window
     const open = vi.fn(() => popup)
     vi.stubGlobal('open', open)
     render(
@@ -437,10 +437,10 @@ describe('DetailPage - Reportes y Visor', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /^consultar$/i })[0])
 
-    await waitFor(() => expect(popup.location.replace).toHaveBeenCalledWith('https://wa.me/5355510101?text=hello'))
+    await waitFor(() => expect(open).toHaveBeenCalledWith('https://wa.me/5355510101?text=hello', '_blank'))
     expect(fetchMarketplaceContact).toHaveBeenCalledWith('property', mockProperty.id)
     expect(getMarketplaceContactUrl).toHaveBeenCalledWith('whatsapp', '+5355510101', mockProperty.title, 'Playa, La Habana')
-    expect(open).toHaveBeenCalledWith('about:blank', '_blank')
+    expect(popup.opener).toBeNull()
     vi.unstubAllGlobals()
   })
 

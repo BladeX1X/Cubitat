@@ -16,8 +16,8 @@ describe('MarketplaceContactActions', () => {
     vi.mocked(getMarketplaceContactUrl).mockClear()
   })
 
-  it('opens a contextual WhatsApp destination directly from the card action', async () => {
-    const destination = { location: { replace: vi.fn() }, opener: {} as Window | null, close: vi.fn() } as unknown as Window
+  it('opens a contextual WhatsApp destination only after the protected lookup succeeds', async () => {
+    const destination = { opener: {} as Window | null } as unknown as Window
     const open = vi.fn(() => destination)
     vi.stubGlobal('open', open)
     vi.mocked(fetchMarketplaceContact).mockResolvedValue({ phone: '+5351234567', whatsapp: '+5355510101' })
@@ -25,11 +25,11 @@ describe('MarketplaceContactActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Consultar' }))
 
-    expect(open).toHaveBeenCalledWith('about:blank', '_blank')
     expect(await screen.findByRole('button', { name: 'Consultar' })).toBeEnabled()
     expect(fetchMarketplaceContact).toHaveBeenCalledWith('service', 'listing-1')
     expect(getMarketplaceContactUrl).toHaveBeenCalledWith('whatsapp', '+5355510101', 'Electricista', 'Playa, La Habana')
-    expect(destination.location.replace).toHaveBeenCalledWith('https://wa.me/5355510101?text=hello')
+    expect(open).toHaveBeenCalledWith('https://wa.me/5355510101?text=hello', '_blank')
+    expect(destination.opener).toBeNull()
     vi.unstubAllGlobals()
   })
 
@@ -64,16 +64,33 @@ describe('MarketplaceContactActions', () => {
   })
 
   it('does not assume a phone number is also registered with WhatsApp', async () => {
-    const popup = { close: vi.fn(), location: { replace: vi.fn() } } as unknown as Window
-    vi.stubGlobal('open', vi.fn(() => popup))
+    const open = vi.fn()
+    const assign = vi.fn()
+    vi.stubGlobal('open', open)
+    vi.stubGlobal('location', { assign })
     vi.mocked(fetchMarketplaceContact).mockResolvedValue({ phone: '+5351234567', whatsapp: null })
     render(<MarketplaceContactActions listingType="material" listingId="listing-4" listingTitle="Cemento" listingLocation="La Habana" />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Consultar' }))
 
     expect(await screen.findByText(/no ha asociado WhatsApp a este anuncio/i)).toHaveAttribute('role', 'status')
-    expect(popup.close).toHaveBeenCalledOnce()
+    expect(open).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
     expect(getMarketplaceContactUrl).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('offers a direct WhatsApp link if the browser blocks the new tab', async () => {
+    vi.stubGlobal('open', vi.fn(() => null))
+    vi.mocked(fetchMarketplaceContact).mockResolvedValue({ phone: '+5351234567', whatsapp: '+5355510101' })
+    render(<MarketplaceContactActions listingType="material" listingId="listing-6" listingTitle="Cemento" listingLocation="La Habana" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar' }))
+
+    const link = await screen.findByRole('link', { name: 'Abrir WhatsApp' })
+    expect(link).toHaveAttribute('href', 'https://wa.me/5355510101?text=hello')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     vi.unstubAllGlobals()
   })
 
