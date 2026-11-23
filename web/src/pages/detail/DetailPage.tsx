@@ -20,7 +20,6 @@ import {
   Eye,
   EyeOff,
   Building2,
-  StickyNote,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { createApproximateLocationArea } from '../../modules/maps/lib/approximateLocationArea'
@@ -64,7 +63,6 @@ import {
 import { submitPublicContact, submitPublicReport } from './publicSubmissions'
 import type { AgentProfile } from '../../modules/agents/types'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
-import { getPersonalPropertyNote, setPersonalPropertyNote } from '../../modules/properties/utils/propertyLocalPreferences'
 
 import type { SearchFilters } from '../../modules/search/types'
 
@@ -127,10 +125,7 @@ export function DetailPage({
   const [reportTurnstileToken, setReportTurnstileToken] = useState<string | null>(null)
   const [reportTurnstileKey, setReportTurnstileKey] = useState(0)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
-  const [detailActionDialog, setDetailActionDialog] = useState<'notes' | 'hide' | null>(null)
-  const [personalNote, setPersonalNote] = useState(() => getPersonalPropertyNote(property.id))
-  const [personalNoteDraft, setPersonalNoteDraft] = useState('')
-  const [personalNoteError, setPersonalNoteError] = useState<string | null>(null)
+  const [detailActionDialog, setDetailActionDialog] = useState<'hide' | null>(null)
 
   const isAdmin = userRole === 'admin'
   const isPublished = property.status === 'published'
@@ -138,7 +133,6 @@ export function DetailPage({
   const levels = getNumericFeature(property, 'levels')
 
   useEffect(() => {
-    setPersonalNote(getPersonalPropertyNote(property.id))
     setDescriptionExpanded(false)
   }, [property.id])
 
@@ -414,20 +408,6 @@ export function DetailPage({
             >
               <Share2 size={16} />
               <span className="detail-action-label">{copied ? 'Copiado' : 'Compartir'}</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              aria-label="Notas personales"
-              onClick={() => {
-                setPersonalNoteDraft(personalNote)
-                setPersonalNoteError(null)
-                setDetailActionDialog('notes')
-              }}
-              className="detail-action-button"
-            >
-              <StickyNote size={16} />
-              <span className="detail-action-label">Notas personales</span>
             </Button>
             {isPublished && onHideListing && (
               <Button
@@ -975,56 +955,21 @@ export function DetailPage({
             aria-labelledby="detail-action-dialog-title"
             className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
           >
-            {detailActionDialog === 'notes' ? (
-              <>
-                <h2 id="detail-action-dialog-title" className="text-xl font-bold text-neutral-900">Notas personales</h2>
-                <p className="mt-1 text-sm text-neutral-600">Guarda una nota privada sobre esta propiedad. Solo queda en este dispositivo.</p>
-                <Textarea
-                  autoFocus
-                  value={personalNoteDraft}
-                  onChange={(event) => setPersonalNoteDraft(event.target.value)}
-                  maxLength={2000}
-                  aria-label="Tu nota personal"
-                  className="mt-4 min-h-36"
-                  placeholder="Escribe una nota para recordar detalles…"
-                />
-                {personalNoteError && <p role="alert" className="mt-2 text-sm text-red-700">{personalNoteError}</p>}
-                <div className="mt-4 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setDetailActionDialog(null)}>Cancelar</Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (!setPersonalPropertyNote(property.id, personalNoteDraft)) {
-                        setPersonalNoteError('No se pudo guardar la nota en este dispositivo.')
-                        return
-                      }
-                      setPersonalNote(personalNoteDraft)
-                      setDetailActionDialog(null)
-                    }}
-                  >
-                    Guardar nota
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 id="detail-action-dialog-title" className="text-xl font-bold text-neutral-900">¿Ocultar este aviso?</h2>
-                <p className="mt-1 text-sm text-neutral-600">Dejará de aparecer en tus resultados en este dispositivo. Puedes deshacerlo al regresar al catálogo.</p>
-                <div className="mt-5 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setDetailActionDialog(null)}>Cancelar</Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setDetailActionDialog(null)
-                      onHideListing?.(property.id)
-                      onBack()
-                    }}
-                  >
-                    Ocultar aviso
-                  </Button>
-                </div>
-              </>
-            )}
+            <h2 id="detail-action-dialog-title" className="text-xl font-bold text-neutral-900">¿Ocultar este aviso?</h2>
+            <p className="mt-1 text-sm text-neutral-600">Dejará de aparecer en tus resultados en este dispositivo. Puedes deshacerlo al regresar al catálogo.</p>
+            <div className="mt-5 flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setDetailActionDialog(null)}>Cancelar</Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setDetailActionDialog(null)
+                  onHideListing?.(property.id)
+                  onBack()
+                }}
+              >
+                Ocultar aviso
+              </Button>
+            </div>
           </section>
         </div>
       )}

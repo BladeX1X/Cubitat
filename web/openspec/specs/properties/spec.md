@@ -278,8 +278,13 @@ La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selec
 ### Requirement: Acciones y resumen legibles en la ficha pública
 - GIVEN una propiedad publicada abierta en su ficha
 - WHEN se muestran las acciones superiores
-- THEN MUST presentar Favorito, Compartir, Notas personales y Ocultar aviso con separadores discretos y acceso usable en móvil
-- AND las notas personales MUST quedar en el almacenamiento local del navegador y mostrar claramente esa limitación
+- THEN MUST presentar Favorito, Compartir y Ocultar aviso con separadores discretos y acceso usable en móvil
+- AND en móvil, Favorito y Compartir MUST mostrarse como controles compactos adaptados al ancho disponible, sin scroll horizontal
 - AND ocultar un aviso MUST retirarlo de los resultados en ese navegador y ofrecer deshacer al regresar al catálogo
 - AND la portada MUST resumir las características disponibles sin inventar datos ausentes
 - AND las descripciones largas MUST poder expandirse y contraerse
+
+### Requirement: Controles de galería móvil sin solapamiento
+- GIVEN una propiedad con más de una foto en la ficha móvil
+- WHEN se muestran los controles «Fotos» y «Mapa» sobre la imagen
+- THEN los indicadores de posición del carrusel MUST mantenerse separados y visibles, sin quedar cubiertos por esos controles

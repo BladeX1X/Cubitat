@@ -10,10 +10,10 @@ fila de contenido ya no reduce su ancho con gutters propios; el panel de
 contacto sigue en su columna junto a las características. En viewports de
 escritorio estrechos se reservan márgenes laterales de 16 px.
 
-La barra de acciones sigue el estilo de acciones de referencia: Favorito,
-Compartir, Notas personales y Ocultar aviso, con divisores discretos y scroll
-horizontal en móvil. Las notas y los anuncios ocultos se guardan solo en el
-navegador actual; al ocultar desde una ficha, el catálogo ofrece deshacer.
+La barra de acciones ofrece Favorito, Compartir y Ocultar aviso. En móvil,
+Favorito y Compartir se muestran como controles compactos que caben sin scroll
+horizontal. Los anuncios ocultos se guardan solo en el navegador actual; al
+ocultar desde una ficha, el catálogo ofrece deshacer.
 La portada resume recámaras, baños, estacionamiento y área; la ficha conserva
 las características completas. Las descripciones largas se pueden expandir.
 
@@ -24,6 +24,7 @@ catálogo. Con varias fotos muestra flechas accesibles y puntos de posición en
 escritorio y móvil; conserva el gesto táctil. El visor ampliado comparte el
 índice activo con ambas vistas y permite avanzar, retroceder y elegir
 miniaturas. Si hay una sola foto, no muestra controles vacíos.
+En móvil, los puntos se separan de las acciones superpuestas «Fotos» y «Mapa».
 
 Las consultas de propiedades similares incluyen explícitamente `status = published` en la búsqueda principal y la consulta de relleno, porque las sesiones autenticadas también pueden leer sus propios anuncios privados. Se excluyen además la ficha actual y los anuncios ya seleccionados. Ambas usan la proyección pública compartida `PUBLIC_PROPERTY_SELECT`; no deben usar `SELECT *` porque columnas de contacto y moderación están revocadas a clientes.
 

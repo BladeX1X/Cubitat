@@ -191,7 +191,7 @@ const mockFilters: SearchFilters = {
 }
 
 describe('DetailPage - Reportes y Visor', () => {
-  it('presents the reference actions, saves a local note, and collapses long descriptions', () => {
+  it('shows mobile friendly favorite/share actions without personal notes and collapses long descriptions', () => {
     const longDescription = 'Descripción útil. '.repeat(40)
     render(<DetailPage
       property={{ ...mockProperty, description: longDescription }}
@@ -202,14 +202,10 @@ describe('DetailPage - Reportes y Visor', () => {
     />)
 
     expect(screen.getAllByRole('button', { name: 'Compartir propiedad' }).length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByRole('button', { name: 'Notas personales' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Notas personales' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Guardar propiedad' })).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Ocultar aviso' })).toBeInTheDocument()
     expect(screen.getAllByRole('list', { name: 'Datos principales de la propiedad' })[0]).toHaveTextContent('3 recámaras')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notas personales' }))
-    fireEvent.change(screen.getByRole('textbox', { name: 'Tu nota personal' }), { target: { value: 'Llamar el viernes' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar nota' }))
-    expect(localStorage.getItem('cubitat:property-notes:v1')).toContain('Llamar el viernes')
 
     fireEvent.click(screen.getByRole('button', { name: 'Leer descripción completa' }))
     expect(screen.getByRole('button', { name: 'Mostrar menos' })).toHaveAttribute('aria-expanded', 'true')
