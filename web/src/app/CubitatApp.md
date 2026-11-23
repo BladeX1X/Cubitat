@@ -32,6 +32,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - `selectedPropertyId`: sincroniza lista, mapa y detalle.
 - `isLoginOpen`: muestra u oculta `LoginModal`.
 - `pageMode`: alterna entre portada (`home`) y pagina de resultados (`results`) usando `history.pushState`.
+- Al volver a Inicio desde cualquier operación, `navigateHome` limpia los filtros locales junto con la URL para que no quede Comprar, Rentar o Permutar marcado en la portada.
 
 ## Flujo Actual
 

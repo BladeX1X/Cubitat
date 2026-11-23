@@ -665,6 +665,7 @@ export function CubitatApp() {
   function navigateHome() {
     window.history.pushState(null, '', '/')
     setPageMode('home')
+    setFilters(initialFilters)
     setSeoResultsRoute(null)
     setSelectedPropertyId(undefined)
     window.scrollTo(0, 0)
