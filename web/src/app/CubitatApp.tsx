@@ -1249,6 +1249,8 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
+            onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onEditProperty={navigateEditProperty}
             onNewProperty={navigatePublish}
@@ -1265,6 +1267,8 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
+            onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onNavigateAgentApplication={PHASE_THREE_UI_ENABLED ? navigateAgentApplication : undefined}
           />
@@ -1276,6 +1280,8 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
+            onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={navigateAgentDashboard}
             onEditProperty={navigateEditProperty}
             onSelectProperty={handleSelectProperty}
@@ -1290,7 +1296,16 @@ export function CubitatApp() {
           <ServiceDirectoryPage onRequireLogin={openLogin} onCreateProfile={navigateServiceSubmission} onManageProfiles={navigateMyServiceProfiles} reviewsEnabled={PHASE_FOUR_REV_ENABLED} userId={user?.id ?? null} />
         )}
         {PHASE_FOUR_SVC_ENABLED && MyServiceProfilesPage && pageMode === 'my-services' && user && (
-          <MyServiceProfilesPage onBack={navigateServices} onCreate={navigateServiceSubmission} onEdit={navigateEditServiceProfile} />
+          <MyServiceProfilesPage
+            onBack={navigateServices}
+            onCreate={navigateServiceSubmission}
+            onEdit={navigateEditServiceProfile}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={navigateMyServiceProfiles}
+            onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
+          />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialsMarketplacePage && pageMode === 'materials' && (
           <MaterialsMarketplacePage onRequireLogin={openLogin} onCreateListing={navigateMaterialSubmission} onManageListings={navigateMyMaterialListings} />
@@ -1302,7 +1317,16 @@ export function CubitatApp() {
           <MaterialListingSubmissionPage onBack={navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
-          <MyMaterialListingsPage onBack={navigateMaterials} onCreate={navigateMaterialSubmission} onEdit={navigateEditMaterialListing} />
+          <MyMaterialListingsPage
+            onBack={navigateMaterials}
+            onCreate={navigateMaterialSubmission}
+            onEdit={navigateEditMaterialListing}
+            onNavigateAccount={navigateAccount}
+            onNavigateFavorites={navigateFavorites}
+            onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
+            onNavigateMyMaterials={navigateMyMaterialListings}
+          />
         )}
         {PHASE_FOUR_VAL_ENABLED && PropertyValuationPage && pageMode === 'valuation' && (
           <PropertyValuationPage authenticated={Boolean(user)} onRequireLogin={openLogin} />
@@ -1314,6 +1338,8 @@ export function CubitatApp() {
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}
+            onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
+            onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onSelectProperty={handleSelectProperty}
             onGoResults={navigateResults}

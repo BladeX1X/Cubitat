@@ -4,10 +4,10 @@
 
 - Las secciones de datos de cuenta pueden encogerse dentro de la columna de
   contenido (`min-w-0`).
-- La navegación lateral de Cuenta/Favoritos/Publicaciones/Panel de Agente se
-  muestra desde `md`; por debajo se ofrece una barra horizontal desplazable con
-  los mismos destinos para que la navegación no desaparezca al reducir la
-  ventana o usar zoom del navegador.
+- La navegación compartida del área privada muestra Cuenta, Favoritos,
+  Publicaciones y, cuando están habilitados, Mis servicios y Mis materiales.
+  El Panel de Agente sigue sujeto al rol y verificación requeridos. En móvil,
+  los mismos accesos aparecen en una barra horizontal desplazable.
 - Los correos se parten dentro de su contenedor para evitar desbordamiento
   horizontal en móviles estrechos, incluidos viewports de 320 px.
 - Mantener etiquetas y acciones legibles; no ocultar datos para resolver el

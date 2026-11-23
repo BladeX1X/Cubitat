@@ -11,6 +11,8 @@ const navigationProps = {
   onNavigateAccount: vi.fn(),
   onNavigateFavorites: vi.fn(),
   onNavigateMyProperties: vi.fn(),
+  onNavigateMyServices: vi.fn(),
+  onNavigateMyMaterials: vi.fn(),
   onNavigateAgentDashboard: vi.fn(),
 }
 
@@ -50,5 +52,26 @@ describe('AccountLayout agent navigation', () => {
     expect(within(mobileNavigation).getByRole('button', { name: 'Mi cuenta' })).toHaveAttribute('aria-current', 'page')
     fireEvent.click(within(mobileNavigation).getByRole('button', { name: 'Favoritos' }))
     expect(navigationProps.onNavigateFavorites).toHaveBeenCalledOnce()
+  })
+
+  it('shows service and material management in desktop and mobile account navigation', () => {
+    render(
+      <AccountLayout {...navigationProps} userRole="buyer" active="contents">
+        Cuenta
+      </AccountLayout>,
+    )
+
+    const desktopNavigation = screen.getByRole('navigation', { name: 'Navegacion de cuenta' })
+    const mobileNavigation = screen.getByRole('navigation', { name: 'Navegación de cuenta móvil' })
+
+    expect(within(desktopNavigation).getByRole('button', { name: 'Mis servicios' })).toBeInTheDocument()
+    expect(within(desktopNavigation).getByRole('button', { name: 'Mis materiales' })).toBeInTheDocument()
+    expect(within(mobileNavigation).getByRole('button', { name: 'Mis servicios' })).toBeInTheDocument()
+    expect(within(mobileNavigation).getByRole('button', { name: 'Mis materiales' })).toBeInTheDocument()
+
+    fireEvent.click(within(desktopNavigation).getByRole('button', { name: 'Mis servicios' }))
+    fireEvent.click(within(mobileNavigation).getByRole('button', { name: 'Mis materiales' }))
+    expect(navigationProps.onNavigateMyServices).toHaveBeenCalledOnce()
+    expect(navigationProps.onNavigateMyMaterials).toHaveBeenCalledOnce()
   })
 })

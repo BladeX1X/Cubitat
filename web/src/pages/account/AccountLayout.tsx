@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { BarChart3, Heart, Home, User as UserIcon } from 'lucide-react'
+import { BarChart3, Boxes, BriefcaseBusiness, Heart, Home, User as UserIcon } from 'lucide-react'
 import { PHASE_TWO_ENABLED } from '../../shared/config/features'
 
-export type AccountSectionKey = 'account' | 'favorites' | 'contents' | 'agent-dashboard'
+export type AccountSectionKey = 'account' | 'favorites' | 'contents' | 'services' | 'materials' | 'agent-dashboard'
 
 type AccountLayoutProps = {
   active: AccountSectionKey
@@ -11,6 +11,8 @@ type AccountLayoutProps = {
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateMyServices?: () => void
+  onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
   canAccessAgentDashboard?: boolean
 }
@@ -22,6 +24,8 @@ export function AccountLayout({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
   onNavigateAgentDashboard,
   canAccessAgentDashboard = false,
 }: AccountLayoutProps) {
@@ -35,6 +39,8 @@ export function AccountLayout({
           <MobileNavItem active={active === 'account'} icon={<UserIcon size={17} />} label="Mi cuenta" onClick={onNavigateAccount} />
           <MobileNavItem active={active === 'favorites'} icon={<Heart size={17} />} label="Favoritos" onClick={onNavigateFavorites} />
           <MobileNavItem active={active === 'contents'} icon={<Home size={17} />} label="Mis publicaciones" onClick={onNavigateMyProperties} />
+          {onNavigateMyServices && <MobileNavItem active={active === 'services'} icon={<BriefcaseBusiness size={17} />} label="Mis servicios" onClick={onNavigateMyServices} />}
+          {onNavigateMyMaterials && <MobileNavItem active={active === 'materials'} icon={<Boxes size={17} />} label="Mis materiales" onClick={onNavigateMyMaterials} />}
           {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
             <MobileNavItem active={active === 'agent-dashboard'} icon={<BarChart3 size={17} />} label="Panel de Agente" onClick={onNavigateAgentDashboard} />
           )}
@@ -64,6 +70,22 @@ export function AccountLayout({
                 label="Mis publicaciones"
                 onClick={onNavigateMyProperties}
               />
+              {onNavigateMyServices && (
+                <SideItem
+                  active={active === 'services'}
+                  icon={<BriefcaseBusiness size={20} />}
+                  label="Mis servicios"
+                  onClick={onNavigateMyServices}
+                />
+              )}
+              {onNavigateMyMaterials && (
+                <SideItem
+                  active={active === 'materials'}
+                  icon={<Boxes size={20} />}
+                  label="Mis materiales"
+                  onClick={onNavigateMyMaterials}
+                />
+              )}
               {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
                 <SideItem
                   active={active === 'agent-dashboard'}

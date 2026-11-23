@@ -20,6 +20,8 @@ export type AgentDashboardPageProps = {
   onNavigateAccount?: () => void
   onNavigateFavorites?: () => void
   onNavigateMyProperties?: () => void
+  onNavigateMyServices?: () => void
+  onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
   onEditProperty?: (propertyId: string) => void
   onSelectProperty?: (propertyId: string) => void
@@ -30,6 +32,8 @@ export function AgentDashboardPage({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
   onNavigateAgentDashboard,
   onEditProperty,
   onSelectProperty,
@@ -66,6 +70,8 @@ export function AgentDashboardPage({
       onNavigateAccount={onNavigateAccount || (() => {})}
       onNavigateFavorites={onNavigateFavorites || (() => {})}
       onNavigateMyProperties={onNavigateMyProperties || (() => {})}
+      onNavigateMyServices={onNavigateMyServices}
+      onNavigateMyMaterials={onNavigateMyMaterials}
       onNavigateAgentDashboard={onNavigateAgentDashboard || (() => {})}
       canAccessAgentDashboard={dashboard.isVerifiedAgent}
     >
