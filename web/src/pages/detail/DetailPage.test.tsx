@@ -204,11 +204,23 @@ describe('DetailPage - Reportes y Visor', () => {
     expect(screen.getAllByRole('button', { name: 'Compartir propiedad' }).length).toBeGreaterThanOrEqual(2)
     expect(screen.queryByRole('button', { name: 'Notas personales' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Guardar propiedad' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Compartir propiedad' }).some((button) => button.closest('.detail-mobile-media-topbar'))).toBe(true)
+    expect(screen.getAllByRole('button', { name: 'Guardar propiedad' }).some((button) => button.closest('.detail-mobile-media-topbar'))).toBe(true)
     expect(screen.getByRole('button', { name: 'Ocultar aviso' })).toBeInTheDocument()
     expect(screen.getAllByRole('list', { name: 'Datos principales de la propiedad' })[0]).toHaveTextContent('3 recámaras')
 
     fireEvent.click(screen.getByRole('button', { name: 'Leer descripción completa' }))
     expect(screen.getByRole('button', { name: 'Mostrar menos' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('opens the photo and map viewer from the mobile carousel controls', () => {
+    render(<DetailPage property={mockProperty} onBack={vi.fn()} onChangeFilters={vi.fn()} filters={mockFilters} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir fotos' }))
+    expect(screen.getByRole('dialog', { name: 'Galería de fotos de la propiedad' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir mapa' }))
+    expect(screen.getByRole('dialog', { name: 'Mapa de la propiedad' })).toBeInTheDocument()
   })
 
   it('confirms hiding the listing and returns to results', () => {

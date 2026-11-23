@@ -279,7 +279,8 @@ La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selec
 - GIVEN una propiedad publicada abierta en su ficha
 - WHEN se muestran las acciones superiores
 - THEN MUST presentar Favorito, Compartir y Ocultar aviso con separadores discretos y acceso usable en móvil
-- AND en móvil, Favorito y Compartir MUST mostrarse como controles compactos adaptados al ancho disponible, sin scroll horizontal
+- AND en móvil, Favorito y Compartir MUST aparecer solo como iconos dentro de la galería, sin etiquetas ni ocupar una fila aparte
+- AND las acciones Fotos/Mapa MUST abrir el visor desde la galería móvil
 - AND ocultar un aviso MUST retirarlo de los resultados en ese navegador y ofrecer deshacer al regresar al catálogo
 - AND la portada MUST resumir las características disponibles sin inventar datos ausentes
 - AND las descripciones largas MUST poder expandirse y contraerse
@@ -288,3 +289,4 @@ La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selec
 - GIVEN una propiedad con más de una foto en la ficha móvil
 - WHEN se muestran los controles «Fotos» y «Mapa» sobre la imagen
 - THEN los indicadores de posición del carrusel MUST mantenerse separados y visibles, sin quedar cubiertos por esos controles
+- AND el visor MUST renderizarse sobre la página aunque la galería que controla su estado esté en una sección no visible para ese ancho

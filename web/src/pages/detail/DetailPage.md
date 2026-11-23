@@ -11,9 +11,9 @@ contacto sigue en su columna junto a las características. En viewports de
 escritorio estrechos se reservan márgenes laterales de 16 px.
 
 La barra de acciones ofrece Favorito, Compartir y Ocultar aviso. En móvil,
-Favorito y Compartir se muestran como controles compactos que caben sin scroll
-horizontal. Los anuncios ocultos se guardan solo en el navegador actual; al
-ocultar desde una ficha, el catálogo ofrece deshacer.
+Favorito y Compartir aparecen como iconos dentro de la galería. Los anuncios
+ocultos se guardan solo en el navegador actual; al ocultar desde una ficha, el
+catálogo ofrece deshacer.
 La portada resume recámaras, baños, estacionamiento y área; la ficha conserva
 las características completas. Las descripciones largas se pueden expandir.
 
@@ -25,6 +25,8 @@ escritorio y móvil; conserva el gesto táctil. El visor ampliado comparte el
 índice activo con ambas vistas y permite avanzar, retroceder y elegir
 miniaturas. Si hay una sola foto, no muestra controles vacíos.
 En móvil, los puntos se separan de las acciones superpuestas «Fotos» y «Mapa».
+Fotos y Mapa abren un visor renderizado fuera del contenedor oculto de la
+galería de escritorio, de modo que ambos controles siguen funcionando en móvil.
 
 Las consultas de propiedades similares incluyen explícitamente `status = published` en la búsqueda principal y la consulta de relleno, porque las sesiones autenticadas también pueden leer sus propios anuncios privados. Se excluyen además la ficha actual y los anuncios ya seleccionados. Ambas usan la proyección pública compartida `PUBLIC_PROPERTY_SELECT`; no deben usar `SELECT *` porque columnas de contacto y moderación están revocadas a clientes.
 

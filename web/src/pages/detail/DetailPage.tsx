@@ -22,6 +22,7 @@ import {
   Building2,
 } from 'lucide-react'
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createApproximateLocationArea } from '../../modules/maps/lib/approximateLocationArea'
 import { approximatePropertyCoordinates } from '../../modules/maps/lib/propertyCoordinates'
 import { useSEO } from '../../shared/hooks/useSEO'
@@ -614,6 +615,7 @@ export function DetailPage({
                     <button
                     type="button"
                     aria-label="Compartir propiedad"
+                    title="Compartir"
                     aria-busy={sharing}
                     disabled={sharing}
                     onPointerDown={(event) => {
@@ -631,6 +633,7 @@ export function DetailPage({
                       propertyId={property.id}
                       iconSize={18}
                       iconClassName={(saved) => saved ? 'fill-red-500 text-red-500' : ''}
+                      title="Favorito"
                       preventDefault
                       stopPropagation
                     />
@@ -646,6 +649,7 @@ export function DetailPage({
                 <div className="detail-mobile-media-pills">
                   <button
                     type="button"
+                    aria-label="Abrir fotos"
                     onPointerDown={(event) => {
                       event.stopPropagation()
                     }}
@@ -660,6 +664,7 @@ export function DetailPage({
                   </button>
                   <button
                     type="button"
+                    aria-label="Abrir mapa"
                     onPointerDown={(event) => {
                       event.stopPropagation()
                     }}
@@ -1087,9 +1092,12 @@ function ImageGallery({
         </Carousel>
 
       {/* Modal visor de pantalla completa */}
-      {renderModal && isOpenModal && (
+      {renderModal && isOpenModal && createPortal((
         <div 
           className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-4 animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeTab === 'map' ? 'Mapa de la propiedad' : 'Galería de fotos de la propiedad'}
           onClick={(e) => { if (e.target === e.currentTarget) setIsOpenModal(false) }}
           onKeyDown={(e) => { if (e.key === 'Escape') setIsOpenModal(false) }}
           tabIndex={-1}
@@ -1170,7 +1178,7 @@ function ImageGallery({
             </div>
           )}
         </div>
-      )}
+      ), document.body)}
     </div>
   )
 }
