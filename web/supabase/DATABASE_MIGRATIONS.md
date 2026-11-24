@@ -23,12 +23,12 @@ orden y propósito, pero no sustituye la lectura del SQL.
   dry-run de una sola versión y postcondiciones de RLS/grants/RPC/triggers. No
   usar `db push` global ni el allowlist antiguo Phase 3/4, que no incluye esta
   candidata.
-- El primer preflight de producción abortó antes del dry-run: el ledger registra
-  `20261120203809`, cuya fuente canónica está en el commit histórico
-  `ba3359065b838dbf4c155b78a6174f80058c5a2f`, no en `main`. El workflow se
-  ajustó para cargar exclusivamente esa fuente histórica fijada por commit y
-  checksum; no se modificó la base. La siguiente ejecución debe continuar
-  fallando de forma segura si aparece cualquier otra versión remota sin fuente.
+- La rama de conciliación restauró en `migrations/20261120203809_material_listing_municipality.sql`
+  la fuente canónica exacta del commit `ba3359065b838dbf4c155b78a6174f80058c5a2f`;
+  ese cambio solo recupera una versión que ya está registrada en producción y
+  no debe volver a ejecutarse allí. El primer preflight abortó antes del dry-run
+  porque la fuente faltaba de `main`; no modificó la base. La siguiente ejecución
+  valida que no haya otros huecos en el ledger antes de la migración candidata.
 
 ## Reportes de Servicios y Materiales — aplicada y verificada en producción — 2026-11-23
 

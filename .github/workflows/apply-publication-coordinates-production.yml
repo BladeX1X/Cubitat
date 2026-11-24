@@ -29,12 +29,6 @@ jobs:
       - name: Check out reviewed main revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Check out the canonical historical source for the recorded production migration
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ba3359065b838dbf4c155b78a6174f80058c5a2f
-          path: migration-history-source
-
       - name: Install Supabase CLI
         uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
@@ -127,27 +121,10 @@ jobs:
             fi
             matches=(web/supabase/migrations/"${version}"_*.sql)
             if [[ ${#matches[@]} -ne 1 ]]; then
-              case "$version" in
-                20261120203809)
-                  historical=(migration-history-source/web/supabase/migrations/20261120203809_material_listing_municipality.sql)
-                  if [[ ${#historical[@]} -ne 1 || ! -f "${historical[0]}" ]]; then
-                    echo 'The pinned canonical source for recorded migration 20261120203809 is missing.'
-                    exit 1
-                  fi
-                  historical_hash=$(sha256sum "${historical[0]}" | cut -d' ' -f1)
-                  [[ "$historical_hash" == 'e7e8d7946189e840e75acaea7eb93bae69771a6d018f601a7c4b06967811f7cc' ]] || {
-                    echo 'The pinned canonical source for migration 20261120203809 changed; stopping.'; exit 1;
-                  }
-                  cp "${historical[0]}" "$MIGRATION_WORKDIR/supabase/migrations/"
-                  ;;
-                *)
-                  echo "Recorded production version has no unique canonical source: $version"
-                  exit 1
-                  ;;
-              esac
-            else
-              cp "${matches[0]}" "$MIGRATION_WORKDIR/supabase/migrations/"
+              echo "Recorded production version has no unique canonical source: $version"
+              exit 1
             fi
+            cp "${matches[0]}" "$MIGRATION_WORKDIR/supabase/migrations/"
           done <<<"$remote_versions"
           local_versions=$(find "$MIGRATION_WORKDIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
             | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
