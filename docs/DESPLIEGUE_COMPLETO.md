@@ -143,6 +143,15 @@ mantenimiento supervisada. La ejecucion manual debe usar exactamente los SQL
 versionados, en orden cronologico, y reconciliar el historial de migraciones.
 Consultar `web/supabase/DATABASE_MIGRATIONS.md` antes de actuar.
 
+Las migraciones productivas con allowlist propia se ejecutan únicamente desde
+su workflow `workflow_dispatch` en `main`, nunca desde una copia local del
+repositorio. Para coordenadas privadas de Servicios y Materiales, usar
+`Apply publication coordinates migration to production` después de integrar
+la migración revisada. El workflow exige la frase de confirmación y un artefacto
+de respaldo de producción exitoso de menos de 24 horas; valida el proyecto, el
+ledger exacto, el estado previo, el dry-run de una sola versión y los grants/RLS
+posteriores.
+
 No crear politicas alternativas de insercion publica para `contacts` ni
 `property_reports`: el flujo vigente exige Turnstile en el Worker y RPC
 exclusivas de `service_role`. El antiguo bloque SQL de esta guia fue retirado

@@ -16,8 +16,13 @@ orden y propósito, pero no sustituye la lectura del SQL.
   de propietario y actualización.
 - `tests/marketplace_publication_coordinates_local.sql` valida la privacidad,
   el redondeo y la lectura exacta por propietario en Supabase local aislado.
-- Estado: candidata local en `feature/unified-publishing-coordinates`; no se ha
-  aplicado a ningún proyecto alojado ni desplegado la interfaz.
+- Estado de esta rama: migración aún no aplicada en producción. Tras integrar,
+  usar exclusivamente `Apply publication coordinates migration to production`
+  desde `main`. Ese flujo exige confirmación explícita y respaldo exitoso de
+  menos de 24 h; verifica target, ledger, esquema inicial, checksum de fuente,
+  dry-run de una sola versión y postcondiciones de RLS/grants/RPC/triggers. No
+  usar `db push` global ni el allowlist antiguo Phase 3/4, que no incluye esta
+  candidata.
 
 ## Reportes de Servicios y Materiales — aplicada y verificada en producción — 2026-11-23
 
