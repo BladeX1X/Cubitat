@@ -1,7 +1,6 @@
 -- Isolated local database only. Leaves no test records.
 \set ON_ERROR_STOP on
 BEGIN;
-SELECT plan(6);
 CREATE FUNCTION pg_temp.assert_true(ok boolean, message text) RETURNS void
 LANGUAGE plpgsql AS $$ BEGIN
   IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%', message; END IF;
@@ -59,5 +58,4 @@ SELECT pg_temp.assert_true(
   'Owner RPCs did not return exact coordinates');
 RESET ROLE;
 
-SELECT * FROM finish();
 ROLLBACK;
