@@ -11,6 +11,7 @@ import { CatalogFilterToolbar } from '../../modules/catalog-explorer/CatalogFilt
 import { CatalogMap } from '../../modules/catalog-explorer/CatalogMap'
 import { CatalogPagination, CATALOG_PAGE_SIZE } from '../../modules/catalog-explorer/CatalogPagination'
 import { MarketplaceMapToggle } from '../../modules/marketplace/MarketplaceMapToggle'
+import { MarketplaceCatalogHeader } from '../../modules/marketplace/MarketplaceCatalogHeader'
 import { PHASE_FOUR_MAT_ENABLED } from '../../shared/config/features'
 import { fetchMaterialListing, fetchMaterialListings, fetchMaterialProvinceCounts, sendMaterialInquiry } from '../../modules/materials/materialRepository'
 import type { ProvinceCount } from '../../modules/marketplace/provinceAggregates'
@@ -46,7 +47,7 @@ function availabilityLabel(value: MaterialListing['availability']) {
   }
 }
 
-export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onManageListings }: MaterialsMarketplacePageProps) {
+export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplacePageProps) {
   const [slug, setSlug] = useState<string | null>(getSlugFromPath)
   const [category, setCategory] = useState<MaterialCategory | ''>('')
   const [province, setProvince] = useState('')
@@ -236,12 +237,9 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
     <main className="marketplace-directory-map-page min-h-[75vh] bg-neutral-50 px-4 py-4 sm:px-6 sm:py-6">
       <div className={`mx-auto ${mapOpen ? 'max-w-screen-2xl' : 'max-w-6xl'}`}>
         {import.meta.env.MODE === 'phase34-dev' && <span className="marketplace-directory-dev-badge">Entorno de pruebas · DEV</span>}
-        <header className="marketplace-directory-heading">
-          <h1 className="font-black text-neutral-900">Materiales de construcción</h1>
-          <div className="marketplace-directory-heading__actions"><Button type="button" className="min-h-11" onClick={onCreateListing}>Vender materiales</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageListings}>Mis anuncios</Button></div>
-        </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="materials-province-map" mapBusy={provinceCountsLoading} toolbar={
+        <MarketplaceCatalogHeader title="Materiales de construcción" description="Encuentra materiales, compara disponibilidad y contacta al anunciante." resultCount={`${total} ${total === 1 ? 'anuncio disponible' : 'anuncios disponibles'}`}>
           <CatalogFilterToolbar label="Filtros de materiales" resultLabel="anuncios" resultCount={total} activeFiltersCount={[category, province, availability, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setAvailability(''); setSearch(''); setCurrentPage(1) }}
             search={<label><span className="sr-only">Buscar material</span><input aria-label="Buscar material" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1) }} className="marketplace-filter-search" placeholder="Cemento, tubería…" /></label>}
             filters={<>
@@ -250,6 +248,7 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
               <label><span className="sr-only">Disponibilidad</span><select aria-label="Disponibilidad" value={availability} onChange={(event) => { setAvailability(event.target.value as Exclude<MaterialListing['availability'], 'out_of_stock'> | ''); setCurrentPage(1) }}><option value="">Todas</option><option value="available">Disponible</option><option value="limited">Disponibilidad limitada</option><option value="made_to_order">Por encargo</option></select></label>
             </>}
           />
+        </MarketplaceCatalogHeader>
         } map={
           provinceCountsError
             ? <ProvinceMapStatus error onClose={() => setMapOpen(false)} resultLabel="anuncios de materiales" />
@@ -257,7 +256,6 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
         }>
 
           <div className="marketplace-directory-results" aria-busy={loading}>
-            <p className="mb-4 text-sm text-neutral-600">{total} {total === 1 ? 'anuncio disponible' : 'anuncios disponibles'}</p>
             {loading && <span role="status" aria-label="Actualizando materiales" className="sr-only">Actualizando resultados…</span>}
             {resultsContent}
             <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />

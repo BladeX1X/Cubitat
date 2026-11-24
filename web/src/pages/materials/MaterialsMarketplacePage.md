@@ -4,7 +4,8 @@
 
 Presenta anuncios publicados de materiales de construcción con filtros por
 texto del título, categoría, provincia y disponibilidad, detalle, precio
-declarado, consulta privada para el vendedor y acceso a solicitud de publicación.
+declarado y consulta privada para el vendedor. La publicación y gestión se
+inician desde el flujo universal y Mi cuenta, sin accesos duplicados en el catálogo.
 El catálogo pagina desde Supabase en bloques numerados de 15 resultados, muestra
 el total exacto de coincidencias y permite ir a cualquier página sin acumular
 anuncios anteriores. Un mapa
@@ -19,6 +20,9 @@ intermedio.
 ## Reglas
 
 - Solo anuncios `published` y no agotados aparecen en el catálogo.
+- El catálogo comparte `MarketplaceCatalogHeader` con Servicios: filtros primero,
+  seguidos por título, descripción y total de anuncios; conserva los filtros
+  propios de categoría, provincia y disponibilidad.
 - La opción pública de disponibilidad excluye anuncios agotados; no los revela
   ni presenta un conteo de cero como si fueran resultados disponibles.
 - La ubicación municipal se mantiene pendiente: `material_listings` en la cadena
@@ -36,7 +40,8 @@ intermedio.
   hoja ofrece limpiar y ver resultados. En escritorio, filtros y búsqueda
   aparecen en la barra; el desbordamiento de controles se contiene dentro de
   ella. La barra sticky queda bajo el encabezado (76 px escritorio, 104 px
-  tablet y 64 px móvil); el encabezado conserva las acciones compactas.
+  tablet y 64 px móvil); publicación y gestión se reservan al flujo universal y
+  Mi cuenta.
 - En pantallas táctiles, los botones del encabezado, filtros, acciones de
   tarjetas y mapa tienen objetivos de al menos 48×48 px; las cajas de búsqueda
   usan fuente de 16 px para evitar el zoom automático del navegador móvil.
