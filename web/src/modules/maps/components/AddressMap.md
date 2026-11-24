@@ -1,6 +1,6 @@
 # AddressMap
 
-Mapa interactivo para elegir las coordenadas privadas de una propiedad durante la publicación y edición.
+Mapa interactivo para elegir coordenadas privadas durante la publicación y edición de inmuebles, servicios y materiales.
 
 ## Carga y recuperación
 

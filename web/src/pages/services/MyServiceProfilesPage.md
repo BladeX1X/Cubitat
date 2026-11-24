@@ -14,6 +14,9 @@ de edición que los devuelva a moderación.
   presenta como envío a revisión.
 - La vista requiere sesión y nunca lista perfiles de otras cuentas.
 - La pantalla maneja carga, error, vacío y reintento.
+- La gestión se integra en `AccountLayout`, con `Mis servicios` seleccionado y
+  acceso a Cuenta, Favoritos, Mis publicaciones y Mis materiales cuando están
+  habilitados.
 
 ## Verificación
 

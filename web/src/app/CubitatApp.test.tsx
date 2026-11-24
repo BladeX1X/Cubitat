@@ -99,7 +99,9 @@ vi.mock('../components/layout/PWAInstallPrompt', () => ({
 }))
 
 vi.mock('../pages/home/HomePage', () => ({
-  HomePage: () => <div>Inicio Cubitat</div>,
+  HomePage: ({ filters }: { filters: { operations: string[] } }) => (
+    <div>Inicio Cubitat <span data-testid="home-operations">{filters.operations.join(',')}</span></div>
+  ),
 }))
 
 vi.mock('../pages/moderar/AdminPage', () => ({
@@ -215,5 +217,13 @@ describe('CubitatApp', () => {
 
     expect(await screen.findByRole('button', { name: 'Publicar' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vender' })).not.toBeInTheDocument()
+  })
+
+  it('limpia Permuta al volver a Inicio', async () => {
+    window.history.replaceState(null, '', '/resultados?operacion=permuta')
+    render(<AuthModalProvider><CubitatApp /></AuthModalProvider>)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Inicio' }))
+    expect(await screen.findByTestId('home-operations')).toBeEmptyDOMElement()
   })
 })

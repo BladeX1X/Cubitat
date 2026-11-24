@@ -36,6 +36,7 @@ const worker = createWorker({
     'home_service_inquiries',
     'material_listings',
     'material_inquiries',
+    'saved_marketplace_listings',
   ],
   additionalPublicRpcs: [
     'get_active_business_benefits',
@@ -63,6 +64,7 @@ const worker = createWorker({
     'grant_business_benefit',
     'revoke_business_benefit',
     'get_property_value_comparables',
+      'get_admin_property_contact_details',
     'submit_kyc_request',
     'review_kyc_request',
     'submit_property_verification',

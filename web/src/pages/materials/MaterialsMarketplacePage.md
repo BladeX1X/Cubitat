@@ -1,5 +1,9 @@
 # MaterialsMarketplacePage
 
+La tarjeta lateral de contacto comparte la presentación de Comprar con Servicios
+(encabezado, fecha de actualización, etiqueta, campo de mensaje y CTA); conserva
+las preguntas y el envío privado propios del material.
+
 ## Responsabilidad
 
 Presenta anuncios publicados de materiales de construcción con filtros por
@@ -15,6 +19,23 @@ Las tarjetas comparten las acciones Contactar y Consultar con el directorio de
 Servicios. Contactar abre directamente la llamada y Consultar abre WhatsApp con
 el título y la zona del anuncio. No navega a otra página ni muestra un diálogo
 intermedio.
+
+Las tarjetas usan `CatalogCardFrame`, compartido con Comprar y Servicios: ancho
+máximo centrado de 72 rem, columnas desde 320 px, portada 16:9, estructura
+vertical común y acciones alineadas al borde inferior.
+
+El encabezado del catálogo solo muestra el título. La publicación de materiales
+y la gestión de anuncios propios se acceden desde el flujo universal de
+publicación y el centro de cuenta, respectivamente.
+
+La ficha reutiliza `MarketplaceListingDetail` con Servicios. Adapta las
+secciones a categoría, precio declarado, disponibilidad, provincia,
+actualización, descripción y aviso de inventario; conserva la galería original
+con flechas/puntos y el formulario de consulta al vendedor.
+Sobre la galería aparecen Fotos y Mapa. Fotos abre todas las imágenes en un
+visor navegable sincronizado con el carrusel del hero; Mapa presenta la
+provincia declarada como referencia aproximada, ya que no hay dirección exacta
+disponible.
 
 ## Reglas
 
@@ -78,8 +99,10 @@ intermedio.
 - Las tarjetas y Favoritos piden a Storage una miniatura firmada de 420×192,
   recorte `cover` y calidad 65. Si falla la transformación, se firma el original
   como fallback. Las fichas conservan originales para la galería.
-- Las tarjetas usan `MarketplaceCardImage`: las dos primeras fotos se cargan con
-  prioridad alta, las siguientes de forma diferida, todas con decodificación
+- Las tarjetas usan `CatalogCardGallery`, compartida con Servicios, con flechas
+  y puntos accesibles al mostrar varias fotos. El directorio firma la galería
+  completa para el carrusel. `MarketplaceCardImage` carga las dos primeras
+  portadas con prioridad alta y las demás de forma diferida, con decodificación
   asíncrona y fallback accesible. Unsplash entrega miniaturas a 420 px/calidad
   45; las URLs firmadas de Storage se conservan sin reescritura.
 
@@ -117,3 +140,7 @@ consulta. La tarjeta y la navegación Atrás/Adelante ahora activan el indicador
 carga y limpian el estado anterior antes del cambio de ruta. La E2E con consulta
 demorada falló antes de corregir y pasa después; solo anuncia ausencia tras una
 respuesta correcta sin anuncio.
+
+## Reportes y recomendaciones
+
+La ficha permite reportar el anuncio de material con Turnstile; el Worker valida y registra el envío en la cola unificada de Moderación. Al final se muestran perfiles que tengan activo profile_featured, con portada firmada y excluyendo agotados por el catálogo de origen.

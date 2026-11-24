@@ -10,6 +10,13 @@ Ruta publica:
 
 Permitir al usuario crear una nueva contrasena despues de abrir el enlace de recuperacion enviado por Supabase Auth.
 
+El flujo del portal no solicita TOTP mientras `ADMIN_MFA_ENABLED` permanezca
+desactivado. Los enlaces de recuperación, la política de contraseñas y la
+sesión válida de Supabase siguen siendo obligatorios. Si la configuración Auth
+del proveedor todavía exige AAL2 para cambiar una contraseña, se muestra un
+mensaje seguro sin exponer el error técnico; ese ajuste del proveedor debe
+revisarse por separado.
+
 ## Configuracion esperada en Supabase
 
 Site URL local:

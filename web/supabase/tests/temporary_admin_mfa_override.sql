@@ -67,7 +67,7 @@ BEGIN
     RAISE EXCEPTION 'admin must receive a future deadline within the seven-day window';
   END IF;
   IF NOT public.is_admin_aal2() THEN
-    RAISE EXCEPTION 'admin AAL1 session must pass the temporary MFA override';
+    RAISE EXCEPTION 'admin AAL1 session must pass while administrative MFA is disabled';
   END IF;
   BEGIN
     PERFORM 1 FROM public.admin_mfa_temporary_overrides;
@@ -108,8 +108,8 @@ SELECT set_config(
 SET LOCAL ROLE authenticated;
 DO $$
 BEGIN
-  IF public.is_admin_aal2() THEN
-    RAISE EXCEPTION 'expired override must restore the AAL2 requirement';
+  IF NOT public.is_admin_aal2() THEN
+    RAISE EXCEPTION 'expired legacy override must not restore the AAL2 requirement';
   END IF;
 END;
 $$;

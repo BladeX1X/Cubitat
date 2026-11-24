@@ -2,6 +2,21 @@
 
 La ficha pública muestra galería, datos técnicos, ubicación aproximada, contacto y propiedades similares.
 
+## Ancho común del detalle — 2026-11-22
+
+En escritorio, navegación, portada con galería/resumen, contenido técnico y
+propiedades similares comparten un contenedor centrado de hasta `1152 px`. La
+fila de contenido ya no reduce su ancho con gutters propios; el panel de
+contacto sigue en su columna junto a las características. En viewports de
+escritorio estrechos se reservan márgenes laterales de 16 px.
+
+La barra de acciones ofrece Favorito, Compartir y Ocultar aviso. En móvil,
+Favorito y Compartir aparecen como iconos dentro de la galería. Los anuncios
+ocultos se guardan solo en el navegador actual; al ocultar desde una ficha, el
+catálogo ofrece deshacer.
+La portada resume recámaras, baños, estacionamiento y área; la ficha conserva
+las características completas. Las descripciones largas se pueden expandir.
+
 ## Carrusel de fotos — 2026-11-22
 
 La galería reutiliza los controles Carousel compartidos con las tarjetas del
@@ -9,6 +24,9 @@ catálogo. Con varias fotos muestra flechas accesibles y puntos de posición en
 escritorio y móvil; conserva el gesto táctil. El visor ampliado comparte el
 índice activo con ambas vistas y permite avanzar, retroceder y elegir
 miniaturas. Si hay una sola foto, no muestra controles vacíos.
+En móvil, los puntos se separan de las acciones superpuestas «Fotos» y «Mapa».
+Fotos y Mapa abren un visor renderizado fuera del contenedor oculto de la
+galería de escritorio, de modo que ambos controles siguen funcionando en móvil.
 
 Las consultas de propiedades similares incluyen explícitamente `status = published` en la búsqueda principal y la consulta de relleno, porque las sesiones autenticadas también pueden leer sus propios anuncios privados. Se excluyen además la ficha actual y los anuncios ya seleccionados. Ambas usan la proyección pública compartida `PUBLIC_PROPERTY_SELECT`; no deben usar `SELECT *` porque columnas de contacto y moderación están revocadas a clientes.
 
@@ -52,7 +70,7 @@ La migración `20260912010000_private_property_coordinates.sql` conserva el punt
 
 ## Área aproximada del mapa — 2026-09-23
 
-`DetailLocationMap` dibuja la zona pública como un polígono GeoJSON de `2 km` de radio mediante `createApproximateLocationArea`, no como un `circle-radius` en píxeles. Al acercar o alejar el mapa cambia su tamaño en pantalla, pero conserva la misma región geográfica aproximada.
+`DetailLocationMap` dibuja la zona pública como un polígono GeoJSON de `1 km` de diámetro (500 m de radio) mediante `createApproximateLocationArea`, no como un `circle-radius` en píxeles. Al acercar o alejar el mapa cambia su tamaño en pantalla, pero conserva la misma región geográfica aproximada.
 
 ## Recuperación del mapa de ubicación — 2026-11-12
 

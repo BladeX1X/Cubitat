@@ -139,7 +139,7 @@ describe('ResetPasswordPage', () => {
     expect(screen.queryByText(/PKCE code verifier/i)).toBeNull()
   })
 
-  it('asks for the TOTP code before changing password when the recovery session needs AAL2', async () => {
+  it('does not ask for TOTP during password recovery while MFA is disabled', async () => {
     getAdminMfaStatusMock.mockResolvedValue({
       currentLevel: 'aal1',
       verifiedFactorId: 'factor-1',
@@ -148,7 +148,10 @@ describe('ResetPasswordPage', () => {
 
     render(<ResetPasswordPage onDone={vi.fn()} />)
 
-    expect(await screen.findByText(/segundo factor activo/i)).toBeInTheDocument()
+    await screen.findByRole('button', { name: /guardar nueva contrasena/i })
+    expect(getAdminMfaStatusMock).not.toHaveBeenCalled()
+    expect(screen.queryByText(/segundo factor activo/i)).toBeNull()
+    expect(screen.queryByLabelText(/codigo de verificacion/i)).toBeNull()
     const passwordInputs = screen.getAllByPlaceholderText('********')
     fireEvent.change(passwordInputs[0], {
       target: { value: 'NuevaClave1!' },
@@ -156,12 +159,9 @@ describe('ResetPasswordPage', () => {
     fireEvent.change(passwordInputs[1], {
       target: { value: 'NuevaClave1!' },
     })
-    fireEvent.change(screen.getByLabelText(/codigo de verificacion/i), {
-      target: { value: '123456' },
-    })
     fireEvent.click(screen.getByRole('button', { name: /guardar nueva contrasena/i }))
 
-    await waitFor(() => expect(verifyOtpMock).toHaveBeenCalledWith('factor-1', '123456'))
+    await waitFor(() => expect(verifyOtpMock).not.toHaveBeenCalled())
     expect(updateUserMock).toHaveBeenCalledWith({ password: 'NuevaClave1!' })
   })
 
@@ -183,7 +183,7 @@ describe('ResetPasswordPage', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /guardar nueva contrasena/i }))
 
-    expect(await screen.findByText(/verifica el segundo factor/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no pudimos actualizar la contrasena con este enlace/i)).toBeInTheDocument()
     expect(screen.queryByText(/AAL2 session is required/i)).toBeNull()
   })
 })

@@ -77,6 +77,11 @@ export function PropertiesTab() {
 
   return (
     <div className="space-y-4">
+      {state.warning && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {state.warning} Puedes seguir revisando las publicaciones.
+        </p>
+      )}
       <div className="space-y-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_4px_14px_rgba(10,31,28,0.04)]">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map(({ value, label }) => (

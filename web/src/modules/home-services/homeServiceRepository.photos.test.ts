@@ -47,16 +47,15 @@ describe('fetchHomeServiceProviders gallery references', () => {
     }))
   })
 
-  it('signs only the cover photos for directory cards', async () => {
+  it('signs every gallery photo for directory card carousels', async () => {
     const result = await fetchHomeServiceProviders()
 
     expect(storageFrom).toHaveBeenCalledWith('home-service-profiles')
-    expect(storageFrom).not.toHaveBeenCalledWith('home-service-photos')
-    expect(createSignedUrl).toHaveBeenCalledWith('home-service-profiles', legacyPath, 3600, {
-      transform: { width: 420, height: 192, resize: 'cover', quality: 65 },
-    })
+    expect(storageFrom).toHaveBeenCalledWith('home-service-photos')
+    expect(createSignedUrl).not.toHaveBeenCalled()
     expect(result.items[0]?.galleryUrls).toEqual([
       `https://signed.invalid/home-service-profiles/${encodeURIComponent(legacyPath)}`,
+      `https://signed.invalid/home-service-photos/${encodeURIComponent(currentPath)}`,
     ])
     expect(result.items[0]?.photoUnavailable).toBe(false)
   })

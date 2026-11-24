@@ -9,7 +9,32 @@ calidad del trabajo.
 
 ## Requisitos
 
+### Ubicación con privacidad para publicar servicios
+
+- El formulario de alta/edición comparte el marco de publicación con Comprar y
+  Materiales, y permite marcar opcionalmente un punto en el mapa.
+- La base guarda la coordenada exacta en una tabla privada accesible únicamente
+  al propietario autenticado; el catálogo solo recibe una coordenada pública
+  redondeada a una cuadrícula de 0.005 grados.
+- El propietario recupera su punto exacto mediante `get_my_home_service_providers`
+  y puede moverlo o quitarlo al editar. Una ficha pública usa la referencia
+  redondeada y un círculo de 1 km de diámetro; si no hay punto, conserva el mapa
+  provincial existente.
+
 ### Listado y detalle públicos
+
+- **WHEN** una persona abre el directorio público de servicios
+- **THEN** el encabezado muestra el título sin accesos directos para publicar
+  un servicio ni administrar perfiles propios
+- **AND** esas acciones se encuentran en el flujo universal de publicación y
+  el centro de cuenta, respectivamente
+
+- Las tarjetas MUST compartir el marco, ancho máximo centrado de 72 rem,
+  cuadrícula con columnas desde 320 px y proporción de imagen 16:9 con Comprar y
+  Materiales. Las acciones quedan alineadas al borde inferior de cada tarjeta.
+- Con más de una foto, la tarjeta MUST mostrar flechas y puntos accesibles para
+  navegar la galería; con una foto no muestra controles. La portada conserva
+  prioridad de carga y las demás imágenes son diferidas.
 
 - **WHEN** una persona filtra el directorio desde escritorio o móvil
 - **THEN** la barra usa el estilo compacto de los filtros de Comprar
@@ -82,13 +107,12 @@ actualiza el perfil antes de completar el lote.
   navegación inferior y no intercepta sus controles.
 - Si falla la carga inicial del estilo del mapa, se puede reintentar desde el
   mismo panel sin cerrar el mapa ni abandonar los filtros del directorio.
-- El directorio y Favoritos MUST firmar solo la foto de portada de cada perfil
-  para sus tarjetas; la ficha MUST firmar la galería completa al abrirse. Las
-  tarjetas MUST cargar imágenes bajo demanda, con prioridad para las primeras
-  portadas visibles y fallback accesible. El repositorio MUST solicitar a
-  Storage una miniatura firmada de 420×192, recorte `cover`, calidad 65, y MUST
-  recurrir a una URL firmada original si falla la transformación. La ficha y la
-  galería del propietario MUST seguir sirviendo originales. Las URLs firmadas
+- El directorio firma las fotos de la galería para permitir recorrerlas en la
+  tarjeta; Favoritos firma solo la portada y la ficha firma la galería completa
+  al abrirse. Las tarjetas cargan imágenes bajo demanda, con prioridad para las
+  primeras fotos visibles y fallback accesible. Favoritos sigue solicitando a
+  Storage una miniatura firmada de 420×192, recorte `cover`, calidad 65. La
+  ficha y la galería del propietario MUST seguir sirviendo originales. Las URLs firmadas
   privadas MUST conservarse sin reescritura.
 - El formulario permite seleccionar varias fotos de trabajos en una sola
   operación, hasta 10 por perfil; valida JPEG/PNG/WebP y 5 MiB por archivo,
@@ -141,17 +165,21 @@ actualiza el perfil antes de completar el lote.
   sus propiedades y materiales. Los visitantes sin sesión reciben el flujo
   compartido de inicio de sesión. En DEV, las escrituras pasan por la lista
   explícita del Worker proxy y quedan limitadas además por RLS al usuario dueño.
-- Reseñas son una extensión opcional especificada en
-  `phase4-review-reputation/spec.md`; el directorio sigue funcionando apagada.
+- Las reseñas permanecen ocultas temporalmente en la ficha pública. Esta pausa
+  afecta solo a la presentación; no borra perfiles, opiniones, ni cambia el
+  módulo de reseñas o su esquema.
 
 ### Detalle y acciones del anuncio
 
-- La ficha presenta en un hero compartido la categoría, nombre, zona, galería y
-  acciones; el hero se apila en móvil y mantiene el contenido de contacto a mano.
-- La cabecera y las pestañas reutilizan `CatalogDetailHero` y
-  `CatalogDetailTabs` con propiedades y Materiales. La pestaña seleccionada
-  muestra un panel exclusivo (Detalles, Cobertura o Reseñas habilitadas); el
-  formulario de contacto permanece visible junto al panel.
+- La ficha reutiliza `MarketplaceListingDetail` con Materiales: barra compacta
+  de navegación/acciones, breadcrumb, hero de dos columnas y galería con
+  flechas y puntos cuando hay varias fotos. En móvil el hero se apila y las
+  acciones quedan en iconos accesibles.
+- Las secciones adaptadas al perfil incluyen información del servicio,
+  descripción, categoría, fecha de actualización y área de servicio. El panel
+  lateral conserva el formulario de consulta del servicio y comparte con Comprar
+  la jerarquía visual del contacto: encabezado, fecha, etiqueta, campo de mensaje
+  y CTA, con texto propio del profesional.
 - «Contactar» y «Consultar» conservan los botones y destinos por canal de
   Comprar. La llamada/WhatsApp se inicia sin modal ni Turnstile intermedio; el
   Worker aplica límite por IP y Turnstile sigue protegiendo el formulario de
@@ -172,3 +200,41 @@ actualiza el perfil antes de completar el lote.
 - GIVEN una ficha pública de servicio abierta en escritorio o móvil
 - WHEN la persona selecciona «Compartir»
 - THEN escritorio MUST copiar el enlace y móvil MUST conservar el panel nativo si está disponible.
+
+### Requirement: Reportes y destacados en perfiles de servicio
+Las fichas públicas MUST permitir reportar un perfil publicado mediante el Worker y mostrar al final perfiles con beneficio profile_featured vigente.
+
+#### Scenario: Abrir reporte de servicio
+- GIVEN un perfil de servicio publicado
+- WHEN la persona selecciona «Informar sobre un problema»
+- THEN el formulario de reporte se abre en un diálogo modal accesible, adaptado al servicio
+- AND el bloque informativo y el botón de apertura conservan el diseño de reporte de Comprar
+- AND se puede cerrar con Escape, el botón de cierre o pulsando el fondo
+
+#### Scenario: Enviar reporte de servicio
+- GIVEN el diálogo modal de reporte para un perfil de servicio publicado
+- WHEN el visitante completa motivo y Turnstile
+- THEN el reporte se guarda para la cola de Moderación sin escribir directamente desde el navegador
+
+#### Scenario: Servicios destacados
+- GIVEN existen perfiles publicados con profile_featured vigente
+- WHEN se abre un perfil de servicio
+- THEN la ficha muestra hasta tres perfiles destacados al final y excluye el actual
+
+### Requirement: Visor de fotos y mapa del perfil
+La ficha pública de servicio MUST ofrecer botones Fotos y Mapa sobre su galería,
+con el mismo visor modal accesible que las fichas de propiedades y adaptado a
+los datos de cobertura del perfil.
+
+#### Scenario: Navegar fotos de un servicio
+- GIVEN un perfil publicado con una o más fotos
+- WHEN el visitante abre Fotos
+- THEN puede avanzar y retroceder por las fotos en un visor modal
+- AND la imagen seleccionada coincide con la del carrusel de la ficha
+- AND puede cerrar con Escape, el botón de cierre o pulsando el fondo
+
+#### Scenario: Consultar cobertura de un servicio en el mapa
+- GIVEN un perfil publicado que declara provincia y cobertura
+- WHEN el visitante abre Mapa
+- THEN el visor muestra una referencia geográfica de la provincia declarada
+- AND informa que el mapa no es el domicilio ni un punto exacto de atención

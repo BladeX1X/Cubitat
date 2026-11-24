@@ -124,12 +124,12 @@ El sistema MUST permitir retirar propiedades guardadas sin romper el contexto ac
 - THEN el sistema MUST eliminar el favorito
 - AND MUST actualizar el icono sin duplicar solicitudes innecesarias
 
-### Requirement: Guardar servicios y materiales en DEV
-El perfil `phase34-dev` MUST permitir guardar perfiles de servicio y anuncios de materiales con el mismo control visual y autenticación compartida, usando `saved_marketplace_listings` con aislamiento por usuario.
+### Requirement: Guardar servicios y materiales
+Los perfiles DEV y producción que habilitan favoritos de Servicios y Materiales MUST permitir guardar perfiles de servicio y anuncios de materiales con el mismo control visual y autenticación compartida, usando `saved_marketplace_listings` con aislamiento por usuario.
 
 La interfaz de catálogo, el proveedor de estado compartido y la pantalla `/favoritos` MUST habilitarse según las banderas F4-SVC/F4-MAT activas, sin depender del nombre de modo de Vite.
 
-El proxy del Worker DEV MUST permitir `POST` y `DELETE` en esa tabla solo cuando la solicitud lleve una sesión autenticada; la política RLS sigue siendo la autoridad final sobre el usuario y el anuncio.
+Los proxies de los Workers DEV y producción MUST permitir `POST` y `DELETE` en esa tabla solo cuando la solicitud lleve una sesión autenticada; la política RLS sigue siendo la autoridad final sobre el usuario y el anuncio.
 
 #### Scenario: Guardar un servicio o material
 - GIVEN un usuario autenticado está en el catálogo de Servicios o Materiales
@@ -150,10 +150,10 @@ El proxy del Worker DEV MUST permitir `POST` y `DELETE` en esa tabla solo cuando
 - AND `anon` y `service_role` MUST NOT recibir acceso a la tabla
 - AND las políticas RLS MUST limitar lectura, alta y baja al UID de la sesión
 
-#### Scenario: Guardar favorito a través del proxy DEV
+#### Scenario: Guardar favorito a través de los proxies
 - GIVEN un usuario autenticado guarda o quita un favorito de Servicio o Material
 - WHEN la solicitud pasa por `/api/supabase`
-- THEN el Worker DEV MUST reenviar `POST` y `DELETE` a `saved_marketplace_listings`
+- THEN los Workers DEV y producción MUST reenviar `POST` y `DELETE` a `saved_marketplace_listings`
 - AND MUST conservar el encabezado de autorización de la sesión
 - WHEN la misma escritura llega sin sesión autenticada
 - THEN el Worker MUST responder `403` sin reenviarla a Supabase
@@ -172,7 +172,7 @@ El proxy del Worker DEV MUST permitir `POST` y `DELETE` en esa tabla solo cuando
 - AND un fallo de escritura de la cuenta anterior MUST NOT revertir favoritos de la cuenta nueva
 
 #### Scenario: Consultar favoritos de marketplace
-- GIVEN el usuario abre Favoritos en DEV
+- GIVEN el usuario abre Favoritos en un perfil con marketplace habilitado
 - WHEN existen perfiles o anuncios guardados y publicados
 - THEN la pantalla MUST mostrar conjuntamente propiedades, servicios y materiales guardados
 - AND los servicios/materiales pausados, retirados o no disponibles MUST quedar fuera de los resultados públicos

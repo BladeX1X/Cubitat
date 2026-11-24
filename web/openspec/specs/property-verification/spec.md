@@ -8,7 +8,7 @@ de una propiedad sin convertir la revisión en una certificación legal.
 - Las evidencias viven en un bucket privado y la base de datos solo conserva la
   ruta interna, nunca una URL pública.
 - El propietario solo puede solicitar la verificación de una propiedad propia.
-- Un administrador con sesión AAL2 puede revisar y cambiar el estado.
+- Un administrador puede revisar y cambiar el estado según su rol. Mientras MFA administrativo esté desactivado, no se exige sesión AAL2.
 - El indicador de confianza es interno y explicable; no promete titularidad ni
   sustituye una validación legal.
 
@@ -25,17 +25,18 @@ MUST comprobar que el objeto exista en el bucket privado antes de registrarla.
 - AND MUST rechazar rutas fuera de la carpeta del propietario, objetos ausentes
   y una segunda solicitud pendiente.
 
-### Requirement: Revisar con AAL2
+### Requirement: Revisar como administrador
 
 El sistema MUST permitir aprobar o rechazar una solicitud únicamente a un
-administrador con AAL2 y MUST exigir un motivo no vacío para rechazarla.
+administrador y MUST exigir un motivo no vacío para rechazarla. Mientras MFA
+administrativo esté desactivado, MUST NOT exigir una sesión AAL2.
 
 #### Scenario: Revisión administrativa
 
 - GIVEN existe una solicitud `pending`
-- WHEN un administrador AAL2 la aprueba o rechaza
+- WHEN un administrador autenticado la aprueba o rechaza
 - THEN el sistema MUST guardar el estado, actor, fecha y motivo de rechazo
-- AND una sesión sin AAL2 MUST recibir un error de permiso.
+- AND un usuario sin rol administrador MUST recibir un error de permiso.
 
 ### Requirement: Indicador interno explicable
 
@@ -47,7 +48,7 @@ legal.
 
 #### Scenario: Moderator inspects a listing without a document request
 
-- GIVEN un moderador con sesión AAL2 abre una ficha en el panel de propiedades
+- GIVEN un moderador administrador abre una ficha en el panel de propiedades
 - AND la ficha no tiene una solicitud documental pendiente
 - WHEN solicita ver el indicador interno
 - THEN el sistema MUST consultar únicamente el Trust Score de esa ficha
@@ -61,8 +62,8 @@ El perfil productivo de verificación documental MUST habilitar el panel del
 propietario y la sección administrativa sin activar KYC, agentes, alertas ni
 pHash. MUST apuntar al proyecto Supabase productivo. El Worker productivo
 MUST permitir solo las RPC documentales requeridas para sesiones autenticadas;
-las reglas RLS y la comprobación AAL2 de la base de datos siguen siendo la
-autoridad de acceso.
+las reglas RLS y la comprobación de rol administrador de la base de datos
+siguen siendo la autoridad de acceso; MFA administrativo permanece desactivado.
 
 #### Scenario: Build de documentos
 
@@ -82,7 +83,8 @@ solo bundle productivo. MUST exigir la URL y anon key del Supabase productivo,
 excluir cualquier referencia al proyecto/Worker DEV, conservar la PWA del
 dominio productivo y no habilitar el dispatcher de correo de alertas. El Worker
 productivo MUST permitir las RPC pHash solo a sesiones autenticadas; la base de
-datos conserva AAL2, RLS y acceso `service_role` para escrituras.
+datos conserva RLS y acceso `service_role` para escrituras; el control admin de
+base de datos no exige AAL2 mientras MFA administrativo esté desactivado.
 
 #### Scenario: Build combinado de producción
 

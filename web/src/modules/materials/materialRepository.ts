@@ -5,6 +5,7 @@ import { isMaterialPhotoPath, isMaterialPhotoReference, MATERIAL_PHOTO_BUCKET, v
 import { aggregateProvinceCounts } from '../marketplace/provinceAggregates'
 import { signCatalogCardImage } from '../../shared/lib/catalogStorageImage'
 import { uploadMaterialPhoto } from './uploadMaterialPhoto'
+import { normalizePropertyCoordinates } from '../maps/lib/propertyCoordinates'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -41,6 +42,7 @@ function parseMaterial(value: unknown): MaterialListing | null {
     price,
     currency: value.currency as MaterialCurrency,
     province: value.province,
+    coordinates: normalizePropertyCoordinates(value.coordinates),
     availability: value.availability as MaterialListing['availability'],
     phone: typeof value.phone === 'string' ? value.phone : null,
     whatsapp: typeof value.whatsapp === 'string' ? value.whatsapp : null,
@@ -160,7 +162,7 @@ export async function fetchMaterialListings(filters: {
   try {
     let query = supabase
       .from('material_listings')
-      .select('id, slug, title, category, description, price, currency, province, availability, photo_urls, updated_at', { count: 'exact' })
+      .select('id, slug, title, category, description, price, currency, province, coordinates, availability, photo_urls, updated_at', { count: 'exact' })
       .eq('status', 'published')
       .neq('availability', 'out_of_stock')
       .order('updated_at', { ascending: false })
@@ -173,7 +175,7 @@ export async function fetchMaterialListings(filters: {
     const { data, error, count } = await query
     if (error) return throwLoadError('fetch_material_list', error)
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return { items: await signMaterialPhotos(listings, { coverOnly: true, transformCover: true }), total: count ?? listings.length }
+    return { items: await signMaterialPhotos(listings), total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
   }
@@ -210,7 +212,7 @@ export async function fetchMaterialListing(slug: string): Promise<MaterialListin
   try {
     const { data, error } = await supabase
       .from('material_listings')
-      .select('id, slug, title, category, description, price, currency, province, availability, photo_urls, updated_at')
+      .select('id, slug, title, category, description, price, currency, province, coordinates, availability, photo_urls, updated_at')
       .eq('slug', slug)
       .eq('status', 'published')
       .maybeSingle()
@@ -228,7 +230,7 @@ export async function fetchMaterialListingsByIds(ids: readonly string[]): Promis
   if (!listingIds.length) return []
   try {
     const { data, error } = await supabase.from('material_listings')
-      .select('id, slug, title, category, description, price, currency, province, availability, photo_urls, updated_at')
+      .select('id, slug, title, category, description, price, currency, province, coordinates, availability, photo_urls, updated_at')
       .in('id', listingIds).eq('status', 'published').neq('availability', 'out_of_stock')
     if (error) throw error
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
@@ -279,6 +281,7 @@ export async function createMaterialListing(input: {
   price: number | null
   currency: MaterialCurrency
   province: string
+  coordinates: { latitude: number; longitude: number } | null
   availability: MaterialListing['availability']
   phone: string | null
   whatsapp: string | null
@@ -294,6 +297,7 @@ export async function createMaterialListing(input: {
     price: input.price,
     currency: input.currency,
     province: input.province.trim(),
+    coordinates: input.coordinates,
     availability: input.availability,
     phone: input.phone,
     whatsapp: input.whatsapp,
@@ -369,6 +373,7 @@ export async function updateMaterialListing(listingId: string, input: {
   price: number | null
   currency: MaterialCurrency
   province: string
+  coordinates: { latitude: number; longitude: number } | null
   availability: MaterialListing['availability']
   phone: string | null
   whatsapp: string | null
@@ -382,6 +387,7 @@ export async function updateMaterialListing(listingId: string, input: {
     p_price: input.price,
     p_currency: input.currency,
     p_province: input.province.trim(),
+    p_coordinates: input.coordinates,
     p_availability: input.availability,
     p_phone: input.phone,
     p_whatsapp: input.whatsapp,

@@ -32,6 +32,6 @@ export const REASON_LABELS: Record<string, string> = {
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   pending: 'Pendiente',
-  resolved: 'Resuelto (Ocultado)',
+  resolved: 'Resuelto',
   dismissed: 'Descartado',
 }

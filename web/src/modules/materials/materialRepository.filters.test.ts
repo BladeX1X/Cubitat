@@ -57,19 +57,17 @@ describe('fetchMaterialListings filters and pagination', () => {
     expect(result.items[0]).toMatchObject({ photoUrls: [], photoUnavailable: true })
   })
 
-  it('uses a transformed signed thumbnail for the material card cover', async () => {
+  it('signs the full gallery for material card carousels', async () => {
     const photoPath = 'f7adba7c-367d-42a8-933a-af01f7f9155a/45c8e993-b64a-4d1c-9e58-20ad1a25eb6b/72b35ff4-8507-4950-ab14-ed1d9dd34042.webp'
     Object.assign(query, {
       data: [{ id: '1', slug: 'cemento', title: 'Cemento gris', category: 'cemento', description: 'Cemento para obra', price: 1, currency: 'USD', province: 'La Habana', availability: 'limited', photo_urls: [photoPath], updated_at: '2026-11-05T00:00:00Z' }],
     })
-    createSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.test/material-thumbnail' }, error: null })
+    createSignedUrls.mockResolvedValue({ data: [{ path: photoPath, signedUrl: 'https://example.test/material-thumbnail' }], error: null })
 
     const result = await fetchMaterialListings()
 
-    expect(createSignedUrl).toHaveBeenCalledWith(photoPath, 3600, {
-      transform: { width: 420, height: 192, resize: 'cover', quality: 65 },
-    })
-    expect(createSignedUrls).not.toHaveBeenCalled()
+    expect(createSignedUrls).toHaveBeenCalledWith([photoPath], 3600)
+    expect(createSignedUrl).not.toHaveBeenCalled()
     expect(result.items[0]).toMatchObject({ photoUrls: ['https://example.test/material-thumbnail'], photoUnavailable: false })
   })
 

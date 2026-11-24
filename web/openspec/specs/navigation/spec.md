@@ -41,6 +41,12 @@ igual al idioma predeterminado de la interfaz.
 - THEN el sistema MUST abrir resultados con la operacion venta, alquiler o permuta correspondiente
 - AND la accion separada `Publicar gratis` MUST continuar disponible para crear anuncios
 
+#### Scenario: Volver a Inicio limpia la operación seleccionada
+- GIVEN el usuario abrió Resultados desde Comprar, Rentar o Permutar
+- WHEN selecciona Inicio desde el encabezado o la navegación móvil
+- THEN el sistema MUST abrir la portada sin una operación de búsqueda seleccionada
+- AND MUST limpiar los filtros heredados de la búsqueda anterior
+
 #### Scenario: Navegacion en ventanas medianas
 - GIVEN el viewport tiene entre 621 y 1180 px de ancho
 - WHEN el encabezado cambia a su distribucion compacta

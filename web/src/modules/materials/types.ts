@@ -13,6 +13,7 @@ export const MATERIAL_CATEGORIES = [
 ] as const
 
 export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number]
+export type MarketplaceCoordinates = { latitude: number; longitude: number }
 export type MaterialCurrency = 'USD' | 'CUP' | 'EUR' | 'MIXED'
 
 export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategory, string> = {
@@ -41,6 +42,7 @@ export type MaterialListing = {
   price: number | null
   currency: MaterialCurrency
   province: string
+  coordinates?: MarketplaceCoordinates | null
   availability: 'available' | 'limited' | 'out_of_stock' | 'made_to_order'
   phone: string | null
   whatsapp: string | null

@@ -1,7 +1,8 @@
 const EARTH_RADIUS_METERS = 6_371_000
 const DEFAULT_SEGMENTS = 64
 
-export const APPROXIMATE_PROPERTY_AREA_RADIUS_METERS = 2_000
+// The public location area is 1 km across (500 m from center to edge).
+export const APPROXIMATE_PROPERTY_AREA_RADIUS_METERS = 500
 
 type LinearRing = [number, number][]
 

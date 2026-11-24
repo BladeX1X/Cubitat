@@ -22,12 +22,6 @@ const OPERATION_LABELS: Record<OperationType, string> = {
   permuta: 'PERMUTA',
 }
 
-const BADGE_LABELS: Record<NonNullable<Property['badge']>, string> = {
-  destacado: 'Destacado',
-  exclusivo: 'Exclusivo',
-  nuevo: 'Nuevo',
-}
-
 export type ResultsMapViewProps = {
   viewMode: 'list' | 'map'
   onViewModeChange: (mode: 'list' | 'map') => void
@@ -119,9 +113,6 @@ function MapPreviewCard({ property, isSelected, onSelect }: MapPreviewCardProps)
         ) : (
           <div className="map-carousel-card__image map-carousel-card__image--fallback" aria-hidden="true" />
         )}
-        {property.badge ? (
-          <span className="map-carousel-card__badge">{BADGE_LABELS[property.badge]}</span>
-        ) : null}
         <SavePropertyButton
           className="map-carousel-card__save"
           propertyId={property.id}

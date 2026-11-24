@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, Boxes } from 'lucide-react'
+import { Boxes } from 'lucide-react'
 import { createMaterialListing, createOwnedMaterialPhotoPreviews, fetchMyMaterialListings, removeUnattachedMaterialPhotos, updateMaterialListing, uploadMaterialPhotos } from '../../modules/materials/materialRepository'
 import { MATERIAL_PHOTO_MAX_BYTES, MATERIAL_PHOTO_MAX_COUNT, validateMaterialPhotoFiles } from '../../modules/materials/materialPhotos'
 import { MATERIAL_AVAILABILITIES, MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, MATERIAL_CURRENCIES, type MaterialCategory, type MaterialCurrency, type MaterialListing } from '../../modules/materials/types'
@@ -7,6 +7,8 @@ import { compressCatalogPhoto } from '../../shared/lib/catalogPhotos'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
 import { MultiPhotoUploadField } from '../../shared/ui/MultiPhotoUploadField'
+import { PublicationFormShell } from '../publish/PublicationFormShell'
+import { PublicationLocationField } from '../publish/PublicationLocationField'
 
 type MaterialListingSubmissionPageProps = {
   onBack: () => void
@@ -32,6 +34,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   const [category, setCategory] = useState<MaterialCategory>('cemento')
   const [description, setDescription] = useState('')
   const [province, setProvince] = useState('')
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null)
   const [price, setPrice] = useState('')
   const [currency, setCurrency] = useState<MaterialCurrency>('USD')
   const [availability, setAvailability] = useState<MaterialListing['availability']>('available')
@@ -66,6 +69,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       setCategory(listing.category)
       setDescription(listing.description)
       setProvince(listing.province)
+      setCoordinates(listing.coordinates ?? null)
       setPrice(listing.price == null ? '' : String(listing.price))
       setCurrency(listing.currency)
       setAvailability(listing.availability)
@@ -136,6 +140,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
         price: parsedPrice,
         currency,
         province,
+        coordinates,
         availability,
         phone: phone.trim() || null,
         whatsapp: whatsapp.trim() || null,
@@ -193,13 +198,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-900"><Boxes /></div><h1 className="mt-5 text-2xl font-black">{listingId ? 'Cambios enviados a revisión' : 'Anuncio enviado a revisión'}</h1><p className="mt-2 text-neutral-600">El anuncio aparecerá en el catálogo después de su revisión. El precio y el inventario no son una reserva ni garantía de venta.</p><Button className="mt-6" onClick={onBack}>Volver a mis anuncios</Button></main>
 
   return (
-    <main className="min-h-[75vh] bg-neutral-50 px-4 py-7 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-3xl">
-        <button type="button" onClick={onBack} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 hover:bg-white"><ArrowLeft size={18} />Volver</button>
-        <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8">
-          <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-emerald-800"><Boxes size={17} />Catálogo de materiales</p>
-          <h1 className="mt-2 text-3xl font-black text-neutral-900">{listingId ? 'Edita tu anuncio' : 'Anuncia materiales'}</h1>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">Los anuncios pasan por revisión. Precio y disponibilidad son datos declarados por el vendedor. Cubitat no procesa pagos, pedidos ni reservas.</p>
+    <PublicationFormShell onBack={onBack} icon={<Boxes size={17} />} eyebrow="Catálogo de materiales" title={listingId ? 'Edita tu anuncio' : 'Anuncia materiales'} description="Los anuncios pasan por revisión. Precio y disponibilidad son datos declarados por el vendedor. Cubitat no procesa pagos, pedidos ni reservas.">
           <form className="mt-7 grid gap-4 sm:grid-cols-2" onSubmit={(event) => void handleSubmit(event)}>
             <label className="text-sm font-semibold">Nombre del producto<input value={title} onChange={(event) => setTitle(event.target.value)} required minLength={3} maxLength={140} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold">Categoría<select value={category} onChange={(event) => setCategory(event.target.value as MaterialCategory)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{MATERIAL_CATEGORIES.map((value) => <option key={value} value={value}>{MATERIAL_CATEGORY_LABELS[value]}</option>)}</select></label>
@@ -210,13 +209,12 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
             <label className="text-sm font-semibold">Teléfono<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={32} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold">WhatsApp<input type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} maxLength={32} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold sm:col-span-2">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} required minLength={20} maxLength={5000} rows={5} className="mt-1 block w-full rounded-xl border border-neutral-300 px-3 py-2" /></label>
+            <PublicationLocationField province={province} municipality="" latitude={coordinates?.latitude ?? null} longitude={coordinates?.longitude ?? null} onCoordinatesChange={(latitude, longitude) => setCoordinates({ latitude, longitude })} onClear={() => setCoordinates(null)} />
             <MultiPhotoUploadField label="Fotos del producto" files={photoFiles} existingPhotos={photoPaths.map((path) => ({ id: path, src: photoPreviews.find((preview) => preview.path === path)?.url }))} maxCount={MATERIAL_PHOTO_MAX_COUNT} maxSizeLabel={`${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB`} isCompressing={compressingPhotos || saving} onSelectFiles={(files) => void handlePhotoSelection(files)} onRemoveFile={(index) => setPhotoFiles((previous) => previous.filter((_, current) => current !== index))} onRemoveExisting={(photo) => { setPhotoPaths((previous) => previous.filter((path) => path !== photo.id)); setPhotoPreviews((previous) => previous.filter((preview) => preview.path !== photo.id)); setRemovedPhotoPaths((previous) => [...previous, photo.id]) }} />
             {unavailablePhotoPreviews > 0 && <p role="status" className="sm:col-span-2 text-sm text-amber-800">No se pudieron cargar {unavailablePhotoPreviews === 1 ? 'una foto guardada' : `${unavailablePhotoPreviews} fotos guardadas`}. Puedes conservarlas o quitarlas del anuncio.</p>}
             {error && <p role="alert" className="sm:col-span-2 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
             <div className="sm:col-span-2"><Button type="submit" className="min-h-11" disabled={saving || compressingPhotos}>{compressingPhotos ? 'Preparando fotos…' : saving ? 'Enviando…' : listingId ? 'Guardar y enviar a revisión' : 'Enviar a revisión'}</Button></div>
           </form>
-        </section>
-      </div>
-    </main>
+    </PublicationFormShell>
   )
 }

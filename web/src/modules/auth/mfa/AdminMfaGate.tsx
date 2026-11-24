@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import {
+  ADMIN_MFA_ENABLED,
   getAdminMfaStatus,
   getAdminMfaBypassUntil,
   MfaVerificationError,
@@ -46,6 +47,7 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
   const [bypassUntil, setBypassUntil] = useState<string | null>(null)
 
   const loadStatus = useCallback(async () => {
+    if (!ADMIN_MFA_ENABLED) return
     setState('loading')
     setMessage('')
     setSessionExpired(false)
@@ -75,7 +77,7 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
   }, [])
 
   useEffect(() => {
-    void loadStatus()
+    if (ADMIN_MFA_ENABLED) void loadStatus()
   }, [loadStatus])
 
   useEffect(() => {
@@ -88,6 +90,8 @@ export function AdminMfaGate({ children, onSessionExpired }: AdminMfaGateProps) 
     const timeoutId = window.setTimeout(() => void loadStatus(), delay)
     return () => window.clearTimeout(timeoutId)
   }, [bypassUntil, loadStatus, state])
+
+  if (!ADMIN_MFA_ENABLED) return <>{children}</>
 
   const beginEnrollment = async () => {
     setState('loading')

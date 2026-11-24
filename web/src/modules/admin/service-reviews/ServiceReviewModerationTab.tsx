@@ -91,10 +91,10 @@ export function ServiceReviewModerationTab() {
   return (
     <section aria-labelledby="service-reviews-moderation-title" className="space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 id="service-reviews-moderation-title" className="text-lg font-bold">Moderación de reseñas</h2><p className="mt-1 text-sm text-neutral-600">Requiere sesión administrativa AAL2. La cola no muestra la identidad del autor o denunciante.</p></div>
+        <div><h2 id="service-reviews-moderation-title" className="text-lg font-bold">Moderación de reseñas</h2><p className="mt-1 text-sm text-neutral-600">Solo para administradores. La cola no muestra la identidad del autor o denunciante.</p></div>
         <Button variant="outline" disabled={loading} onClick={() => void load()} aria-label="Actualizar reseñas"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} />Actualizar</Button>
       </header>
-      {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertTriangle size={18} />No se pudo cargar o actualizar. Comprueba AAL2 y la migración DEV.</div>}
+      {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertTriangle size={18} />No se pudo cargar o actualizar. Comprueba tu acceso de administrador y que la migración esté aplicada.</div>}
       {loading ? <div role="status" className="flex items-center justify-center gap-2 py-12 text-sm text-neutral-500"><Loader2 size={18} className="animate-spin" />Cargando reseñas…</div> : <>
         <section aria-label="Reseñas para moderar" className="space-y-3">
           <h3 className="font-bold">Reseñas activas y pendientes</h3>

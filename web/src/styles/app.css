@@ -941,8 +941,7 @@ h2 {
   transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
 
-.property-card:hover .property-photo-arrow,
-.property-card:focus-within .property-photo-arrow {
+.property-photo:has(.property-photo-arrow:focus-visible) .property-photo-arrow {
   opacity: 1;
   transform: translateY(-50%) scale(1);
 }
@@ -1380,6 +1379,80 @@ h2 {
   gap: 10px;
 }
 
+.detail-actions .detail-action-button {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 0;
+  color: #111827;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detail-actions .detail-action-button + .detail-action-button {
+  border-left: 1px solid #e6e9e8;
+}
+
+.detail-actions .detail-action-button svg { order: 2; color: #4b5563; }
+.detail-actions .detail-action-button .detail-action-label { order: 1; }
+.detail-actions .detail-action-button:hover { color: var(--green-dark); background: #f7faf9; }
+.detail-actions .detail-action-button.is-active svg { color: #e11d48; }
+
+.detail-quick-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.detail-quick-facts li + li { border-left: 1px solid #d7dfdc; padding-left: 16px; }
+
+.detail-description-toggle {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  color: var(--green-dark);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.results-hidden-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 16px;
+  padding: 12px 16px;
+  border: 1px solid #cfe9df;
+  border-radius: 12px;
+  color: #174f45;
+  background: #f0faf6;
+  font-size: 14px;
+}
+
+.results-hidden-notice button {
+  flex: 0 0 auto;
+  border: 0;
+  color: #006c57;
+  background: transparent;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .detail-actions button,
 .contact-card button,
 .publish-form button,
@@ -1596,7 +1669,20 @@ h2 {
   .detail-shell > .grid {
     max-width: 1152px;
     margin: 28px auto 0;
-    padding-inline: clamp(24px, 4vw, 72px);
+    padding-inline: 0;
+  }
+
+  .detail-aligned-content {
+    width: min(1152px, calc(100% - 32px));
+    margin-inline: auto;
+  }
+
+  .detail-heading {
+    padding-inline: 0;
+  }
+
+  .detail-similar-section {
+    padding-inline: 0;
   }
 }
 
@@ -2767,7 +2853,13 @@ h2 {
   }
 
   .detail-heading {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 0;
+    padding: 8px 16px;
+    border-bottom: 1px solid #edf1ef;
   }
 
   .detail-nav {
@@ -2793,27 +2885,6 @@ h2 {
   }
 
   .detail-actions {
-    width: auto;
-    gap: 2px;
-  }
-
-  .detail-action-button {
-    width: 32px;
-    height: 32px;
-    min-height: 32px;
-    flex: 0 0 auto;
-    padding: 0;
-    border: 0;
-    box-shadow: none;
-    background: transparent;
-  }
-
-  .detail-action-button svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .detail-action-label {
     display: none;
   }
 
@@ -2900,7 +2971,29 @@ h2 {
   }
 
   .detail-mobile-media-topbar {
+    display: flex;
     justify-content: space-between;
+    width: 100%;
+  }
+
+  .detail-mobile-media-topbar > div {
+    gap: 8px;
+  }
+
+  .detail-mobile-media-topbar > div button {
+    width: 40px;
+    height: 40px;
+    color: #075f53;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+  }
+
+  .detail-mobile-media-topbar > div button:active {
+    transform: scale(0.95);
+  }
+
+  .detail-mobile-media-topbar > div button[aria-label="Compartir propiedad"]:disabled {
+    opacity: 0.65;
   }
 
   .detail-mobile-media-overlay button {
@@ -3376,6 +3469,16 @@ h2 {
 /* Slide arrow transition override */
 .property-photo:hover .property-photo-arrow {
   opacity: 1 !important;
+}
+
+.property-photo:has(.property-save:hover, .property-save:focus-visible) .property-photo-arrow {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.property-photo:has(.property-photo-arrow:focus-visible) .property-photo-arrow:not(:disabled) {
+  opacity: 1 !important;
+  pointer-events: auto;
 }
 
 .property-photo .property-photo-arrow {
@@ -4969,6 +5072,12 @@ h2 {
   justify-content: center;
   gap: 2px;
   pointer-events: none;
+}
+
+@media (max-width: 899px) {
+  .detail-property-carousel-dots {
+    bottom: 62px;
+  }
 }
 
 .detail-gallery-modal-photo {

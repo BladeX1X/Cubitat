@@ -2,6 +2,7 @@ import { supabase } from '../../../shared/lib/supabaseClient'
 import { IMAGE_DUPLICATE_MODERATION_ENABLED } from '../../../shared/config/features'
 import { PAGE_SIZE } from '../core/constants'
 import type { ModerationFilter, ModerationProperty, PropertyModerationFilters, StatusCounts, StatusFilter } from '../core/types'
+import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 const PROPERTY_SELECT = 'id,title,location,description,price_usd,price_currency,cover_image,images,created_at,user_id,operation,property_type,bedrooms,bathrooms,parking,area_m2,age_years,amenities,features,status,moderation_message'
 
@@ -87,7 +88,7 @@ export async function fetchModerationProperties(
     const candidateResult = candidates as { property_ids?: string[]; total_count?: number } | null
     const ids = candidateResult?.property_ids ?? []
     total = Number(candidateResult?.total_count ?? 0)
-    if (ids.length === 0) return { properties: [], total }
+    if (ids.length === 0) return { properties: [], total, warnings: [] as string[] }
     const { data, error } = await supabase.from('properties').select(PROPERTY_SELECT).in('id', ids)
     if (error) throw error
     const byId = new Map(((data ?? []) as unknown as ModerationProperty[]).map((property) => [property.id, property]))
@@ -112,8 +113,9 @@ export async function fetchModerationProperties(
     properties = (data ?? []) as unknown as ModerationProperty[]
     total = count ?? 0
   }
-  if (properties.length === 0) return { properties: [], total }
+  if (properties.length === 0) return { properties: [], total, warnings: [] as string[] }
 
+  const warnings: string[] = []
   const userIds = [...new Set(properties.map((property) => property.user_id))].filter(Boolean)
   const propertyIds = properties.map((property) => property.id)
   const [profileResult, contactResult] = await Promise.all([
@@ -123,8 +125,15 @@ export async function fetchModerationProperties(
       .in('id', userIds),
     supabase.rpc('get_admin_property_contact_details', { p_property_ids: propertyIds }),
   ])
-  if (profileResult.error) throw profileResult.error
-  if (contactResult.error) throw contactResult.error
+  if (profileResult.error) {
+    logSafeEvent({ module: 'admin', action: 'load_property_profiles', level: 'warn', code: sanitizeErrorReason(profileResult.error) })
+    warnings.push('No se pudieron cargar algunos datos de los anunciantes.')
+  }
+  if (contactResult.error) {
+    const errorCode = sanitizeErrorReason(contactResult.error)
+    logSafeEvent({ module: 'admin', action: 'load_property_contacts', level: 'warn', code: errorCode })
+    warnings.push(`No se pudieron cargar los datos privados de contacto (código: ${errorCode}).`)
+  }
 
   const profiles = (profileResult.data ?? []) as unknown as ProfileSummary[]
   const profileMap = new Map(profiles.map((profile) => [
@@ -143,6 +152,7 @@ export async function fetchModerationProperties(
   const imageDuplicateMap = new Map<string, NonNullable<ModerationProperty['image_duplicate_matches']>>()
   const imageHashStatusMap = new Map<string, ImageHashStatus>()
   if (IMAGE_DUPLICATE_MODERATION_ENABLED) {
+    try {
     const { data: duplicateFlags, error: duplicateError } = await supabase
       .from('property_duplicate_flags')
       .select('property_id, duplicate_of')
@@ -177,7 +187,6 @@ export async function fetchModerationProperties(
       imageHashStatusMap.set(status.property_id, status)
     })
 
-    try {
       const { data: imageFlags, error: imageFlagsError } = await supabase
         .from('property_image_duplicate_flags')
         .select('property_id, duplicate_of, hamming_distance')
@@ -185,8 +194,8 @@ export async function fetchModerationProperties(
         .is('resolved_at', null)
       if (imageFlagsError) throw imageFlagsError
 
-      const flags = (imageFlags ?? []) as ImageDuplicateFlag[]
-      const relatedIds = [...new Set(flags.map((flag) => flag.duplicate_of))]
+      const imageDuplicateFlags = (imageFlags ?? []) as ImageDuplicateFlag[]
+      const relatedIds = [...new Set(imageDuplicateFlags.map((flag) => flag.duplicate_of))]
       if (relatedIds.length > 0) {
         const { data: relatedProperties, error: relatedError } = await supabase
           .from('properties')
@@ -197,7 +206,7 @@ export async function fetchModerationProperties(
         const relatedById = new Map(
           ((relatedProperties ?? []) as ImageDuplicateProperty[]).map((property) => [property.id, property]),
         )
-        flags.forEach((flag) => {
+        imageDuplicateFlags.forEach((flag) => {
           const related = relatedById.get(flag.duplicate_of)
           if (!related) return
           const matches = imageDuplicateMap.get(flag.property_id) ?? []
@@ -206,13 +215,14 @@ export async function fetchModerationProperties(
         })
       }
     } catch (error) {
-      // Keep old DEV deployments usable while the additive image-hash migration is pending.
-      if (!(error instanceof TypeError)) throw error
+      logSafeEvent({ module: 'admin', action: 'load_property_duplicate_signals', level: 'warn', code: sanitizeErrorReason(error) })
+      warnings.push('Las propiedades cargaron, pero no estuvieron disponibles todas las señales de posibles duplicados.')
     }
   }
 
   return {
     total,
+    warnings,
     properties: properties.map((property) => ({
       ...property,
       contact_info: contactMap.get(property.id) ?? null,

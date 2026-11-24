@@ -31,6 +31,14 @@ El sistema MUST ofrecer acciones claras de contacto en cada tarjeta cuando exist
 - THEN el sistema MUST ocultar o deshabilitar acciones no disponibles
 - AND MUST evitar enlaces rotos o botones que no hacen nada
 
+#### Scenario: WhatsApp ausente sin abrir una pestaña vacía
+- GIVEN el anuncio no tiene un número de WhatsApp declarado
+- WHEN el visitante pulsa `Consultar`
+- THEN el sistema MUST resolver el contacto antes de abrir cualquier pestaña
+- AND MUST mostrar el aviso del canal ausente en la página actual
+- AND MUST NOT abrir ni cerrar una pestaña temporal
+- AND si el navegador bloquea la pestaña de WhatsApp cuando el número sí existe, MUST ofrecer un enlace directo como alternativa
+
 ### Requirement: Llamada telefonica en movil
 El sistema MUST usar enlaces telefonicos validos cuando el usuario pulsa el icono de telefono.
 

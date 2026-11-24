@@ -75,6 +75,11 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
   el shell vuelve a ocupar el ancho disponible para conservar la vista dividida.
 - El mapa quedo desacoplado para reincorporarlo despues como modo lista/mapa o pagina especifica.
 - Las tarjetas oficiales son `PropertyCard`.
+- Las etiquetas editoriales «Nuevo», «Destacado» y «Exclusivo» permanecen
+  temporalmente ocultas en las tarjetas y previews del mapa; las categorías y
+  operaciones del anuncio siguen visibles.
+- Las filas del catálogo usan alturas compartidas: las tarjetas y sus botones de
+  contacto se alinean aunque cada propiedad tenga distinta cantidad de datos.
 - La busqueda desde portada conserva filtros en estado local.
 - El control `Ordenar` usa un popover funcional con opciones: `Relevancia`, `Menor precio`, `Mayor precio` y `Mayor superficie`.
 - `Solo Verificados` filtra las marcas `isVerifiedAgent` e `isVerifiedSeller`,

@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, Boxes, MapPin } from 'lucide-react'
+import { Boxes, CalendarDays, MapPin } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
 import { MarketplaceContactActions } from '../../shared/ui/MarketplaceContactActions'
 import { MarketplaceCardImage } from '../../shared/ui/MarketplaceCardImage'
+import { CatalogCardGallery } from '../../shared/ui/CatalogCardGallery'
+import { MarketplaceListingDetail } from '../../shared/ui/MarketplaceListingDetail'
 import { SaveMarketplaceListingButton } from '../../shared/ui/SaveMarketplaceListingButton'
+import { CatalogCardFrame } from '../../shared/ui/CatalogCardFrame'
 import { MarketplaceCardActions } from '../../shared/ui/MarketplaceCardActions'
+import { MarketplaceDetailMap } from '../../modules/marketplace/MarketplaceDetailMap'
+import { getCubanProvinceMapCenter } from '../../modules/maps/data/cubanProvinceMapCenters'
+import { MarketplaceReportPanel } from '../../shared/ui/MarketplaceReportPanel'
+import { FeaturedHomeServicesSection } from '../../shared/ui/FeaturedHomeServicesSection'
 import { CatalogExplorerLayout } from '../../modules/catalog-explorer/CatalogExplorerLayout'
 import { CatalogFilterToolbar } from '../../modules/catalog-explorer/CatalogFilterToolbar'
 import { CatalogMap } from '../../modules/catalog-explorer/CatalogMap'
@@ -21,8 +28,6 @@ import '../marketplace/MarketplaceDirectoryMap.css'
 
 type MaterialsMarketplacePageProps = {
   onRequireLogin: () => void
-  onCreateListing: () => void
-  onManageListings: () => void
 }
 
 function getSlugFromPath(): string | null {
@@ -46,7 +51,11 @@ function availabilityLabel(value: MaterialListing['availability']) {
   }
 }
 
-export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onManageListings }: MaterialsMarketplacePageProps) {
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
+}
+
+export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplacePageProps) {
   const [slug, setSlug] = useState<string | null>(getSlugFromPath)
   const [category, setCategory] = useState<MaterialCategory | ''>('')
   const [province, setProvince] = useState('')
@@ -179,35 +188,59 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
     if (loadError) return <main className="mx-auto min-h-[55vh] max-w-xl px-4 py-24 text-center" role="alert"><h1 className="text-2xl font-bold">No se pudo cargar el anuncio</h1><p className="mt-2 text-neutral-600">Comprueba la conexión e inténtalo de nuevo.</p><Button className="mt-5" onClick={() => setReloadKey((key) => key + 1)}>Reintentar</Button><Button className="mt-5 ml-2" variant="outline" onClick={backToCatalog}>Volver al catálogo</Button></main>
     if (!listing) return <main className="mx-auto min-h-[55vh] max-w-xl px-4 py-24 text-center"><h1 className="text-2xl font-bold">Anuncio no disponible</h1><p className="mt-2 text-neutral-600">Este material no existe o ya no está publicado.</p><Button className="mt-5" onClick={backToCatalog}>Volver al catálogo</Button></main>
     return (
-      <main className="min-h-[75vh] bg-neutral-50 px-4 py-6 sm:px-6 sm:py-10">
-        <div className="mx-auto max-w-5xl">
-          <button type="button" onClick={backToCatalog} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 hover:bg-white hover:text-neutral-900"><ArrowLeft size={18} />Volver al catálogo</button>
-          <section className="grid gap-7 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 md:grid-cols-[1.1fr_1fr]">
-            <div className="overflow-hidden rounded-2xl bg-neutral-100">
-              {listing.photoUrls[0] ? <img src={listing.photoUrls[0]} alt={listing.title} className="h-72 w-full object-cover sm:h-[420px]" /> : <div className="flex h-72 flex-col items-center justify-center gap-2 text-neutral-400 sm:h-[420px]"><Boxes size={56} />{listing.photoUnavailable && <p role="status" className="px-4 text-center text-sm text-neutral-700">Las fotos no están disponibles temporalmente.</p>}</div>}
-              {listing.photoUrls.length > 1 && <div className="mt-1 grid grid-cols-3 gap-1">{listing.photoUrls.slice(1, 4).map((url, index) => <img key={`${url}-${index}`} src={url} alt={`${listing.title}, foto ${index + 2}`} loading="lazy" className="h-24 w-full object-cover" />)}</div>}
-              {listing.photoUrls.length > 0 && listing.photoUnavailable && <p role="status" className="p-2 text-center text-sm text-amber-900">Algunas fotos no están disponibles temporalmente.</p>}
-            </div>
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{MATERIAL_CATEGORY_LABELS[listing.category]}</p>
-              <h1 className="mt-2 text-3xl font-black text-neutral-900">{listing.title}</h1>
-              <p className="mt-4 text-2xl font-extrabold text-emerald-800">{formatPrice(listing)}</p>
-              <p className="mt-2 flex items-center gap-2 text-sm text-neutral-600"><MapPin size={16} />{listing.province}</p>
-              <p className="mt-3 text-sm font-semibold text-neutral-700">{availabilityLabel(listing.availability)}</p>
-              <p className="mt-6 whitespace-pre-line leading-7 text-neutral-700">{listing.description}</p>
-              <p className="mt-4 text-xs text-neutral-500">Precio y disponibilidad son declarados por el vendedor; consúltalos antes de trasladarte. Este anuncio no constituye reserva ni garantía de inventario.</p>
-              <div id="marketplace-contact" className="mt-6"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={listing.province} onMissing={() => openListing(listing, 'inquiry')} /></div>
-              <form onSubmit={submitInquiry} className="mt-5 space-y-3 rounded-2xl bg-neutral-50 p-4">
-                <label htmlFor="material-inquiry" className="block text-sm font-bold">Enviar consulta al vendedor</label>
-                <textarea id="material-inquiry" value={message} onChange={(event) => setMessage(event.target.value)} minLength={10} maxLength={3000} required rows={3} className="w-full rounded-xl border border-neutral-300 bg-white p-3 text-sm" placeholder="Pregunta por medidas, precio o disponibilidad…" />
-                <Button type="submit" disabled={submitState === 'sending'} className="w-full">{submitState === 'sending' ? 'Enviando…' : 'Enviar consulta'}</Button>
-                {submitState === 'sent' && <p role="status" className="text-sm text-emerald-800">Consulta enviada. No crea una orden ni reserva.</p>}
-                {submitState === 'error' && <p role="alert" className="text-sm text-red-700">No se pudo enviar. Inicia sesión y vuelve a intentarlo.</p>}
-              </form>
-            </div>
-          </section>
-        </div>
-      </main>
+      <MarketplaceListingDetail
+        backLabel="Volver al catálogo"
+        breadcrumb="Materiales"
+        category={MATERIAL_CATEGORY_LABELS[listing.category]}
+        title={listing.title}
+        location={listing.province}
+        price={formatPrice(listing)}
+        summary={availabilityLabel(listing.availability)}
+        images={listing.photoUrls}
+        imageLabel={`Fotos de ${listing.title}`}
+        imageUnavailable={listing.photoUnavailable}
+        imageFallback={<div className="marketplace-detail-image-fallback"><Boxes size={54} /><span>{listing.photoUnavailable ? 'Fotos no disponibles temporalmente' : 'Fotos del material'}</span></div>}
+        renderImage={(src, index, eager) => <MarketplaceCardImage src={src} alt={`${listing.title}, foto ${index + 1}`} eager={eager} className="property-photo-slide" fallback={<div className="marketplace-detail-image-fallback"><Boxes size={54} /><span>Foto no disponible</span></div>} />}
+        favoriteAction={PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={listing.id} listingTitle={listing.title} className="marketplace-detail-favorite" showLabel iconSize={19} />}
+        mapLabel={`Ubicación declarada: ${listing.province}`}
+        mapDescription={listing.coordinates ? 'El punto es aproximado. El círculo representa un área de 1 km de diámetro y no revela la dirección exacta.' : 'El mapa muestra una referencia provincial. El anunciante no publicó una dirección exacta.'}
+        mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} locationLabel={listing.province} />}
+        contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={listing.province} onMissing={() => openListing(listing, 'inquiry')} /></div>}
+        contactPanel={(
+          <>
+            <h2>Contactar al vendedor</h2>
+            <p className="marketplace-contact-meta"><CalendarDays size={12} aria-hidden="true" /> Actualizado {formatDate(listing.updatedAt)}</p>
+            <form className="marketplace-inquiry-form" onSubmit={submitInquiry}>
+              <label htmlFor="material-inquiry" className="marketplace-inquiry-label">Tu mensaje</label>
+              <textarea id="material-inquiry" value={message} onChange={(event) => setMessage(event.target.value)} minLength={10} maxLength={3000} required rows={4} disabled={submitState === 'sending'} className="marketplace-inquiry-textarea" placeholder="Pregunta por medidas, precio o disponibilidad…" />
+              <Button type="submit" disabled={submitState === 'sending'} className="marketplace-inquiry-submit">{submitState === 'sending' ? 'Enviando…' : 'Enviar consulta'}</Button>
+              {submitState === 'sent' && <p role="status" className="mt-3 text-sm text-emerald-800">Consulta enviada. No crea una orden ni reserva.</p>}
+              {submitState === 'error' && <p role="alert" className="mt-3 text-sm text-red-700">No se pudo enviar. Inicia sesión y vuelve a intentarlo.</p>}
+            </form>
+          </>
+        )}
+        onBack={backToCatalog}
+        footer={<FeaturedHomeServicesSection />}
+      >
+        <section className="marketplace-detail-panel">
+          <h2>Información del material</h2>
+          <div className="marketplace-detail-facts">
+            <div className="marketplace-detail-fact"><strong>{MATERIAL_CATEGORY_LABELS[listing.category]}</strong><span>Categoría</span></div>
+            <div className="marketplace-detail-fact"><strong>{availabilityLabel(listing.availability)}</strong><span>Disponibilidad</span></div>
+            <div className="marketplace-detail-fact"><strong>{listing.province}</strong><span>Ubicación</span></div>
+            <div className="marketplace-detail-fact"><strong>{new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(listing.updatedAt))}</strong><span>Actualizado</span></div>
+          </div>
+        </section>
+        <section className="marketplace-detail-panel">
+          <h2>Descripción del material</h2>
+          <p>{listing.description}</p>
+        </section>
+        <section className="marketplace-detail-panel">
+          <h2>Antes de comprar</h2>
+          <p>Precio y disponibilidad son declarados por el vendedor. Confírmalos antes de trasladarte; este anuncio no constituye reserva ni garantía de inventario.</p>
+        </section>
+        <MarketplaceReportPanel listingType="material" listingId={listing.id} listingTitle={listing.title} />
+      </MarketplaceListingDetail>
     )
   }
 
@@ -226,8 +259,31 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
       <p className="mt-2 text-sm text-neutral-600">Prueba otra palabra, categoría o provincia.</p>
     </section>
   ) : (
-    <section className={`grid gap-5 ${mapOpen ? 'sm:grid-cols-1' : 'sm:grid-cols-2 xl:grid-cols-3'}`} aria-label="Materiales disponibles">
-      {listings.map((item, index) => <article key={item.id} className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><button type="button" onClick={() => openListing(item)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"><div className="relative h-48 bg-amber-50"><MarketplaceCardImage src={item.photoUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center text-amber-800"><Boxes size={36} /><span className="sr-only">Foto no disponible</span></div>} />{item.photoUnavailable && <span role="status" className="absolute inset-x-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 text-center text-xs text-amber-900">Fotos no disponibles temporalmente</span>}</div><div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{MATERIAL_CATEGORY_LABELS[item.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{item.title}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{item.province}</p><p className="mt-3 text-lg font-extrabold text-emerald-800">{formatPrice(item)}</p><p className="mt-1 text-xs text-neutral-500">{availabilityLabel(item.availability)}</p><span className="mt-4 inline-flex min-h-10 items-center font-bold text-emerald-800">Ver anuncio →</span></div></button><MarketplaceCardActions listingType="material" listingId={item.id} listingTitle={item.title} listingLocation={item.province} onMissing={() => openListing(item, 'inquiry')} />{PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={item.id} listingTitle={item.title} />}</article>)}
+    <section className="catalog-card-grid" aria-label="Materiales disponibles">
+      {listings.map((item, index) => (
+        <CatalogCardFrame key={item.id} className="marketplace-listing-card">
+          <CatalogCardGallery
+            images={item.photoUrls}
+            label={item.title}
+            eager={index < 2}
+            fallback={<div className="flex h-full items-center justify-center bg-amber-50 text-amber-800"><Boxes size={36} /><span className="sr-only">Foto no disponible</span></div>}
+            renderImage={(src, _imageIndex, eager) => <MarketplaceCardImage src={src} alt="" eager={eager} className="property-photo-slide" fallback={<div className="flex h-full items-center justify-center bg-amber-50 text-amber-800"><Boxes size={36} /><span className="sr-only">Foto no disponible</span></div>} />}
+            status={item.photoUnavailable && <span role="status" className="absolute inset-x-2 bottom-8 z-10 rounded-lg bg-white/95 px-2 py-1 text-center text-xs text-amber-900">Fotos no disponibles temporalmente</span>}
+            overlay={PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={item.id} listingTitle={item.title} />}
+          />
+          <button type="button" onClick={() => openListing(item)} className="catalog-card__open focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
+            <div className="catalog-card__content">
+              <p className="catalog-card__category">{MATERIAL_CATEGORY_LABELS[item.category]}</p>
+              <h2 className="catalog-card__title">{item.title}</h2>
+              <p className="catalog-card__location"><MapPin size={15} />{item.province}</p>
+              <p className="catalog-card__price mt-3">{formatPrice(item)}</p>
+              <p className="mt-1 text-xs text-neutral-500">{availabilityLabel(item.availability)}</p>
+              <span className="catalog-card__more">Ver anuncio →</span>
+            </div>
+          </button>
+          <MarketplaceCardActions listingType="material" listingId={item.id} listingTitle={item.title} listingLocation={item.province} onMissing={() => openListing(item, 'inquiry')} />
+        </CatalogCardFrame>
+      ))}
     </section>
   )
   const totalPages = Math.ceil(total / CATALOG_PAGE_SIZE)
@@ -238,7 +294,6 @@ export function MaterialsMarketplacePage({ onRequireLogin, onCreateListing, onMa
         {import.meta.env.MODE === 'phase34-dev' && <span className="marketplace-directory-dev-badge">Entorno de pruebas · DEV</span>}
         <header className="marketplace-directory-heading">
           <h1 className="font-black text-neutral-900">Materiales de construcción</h1>
-          <div className="marketplace-directory-heading__actions"><Button type="button" className="min-h-11" onClick={onCreateListing}>Vender materiales</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageListings}>Mis anuncios</Button></div>
         </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="materials-province-map" mapBusy={provinceCountsLoading} toolbar={

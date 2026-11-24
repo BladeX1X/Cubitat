@@ -15,8 +15,10 @@ mantenerla apagada en perfiles sin la migración. El release incorpora una
 migración canónica para producción y una migración forward que elimina los
 permisos amplios concedidos por los privilegios por defecto del esquema; la
 tabla permite a `authenticated` solo lectura, alta y baja propias. Habilitar los
-perfiles productivos solo en el mismo release coordinado con la aplicación y
-verificación de las migraciones.
+Worker de producción permite las escrituras autenticadas a esta tabla; la
+política RLS conserva el aislamiento por UID. Los perfiles productivos se
+habilitan en el mismo release coordinado con la aplicación y la verificación
+de las migraciones.
 
 ## Verificación
 

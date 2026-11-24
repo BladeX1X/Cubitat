@@ -13,6 +13,9 @@ estado y permite editar los que no están archivados.
   falla, la lista previamente cargada sigue visible junto al error.
 - Los anuncios archivados no se pueden editar desde esta pantalla.
 - La propiedad se determina en el servidor; el cliente no envía `owner_id`.
+- La gestión se integra en `AccountLayout`, con `Mis materiales` seleccionado y
+  acceso a Cuenta, Favoritos, Mis publicaciones y Mis servicios cuando están
+  habilitados.
 
 ## Verificación
 

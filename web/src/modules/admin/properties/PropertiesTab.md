@@ -12,7 +12,9 @@ La pestaña `PropertiesTab` presenta la cola paginada de propiedades para modera
 - La UI emplea los componentes compartidos `Button`, `Input` y `Select`.
 - La consulta general no lee `properties.contact_info`. El repositorio obtiene
   los datos privados de contacto mediante `get_admin_property_contact_details`
-  para los IDs de la página; esa RPC exige una sesión administrativa AAL2.
+  para los IDs de la página. Si falla una consulta complementaria de anunciante,
+  contacto o señales de duplicados, las propiedades siguen visibles y se muestra
+  un aviso; los fallos se registran sin datos personales.
 
 ## Validación
 

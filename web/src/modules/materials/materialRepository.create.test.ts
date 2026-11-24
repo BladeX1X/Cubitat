@@ -33,6 +33,7 @@ const input = {
   price: 20,
   currency: 'USD' as const,
   province: 'La Habana',
+  coordinates: null,
   availability: 'available' as const,
   phone: null,
   whatsapp: null,
@@ -57,6 +58,7 @@ describe('createMaterialListing retry safety', () => {
     expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
       owner_id: ownerId,
       slug: stableSlug,
+      coordinates: null,
       photo_urls: [],
     }))
     expect(rpcMock).not.toHaveBeenCalled()
