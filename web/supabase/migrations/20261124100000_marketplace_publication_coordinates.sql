@@ -6,12 +6,14 @@ ALTER TABLE public.material_listings
   ADD COLUMN coordinates jsonb;
 
 CREATE TABLE public.home_service_private_coordinates (
-  provider_id uuid PRIMARY KEY REFERENCES public.home_service_providers(id) ON DELETE CASCADE,
+  provider_id uuid PRIMARY KEY REFERENCES public.home_service_providers(id)
+    ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   coordinates jsonb NOT NULL CHECK (jsonb_typeof(coordinates) = 'object'),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE public.material_private_coordinates (
-  listing_id uuid PRIMARY KEY REFERENCES public.material_listings(id) ON DELETE CASCADE,
+  listing_id uuid PRIMARY KEY REFERENCES public.material_listings(id)
+    ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   coordinates jsonb NOT NULL CHECK (jsonb_typeof(coordinates) = 'object'),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
