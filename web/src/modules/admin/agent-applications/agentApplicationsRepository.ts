@@ -53,7 +53,7 @@ function getReviewRpcErrorMessage(error: unknown): string {
   const diagnostic = getSafeRpcError(error)
   const { code, status, name, message, keys } = diagnostic
   if (code === '42501' || status === 403 || /admin aal2 required|permission denied/i.test(message)) {
-    return 'Tu sesión administrativa necesita una nueva verificación de seguridad para guardar la decisión.'
+    return 'No tienes permiso de administrador para guardar esta decisión.'
   }
   if (code === 'P0002') return 'La postulación ya no existe. Actualiza la lista.'
   if (code === '22023' || /kyc|verificaci[oó]n|estado cannot transition/i.test(message)) {
@@ -81,7 +81,7 @@ async function readDocumentError(response: Response): Promise<string> {
   }
 
   if (response.status === 401 || code === 'session_required') return 'La sesión expiró. Inicia sesión otra vez.'
-  if (response.status === 403 || code === 'admin_aal2_required') return 'Tu sesión administrativa necesita una nueva verificación de seguridad para abrir documentos.'
+  if (response.status === 403 || code === 'admin_aal2_required') return 'No tienes permiso de administrador para abrir estos documentos.'
   if (response.status === 404 || code === 'application_not_found') return 'La postulación ya no está disponible en la cola. Actualiza la lista.'
   if (response.status === 410 || code === 'documents_expired') return 'El plazo de conservación terminó; los documentos ya fueron eliminados.'
   if (response.status === 429) return 'Se alcanzó el límite temporal para abrir documentos. Espera unos minutos e inténtalo de nuevo.'

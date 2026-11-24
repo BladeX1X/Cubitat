@@ -10,9 +10,7 @@ const sources = await Promise.all(javascriptAssets.map((name) => readFile(join(a
 const requiredMarkers = [
   'Servicios para el hogar',
   'Profesionales disponibles',
-  'Comparte tu experiencia',
   'Materiales disponibles',
-  'Beneficios comerciales',
   'marketplace-contact',
   'https://tohjzoncoosvjbjcakdl.supabase.co',
 ]
@@ -20,6 +18,8 @@ const forbiddenMarkers = [
   'https://bknwerqbbysveehcdmzr.supabase.co',
   'cubitat1-phase2-dev',
   'get_property_value_comparables',
+  'Beneficios comerciales',
+  'Comparte tu experiencia',
 ]
 const missing = requiredMarkers.filter((marker) => !sources.some((source) => source.includes(marker)))
 const leaked = forbiddenMarkers.filter((marker) => sources.some((source) => source.includes(marker)))
@@ -35,4 +35,4 @@ if (missing.length || leaked.length) {
   ].join('\n'))
 }
 
-console.log('Verified: Fase 4 production UI and private contact are present; valuation and DEV origins are absent')
+console.log('Verified: Fase 4 production UI and private contact are present; service reviews and benefits moderation UI, valuation, and DEV origins are absent')

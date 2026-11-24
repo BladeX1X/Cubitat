@@ -78,6 +78,8 @@ export type MyPropertiesPageProps = {
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateMyServices?: () => void
+  onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
   onEditProperty: (propertyId: string) => void
   onNewProperty: (loadDraft?: boolean) => void
@@ -314,6 +316,8 @@ export function MyPropertiesPage({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
   onNavigateAgentDashboard,
   onEditProperty,
   onNewProperty,
@@ -521,6 +525,8 @@ export function MyPropertiesPage({
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateMyServices={onNavigateMyServices}
+      onNavigateMyMaterials={onNavigateMyMaterials}
       onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
       <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-7 py-8 text-white shadow-sm">

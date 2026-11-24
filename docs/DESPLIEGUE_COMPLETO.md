@@ -574,6 +574,12 @@ frase `DEPLOY PRODUCTION` en una terminal interactiva y solo entonces ejecuta
 Wrangler con la configuración de producción. Para DEV, usa
 `npm run deploy:phase2-dev` y escribe `DEPLOY DEV` cuando se solicite.
 
+Las RPC autenticadas usadas por la interfaz deben estar declaradas en
+`additionalAuthenticatedRpcs` del entrypoint de Worker correspondiente
+(`worker-phase2-production.ts` o `worker-phase2-dev.ts`). La lista solo permite
+que la petición autenticada atraviese el proxy; no reemplaza los controles de
+rol, RLS ni las comprobaciones propias de cada RPC en Supabase.
+
 ### 6.5 Deploy Desde GitHub
 
 En Cloudflare conectar:
@@ -1112,3 +1118,35 @@ Este despliegue confirma disponibilidad HTTP y protección anónima, no el flujo
 completo autenticado. Sigue pendiente validar con cuenta autorizada el envío de
 postulación, lectura de documentos con AAL2, decisión y revocación administrativa,
 además de comprobar entrega de correo y purga de documentos en producción.
+
+## Favoritos de Servicios/Materiales — corrección productiva — 2026-11-23
+
+La tabla, sus migraciones y permisos RLS ya existían. Se corrigió la allowlist del Worker para aceptar escrituras autenticadas a `saved_marketplace_listings`. Pasaron lint, 1,146 pruebas (1 omitida), build `phase4-production` y verificadores de bundles. Worker `cubitat1`: `bf754180-1310-4077-905c-65e70dbb0f3c`.
+
+Verificación: portada y `/favoritos` HTTP 200; un POST con JWT deliberadamente inválido llegó a Supabase y recibió 401, sin escribir datos, en vez del 403 del Worker. Pendiente verificar guardar/quitar con una sesión real. El ledger productivo tiene 167 versiones: no ejecutar el paquete antiguo de migraciones.
+
+## Desactivación de MFA administrativo — producción — 2026-11-23
+
+Aplicada y verificada la migración `20261123090000_disable_admin_mfa_requirement.sql` en `tohjzoncoosvjbjcakdl`. El preflight comparó las 167 versiones remotas contra el release completo; el dry-run seleccionó únicamente la nueva migración. La solicitud del usuario fue no generar respaldo. Postcheck: ledger 168, nueva versión registrada y `public.is_admin_aal2()` delega en `public.is_admin()`.
+
+Desplegados frontend y Worker `cubitat1`, versión `0d79f4a9-9947-4b20-8eb1-91b3d887cf2a` al 100%. Gates: lint, 248 archivos/1,134 PASS/1 SKIP, `build:phase4-production` y verificadores PASS; home, `/moderar` y recuperación HTTP 200, índice del build y chunk administrativo 200. No se hizo QA con sesión admin autenticada; queda pendiente confirmar acceso admin AAL1 y revisar posible requisito AAL2 independiente de Supabase Auth durante recovery. Los factores TOTP inscritos siguen intactos. La contraseña temporal compartida en el chat requiere rotación; no copiarla a archivos.
+## Tarjetas con diseño compartido — producción — 2026-11-23
+
+Se desplegó el marco común de las tarjetas de Comprar, Servicios y Materiales en `cubitat1`, versión `318d5a93-5f0e-4ef2-8a3b-4859924951e1` (100%). Pasaron lint, 249 archivos de pruebas (1,135 PASS, 1 omitida), build `phase4-production`, sitemap dinámico de 446 URLs y verificadores de bundles. Smoke posterior: `/`, `/resultados`, `/servicios` y `/materiales` HTTP 200; el CSS compartido HTTP 200 contiene la cuadrícula desde 320 px y la portada 16:9. Sin migraciones ni cambios de datos.
+
+## Etiquetas editoriales en resultados — producción — 2026-11-23
+
+Se ocultaron las etiquetas Nuevo, Destacado y Exclusivo en las tarjetas de resultados y en el carrusel del mapa. Los valores `properties.badge` se conservan en los anuncios y no se modificó el esquema. `cubitat1` versión `4244f315-3eb7-49ee-80f0-825340a77f7c` al 100%; lint, pruebas (249 archivos, 1,148 PASS y 1 omitida), build estándar y verificadores Fase 4 PASS. Portada y `/resultados` HTTP 200.
+
+## 2026-11-23 — Galería compartida en Servicios y Materiales
+
+Se desplegó `CatalogCardGallery` en las tarjetas de Servicios y Materiales. Ambas usan flechas y puntos accesibles cuando existen varias fotos; se firma la galería para permitir la navegación y se conservan los campos propios de cada catálogo. Worker `cubitat1` versión `5b72bda8-49e4-48c1-a875-9b68ca2e6e86` al 100%. Lint, suite completa (1,150 PASS, 1 omitida), build Fase 4 y verificadores PASS. Rutas y módulo compartido respondieron HTTP 200. Sin migraciones ni cambios de datos. QA visual con anuncios multi-foto pendiente.
+## Fichas de Servicios y Materiales con diseño compartido — producción — 2026-11-23
+
+Ambas fichas públicas reutilizan `MarketplaceListingDetail` para toolbar, breadcrumb, hero adaptable, galería y panel de contacto. Los campos inferiores siguen siendo específicos del catálogo. Gates: lint, 249 archivos/1,152 pruebas PASS/1 omitida, build estándar y build `phase4-production` con verificadores PASS. Worker `cubitat1`, versión `b4593cbf-cb36-49f6-bd69-f3a3223a04c4`. Smoke solo lectura: `/servicios`, `/materiales`, bundles de las fichas y CSS compartido HTTP 200. Sin cambios de esquema ni datos. QA visual manual móvil pendiente.
+## Reseñas públicas de Servicios ocultas temporalmente — producción — 2026-11-23
+
+La ficha pública ya no carga ni presenta el panel de reseñas; perfiles, opiniones, moderación administrativa y esquema quedan intactos. El verificador de bundles exige que la sección «Comparte tu experiencia» no aparezca en producción. Lint PASS; suite completa 249 archivos, 1,152 PASS/1 omitida; build estándar y phase4-production/verificadores PASS. Worker `cubitat1` versión `4ffec3d4-bc08-452a-9243-c2e31fb57030`. Smoke de solo lectura: catálogo y ficha de Servicios HTTP 200; bundle de la ficha HTTP 200 y sin el texto del panel. Sin migraciones ni cambios de datos.
+## Reportes de Servicios/Materiales y perfiles destacados — implementación local — 2026-11-23
+
+Se implementó el formulario con Turnstile, ruta Worker y migración aislada 20261123100000_marketplace_listing_reports.sql; Moderación combina reportes de inmuebles y marketplace y revisa estos últimos sin pausar anuncios. Las fichas incorporan la denuncia adaptada y perfiles profile_featured vigentes. Gates locales: lint PASS; suite 250 archivos, 1,156 PASS/1 omitida; build estándar PASS. La migración no se aplicó y no se desplegó: el workflow productivo de esquema F3/F4 exige un respaldo exitoso reciente y no admite aplicar solo esta versión. No se intentó eludir esa condición.

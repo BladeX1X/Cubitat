@@ -58,6 +58,8 @@ type AccountPageProps = {
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
+  onNavigateMyServices?: () => void
+  onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
   onNavigateAgentApplication?: () => void
 }
@@ -78,6 +80,8 @@ export function AccountPage({
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
   onNavigateAgentDashboard,
   onNavigateAgentApplication,
 }: AccountPageProps) {
@@ -364,6 +368,8 @@ export function AccountPage({
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateMyServices={onNavigateMyServices}
+      onNavigateMyMaterials={onNavigateMyMaterials}
       onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
             <section className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#155b55] to-[#007565] px-4 py-5 text-white shadow-sm sm:px-7 sm:py-8">

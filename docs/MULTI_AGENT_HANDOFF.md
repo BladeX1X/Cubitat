@@ -1,4 +1,7 @@
-# Relevo y coordinación multiagente de Cubitat
+
+## Favoritos SVC/MAT en producción — bloqueo por GitHub Actions — 2026-11-22
+
+El usuario autorizó respaldo y migraciones de producción para resolver el corazón que falla. El run de respaldo `45119551323` (https://github.com/BladeX1X/Cubitat/actions/runs/45119551323) no inició: GitHub Actions reporta pagos fallidos o límite de gasto. No se ejecutó migración ni se modificó la base. No aplicar migraciones de favoritos aisladas: el inventario requiere el paquete coordinado de 64 fuentes F3/F4 con preflight, respaldo de menos de 24 h y postcheck. Reanudar una vez resuelto Actions; autorización persistente ya obtenida. Nota: [[Cubitat - Favoritos SVC MAT bloqueo respaldo GitHub Actions Producción 2026-11-22]].# Relevo y coordinación multiagente de Cubitat
 
 ## Estado vigente tras release de Fases 3/4 — 2026-11-16
 
@@ -4226,3 +4229,55 @@ GitHub retiró `GHSA-fc5q-39xc-vjpf` el 2026-11-18, pero el registro npm aún lo
 - QA autenticado de solo lectura: «Todos» 5; Propiedades 5; Servicios y Materiales 0 con estado vacío; filtrar no cambia `/favoritos` y «Todos» restaura la lista.
 - No hubo cambios de base de datos ni escrituras de anuncios. PR #247 sigue abierto porque GitHub Actions no inició `quality` ni `database-security` por el bloqueo de facturación. La validación local y el deploy manual no se presentan como CI verde ni integración del PR.
 - Evidencia: `docs/FAVORITES_FILTERS_PRODUCTION_2026-11-18.md`.
+
+
+## Favoritos SVC/MAT — intento de respaldo local (2026-11-22)
+
+A solicitud del usuario se intentó respaldar desde el equipo local. Bloqueado: solo hay SUPABASE_ACCESS_TOKEN; no existe project-ref enlazado ni URL/contraseña de DB, las herramientas PostgreSQL no están instaladas y el token no tiene permiso projects_read. La sesión Chrome visible está en Cubitat DEV. No se creó respaldo ni se aplicaron migraciones. Para reanudar: resolver el gate de facturación en GitHub Actions o configurar conexión local y herramientas de respaldo; validar primero el backup y después aplicar únicamente el workflow coordinado F3/F4.
+
+
+
+Comprobación adicional del intento local (2026-11-22): la referencia productiva 	ohjzoncoosvjbjcakdl sí consta en los workflows. supabase link --project-ref falla porque el token no tiene api_gateway_keys_read; Docker está instalado, pero falta SUPABASE_DB_URL/contraseña para ejecutar pg_dump. No se creó respaldo.
+
+
+
+## Verificación de favoritos en producción — 2026-11-23
+
+Consultas read-only confirmaron public.saved_marketplace_listings, versiones 20261116100000 y 20261116120000 en ledger, grants esperados y tres políticas RLS. No se ejecutó DDL/DML. Ledger remoto: 167 versiones, distinto de la huella de 101 que exige el workflow Phase 3/4; no ejecutar el bundle antiguo de 64 migraciones. UI autenticada aún pendiente; si falla, revisar cliente/Worker/sesión. La URI compartida en chat requiere rotación. Evidencia: docs/FAVORITES_PRODUCTION_STATE_2026-11-23.md.
+
+
+## Favorites SVC/MAT production follow-up — 2026-11-23
+
+Production already had the favorites table, both migration versions, grants and owner RLS policies. Added the table to the production Worker authenticated write allowlist and regression coverage. Deployed version `bf754180-1310-4077-905c-65e70dbb0f3c`. No database migration or data write was performed. Production ledger drift remains; do not run the stale global migration package. Real authenticated UI save/remove QA remains open.
+
+## Admin MFA disabled — production verified — 2026-11-23
+
+Migration `20261123090000_disable_admin_mfa_requirement.sql` applied to production after comparing the exact 167-version remote ledger against the complete release sources; dry-run selected only this migration. No backup was created at the user's explicit request. Postcheck confirms ledger 168, the migration row, and `is_admin_aal2()` delegating to `is_admin()`.
+
+Production Worker `cubitat1` deployed at 100%, version `0d79f4a9-9947-4b20-8eb1-91b3d887cf2a`. Lint, 248 test files (1,134 passed, 1 skipped), phase4-production build/verifiers passed. `/`, `/moderar`, `/recuperar-contrasena` return 200; live index matches the build and admin chunk returns 200. TOTP factors remain enrolled. Pending: authenticated admin AAL1 QA and check for any independent Supabase Auth AAL2 requirement during recovery. The temporary DB password shared in chat must be rotated; do not copy it to repository files.
+## Tarjetas con diseño compartido — producción — 2026-11-23
+
+`CatalogCardFrame` unifica Comprar, Servicios y Materiales: 72 rem centrados, grilla con columnas desde 320 px, imagen 16:9 y acciones abajo. `cubitat1` versión `318d5a93-5f0e-4ef2-8a3b-4859924951e1` al 100%. Lint, 1,135 PASS/1 omitida, build F4 y verificadores PASS. Rutas principales y CSS compartido HTTP 200. Sin cambios de base de datos. QA visual manual en móvil queda pendiente.
+
+### Estado al 2026-11-23 — fichas SVC/MAT
+- `MarketplaceListingDetail` comparte toolbar, breadcrumb, hero split, galería y contacto; las secciones particulares conservan semántica de Servicio o Material.
+- Gates local y de producción PASS: lint, 249 archivos / 1,152 PASS / 1 omitida, builds estándar y phase4-production.
+- Producción `cubitat1` versión `b4593cbf-cb36-49f6-bd69-f3a3223a04c4`; rutas `/servicios`, `/materiales` y activos compartidos HTTP 200.
+- Sin DB/migraciones. Pendiente QA visual manual móvil.
+- Evidencia: `Cubitat - Fichas compartidas Servicios Materiales Producción 2026-11-23.md` en el vault.
+### Estado al 2026-11-23 — reseñas públicas ocultas temporalmente
+- La página de Servicios ya no importa/monta el panel de reseñas en la ficha pública; opiniones y administración de reseñas permanecen intactas.
+- El verificador `verify-phase4-production-bundle.mjs` comprueba que el texto del panel no se incluya en el bundle público.
+- Lint y build phase4-production/verificadores PASS; suite 249 archivos / 1,152 PASS / 1 omitida.
+- `cubitat1` versión `4ffec3d4-bc08-452a-9243-c2e31fb57030`; `/servicios`, ficha y chunk HTTP 200; texto del panel ausente del bundle de detalle.
+- Sin DB, migraciones ni cambios de datos.
+- Evidencia en el vault: `Cubitat - Reseñas ocultas temporalmente en Servicios Producción 2026-11-23.md`.
+## Reportes Marketplace + perfiles destacados — implementación local — 2026-11-23
+
+Rama ugfix/detail-page-consistent-width: formulario de reportes de Servicios/Materiales, API Worker POST /api/public/marketplace-report, nueva migración 20261123100000_marketplace_listing_reports.sql, lectura/revisión unificada en Moderación, y bloque final de perfiles con beneficio vigente profile_featured. Gates locales: lint, 250 archivos/1,156 PASS/1 omitida, build estándar. Producción pendiente: el workflow vigente de migraciones productivas exige respaldo <24h y conjunto release F3/F4; no se aplicó DDL ni se desplegó código porque el cambio requiere ambos para funcionar. Sin backup por instrucción del usuario.
+
+## Reportes Marketplace SVC/MAT — producción — 2026-11-23
+
+Aplicada únicamente `20261123100000_marketplace_listing_reports.sql` a `tohjzoncoosvjbjcakdl`, sin respaldo a solicitud expresa. El ledger pasó de 168 a 169 versiones; una versión antigua registrada remotamente (`20261120203809`) no tenía fuente en este checkout y se representó como ya aplicada solo en el manifiesto temporal. `migration list` confirmó que solo la migración nueva estaba pendiente y `migration up` la registró junto con su ejecución. Postcheck confirmó tabla, dos RPC, RLS y grants.
+
+`cubitat1` publicado como `408b4581-fba4-4e0d-b459-e97a9e71dc36`. Lint, 251 archivos/1,156 PASS/1 omitida, build Fase 4 y verificadores PASS. Home, resultados, Servicios, Materiales, Moderación y bundles clave HTTP 200. Prueba autenticada de envío/revisión pendiente; no se crearon reportes de prueba.

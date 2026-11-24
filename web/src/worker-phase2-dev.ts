@@ -68,6 +68,7 @@ const worker = createWorker({
     'grant_business_benefit',
     'revoke_business_benefit',
     'get_property_value_comparables',
+      'get_admin_property_contact_details',
     'get_admin_property_image_hash_status',
     'get_admin_property_image_duplicate_candidates',
     'submit_kyc_request',

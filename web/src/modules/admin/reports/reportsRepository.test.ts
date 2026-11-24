@@ -38,11 +38,12 @@ describe('reportsRepository', () => {
   })
 
   it('loads the requested report page in reverse chronological order', async () => {
-    const reports = [{ id: 'report-1', status: 'pending' }]
-    rangeMock.mockResolvedValue({ data: reports, count: 11, error: null })
+    const reports = [{ id: 'report-1', status: 'pending', created_at: '2026-01-01' }]
+    rangeMock.mockResolvedValueOnce({ data: reports, count: 11, error: null }).mockResolvedValueOnce({ data: [], count: 3, error: null })
 
-    await expect(fetchModerationReports(2)).resolves.toEqual({ reports, total: 11 })
+    await expect(fetchModerationReports(2)).resolves.toEqual({ reports: [{ ...reports[0], kind: 'property' }], total: 14 })
     expect(fromMock).toHaveBeenCalledWith('property_reports')
+    expect(fromMock).toHaveBeenCalledWith('marketplace_listing_reports')
     expect(orderMock).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(rangeMock).toHaveBeenCalledWith(30, 44)
   })
@@ -55,7 +56,7 @@ describe('reportsRepository', () => {
   })
 
   it('resolves a property report atomically through the protected database action', async () => {
-    await resolveReport('report-1', 'property-1')
+    await resolveReport({ kind: 'property', id: 'report-1', property_id: 'property-1' } as never)
 
     expect(rpcMock).toHaveBeenCalledWith('resolve_property_report', {
       p_report_id: 'report-1',
@@ -67,11 +68,11 @@ describe('reportsRepository', () => {
     const error = new Error('report resolution failed')
     rpcMock.mockResolvedValueOnce({ error })
 
-    await expect(resolveReport('report-1', 'property-1')).rejects.toBe(error)
+    await expect(resolveReport({ kind: 'property', id: 'report-1', property_id: 'property-1' } as never)).rejects.toBe(error)
   })
 
   it('marks a report as dismissed', async () => {
-    await dismissReport('report-1')
+    await dismissReport({ kind: 'property', id: 'report-1' } as never)
 
     expect(fromMock).toHaveBeenCalledWith('property_reports')
     expect(updateMock).toHaveBeenCalledWith({ status: 'dismissed' })

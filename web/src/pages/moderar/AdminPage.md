@@ -10,26 +10,16 @@ El guard principal de ruta sigue en `CubitatApp`; el guard de esta página se
 mantiene como segunda barrera visual. La autorización efectiva continúa
 dependiendo de las políticas RLS y de las funciones administrativas del backend.
 
-## Recuperación de sesión MFA expirada
+## MFA administrativo apagado
 
-`AdminMfaGate` distingue `session_not_found` de un TOTP inválido. Cuando la
-sesión ya no existe, oculta el formulario que no puede completarse y muestra
-`Cerrar sesión e iniciar nuevamente`.
-
-La acción no accede directamente a Supabase desde `AdminPage`: propaga
-`onSessionExpired` hasta `CubitatApp`, que reutiliza el cierre central para
-limpiar Auth, caché offline y borrador legado, volver a `/` y abrir el login.
-Si el callback falla, el guard permanece bloqueado, no muestra datos
-administrativos y ofrece reintentar con un mensaje seguro.
-
-## Excepción temporal de MFA administrativo
-
-La excepción operativa solo se habilita con la migración productiva numerada.
-El panel obtiene el vencimiento desde `get_admin_mfa_bypass_until`; un error de
-lectura conserva el desafío TOTP normal. Mientras el vencimiento esté vigente,
-la UI informa la fecha y programa el bloqueo al expirar. El backend y el Worker
-validan esa misma fecha en cada operación sensible. Los factores TOTP no se
-eliminan y AAL2 vuelve a ser obligatorio automáticamente al vencer.
+Por decisión de producto, `ADMIN_MFA_ENABLED` permanece en `false` hasta una
+reactivación futura. `AdminMfaGate` deja pasar al contenido sin consultar ni
+pedir factores TOTP. El rol `admin` se sigue comprobando en la ruta, Worker y
+base de datos. La migración `20261123090000_disable_admin_mfa_requirement.sql`
+actualiza el helper `is_admin_aal2()` para conservar el control de rol sin
+exigir AAL2 cuando se aplique. Los factores existentes no se eliminan.
+Reactivar requiere habilitar el gate en la aplicación y desplegar una migración
+que restaure AAL2.
 
 ## Módulos
 
@@ -45,7 +35,7 @@ Cada capacidad vive bajo `src/modules/admin`:
   propiedades. Encapsula filtros, estado asíncrono, formateo y tarjetas
   mobile-first sin depender de los módulos de propiedades, reportes o métricas.
   La proyección `admin_moderation_audit_log` usa `security_invoker`; el SELECT
-  autenticado no evita RLS y solo administradores AAL2 leen las tablas fuente.
+  autenticado no evita RLS y las tablas fuente siguen restringidas al rol admin.
 - `kyc`: módulo independiente. En DEV se habilita junto con Fase 2; para
   producción se incorpora únicamente con el perfil explícito
   `npm run build:phase2-kyc`, que define `VITE_KYC_UI_ENABLED=true` sin activar
@@ -55,7 +45,7 @@ Cada capacidad vive bajo `src/modules/admin`:
   panel del propietario; requiere `VITE_SUPABASE_URL` del proyecto productivo
   y su anon key pública. El Worker productivo permite únicamente las RPC de
   envío/revisión de evidencia y lectura del indicador, mientras RLS mantiene
-  la comprobación de propietario y AAL2. El verificador de bundle exige destino
+  la comprobación de propietario y rol admin. El verificador de bundle exige destino
   productivo y excluye KYC, agentes, Push/correo y pHash.
 - `trust-score`: indicador de confianza privado para moderadores. Cada ficha
   en DEV y `phase2-production` permite consultar el puntaje bajo demanda, sin
@@ -66,7 +56,7 @@ Cada capacidad vive bajo `src/modules/admin`:
 - `npm run build:phase2-production` combina KYC, verificación documental,
   indicador Trust Score interno, distintivo de vendedor verificado y señales
   pHash. Exige el proyecto Supabase productivo; el Worker mantiene la decisión
-  humana, AAL2 para moderación de hashes y no habilita el dispatcher de correo.
+  humana, rol admin para moderación de hashes y no habilita el dispatcher de correo.
 - `components`: estados, diálogo de aviso y paginación compartidos solo por el
   dominio administrativo.
 - `core`: tipos, constantes, errores y formateadores sin acceso a datos.
@@ -88,6 +78,8 @@ y no contienen reglas específicas de otro módulo.
 ## Comportamiento conservado
 
 - Acceso restringido para roles distintos de `admin`.
+- La RPC privada `get_admin_property_contact_details` cruza el proxy del Worker solo con sesión autenticada; Supabase aplica además el control de administrador de la función.
+- El panel no expone la sección administrativa de beneficios comerciales.
 - Moderación manual y reevaluación por IA de propiedades.
 - En DEV, advertencias privadas de coincidencia por hash perceptual, con título
   de la publicación relacionada y distancia sobre 64 bits. Son señales para el
@@ -124,7 +116,7 @@ si ese cierre falla.
 
 La acción «Ocultar propiedad» del módulo `reports` llama a
 `resolve_property_report` con los IDs del reporte y de la propiedad. La función
-exige AAL2, acepta solo reportes pendientes que coincidan con esa propiedad y
+exige rol admin, acepta solo reportes pendientes que coincidan con esa propiedad y
 pausa el anuncio en la misma transacción. Su migración DEV
 `20261115130000_atomic_property_report_resolution.sql` sigue pendiente de
 aplicación. `AdminPage.test.tsx` comprueba el nombre y argumentos exactos de la
@@ -133,7 +125,7 @@ RPC; no infiere que la acción funcionó por las lecturas iniciales de las tabla
 ## Moderación de postulaciones Fase 3
 
 La sección `Postulaciones` se habilita solo en un build DEV explícito con
-`VITE_PHASE3_UI_ENABLED=true`. Dentro de `AdminMfaGate`, consulta una cola
+`VITE_PHASE3_UI_ENABLED=true`. Dentro del guard administrativo, consulta una cola
 paginada de solicitudes abiertas con RLS y cuenta total. Los enlaces del CV y
 título se solicitan bajo demanda al Worker; no se guardan y se retiran de la
 vista a los dos minutos. La pantalla actual es de consulta, sin aprobar,

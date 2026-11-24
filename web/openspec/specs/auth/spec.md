@@ -138,43 +138,34 @@ El sistema MUST resolver permisos desde la sesion y el perfil del usuario sin co
 - THEN el sistema MUST bloquear o redirigir la accion
 - AND MUST evitar mostrar datos internos de usuarios, reportes o publicaciones no autorizadas
 
-### Requirement: Segundo factor para administracion
-El sistema MUST exigir TOTP verificado y una sesion `aal2` antes de abrir funciones administrativas.
+### Requirement: MFA administrativo desactivado
+Hasta una reactivación explícita coordinada, el sistema MUST NOT exigir TOTP ni una sesión `aal2` para entrar al panel o realizar acciones administrativas. El control de rol `admin` MUST seguir validándose en la interfaz, el Worker, las RPC y RLS. Los factores TOTP existentes MUST permanecer intactos.
 
-La única excepción temporal MUST estar activada por una migración explícita con
-fecha de expiración en la base. La excepción MUST aplicar solo a perfiles admin,
-exponer su vencimiento al panel y dejar de funcionar automáticamente al expirar,
-sin eliminar ni desverificar factores TOTP.
+Esta decisión suspende las referencias a `aal2` administrativo en las
+especificaciones de módulos. Esas referencias describen controles futuros para
+una reactivación coordinada; durante este estado, cada función conserva su
+validación de rol y sus demás reglas de negocio.
 
-#### Scenario: Administrador sin segundo factor
-- GIVEN un usuario con rol administrador y una sesion `aal1`
-- WHEN intenta abrir el panel administrativo
-- THEN MUST completar enrolamiento o desafio TOTP antes de ver datos administrativos
-- AND el cliente MUST NOT persistir ni registrar QR, secreto o codigo TOTP
+#### Scenario: Administrador con sesión normal
+- GIVEN un usuario con rol administrador y una sesión `aal1`
+- WHEN abre el panel o realiza una acción administrativa permitida
+- THEN el sistema MUST autorizarla conforme a su rol sin pedir TOTP
 
-#### Scenario: Excepción temporal de producción
-- GIVEN existe un override de MFA administrativo con vencimiento futuro
-- WHEN un administrador accede al panel con sesión `aal1`
-- THEN el panel y las operaciones administrativas permiten acceso solo mientras el override siga vigente
-- AND el panel informa la fecha de vencimiento
-- AND la base y el Worker MUST comprobar el mismo vencimiento en cada operación sensible
-- AND tras la expiración MUST volver a exigir AAL2 sin depender de una nueva publicación
-- AND el factor TOTP de la cuenta MUST permanecer inscrito y verificado
-- AND una sesión `aal1` de usuario no administrador MUST continuar bloqueada
+#### Scenario: Usuario sin rol admin
+- GIVEN una sesión autenticada `aal1` sin rol `admin`
+- WHEN intenta abrir el panel o llamar una acción administrativa
+- THEN el sistema MUST denegarla y MUST NOT exponer datos administrativos
+
+#### Scenario: Reactivación futura
+- GIVEN se decide volver a exigir MFA administrativo
+- WHEN se reactiva el flujo
+- THEN la aplicación y una nueva migración de base de datos MUST volver a exigir AAL2 de manera coordinada
+- AND la reactivación MUST conservar los factores TOTP existentes
 
 #### Scenario: Usuario normal
 - GIVEN un usuario autenticado sin rol administrador
 - WHEN usa funciones propias de su cuenta
 - THEN el sistema MUST NOT exigir MFA administrativo
-
-#### Scenario: Sesión expirada durante el desafío administrativo
-- GIVEN un administrador intenta verificar TOTP y Supabase responde que la sesión ya no existe
-- WHEN la interfaz muestra el estado de sesión expirada
-- THEN MUST ocultar el formulario TOTP que ya no puede completar la verificación
-- AND MUST ofrecer la acción "Cerrar sesión e iniciar nuevamente"
-- AND al confirmar MUST limpiar la sesión y la caché local mediante el flujo central de cierre
-- AND MUST regresar al inicio y abrir el login sin mostrar datos administrativos
-- AND si la recuperación falla MUST conservar el panel bloqueado y mostrar un error seguro
 
 ### Requirement: Modal de autenticacion reutilizable
 El sistema MUST usar el mismo flujo de login para acciones protegidas en cualquier modulo.
@@ -218,10 +209,10 @@ El sistema MUST proveer flujos seguros para recuperar contraseñas olvidadas e i
 - WHEN aterriza en `/recuperar-contrasena`
 - THEN el sistema MUST preparar la sesion temporal de recuperacion
 - AND el sistema MUST pedir nueva contrasena y confirmacion
-- AND si la cuenta tiene MFA activo y Supabase requiere `aal2`, el sistema MUST pedir el codigo TOTP antes de guardar
+- AND el cliente MUST NOT pedir TOTP para recuperación mientras MFA administrativo esté desactivado
 - AND el sistema MUST validar la fortaleza de la contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial) y la coincidencia entre ambos campos
 - AND el sistema MUST guardar la nueva contrasena mediante Supabase Auth
-- AND el sistema MUST mostrar un mensaje seguro en espanol en vez del error tecnico `AAL2 session is required`
+- AND ante una restricción AAL2 que todavía esté activa en Supabase MUST mostrar un mensaje seguro sin el error técnico `AAL2 session is required`
 
 #### Scenario: Contraseña conocida en filtraciones
 - GIVEN un usuario intenta registrarse o establecer una nueva contraseña

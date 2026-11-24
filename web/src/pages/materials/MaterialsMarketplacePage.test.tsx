@@ -54,8 +54,36 @@ describe('MaterialsMarketplacePage filter loading', () => {
     vi.mocked(fetchMaterialListings).mockResolvedValue({ items: [listing], total: 1 })
   })
 
+  it('renders the shared detail design with material-specific information', async () => {
+    window.history.replaceState(null, '', '/materiales/cemento-gris')
+    vi.mocked(fetchMaterialListing).mockResolvedValueOnce({ ...listing, photoUrls: ['/material-one.webp', '/material-two.webp'] })
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Cemento gris' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Volver al catálogo' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Información del material' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Descripción del material' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Antes de comprar' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Contactar al vendedor' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Tu mensaje')).toHaveClass('marketplace-inquiry-textarea')
+    expect(document.querySelector('.marketplace-contact-meta')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar consulta' })).toHaveClass('marketplace-inquiry-submit')
+    expect(screen.getByRole('button', { name: 'Foto anterior' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto siguiente' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver foto 2' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al catálogo' }))
+    expect(window.location.pathname).toBe('/materiales')
+  })
+
+  it('does not show publish or account shortcuts in the catalog header', async () => {
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
+    expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vender materiales' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mis anuncios' })).not.toBeInTheDocument()
+  })
+
   it.each(['Contactar', 'Consultar'])('%s uses the direct contact action without navigating to the listing first', async (action) => {
-    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
     const pushState = vi.spyOn(window.history, 'pushState')
 
@@ -67,7 +95,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
   })
 
   it('keeps filters, map, and current results mounted while refreshing', async () => {
-    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
 
     const initialPath = window.location.pathname
@@ -94,7 +122,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
     vi.mocked(fetchMaterialListings).mockResolvedValueOnce({ items: [listing], total: 31 })
     const nextRequest = deferred<{ items: Array<typeof listing>; total: number }>()
     vi.mocked(fetchMaterialListings).mockReturnValueOnce(nextRequest.promise)
-    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
 
     expect(screen.getByRole('navigation', { name: 'Paginación del catálogo' })).toBeInTheDocument()
@@ -117,7 +145,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
 
   it('applies a map province without navigation and resets to the first page', async () => {
     vi.mocked(fetchMaterialListings).mockResolvedValueOnce({ items: [listing], total: 31 })
-    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Página 2' }))
@@ -145,7 +173,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
       })),
       total: 3,
     })
-    const { container } = render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} onCreateListing={vi.fn()} onManageListings={vi.fn()} />)
+    const { container } = render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
 
     await screen.findByText('Material 0')
     const images = Array.from(container.querySelectorAll('img'))
@@ -157,5 +185,20 @@ describe('MaterialsMarketplacePage filter loading', () => {
     expect(images[1]).toHaveAttribute('fetchpriority', 'high')
     expect(images[2]).toHaveAttribute('loading', 'lazy')
     expect(images[2]).toHaveAttribute('fetchpriority', 'low')
+  })
+
+  it('shows the shared photo carousel when a material has multiple photos', async () => {
+    vi.mocked(fetchMaterialListings).mockResolvedValueOnce({
+      items: [{ ...listing, photoUrls: ['https://example.com/material-1.jpg', 'https://example.com/material-2.jpg'] }],
+      total: 1,
+    })
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
+
+    expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto anterior' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto siguiente' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Fotos de Cemento gris' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver foto 2' })).toBeInTheDocument()
+    expect(screen.getByText('12,00 US$')).toBeInTheDocument()
   })
 })

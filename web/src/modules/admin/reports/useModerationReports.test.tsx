@@ -47,7 +47,7 @@ describe('useModerationReports', () => {
     const { result } = renderHook(() => useModerationReports())
     await waitFor(() => expect(result.current.reports).toHaveLength(1))
 
-    await act(async () => result.current.resolve('report-1', 'property-1'))
+    await act(async () => result.current.resolve('report-1'))
     expect(result.current.reports[0]).toMatchObject({ id: 'report-1', status: 'resolved' })
 
     await act(async () => result.current.dismiss('report-1'))
@@ -60,7 +60,7 @@ describe('useModerationReports', () => {
     const { result } = renderHook(() => useModerationReports())
     await waitFor(() => expect(result.current.reports).toHaveLength(1))
 
-    await act(async () => result.current.resolve('report-1', 'property-1'))
+    await act(async () => result.current.resolve('report-1'))
 
     expect(result.current.notice).toBe('No se pudo resolver el reporte.')
     expect(result.current.actionLoading).toBeNull()

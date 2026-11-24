@@ -54,6 +54,13 @@ describe('PropertyCard verified seller badge', () => {
   })
 })
 
+describe('PropertyCard editorial labels', () => {
+  it.each(['nuevo', 'destacado', 'exclusivo'] as const)('does not display the %s listing label', (badge) => {
+    render(<PropertyCard property={{ ...property, badge }} isSelected={false} onSelect={vi.fn()} />)
+    expect(screen.queryByText(badge)).not.toBeInTheDocument()
+  })
+})
+
 describe('PropertyCard contact actions', () => {
   it('opens the advertiser phone through the protected property contact endpoint', async () => {
     const onSelect = vi.fn()
@@ -76,7 +83,7 @@ describe('PropertyCard contact actions', () => {
   })
 
   it('opens WhatsApp with public location and property context', async () => {
-    const destination = { location: { replace: vi.fn() }, opener: {} as Window | null, close: vi.fn() } as unknown as Window
+    const destination = { opener: {} as Window | null } as unknown as Window
     const open = vi.fn(() => destination)
     vi.stubGlobal('open', open)
     vi.mocked(fetchMarketplaceContact).mockResolvedValue({ phone: '+53512345678', whatsapp: '+53512345678' })
@@ -90,8 +97,8 @@ describe('PropertyCard contact actions', () => {
     expect(await screen.findByRole('button', { name: /consultar/i })).toBeEnabled()
     expect(fetchMarketplaceContact).toHaveBeenCalledWith('property', property.id)
     expect(getMarketplaceContactUrl).toHaveBeenCalledWith('whatsapp', '+53512345678', 'Casa de prueba', 'Playa, La Habana')
-    expect(open).toHaveBeenCalledWith('about:blank', '_blank')
-    expect(destination.location.replace).toHaveBeenCalledWith('https://wa.me/53512345678?text=hello')
+    expect(open).toHaveBeenCalledWith('https://wa.me/53512345678?text=hello', '_blank')
+    expect(destination.opener).toBeNull()
     vi.unstubAllGlobals()
   })
 })

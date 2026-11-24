@@ -48,6 +48,7 @@ El sistema MUST mostrar un mapa estático o interactivo reducido en la ficha de 
 - THEN el sistema MUST inicializar un contenedor de MapLibre GL centrado en las coordenadas aproximadas del inmueble
 - AND el sistema MUST dibujar un círculo de radio aproximado o un marcador genérico sin indicar la dirección exacta
 - AND cuando se dibuje un area aproximada, el radio MUST estar definido en unidades geograficas para mantener la misma region al hacer zoom
+- AND el área circular aproximada MUST tener 1 km de diámetro (500 m de radio)
 
 #### Scenario: Abrir mapa desde detalle
 - GIVEN una propiedad tiene coordenadas disponibles
@@ -60,6 +61,19 @@ El sistema MUST mostrar un mapa estático o interactivo reducido en la ficha de 
 - WHEN se renderiza detalle o mapa
 - THEN el sistema MUST mostrar estado alternativo estable
 - AND MUST evitar inicializar MapLibre con coordenadas invalidas
+
+### Requirement: Mapa provincial en fichas de Servicios y Materiales
+Las fichas de Servicios y Materiales MUST ofrecer una pestaña Mapa dentro del
+visor multimedia. El mapa MUST cargarse bajo demanda y mostrar solo una
+referencia de la provincia declarada, sin marcador de domicilio ni coordenadas
+exactas.
+
+#### Scenario: Abrir el mapa de un servicio o material
+- GIVEN una ficha pública de servicio o material con provincia declarada
+- WHEN el visitante selecciona Mapa
+- THEN se inicializa MapLibre centrado en una referencia de esa provincia
+- AND se explica que no representa la dirección exacta del anunciante
+- AND un fallo muestra un estado recuperable sin interrumpir el resto de la ficha
 
 ### Requirement: Mapa de Búsqueda Grande con Filtros Integrados
 El sistema MUST proveer una vista de pantalla dividida o pantalla completa con un mapa interactivo para buscar y filtrar inmuebles directamente desde la interfaz geográfica.

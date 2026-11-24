@@ -66,7 +66,7 @@ async function signDocument(path: string, env: AgentApplicationDocumentsEnv, fet
   return safeSignedUrl(payload.signedURL, env.VITE_SUPABASE_URL)
 }
 
-/** Releases short-lived document links only to a session authorized as admin AAL2 by Postgres. */
+/** Releases short-lived document links only to a session authorized as admin by Postgres. */
 export async function handleAgentApplicationDocumentLinks(
   request: Request,
   applicationId: string,

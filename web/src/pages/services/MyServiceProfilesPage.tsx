@@ -4,11 +4,17 @@ import { fetchMyHomeServiceProviders } from '../../modules/home-services/homeSer
 import { HOME_SERVICE_CATEGORY_LABELS, type OwnedHomeServiceProvider } from '../../modules/home-services/types'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
+import { AccountLayout } from '../account/AccountLayout'
 
 type MyServiceProfilesPageProps = {
   onBack: () => void
   onCreate: () => void
   onEdit: (providerId: string) => void
+  onNavigateAccount: () => void
+  onNavigateFavorites: () => void
+  onNavigateMyProperties: () => void
+  onNavigateMyServices: () => void
+  onNavigateMyMaterials?: () => void
 }
 
 const STATUS_LABELS: Record<OwnedHomeServiceProvider['status'], string> = {
@@ -18,7 +24,16 @@ const STATUS_LABELS: Record<OwnedHomeServiceProvider['status'], string> = {
   rejected: 'Requiere cambios',
 }
 
-export function MyServiceProfilesPage({ onBack, onCreate, onEdit }: MyServiceProfilesPageProps) {
+export function MyServiceProfilesPage({
+  onBack,
+  onCreate,
+  onEdit,
+  onNavigateAccount,
+  onNavigateFavorites,
+  onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
+}: MyServiceProfilesPageProps) {
   const [profiles, setProfiles] = useState<OwnedHomeServiceProvider[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -40,7 +55,15 @@ export function MyServiceProfilesPage({ onBack, onCreate, onEdit }: MyServicePro
   useEffect(() => { void load() }, [load])
 
   return (
-    <main className="min-h-[75vh] bg-neutral-50 px-4 py-7 sm:px-6 sm:py-10">
+    <AccountLayout
+      active="services"
+      onNavigateAccount={onNavigateAccount}
+      onNavigateFavorites={onNavigateFavorites}
+      onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateMyServices={onNavigateMyServices}
+      onNavigateMyMaterials={onNavigateMyMaterials}
+    >
+    <section className="min-h-[75vh] bg-neutral-50 px-4 py-7 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={onBack} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 hover:bg-white"><ArrowLeft size={18} />Directorio</button>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -52,6 +75,7 @@ export function MyServiceProfilesPage({ onBack, onCreate, onEdit }: MyServicePro
           : !error && profiles.length === 0 ? <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center"><p className="font-semibold text-neutral-800">Todavía no tienes perfiles</p><p className="mt-1 text-sm text-neutral-500">Crea uno para que pase a revisión.</p><Button className="mt-4 min-h-11" onClick={onCreate}><Plus size={16} className="mr-2" />Crear perfil</Button></div>
             : <div className="mt-7 grid gap-4">{profiles.map((profile) => <article key={profile.id} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-4"><div><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900">{STATUS_LABELS[profile.status]}</span><h2 className="mt-3 text-lg font-bold text-neutral-900">{profile.displayName}</h2><p className="mt-1 text-sm text-neutral-600">{HOME_SERVICE_CATEGORY_LABELS[profile.category]} · {profile.province}</p><p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">{profile.description}</p></div>{profile.status !== 'published' && <Button variant="outline" className="min-h-11 shrink-0" onClick={() => onEdit(profile.id)}><Pencil size={16} className="mr-2" />Editar</Button>}</div></article>)}</div>}
       </div>
-    </main>
+    </section>
+    </AccountLayout>
   )
 }

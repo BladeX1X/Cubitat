@@ -14,7 +14,7 @@ export interface PublicSubmissionEnv {
   }
 }
 
-type TurnstileAction = 'contact-owner' | 'report-property' | 'resend-confirmation'
+type TurnstileAction = 'contact-owner' | 'report-property' | 'report-marketplace' | 'resend-confirmation'
 
 type TurnstileResult = {
   success?: boolean
@@ -37,6 +37,8 @@ type ReportPayload = {
   reason?: unknown
   description?: unknown
 }
+
+type MarketplaceReportPayload = { turnstile_token?: unknown; listing_type?: unknown; listing_id?: unknown; reason?: unknown; description?: unknown }
 
 type MarketplaceContactPayload = {
   listing_type?: unknown
@@ -291,6 +293,29 @@ export async function handlePublicReportSubmission(
   return inserted
     ? json({ ok: true }, 201)
     : json({ error: 'No fue posible registrar el reporte.' }, 503)
+}
+
+export async function handlePublicMarketplaceReportSubmission(request: Request, env: PublicSubmissionEnv, reporterId: string | null): Promise<Response> {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'El formulario no esta disponible.' }, 503)
+  const parsed = await readBoundedJsonObject<MarketplaceReportPayload>(request, MAX_REQUEST_BYTES)
+  if (!parsed.ok) return json({ error: parsed.status === 413 ? 'Solicitud demasiado grande.' : 'Solicitud no valida.' }, parsed.status)
+  const body = parsed.value
+  const token = normalizedString(body.turnstile_token)
+  const listingType = body.listing_type
+  const listingId = normalizedString(body.listing_id)
+  const reason = normalizedString(body.reason)
+  const description = normalizedString(body.description)
+  if ((listingType !== 'service' && listingType !== 'material') || !UUID_PATTERN.test(listingId)
+    || !validLength(reason, 2, 80) || description.length > 2000) {
+    return json({ error: 'Los datos del formulario no son validos.' }, 400)
+  }
+  const turnstile = await verifyTurnstile(request, env, token, 'report-marketplace')
+  if (turnstile !== 'valid') return turnstileFailure(turnstile)
+  const inserted = await callTrustedRpc(env, 'submit_marketplace_listing_report_trusted', {
+    p_listing_type: listingType, p_listing_id: listingId, p_reporter_id: reporterId,
+    p_reason: reason, p_description: description || null,
+  })
+  return inserted ? json({ ok: true }, 201) : json({ error: 'No fue posible registrar el reporte.' }, 503)
 }
 
 export async function handlePublicMarketplaceContact(

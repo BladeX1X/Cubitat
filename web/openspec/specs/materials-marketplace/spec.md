@@ -9,6 +9,24 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 
 ### Catálogo
 
+- La ficha reutiliza `MarketplaceListingDetail` con Servicios: barra de
+  navegación/acciones, breadcrumb, hero de dos columnas, datos propios de
+  Materiales y galería con flechas y puntos cuando hay varias fotos. En móvil
+  el hero se apila y las acciones quedan en iconos accesibles.
+- Las secciones de la ficha muestran categoría, disponibilidad, ubicación,
+  fecha de actualización, descripción y aviso para confirmar precio e
+  inventario con el vendedor. El panel lateral conserva el formulario de
+  consulta al vendedor y comparte con Comprar y Servicios la jerarquía visual
+  del contacto: encabezado, fecha, etiqueta, campo y CTA, con texto propio del
+  material.
+
+- Las tarjetas MUST compartir el marco, ancho máximo centrado de 72 rem,
+  cuadrícula con columnas desde 320 px y proporción de imagen 16:9 con Comprar y
+  Servicios. Las acciones quedan alineadas al borde inferior de cada tarjeta.
+- Con más de una foto, la tarjeta MUST mostrar flechas y puntos accesibles para
+  navegar la galería; con una foto no muestra controles. La portada conserva
+  prioridad de carga y las demás imágenes son diferidas.
+
 - **WHEN** una persona filtra anuncios en escritorio o móvil
 - **THEN** la barra conserva el estilo compacto de los filtros de Comprar
 - **AND** los cambios se aplican en el catálogo sin recargar ni navegar
@@ -26,6 +44,12 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - **AND** cada ficha indica vendedor, descripción, precio/moneda declarados,
   zona y última actualización
 - **AND** no se presenta el precio ni el inventario como garantía contractual
+
+- **WHEN** una persona abre el catálogo público de materiales
+- **THEN** el encabezado del catálogo muestra el título sin accesos directos
+  para publicar ni administrar anuncios propios
+- **AND** la publicación se inicia desde el flujo universal y la gestión de
+  anuncios propios desde el centro de cuenta
 
 ### Publicación
 
@@ -170,3 +194,36 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - Los enlaces HTTPS previos a esta migración se conservan si ya están en la fila,
   pero no se admiten como imágenes nuevas. Su migración a Storage se hará sin
   borrado automático de archivos anteriores.
+
+### Requirement: Reportes y recomendación de servicios
+Las fichas públicas MUST permitir reportar un anuncio de material publicado con controles antiabuso y presentar servicios con profile_featured vigente al final.
+
+#### Scenario: Reportar material
+- GIVEN un material publicado
+- WHEN la persona selecciona «Informar sobre un problema»
+- THEN el formulario de reporte se abre en un diálogo modal accesible, adaptado al material
+- AND el bloque informativo y el botón de apertura conservan el diseño de reporte de Comprar
+- AND se puede cerrar con Escape, el botón de cierre o pulsando el fondo
+
+#### Scenario: Enviar reporte de material
+- GIVEN el diálogo modal de reporte para un material publicado
+- WHEN el visitante completa el motivo y Turnstile
+- THEN el Worker registra el reporte y Moderación puede revisarlo sin cambiar automáticamente el estado del anuncio
+
+### Requirement: Visor de fotos y mapa del material
+La ficha pública de material MUST ofrecer botones Fotos y Mapa sobre su galería,
+reutilizando el visor modal accesible y adaptando el mapa a la ubicación
+provincial declarada por el vendedor.
+
+#### Scenario: Navegar fotos de un material
+- GIVEN un material publicado con una o más fotos
+- WHEN el visitante abre Fotos
+- THEN puede recorrer la galería en el visor modal
+- AND la imagen seleccionada coincide con la del carrusel de la ficha
+- AND puede cerrar con Escape, el botón de cierre o pulsando el fondo
+
+#### Scenario: Consultar ubicación provincial de un material
+- GIVEN un material publicado con provincia declarada
+- WHEN el visitante abre Mapa
+- THEN se carga un mapa centrado en una referencia aproximada de esa provincia
+- AND se informa que la ubicación no es una dirección exacta

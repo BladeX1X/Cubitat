@@ -34,6 +34,13 @@ El sistema MUST sustituir el catálogo por la ficha técnica extendida al selecc
 - AND en escritorio la portada MUST usar un contenedor centrado con ancho máximo de `1152 px` y columnas equilibradas para información e imagen
 - AND en móvil la portada MUST apilar información e imagen sin desbordamiento horizontal
 
+#### Scenario: Alinear el contenido de la ficha en escritorio
+- GIVEN una persona abre la ficha de una propiedad en una pantalla de escritorio
+- WHEN se muestran la navegación, la galería/resumen, las características y las propiedades similares
+- THEN esas secciones MUST compartir un contenedor centrado con el mismo ancho máximo de `1152 px`
+- AND MUST conservar márgenes laterales uniformes en anchos menores sin desbordar el viewport
+- AND la información de la propiedad y el contacto MUST permanecer en columnas dentro de ese mismo ancho
+
 #### Scenario: Navegar las fotos de la ficha y del visor
 - GIVEN una propiedad tiene más de una foto válida
 - WHEN se muestra la galería de la ficha o el visor de fotos a pantalla completa
@@ -116,6 +123,12 @@ El sistema MUST mantener controles tactiles suficientemente grandes en las tarje
 - AND el boton de guardar/favorito MUST tener un area interactiva minima de `44x44 px`
 - AND las flechas de galeria MUST permanecer visibles en viewport movil aunque no exista estado `hover`
 - AND en escritorio las flechas MAY permanecer discretas y aparecer al pasar el cursor para reducir ruido visual
+
+#### Scenario: Favorito no deja flechas del carrusel activas
+- GIVEN una tarjeta de propiedad en escritorio
+- WHEN el usuario agrega o quita el favorito
+- THEN el puntero o el foco de teclado sobre el botón de favorito MUST NOT mantener visibles las flechas del carrusel
+- AND las flechas MUST mostrarse solo al interactuar con la imagen o al enfocarlas desde el teclado
 
 ### Requirement: Reporte de Propiedades Sospechosas
 El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar un anuncio sospechoso, fraudulento o con información incorrecta mediante un modal de informe estructurado.
@@ -267,3 +280,19 @@ La ficha MUST copiar el enlace al portapapeles en escritorio, sin abrir el selec
 - Al resolver un reporte pendiente, el sistema MUST marcar el reporte como resuelto y pausar su propiedad asociada en la misma transacción.
 - Si cualquiera de las dos actualizaciones falla, ambas MUST revertirse.
 - Un reporte ya resuelto/descartado, o que no corresponda a la propiedad enviada, MUST rechazarse sin modificar la propiedad.
+
+### Requirement: Acciones y resumen legibles en la ficha pública
+- GIVEN una propiedad publicada abierta en su ficha
+- WHEN se muestran las acciones superiores
+- THEN MUST presentar Favorito, Compartir y Ocultar aviso con separadores discretos y acceso usable en móvil
+- AND en móvil, Favorito y Compartir MUST aparecer solo como iconos dentro de la galería, sin etiquetas ni ocupar una fila aparte
+- AND las acciones Fotos/Mapa MUST abrir el visor desde la galería móvil
+- AND ocultar un aviso MUST retirarlo de los resultados en ese navegador y ofrecer deshacer al regresar al catálogo
+- AND la portada MUST resumir las características disponibles sin inventar datos ausentes
+- AND las descripciones largas MUST poder expandirse y contraerse
+
+### Requirement: Controles de galería móvil sin solapamiento
+- GIVEN una propiedad con más de una foto en la ficha móvil
+- WHEN se muestran los controles «Fotos» y «Mapa» sobre la imagen
+- THEN los indicadores de posición del carrusel MUST mantenerse separados y visibles, sin quedar cubiertos por esos controles
+- AND el visor MUST renderizarse sobre la página aunque la galería que controla su estado esté en una sección no visible para ese ancho

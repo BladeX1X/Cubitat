@@ -32,6 +32,7 @@ const [pageMode, setPageMode] = useState<PageMode>(getInitialPageMode)
 - `selectedPropertyId`: sincroniza lista, mapa y detalle.
 - `isLoginOpen`: muestra u oculta `LoginModal`.
 - `pageMode`: alterna entre portada (`home`) y pagina de resultados (`results`) usando `history.pushState`.
+- Al volver a Inicio desde cualquier operación, `navigateHome` limpia los filtros locales junto con la URL para que no quede Comprar, Rentar o Permutar marcado en la portada.
 
 ## Flujo Actual
 
@@ -128,7 +129,7 @@ Estado actual (2026-07-01):
 - "Mis Propiedades" vive en `src/pages/my-properties/MyPropertiesPage.tsx`.
 - "Mi cuenta" vive en `src/pages/account/AccountPage.tsx`.
 - "Favoritos" vive en `src/pages/favorites/FavoritesPage.tsx`.
-- `Mi cuenta`, `Favoritos` y `Ver mis contenidos` comparten `src/pages/account/AccountLayout.tsx`; solo debe cambiar el contenido derecho.
+- `Mi cuenta`, `Favoritos`, `Mis publicaciones`, `Mis servicios` y `Mis materiales` comparten `src/pages/account/AccountLayout.tsx`; los accesos disponibles deben conservarse en la navegación lateral y móvil.
 - La opcion `Busquedas guardadas` no forma parte del MVP actual y fue retirada del menu lateral.
 - `Mi cuenta` guarda avatar en Supabase Storage bucket `avatars` y persiste la URL en `profiles.avatar_url`.
 - La tarjeta de cuenta usa 3 datos completados: nombre, email y celular editable (`profiles.phone`). El celular ya no requiere verificacion por WhatsApp dentro del MVP; el proxy solo permite actualizar campos seguros del perfil.

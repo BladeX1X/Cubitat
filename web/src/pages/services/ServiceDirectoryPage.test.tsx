@@ -52,8 +52,35 @@ describe('ServiceDirectoryPage filter loading', () => {
     vi.mocked(fetchHomeServiceProviders).mockResolvedValue({ items: [provider], total: 1 })
   })
 
+  it('renders the shared detail design with service-specific information', async () => {
+    window.history.replaceState(null, '', '/servicios/fontanero-centro')
+    vi.mocked(fetchHomeServiceProvider).mockResolvedValueOnce({ ...provider, galleryUrls: ['/service-one.webp', '/service-two.webp'] })
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Fontanero del Centro' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Volver al directorio' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Información del servicio' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Descripción del servicio' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Área de servicio' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Tu mensaje')).toHaveClass('marketplace-inquiry-textarea')
+    expect(document.querySelector('.marketplace-contact-meta')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar consulta' })).toHaveClass('marketplace-inquiry-submit')
+    expect(screen.getByRole('button', { name: 'Foto anterior' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto siguiente' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver foto 2' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al directorio' }))
+    expect(window.location.pathname).toBe('/servicios')
+  })
+
+  it('does not show publish or account shortcuts in the directory header', async () => {
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
+    expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Publicar mi servicio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mis perfiles' })).not.toBeInTheDocument()
+  })
+
   it.each(['Contactar', 'Consultar'])('%s uses the direct contact action without navigating to the profile first', async (action) => {
-    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
     const pushState = vi.spyOn(window.history, 'pushState')
 
@@ -65,7 +92,7 @@ describe('ServiceDirectoryPage filter loading', () => {
   })
 
   it('keeps filters, map, and current results mounted while refreshing', async () => {
-    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
 
     const initialPath = window.location.pathname
@@ -92,7 +119,7 @@ describe('ServiceDirectoryPage filter loading', () => {
     vi.mocked(fetchHomeServiceProviders).mockResolvedValueOnce({ items: [provider], total: 31 })
     const nextRequest = deferred<{ items: Array<typeof provider>; total: number }>()
     vi.mocked(fetchHomeServiceProviders).mockReturnValueOnce(nextRequest.promise)
-    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Paginación del catálogo' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cargar más profesionales' })).not.toBeInTheDocument()
@@ -114,7 +141,7 @@ describe('ServiceDirectoryPage filter loading', () => {
 
   it('applies a map province without navigation and resets the municipality and page', async () => {
     vi.mocked(fetchHomeServiceProviders).mockResolvedValueOnce({ items: [provider], total: 31 })
-    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Página 2' }))
@@ -147,7 +174,7 @@ describe('ServiceDirectoryPage filter loading', () => {
       })),
       total: 3,
     })
-    const { container } = render(<ServiceDirectoryPage onRequireLogin={vi.fn()} onCreateProfile={vi.fn()} onManageProfiles={vi.fn()} reviewsEnabled={false} userId={null} />)
+    const { container } = render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
 
     await screen.findByText('Profesional 0')
     const images = Array.from(container.querySelectorAll('img'))
@@ -159,5 +186,19 @@ describe('ServiceDirectoryPage filter loading', () => {
     expect(images[1]).toHaveAttribute('fetchpriority', 'high')
     expect(images[2]).toHaveAttribute('loading', 'lazy')
     expect(images[2]).toHaveAttribute('fetchpriority', 'low')
+  })
+
+  it('shows the shared photo carousel when a provider has multiple photos', async () => {
+    vi.mocked(fetchHomeServiceProviders).mockResolvedValueOnce({
+      items: [{ ...provider, galleryUrls: ['https://example.com/service-1.jpg', 'https://example.com/service-2.jpg'] }],
+      total: 1,
+    })
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
+
+    expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto anterior' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Foto siguiente' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Fotos de Fontanero del Centro' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver foto 2' })).toBeInTheDocument()
   })
 })

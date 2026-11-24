@@ -140,7 +140,7 @@ export function AgentGrowthModerationTab() {
 
   return (
     <section aria-labelledby="agent-growth-admin-title" className="space-y-6">
-      <header><p className="text-xs font-black uppercase tracking-[0.18em] text-[#035f53]">Fase 3</p><h2 id="agent-growth-admin-title" className="mt-1 text-xl font-black text-neutral-900">Captación y comisiones de agentes</h2><p className="mt-1 text-sm text-neutral-600">Acceso protegido por administración AAL2. Los registros de pago son referencias manuales; no se inicia una transferencia.</p></header>
+      <header><p className="text-xs font-black uppercase tracking-[0.18em] text-[#035f53]">Fase 3</p><h2 id="agent-growth-admin-title" className="mt-1 text-xl font-black text-neutral-900">Captación y comisiones de agentes</h2><p className="mt-1 text-sm text-neutral-600">Acceso exclusivo para administradores. Los registros de pago son referencias manuales; no se inicia una transferencia.</p></header>
       {actionError ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p> : null}
       {loading ? <p role="status" className="rounded-xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">Cargando operaciones de agentes…</p> : null}
       {!loading && loadError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">No se pudo cargar la actividad de agentes.<Button type="button" variant="outline" className="ml-3 min-h-11" onClick={() => void reload()}><RefreshCw className="mr-2 h-4 w-4" />Reintentar</Button></div> : null}

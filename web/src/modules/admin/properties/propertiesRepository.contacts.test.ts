@@ -64,4 +64,24 @@ describe('moderation property contact loading', () => {
     })
     expect(result.properties[0].contact_info).toEqual({ name: 'Owner', phone: '+5355512345' })
   })
+
+  it('keeps the property list when private contact enrichment fails', async () => {
+    const properties = query({
+      data: [{
+        id: 'property-1', title: 'Casa', location: 'La Habana', description: '', price_usd: 100,
+        cover_image: null, images: [], created_at: '2026-10-01', user_id: 'owner-1', operation: 'venta',
+        property_type: 'casa', bedrooms: 2, bathrooms: 1, parking: 0, area_m2: 80, age_years: null,
+        amenities: [], features: {}, status: 'pending_review', moderation_message: null,
+      }], count: 1, error: null,
+    })
+    const profiles = query({ data: [{ id: 'owner-1', full_name: 'Owner', email: 'owner@example.com' }], error: null })
+    fromMock.mockReturnValueOnce(properties).mockReturnValueOnce(profiles)
+    rpcMock.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'RPC unavailable' } })
+
+    const result = await fetchModerationProperties('pending_review', 0)
+
+    expect(result.properties).toHaveLength(1)
+    expect(result.properties[0].contact_info).toBeNull()
+    expect(result.warnings).toContain('No se pudieron cargar los datos privados de contacto (código: PGRST202).')
+  })
 })

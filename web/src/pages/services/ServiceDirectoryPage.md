@@ -1,9 +1,7 @@
 # ServiceDirectoryPage
 
-F4-SVC muestra el directorio y el detalle sin depender de reputación. El panel
-F4-REV se carga solo cuando `VITE_PHASE4_REV_ENABLED` está activo y recibe el
-ID opaco del proveedor; reseñas, autoría, denuncias y moderación pertenecen al
-módulo `service-reviews`.
+F4-SVC muestra el directorio y el detalle. Las reseñas están ocultas temporalmente
+en la interfaz pública; su módulo y datos no se modifican.
 
 ## Responsabilidad
 
@@ -20,6 +18,27 @@ definir el flujo de pausa/revisión.
 Las tarjetas y fichas comparten las acciones directas Contactar y Consultar con
 Materiales. Contactar inicia la llamada y Consultar abre WhatsApp con el anuncio
 y su zona. Si falta el canal, ofrece abrir la ficha y enviar una consulta.
+
+Las tarjetas usan `CatalogCardFrame`, compartido con Comprar y Materiales: ancho
+máximo centrado de 72 rem, columnas desde 320 px, portada 16:9, estructura
+vertical común y acciones alineadas al borde inferior.
+
+La ficha reutiliza `MarketplaceListingDetail` con Materiales. Sus secciones
+muestran categoría, municipio y provincia de cobertura, descripción y fecha de
+actualización; conserva la galería original con flechas/puntos y el formulario
+público para contactar al profesional.
+Los botones Fotos y Mapa aparecen sobre la galería. Fotos abre el carrusel
+completo y mantiene sincronizada la imagen seleccionada; Mapa enseña la
+provincia declarada como cobertura, sin indicar el domicilio ni un punto exacto
+de atención.
+
+La tarjeta lateral de contacto adopta la presentación de Comprar (encabezado,
+fecha de actualización, etiqueta, campo y CTA), adaptada al mensaje para el
+profesional. El envío sigue guardándose como consulta privada de la cuenta.
+
+El encabezado del directorio solo muestra el título; publicar un servicio y
+administrar perfiles propios se accede desde el flujo universal de publicación
+y el centro de cuenta, respectivamente.
 
 ## Reglas
 
@@ -68,10 +87,11 @@ y su zona. Si falta el canal, ofrece abrir la ficha y enviar una consulta.
   catálogo para distinguirlo de producción.
 - Cuando está habilitada la bandera de fase 4 de Servicios, cada tarjeta ofrece el control de favoritos compartido con Materiales;
   el proveedor mantiene el estado de sesión y persiste la relación por usuario.
-- El listado y Favoritos firman solo la foto de portada de cada perfil, que es
-  la única que muestran sus tarjetas; evita solicitar URLs firmadas para las
-  galerías completas mientras se explora el catálogo. La ficha firma la galería
-  completa al abrirse. Las tarjetas usan `MarketplaceCardImage`: las dos
+- Las tarjetas usan `CatalogCardGallery`, compartida con Materiales, con flechas
+  y puntos accesibles al mostrar varias fotos. El directorio firma las fotos de
+  la galería para el carrusel; Favoritos sigue firmando solo la portada. La ficha
+  firma la galería completa al abrirse. Las tarjetas usan `MarketplaceCardImage`:
+  las dos
   primeras portadas se cargan con prioridad alta, las siguientes de forma
   diferida, todas con decodificación asíncrona y fallback accesible. Unsplash
   entrega miniaturas a 420 px/calidad 45; las URLs firmadas de Storage piden
@@ -134,3 +154,7 @@ el efecto iniciara la consulta. La navegación desde tarjeta y Atrás/Adelante
 ahora activa carga y limpia el estado anterior antes de cambiar la ruta. La E2E
 con detalle demorado falló antes de la corrección y pasa después; no se cambió
 la regla de visibilidad pública.
+
+## Reportes y recomendaciones
+
+La ficha incluye el reporte de servicio protegido por Turnstile; se registra en la cola unificada de Moderación. Al final muestra hasta tres perfiles con el beneficio activo profile_featured, excluyendo el perfil actual. Las fotos recomendadas se firman solo para portada.

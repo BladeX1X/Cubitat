@@ -4,11 +4,17 @@ import { Button } from '../../shared/ui/button'
 import { fetchMyMaterialListings } from '../../modules/materials/materialRepository'
 import { MATERIAL_CATEGORY_LABELS, type OwnedMaterialListing } from '../../modules/materials/types'
 import { useSEO } from '../../shared/hooks/useSEO'
+import { AccountLayout } from '../account/AccountLayout'
 
 type MyMaterialListingsPageProps = {
   onBack: () => void
   onCreate: () => void
   onEdit: (listingId: string) => void
+  onNavigateAccount: () => void
+  onNavigateFavorites: () => void
+  onNavigateMyProperties: () => void
+  onNavigateMyServices?: () => void
+  onNavigateMyMaterials: () => void
 }
 
 const statusLabels: Record<OwnedMaterialListing['status'], string> = {
@@ -19,7 +25,16 @@ const statusLabels: Record<OwnedMaterialListing['status'], string> = {
   archived: 'Archivado',
 }
 
-export function MyMaterialListingsPage({ onBack, onCreate, onEdit }: MyMaterialListingsPageProps) {
+export function MyMaterialListingsPage({
+  onBack,
+  onCreate,
+  onEdit,
+  onNavigateAccount,
+  onNavigateFavorites,
+  onNavigateMyProperties,
+  onNavigateMyServices,
+  onNavigateMyMaterials,
+}: MyMaterialListingsPageProps) {
   const [listings, setListings] = useState<OwnedMaterialListing[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -35,7 +50,15 @@ export function MyMaterialListingsPage({ onBack, onCreate, onEdit }: MyMaterialL
   useEffect(() => { void load() }, [load])
 
   return (
-    <main className="min-h-[70vh] bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12">
+    <AccountLayout
+      active="materials"
+      onNavigateAccount={onNavigateAccount}
+      onNavigateFavorites={onNavigateFavorites}
+      onNavigateMyProperties={onNavigateMyProperties}
+      onNavigateMyServices={onNavigateMyServices}
+      onNavigateMyMaterials={onNavigateMyMaterials}
+    >
+    <section className="min-h-[70vh] bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={onBack} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 hover:bg-white"><ArrowLeft size={18} />Volver al catálogo</button>
         <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="flex items-center gap-2 text-sm font-bold uppercase text-emerald-800"><Boxes size={17} />Mis publicaciones</p><h1 className="mt-2 text-3xl font-black">Mis anuncios de materiales</h1></div><Button className="min-h-11" onClick={onCreate}>Anunciar material</Button></header>
@@ -46,6 +69,7 @@ export function MyMaterialListingsPage({ onBack, onCreate, onEdit }: MyMaterialL
             : <section aria-label="Tus anuncios" className="mt-7 space-y-3">{listings.map((listing) => <article key={listing.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-4"><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-bold">{listing.title}</h2><span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold">{statusLabels[listing.status]}</span></div><p className="mt-1 text-sm text-neutral-600">{MATERIAL_CATEGORY_LABELS[listing.category]} · {listing.province}</p><p className="mt-2 text-xs text-neutral-500">{listing.status === 'published' ? 'Los cambios volverán a revisión antes de aparecer.' : 'Precio y disponibilidad son informativos.'}</p></div><Button variant="outline" className="min-h-11" disabled={listing.status === 'archived'} onClick={() => onEdit(listing.id)}>Editar</Button></article>)}</section>}
         {!loading && <Button variant="ghost" className="mt-4 min-h-11" onClick={() => void load()}><RefreshCw size={16} className="mr-2" />Actualizar</Button>}
       </div>
-    </main>
+    </section>
+    </AccountLayout>
   )
 }

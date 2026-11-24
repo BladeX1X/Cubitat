@@ -212,8 +212,8 @@ SELECT pg_temp.assert_raises(
 
 RESET ROLE;
 
--- La excepción temporal abre las rutas de administración solo a admin y solo
--- hasta la fecha almacenada. Estas mutaciones se revierten al final del test.
+-- La excepción heredada ya no controla el acceso: las acciones administrativas
+-- dependen del rol admin mientras MFA administrativo esté desactivado.
 UPDATE public.admin_mfa_temporary_overrides
 SET expires_at = statement_timestamp() + interval '1 hour'
 WHERE override_key = 'global';
@@ -242,10 +242,10 @@ SELECT set_config(
   true
 );
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.assert_true(NOT public.is_admin_aal2(), 'expired override restores the AAL2 requirement');
+SELECT pg_temp.assert_true(public.is_admin_aal2(), 'expired legacy override does not restore the AAL2 requirement');
 RESET ROLE;
 
--- Administrador AAL1: el rol solo no concede moderación KYC.
+-- Administrador AAL1: el rol admin basta mientras MFA administrativo está desactivado.
 SELECT set_config(
   'request.jwt.claims',
   '{"sub":"f2000000-0000-0000-0000-000000000003","role":"authenticated","aal":"aal1"}',
@@ -253,15 +253,24 @@ SELECT set_config(
 );
 SET LOCAL ROLE authenticated;
 
-SELECT pg_temp.assert_true((SELECT count(*) = 1 FROM public.profiles), 'admin AAL1 sees only own profile');
-SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM public.kyc_requests), 'admin AAL1 must not read KYC');
 SELECT pg_temp.assert_true(
-  (SELECT count(*) = 0 FROM storage.objects WHERE bucket_id = 'kyc_documents'),
-  'admin AAL1 must not read KYC documents'
+  (SELECT count(*) = 3 FROM public.profiles WHERE id IN (
+    'f2000000-0000-0000-0000-000000000001',
+    'f2000000-0000-0000-0000-000000000002',
+    'f2000000-0000-0000-0000-000000000003'
+  )),
+  'admin AAL1 reads local QA profiles by role'
 );
-SELECT pg_temp.assert_raises(
-  $$SELECT public.review_kyc_request((SELECT id FROM public.kyc_requests LIMIT 1), 'approved', NULL)$$,
-  'Permiso denegado'
+SELECT pg_temp.assert_true(
+  (SELECT count(*) = 1 FROM public.kyc_requests
+   WHERE user_id = 'f2000000-0000-0000-0000-000000000001'),
+  'admin AAL1 reads pending KYC by role'
+);
+SELECT pg_temp.assert_true(
+  (SELECT count(*) = 2 FROM storage.objects
+   WHERE bucket_id = 'kyc_documents'
+     AND name LIKE 'f2000000-0000-0000-0000-000000000001/%'),
+  'admin AAL1 reads KYC documents by role'
 );
 
 RESET ROLE;

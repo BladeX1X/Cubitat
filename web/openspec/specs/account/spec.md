@@ -31,6 +31,13 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - AND MUST mantener datos de usuario disponibles
 - AND MUST proteger cada destino si la sesion expira
 
+#### Scenario: Acceder a servicios y materiales desde la cuenta
+- GIVEN un usuario autenticado está en cualquiera de las secciones del área privada
+- WHEN Servicios o Materiales están habilitados en producción
+- THEN la navegación lateral y móvil MUST mostrar Mis servicios y Mis materiales
+- AND cada acceso MUST abrir la gestión de anuncios del usuario correspondiente
+- AND una sección deshabilitada MUST NOT mostrar su acceso
+
 #### Scenario: Navegación visible en ventanas estrechas
 - GIVEN un usuario autenticado abre el área privada en una ventana estrecha o con zoom
 - WHEN el ancho disponible no permite mostrar la barra lateral

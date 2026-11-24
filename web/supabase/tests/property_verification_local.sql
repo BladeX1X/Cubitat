@@ -121,13 +121,14 @@ SELECT set_config(
   true
 );
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.assert_raises(
-  $$SELECT public.review_property_verification(
-    (SELECT id FROM public.property_verification_requests
-     WHERE property_id = 'f2500000-0000-0000-0000-000000000099'),
-    'approved', NULL
-  )$$,
-  'Permiso denegado: se requiere administrador AAL2'
+SELECT pg_temp.assert_true(
+  public.is_admin_aal2(),
+  'admin AAL1 passes the role-only administrative helper while MFA is disabled'
+);
+SELECT pg_temp.assert_true(
+  (SELECT score = 60 AND NOT document_verified
+   FROM public.get_property_trust_score('f2500000-0000-0000-0000-000000000099')),
+  'admin AAL1 can inspect the internal trust score without MFA'
 );
 
 SELECT set_config(

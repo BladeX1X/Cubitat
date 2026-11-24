@@ -8,6 +8,22 @@ Define la experiencia de exploracion de propiedades en lista y mapa.
 ### Requirement: Catalogo paginado
 El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y paginada.
 
+- Las tarjetas MUST usar el marco visual compartido del catálogo, con el mismo
+  ancho máximo centrado de 72 rem, columnas de al menos 320 px y proporción de
+  imagen 16:9 que Servicios y Materiales.
+- La cuadrícula MUST mantener alturas uniformes por fila y acciones alineadas
+  al borde inferior en escritorio y móvil.
+- Las acciones Contactar y Consultar MUST permanecer lado a lado en el pie de
+  cada tarjeta.
+- Las tarjetas de resultados y sus previews del mapa MUST ocultar temporalmente
+  las etiquetas editoriales «Nuevo», «Destacado» y «Exclusivo».
+
+#### Scenario: Etiquetas editoriales temporalmente ocultas
+- GIVEN una propiedad incluye un valor editorial en `badge`
+- WHEN aparece en una tarjeta de resultados o preview del mapa
+- THEN MUST NOT mostrar las etiquetas «Nuevo», «Destacado» ni «Exclusivo»
+- AND MUST conservar las etiquetas de tipo de inmueble y operación.
+
 #### Scenario: Catálogo de propiedades centrado en escritorio
 - GIVEN el usuario abre Comprar o Rentar con un viewport de al menos 1021 px
 - WHEN la vista de lista está activa
@@ -19,6 +35,7 @@ El sistema MUST mostrar resultados de propiedades filtradas en una lista clara y
 - GIVEN un usuario ejecuta una busqueda
 - WHEN llega a `/resultados`
 - THEN el sistema MUST mostrar total de propiedades, resumen, ordenamiento y tarjetas
+- AND las tarjetas de cada cuadrícula MUST conservar la misma altura y alinear las acciones al borde inferior, aunque varíe el número de características
 - AND MUST paginar resultados cuando excedan el tamano de pagina
 - AND MUST mostrar estado vacio cuando no haya coincidencias
 

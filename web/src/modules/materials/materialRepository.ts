@@ -173,7 +173,7 @@ export async function fetchMaterialListings(filters: {
     const { data, error, count } = await query
     if (error) return throwLoadError('fetch_material_list', error)
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return { items: await signMaterialPhotos(listings, { coverOnly: true, transformCover: true }), total: count ?? listings.length }
+    return { items: await signMaterialPhotos(listings), total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
   }

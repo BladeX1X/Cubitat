@@ -58,12 +58,12 @@ describe('AgentApplicationsModerationTab', () => {
     expect(repository.fetchAgentApplicationDocumentLinks).toHaveBeenCalledWith(application.id)
   })
 
-  it('explains that AAL2 is required when the protected endpoint denies the document request', async () => {
-    repository.fetchAgentApplicationDocumentLinks.mockRejectedValue(new Error('Se requiere una sesión administrativa AAL2 para ver documentos.'))
+  it('explains that admin permission is missing when the protected endpoint denies the document request', async () => {
+    repository.fetchAgentApplicationDocumentLinks.mockRejectedValue(new Error('No tienes permiso de administrador para abrir estos documentos.'))
     render(<AgentApplicationsModerationTab />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Ver documentos' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/sesión administrativa AAL2/i)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/permiso de administrador/i)
   })
 
   it('provides an empty state when the review queue has no applications', async () => {

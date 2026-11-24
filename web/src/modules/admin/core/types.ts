@@ -1,4 +1,4 @@
-export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit' | 'kyc' | 'property-verification' | 'agent-applications' | 'home-services' | 'service-reviews' | 'materials' | 'business-benefits'
+export type AdminSection = 'properties' | 'reports' | 'metrics' | 'audit' | 'kyc' | 'property-verification' | 'agent-applications' | 'home-services' | 'service-reviews' | 'materials'
 
 export type StatusFilter =
   | 'pending_review'
@@ -75,6 +75,7 @@ export type ModerationProperty = {
 }
 
 export type PropertyReport = {
+  kind: 'property'
   id: string
   property_id: string
   reporter_id: string | null
@@ -89,6 +90,21 @@ export type PropertyReport = {
     status: string
   } | null
 }
+
+export type MarketplaceListingReport = {
+  kind: 'marketplace'
+  id: string
+  listing_type: 'service' | 'material'
+  listing_id: string
+  listing_title: string
+  reporter_id: string | null
+  reason: string
+  description: string | null
+  status: ReportStatus
+  created_at: string
+}
+
+export type ModerationReport = PropertyReport | MarketplaceListingReport
 
 export type StatusCounts = Record<StatusFilter, number> & { image_duplicates?: number }
 
