@@ -16,6 +16,9 @@ calidad del trabajo.
 - **AND** aplica los cambios al catálogo sin recargar ni navegar
 - **AND** móvil ofrece una hoja de filtros con opción para limpiar y el total
   actualizado de resultados
+- **AND** reutiliza `MarketplaceCatalogHeader` con Materiales: filtros primero;
+  debajo, título, descripción y total de profesionales, sin botones duplicados
+  de publicación o gestión en el catálogo
 
 - **WHEN** un visitante abre el directorio o filtra por texto,
   categoría/provincia/municipio

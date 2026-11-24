@@ -15,7 +15,8 @@ publicación de un perfil. El mapa opcional agrega conteos por provincia bajo
 los filtros actuales (excepto la provincia seleccionada), sin exponer
 coordenadas de perfiles ni reemplazar la paginación. La acción “Mis perfiles” abre una gestión privada;
 solo perfiles no publicados se editan y los publicados no exponen edición hasta
-definir el flujo de pausa/revisión.
+definir el flujo de pausa/revisión. La publicación y gestión se inician desde el
+flujo universal y Mi cuenta; el directorio no duplica esos accesos.
 
 Las tarjetas y fichas comparten las acciones directas Contactar y Consultar con
 Materiales. Contactar inicia la llamada y Consultar abre WhatsApp con el anuncio
@@ -25,6 +26,9 @@ y su zona. Si falta el canal, ofrece abrir la ficha y enviar una consulta.
 
 - Solo se consultan perfiles publicados; no muestra información interna de
   moderación.
+- El catálogo reutiliza `MarketplaceCatalogHeader`: filtros primero y debajo
+  título, descripción y total de profesionales, con el mismo orden visual que
+  Resultados. Búsqueda y filtros conservan su lógica específica.
 - El mapa se carga bajo demanda y usa conteos de todas las páginas que cumplen
   texto, categoría y municipio; seleccionar una provincia aplica el filtro del
   catálogo. El mapa muestra ubicaciones provinciales aproximadas, no domicilios.
@@ -36,7 +40,7 @@ y su zona. Si falta el canal, ofrece abrir la ficha y enviar una consulta.
   ofrece limpiar y ver resultados. En escritorio, filtros y búsqueda aparecen
   en la barra; el desbordamiento de controles se contiene dentro de ella. La
   barra sticky queda bajo el encabezado (76 px escritorio, 104 px tablet y
-  64 px móvil); el encabezado conserva las acciones compactas del directorio.
+  64 px móvil); publicación y gestión no se duplican en el directorio.
 - En pantallas táctiles, los botones del encabezado, filtros, acciones de
   tarjetas y mapa tienen objetivos de al menos 48×48 px; las cajas de búsqueda
   usan fuente de 16 px para evitar el zoom automático del navegador móvil.

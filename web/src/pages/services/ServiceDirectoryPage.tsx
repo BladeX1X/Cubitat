@@ -11,6 +11,7 @@ import { CatalogFilterToolbar } from '../../modules/catalog-explorer/CatalogFilt
 import { CatalogMap } from '../../modules/catalog-explorer/CatalogMap'
 import { CatalogPagination, CATALOG_PAGE_SIZE } from '../../modules/catalog-explorer/CatalogPagination'
 import { MarketplaceMapToggle } from '../../modules/marketplace/MarketplaceMapToggle'
+import { MarketplaceCatalogHeader } from '../../modules/marketplace/MarketplaceCatalogHeader'
 import { HOME_SERVICE_CATEGORIES, HOME_SERVICE_CATEGORY_LABELS, type HomeServiceCategory, type HomeServiceProvider } from '../../modules/home-services/types'
 import { fetchHomeServiceProvider, fetchHomeServiceProviders, fetchHomeServiceProvinceCounts, sendHomeServiceInquiry } from '../../modules/home-services/homeServiceRepository'
 import type { ProvinceCount } from '../../modules/marketplace/provinceAggregates'
@@ -42,7 +43,7 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
 }
 
-export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManageProfiles, reviewsEnabled, userId }: ServiceDirectoryPageProps) {
+export function ServiceDirectoryPage({ onRequireLogin, reviewsEnabled, userId }: ServiceDirectoryPageProps) {
   const [slug, setSlug] = useState<string | null>(getSlugFromPath)
   const [category, setCategory] = useState<HomeServiceCategory | ''>('')
   const [province, setProvince] = useState('')
@@ -233,12 +234,9 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
     <main className="marketplace-directory-map-page min-h-[75vh] bg-neutral-50 px-4 py-4 sm:px-6 sm:py-6">
       <div className={`mx-auto ${mapOpen ? 'max-w-screen-2xl' : 'max-w-6xl'}`}>
         {import.meta.env.MODE === 'phase34-dev' && <span className="marketplace-directory-dev-badge">Entorno de pruebas · DEV</span>}
-        <header className="marketplace-directory-heading">
-          <h1 className="font-black text-neutral-900">Servicios para el hogar</h1>
-          <div className="marketplace-directory-heading__actions"><Button type="button" className="min-h-11" onClick={onCreateProfile}>Publicar mi servicio</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageProfiles}>Mis perfiles</Button></div>
-        </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="service-province-map" mapBusy={provinceCountsLoading} toolbar={
+        <MarketplaceCatalogHeader title="Servicios para el hogar" description="Encuentra profesionales para reparar, mejorar y cuidar tu hogar en Cuba." resultCount={`${total} ${total === 1 ? 'profesional disponible' : 'profesionales disponibles'}`}>
           <CatalogFilterToolbar label="Filtros de profesionales" resultLabel="profesionales" resultCount={total} activeFiltersCount={[category, province, municipality, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setMunicipality(''); setSearch(''); setCurrentPage(1) }}
             search={<label><span className="sr-only">Buscar servicio</span><input aria-label="Buscar servicio" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1) }} className="marketplace-filter-search" placeholder="Plomería, electricidad…" /></label>}
             filters={<>
@@ -247,6 +245,7 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
               <label><span className="sr-only">Municipio</span><select aria-label="Municipio" value={municipality} onChange={(event) => { setMunicipality(event.target.value); setCurrentPage(1) }} disabled={!province}><option value="">Todos los municipios</option>{(province ? cubanMunicipalities[province] ?? [] : []).map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
             </>}
           />
+        </MarketplaceCatalogHeader>
         } map={
           provinceCountsError
             ? <ProvinceMapStatus error onClose={() => setMapOpen(false)} resultLabel="profesionales" />
@@ -254,7 +253,6 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
         }>
 
           <div className="marketplace-directory-results" aria-busy={loading}>
-            <p className="mb-4 text-sm text-neutral-600">{total} {total === 1 ? 'profesional disponible' : 'profesionales disponibles'}</p>
             {loading && <span role="status" aria-label="Actualizando profesionales" className="sr-only">Actualizando resultados…</span>}
             {resultsContent}
             <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />

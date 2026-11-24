@@ -14,6 +14,9 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 - **AND** los cambios se aplican en el catálogo sin recargar ni navegar
 - **AND** móvil permite abrir y cerrar filtros en una hoja, limpiar filtros y
   conservar visible el total de resultados
+- **AND** reutiliza `MarketplaceCatalogHeader` con Servicios: filtros primero;
+  debajo, título, descripción y total de anuncios, sin botones duplicados de
+  publicación o gestión en el catálogo
 - En dispositivos táctiles, los botones del encabezado, filtros, acciones del
   catálogo, paginación y mapa MUST ofrecer objetivos de al menos 48×48 px; los
   campos de texto móviles MUST usar fuente de al menos 16 px.
