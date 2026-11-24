@@ -198,9 +198,32 @@ La conversión se cubre con pruebas de referencia de portada, galería y lote de
 - El editor resuelve referencias históricas del bucket privado `property_images` tanto como URL directa de Supabase como ruta del proxy `/api/supabase`. Solo admite rutas de imagen del propietario autenticado y descarga desde el Storage configurado por la aplicación.
 - Muestra una URL `blob:` temporal, pero conserva la referencia canónica original al guardar. Si la descarga falla, mantiene la referencia y muestra un fallback sin borrarla.
 - El guardado conserva una referencia del proxy solo cuando la ruta canónica coincide con el bucket `property_images` y el propietario autenticado; no intenta convertirla en una foto nueva. Rechaza referencias de otro propietario.
+
 - DEV autenticado: reabrí una propiedad existente; la imagen antes vacía ahora aparece y su tamaño se muestra como 9.7 KB. No guardé el anuncio ni alteré sus datos.
 - Desplegado solo a `cubitat1-phase2-dev`, versión `6dce5d5f-4c21-4ae6-9aa7-b928c2db967a`. `/`, `/publicar` y los bundles del editor/preview respondieron HTTP 200. Gates del perfil DEV: lint, 956 pruebas PASS/1 omitida, build y verificadores PASS.
 - Pendiente: verificar carga de una foto nueva, guardado exitoso y reapertura posterior. Producción, moderación y Supabase no se modificaron.
+
+## Compatibilidad con nombres heredados de fotos — 2026-11-18
+
+El editor y Mis publicaciones aceptan referencias privadas bajo la carpeta UUID
+del propietario con nombre UUID o con el formato anterior de carga
+`<timestamp de 13 dígitos>-<índice de 0 a 19>.webp`. El helper descarga ambos
+formatos con la sesión autenticada; no acepta nombres libres ni rutas de otra
+carpeta. La regresión se valida en `privateImagePreviews.test.ts` y
+`edit-property-photo-retry.spec.ts`. Desplegado primero a producción el
+2026-11-18 como Worker `cubitat1`, versión `379dc861-e684-45b1-a557-b81c9ceb113d`;
+despliegues posteriores desde una rama sin esa corrección volvieron a servir el
+validador UUID-only.
+
+### Retest productivo tras el despliegue actual — 2026-11-18
+
+El helper productivo admite UUID y nombres heredados `<timestamp de 13
+dígitos>-<índice 0–19>.webp`, siempre bajo la carpeta del propietario. Worker
+`cubitat1` versión `db52d8f6-3753-4544-8067-a6ae4f211682` quedó al 100 %. En el
+editor autenticado, la foto antes fallida cargó y mostró 25.9 KB tras
+`Ctrl+Shift+R`; la recarga normal había conservado el bundle PWA anterior. No se
+guardó la publicación. PR #256 conserva el fix en `main`; preview DEV PASS y
+GitHub Actions no asignó runners por pagos/límite de gasto.
 
 ### Salida del editor — prueba E2E local — 2026-11-13
 

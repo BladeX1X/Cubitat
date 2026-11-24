@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('reanuda la edición en Imágenes, conserva la foto privada y guarda una nueva a revisión', async ({ page }) => {
   const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
   const propertyId = '7a2178c8-e5da-4b39-912a-15b57d5c72ea'
-  const originalImage = `/api/supabase/storage/v1/object/property_images/${ownerId}/11111111-1111-4111-8111-111111111111.webp`
+  const originalImage = `/api/supabase/storage/v1/object/property_images/${ownerId}/1763481234567-0.webp`
   const uploadedPath = `${ownerId}/22222222-2222-4222-8222-222222222222.webp`
   let propertyUpdate: Record<string, unknown> | null = null
   let uploadedContentType = ''
@@ -21,7 +21,7 @@ test('reanuda la edición en Imágenes, conserva la foto privada y guarda una nu
       return
     }
 
-    if (url.pathname.endsWith(`/storage/v1/object/property_images/${ownerId}/11111111-1111-4111-8111-111111111111.webp`)) {
+    if (url.pathname.endsWith(`/storage/v1/object/property_images/${ownerId}/1763481234567-0.webp`)) {
       await route.fulfill({ status: 200, contentType: 'image/webp', body: Buffer.from('RIFF0000WEBPVP8 ', 'ascii') })
       return
     }

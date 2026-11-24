@@ -11,8 +11,12 @@ import { createOwnedPropertyCoverPreviews, createOwnedPropertyImagePreview, isOw
 const ownerId = '11111111-1111-4111-8111-111111111111'
 const photoId = '22222222-2222-4222-8222-222222222222'
 const otherOwnerId = '33333333-3333-4333-8333-333333333333'
+const legacyPhotoName = '1763481234567-0.webp'
 function imageSource(folderId = ownerId) {
   return `${window.location.origin}/api/supabase/storage/v1/object/public/property_images/${folderId}/${photoId}.webp`
+}
+function legacyImageSource(folderId = ownerId, filename = legacyPhotoName) {
+  return `${window.location.origin}/api/supabase/storage/v1/object/public/property_images/${folderId}/${filename}`
 }
 function directSupabaseImageSource(folderId = ownerId) {
   return `https://bknwerqbbysveehcdmzr.supabase.co/storage/v1/object/public/property_images/${folderId}/${photoId}.webp`
@@ -41,6 +45,19 @@ describe('private property cover previews', () => {
     expect(isOwnedPropertyImageReference(imageSource(), ownerId)).toBe(true)
     expect(isOwnedPropertyImageReference(imageSource(otherOwnerId), ownerId)).toBe(false)
     expect(isOwnedPropertyImageReference(`${imageSource()}?token=unexpected`, ownerId)).toBe(false)
+  })
+
+  it('accepts only the owner-scoped legacy timestamp filename format', async () => {
+    expect(isOwnedPropertyImageReference(legacyImageSource(), ownerId)).toBe(true)
+    expect(isOwnedPropertyImageReference(legacyImageSource(otherOwnerId), ownerId)).toBe(false)
+    expect(isOwnedPropertyImageReference(legacyImageSource(ownerId, 'photo.webp'), ownerId)).toBe(false)
+    expect(isOwnedPropertyImageReference(legacyImageSource(ownerId, '1763481234567-123.webp'), ownerId)).toBe(false)
+    expect(isOwnedPropertyImageReference(legacyImageSource(ownerId, '1763481234567-20.webp'), ownerId)).toBe(false)
+
+    const result = await createOwnedPropertyImagePreview(legacyImageSource(), ownerId)
+
+    expect(mocks.download).toHaveBeenCalledWith(`${ownerId}/${legacyPhotoName}`)
+    expect(result).toMatchObject({ size: 4 })
   })
 
   it('recognizes legacy direct Supabase URLs but downloads through the configured app client', async () => {

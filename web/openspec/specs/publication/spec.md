@@ -411,6 +411,8 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - THEN MUST conservar esa referencia si pertenece al propietario autenticado
 - AND MUST NOT intentar convertir la ruta en un archivo de imagen nuevo
 - AND MUST rechazar referencias del bucket que pertenezcan a otro propietario
+- AND MUST admitir nombres UUID y el formato heredado `<timestamp de 13 dígitos>-<índice de 0 a 19>.webp` bajo la carpeta UUID del propietario
+- AND MUST rechazar nombres de archivo arbitrarios aunque la carpeta corresponda al propietario
 
 #### Scenario: Mostrar fotos del bucket privado en anuncios publicados
 - GIVEN una imagen de propiedad almacenada en `property_images`, cuyo bucket es privado
