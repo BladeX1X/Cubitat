@@ -68,6 +68,19 @@ visor multimedia. El mapa MUST cargarse bajo demanda y mostrar solo una
 referencia de la provincia declarada, sin marcador de domicilio ni coordenadas
 exactas.
 
+### Requirement: Coordenadas privadas en publicaciones de Servicios y Materiales
+
+- **GIVEN** un anunciante crea o edita un servicio o material
+- **WHEN** marca un punto en `AddressMap`
+- **THEN** el punto exacto MUST guardarse en la tabla privada de la categoría y
+  MUST volver a mostrarse solo al propietario mediante la RPC de sus anuncios
+- **AND** las respuestas de catálogo MUST exponer solo el punto redondeado a
+  0.005 grados, con RLS y privilegios de columna limitados
+- **AND** las fichas MUST dibujar un área de 1 km de diámetro centrada en la
+  referencia aproximada, sin exponer la ubicación exacta
+- **WHEN** el anunciante quita la ubicación
+- **THEN** la coordenada privada y la referencia pública MUST eliminarse
+
 #### Scenario: Abrir el mapa de un servicio o material
 - GIVEN una ficha pública de servicio o material con provincia declarada
 - WHEN el visitante selecciona Mapa

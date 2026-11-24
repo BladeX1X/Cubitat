@@ -13,6 +13,7 @@ export const HOME_SERVICE_CATEGORIES = [
 ] as const
 
 export type HomeServiceCategory = (typeof HOME_SERVICE_CATEGORIES)[number]
+export type MarketplaceCoordinates = { latitude: number; longitude: number }
 
 export const HOME_SERVICE_CATEGORY_LABELS: Record<HomeServiceCategory, string> = {
   plomeria: 'Plomería',
@@ -36,6 +37,7 @@ export type HomeServiceProvider = {
   description: string
   province: string
   municipalities: string[]
+  coordinates?: MarketplaceCoordinates | null
   phone: string | null
   whatsapp: string | null
   galleryUrls: string[]

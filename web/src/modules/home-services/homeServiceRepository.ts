@@ -3,6 +3,7 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 import { aggregateProvinceCounts } from '../marketplace/provinceAggregates'
 import { signCatalogCardImage } from '../../shared/lib/catalogStorageImage'
+import { normalizePropertyCoordinates } from '../maps/lib/propertyCoordinates'
 import {
   getHomeServicePhotoBucket,
   isHomeServicePhotoPath,
@@ -16,6 +17,7 @@ type ProviderRow = {
   description: unknown
   province: unknown
   municipalities: unknown
+  coordinates: unknown
   phone: unknown
   whatsapp: unknown
   gallery_urls: unknown
@@ -120,6 +122,7 @@ function parseProvider(value: unknown): HomeServiceProvider | null {
     description: row.description,
     province: row.province,
     municipalities: parseStringList(row.municipalities),
+    coordinates: normalizePropertyCoordinates(row.coordinates),
     phone: typeof row.phone === 'string' ? row.phone : null,
     whatsapp: typeof row.whatsapp === 'string' ? row.whatsapp : null,
     galleryUrls: parseImageUrls(row.gallery_urls),
@@ -144,7 +147,7 @@ export async function fetchHomeServiceProviders(filters: {
   try {
     let query = supabase
       .from('home_service_providers')
-      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at', { count: 'exact' })
+      .select('id, slug, display_name, category, description, province, municipalities, coordinates, gallery_urls, updated_at', { count: 'exact' })
       .eq('status', 'published')
       .order('updated_at', { ascending: false })
       .range(Math.max(0, filters.offset ?? 0), Math.max(0, filters.offset ?? 0) + Math.min(60, Math.max(1, filters.pageSize ?? 24)) - 1)
@@ -194,7 +197,7 @@ export async function fetchHomeServiceProvider(slug: string): Promise<HomeServic
   try {
     const { data, error } = await supabase
       .from('home_service_providers')
-      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at')
+      .select('id, slug, display_name, category, description, province, municipalities, coordinates, gallery_urls, updated_at')
       .eq('slug', slug)
       .eq('status', 'published')
       .maybeSingle()
@@ -212,7 +215,7 @@ export async function fetchHomeServiceProvidersByIds(ids: readonly string[]): Pr
   try {
     const { data, error } = await supabase
       .from('home_service_providers')
-      .select('id, slug, display_name, category, description, province, municipalities, gallery_urls, updated_at')
+      .select('id, slug, display_name, category, description, province, municipalities, coordinates, gallery_urls, updated_at')
       .in('id', listingIds)
       .eq('status', 'published')
     if (error) throw error
@@ -260,6 +263,7 @@ export async function createHomeServiceProvider(input: {
   description: string
   province: string
   municipalities: string[]
+  coordinates: { latitude: number; longitude: number } | null
   phone: string | null
   whatsapp: string | null
   galleryUrls: string[]
@@ -277,6 +281,7 @@ export async function createHomeServiceProvider(input: {
     description: input.description.trim(),
     province: input.province.trim(),
     municipalities: input.municipalities,
+    coordinates: input.coordinates,
     phone: input.phone,
     whatsapp: input.whatsapp,
     gallery_urls: input.galleryUrls,
@@ -300,6 +305,7 @@ export async function updateHomeServiceProvider(providerId: string, input: {
   description: string
   province: string
   municipalities: string[]
+  coordinates: { latitude: number; longitude: number } | null
   phone: string | null
   whatsapp: string | null
   galleryUrls: string[]
@@ -311,6 +317,7 @@ export async function updateHomeServiceProvider(providerId: string, input: {
     p_description: input.description.trim(),
     p_province: input.province.trim(),
     p_municipalities: input.municipalities,
+    p_coordinates: input.coordinates,
     p_phone: input.phone,
     p_whatsapp: input.whatsapp,
     p_gallery_urls: input.galleryUrls,

@@ -18,6 +18,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
   const [retryCount, setRetryCount] = useState(0)
   const longitude = center?.[0]
   const latitude = center?.[1]
+  const hasCoordinates = center !== null
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -57,7 +58,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
           container: containerRef.current,
           style,
           center: [mapLongitude, mapLatitude],
-          zoom: 8,
+          zoom: hasCoordinates ? 13 : 8,
           attributionControl: false,
         })
         mapRef.current = map
@@ -69,6 +70,31 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
           window.clearTimeout(timeout)
           setLoading(false)
           setUnavailable(false)
+          if (hasCoordinates) {
+            const circleCoordinates = Array.from({ length: 65 }, (_, index) => {
+              const angle = (index / 64) * Math.PI * 2
+              const latitudeOffset = (500 / 111_320) * Math.sin(angle)
+              const longitudeOffset = (500 / (111_320 * Math.cos(mapLatitude * Math.PI / 180))) * Math.cos(angle)
+              return [mapLongitude + longitudeOffset, mapLatitude + latitudeOffset]
+            })
+            map.addSource('approximate-location-radius', {
+              type: 'geojson',
+              data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [circleCoordinates] } },
+            })
+            map.addLayer({
+              id: 'approximate-location-radius-fill',
+              type: 'fill',
+              source: 'approximate-location-radius',
+              paint: { 'fill-color': '#00856f', 'fill-opacity': 0.18 },
+            })
+            map.addLayer({
+              id: 'approximate-location-radius-outline',
+              type: 'line',
+              source: 'approximate-location-radius',
+              paint: { 'line-color': '#00856f', 'line-width': 2 },
+            })
+            new maplibregl.Marker({ color: '#006b5b' }).setLngLat([mapLongitude, mapLatitude]).addTo(map)
+          }
         })
         map.on('error', (event) => {
           if (!didLoad) failMap(event.error ?? new Error('No se pudieron cargar los recursos del mapa'))
@@ -85,7 +111,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [latitude, longitude, retryCount])
+  }, [latitude, longitude, hasCoordinates, retryCount])
 
   return (
     <div className="relative h-full w-full bg-neutral-100">

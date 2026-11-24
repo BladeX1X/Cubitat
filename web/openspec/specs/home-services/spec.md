@@ -9,6 +9,18 @@ calidad del trabajo.
 
 ## Requisitos
 
+### Ubicación con privacidad para publicar servicios
+
+- El formulario de alta/edición comparte el marco de publicación con Comprar y
+  Materiales, y permite marcar opcionalmente un punto en el mapa.
+- La base guarda la coordenada exacta en una tabla privada accesible únicamente
+  al propietario autenticado; el catálogo solo recibe una coordenada pública
+  redondeada a una cuadrícula de 0.005 grados.
+- El propietario recupera su punto exacto mediante `get_my_home_service_providers`
+  y puede moverlo o quitarlo al editar. Una ficha pública usa la referencia
+  redondeada y un círculo de 1 km de diámetro; si no hay punto, conserva el mapa
+  provincial existente.
+
 ### Listado y detalle públicos
 
 - **WHEN** una persona abre el directorio público de servicios

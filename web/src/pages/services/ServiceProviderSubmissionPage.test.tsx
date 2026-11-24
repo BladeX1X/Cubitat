@@ -26,6 +26,9 @@ vi.mock('../../modules/home-services/homeServicePhotos', () => ({
   uploadHomeServicePhotos: serviceMocks.uploadPhotos,
   validateHomeServicePhotoFiles: (files: readonly File[], existing: number) => existing + files.length > 10 ? 'TOO_MANY' : null,
 }))
+vi.mock('../publish/PublicationLocationField', () => ({
+  PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(23.12345, -82.34567)}>Marcar punto</button>,
+}))
 
 describe('ServiceProviderSubmissionPage', () => {
   beforeEach(() => {
@@ -60,6 +63,16 @@ describe('ServiceProviderSubmissionPage', () => {
     }), expect.any(String))
     expect(await screen.findByText('Perfil enviado a revisión')).toBeInTheDocument()
     vi.unstubAllGlobals()
+  })
+
+  it('saves the selected coordinates with the service profile', async () => {
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con ubicación geográfica para el profesional.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
+    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await waitFor(() => expect(serviceMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 23.12345, longitude: -82.34567 } }), expect.any(String)))
   })
 
   it('does not create the profile when a multi-photo upload fails', async () => {

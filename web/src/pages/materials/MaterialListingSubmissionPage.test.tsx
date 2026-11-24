@@ -24,6 +24,9 @@ vi.mock('../../modules/materials/materialRepository', () => ({
 vi.mock('../../shared/lib/catalogPhotos', () => ({
   compressCatalogPhoto: materialMocks.compressPhoto,
 }))
+vi.mock('../publish/PublicationLocationField', () => ({
+  PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(20.01234, -75.81234)}>Marcar punto</button>,
+}))
 
 describe('MaterialListingSubmissionPage', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -64,6 +67,18 @@ describe('MaterialListingSubmissionPage', () => {
       photoPaths: ['owner/listing/photo-1.webp', 'owner/listing/photo-2.webp'],
     }))
     expect(await screen.findByRole('heading', { name: 'Anuncio enviado a revisión' })).toBeInTheDocument()
+  })
+
+  it('saves the selected coordinates with the material listing', async () => {
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material con ubicación QA' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'Santiago de Cuba' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba con más de veinte caracteres para guardar.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
+    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+
+    await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } }), expect.any(String)))
+    await waitFor(() => expect(materialMocks.update).toHaveBeenCalledWith('listing-qa', expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } })))
   })
 
   it('shows signed previews for the owner photos already saved on the listing', async () => {

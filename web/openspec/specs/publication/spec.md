@@ -1,5 +1,17 @@
 # Proceso de Publicacion
 
+## Selector universal de anuncios — 2026-11-24
+
+- «Publicar gratis» abre `/publicar`, que ofrece Inmueble, Servicio y Material
+  según las fases habilitadas.
+- La opción elegida conduce al flujo existente de su categoría. Las rutas
+  directas de edición y el acceso a borradores inmobiliarios se conservan.
+- Desde Mis publicaciones, «Nueva propiedad» abre directamente el asistente
+  inmobiliario; el selector global no altera ese acceso contextual.
+- Los formularios de Servicios y Materiales reutilizan el marco común de
+  publicación (retorno, título, explicación y contenedor) y conservan sus campos
+  propios.
+
 ## Purpose
 Define el flujo completo para crear, editar, guardar y publicar anuncios de propiedades.
 

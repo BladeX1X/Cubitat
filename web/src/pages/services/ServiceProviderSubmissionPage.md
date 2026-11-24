@@ -6,6 +6,13 @@ Crear o editar un perfil profesional y enviarlo a revisión con una galería de
 fotos de trabajos. Los datos de contacto son voluntarios y el perfil no se
 presenta como licencia o certificación.
 
+El formulario comparte el marco visual de publicación con Inmuebles y
+Materiales. El punto opcional se marca con `AddressMap`; al editar se recupera
+desde la RPC del propietario y al guardar se envía junto con los campos del
+perfil. La tabla pública conserva solo la referencia aproximada; la ubicación
+exacta queda en `home_service_private_coordinates`. Si se quita el punto, el
+guardado elimina ambas versiones.
+
 ## Flujo de fotografías
 
 - Acepta seleccionar varias imágenes por tanda, hasta 10 referencias por

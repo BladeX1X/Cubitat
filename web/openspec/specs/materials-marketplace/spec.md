@@ -7,6 +7,18 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 
 ## Requisitos
 
+### Ubicación con privacidad para publicar materiales
+
+- El formulario de alta/edición comparte el marco de publicación con Comprar y
+  Servicios, y permite marcar opcionalmente un punto en el mapa.
+- La base guarda la coordenada exacta en una tabla privada accesible únicamente
+  al propietario autenticado; el catálogo solo recibe una coordenada pública
+  redondeada a una cuadrícula de 0.005 grados.
+- El propietario recupera su punto exacto mediante `get_my_material_listings`
+  y puede moverlo o quitarlo al editar. Una ficha pública usa la referencia
+  redondeada y un círculo de 1 km de diámetro; si no hay punto, conserva el mapa
+  provincial existente.
+
 ### Catálogo
 
 - La ficha reutiliza `MarketplaceListingDetail` con Servicios: barra de

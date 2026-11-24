@@ -13,7 +13,7 @@ import { removeUnattachedMaterialPhotos, updateMaterialListing } from './materia
 
 const listingInput = {
   title: 'Material de prueba', category: 'cemento' as const, description: 'Descripción de material para la prueba.',
-  price: null, currency: 'USD' as const, province: 'La Habana', availability: 'available' as const,
+  price: null, currency: 'USD' as const, province: 'La Habana', coordinates: null, availability: 'available' as const,
   phone: null, whatsapp: null, photoPaths: [],
 }
 const photoPath = '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/33333333-3333-4333-8333-333333333333.webp'

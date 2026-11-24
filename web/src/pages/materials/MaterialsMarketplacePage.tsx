@@ -203,8 +203,8 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
         renderImage={(src, index, eager) => <MarketplaceCardImage src={src} alt={`${listing.title}, foto ${index + 1}`} eager={eager} className="property-photo-slide" fallback={<div className="marketplace-detail-image-fallback"><Boxes size={54} /><span>Foto no disponible</span></div>} />}
         favoriteAction={PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={listing.id} listingTitle={listing.title} className="marketplace-detail-favorite" showLabel iconSize={19} />}
         mapLabel={`Ubicación declarada: ${listing.province}`}
-        mapDescription="El mapa muestra una referencia provincial. El anunciante no publicó una dirección exacta."
-        mapContent={<MarketplaceDetailMap center={getCubanProvinceMapCenter(listing.province)} locationLabel={listing.province} />}
+        mapDescription={listing.coordinates ? 'El punto es aproximado. El círculo representa un área de 1 km de diámetro y no revela la dirección exacta.' : 'El mapa muestra una referencia provincial. El anunciante no publicó una dirección exacta.'}
+        mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} locationLabel={listing.province} />}
         contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={listing.province} onMissing={() => openListing(listing, 'inquiry')} /></div>}
         contactPanel={(
           <>

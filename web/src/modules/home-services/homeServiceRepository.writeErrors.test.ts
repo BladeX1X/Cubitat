@@ -15,7 +15,7 @@ import { createHomeServiceProvider, updateHomeServiceProvider } from './homeServ
 
 const input = {
   displayName: 'Servicio de prueba', category: 'plomeria' as const, description: 'Servicio para validar permisos de guardado.',
-  province: 'La Habana', municipalities: ['Playa'], phone: null, whatsapp: null, galleryUrls: ['owner/photo.webp'],
+  province: 'La Habana', municipalities: ['Playa'], coordinates: null, phone: null, whatsapp: null, galleryUrls: ['owner/photo.webp'],
 }
 const providerId = '48d405e8-2a12-4fb5-9c3d-246271e139af'
 
@@ -42,10 +42,12 @@ describe('home service write permission errors', () => {
       id: providerId,
       slug: 'servicio-de-prueba-48d405e8',
       gallery_urls: input.galleryUrls,
+      coordinates: null,
     }))
     expect(rpc).toHaveBeenCalledWith('update_home_service_provider', expect.objectContaining({
       p_id: providerId,
       p_gallery_urls: input.galleryUrls,
+      p_coordinates: null,
     }))
   })
 

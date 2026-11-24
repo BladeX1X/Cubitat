@@ -54,6 +54,9 @@ const DetailPage = lazy(() =>
 const PublishPage = lazy(() =>
   import('../pages/publish/PublishPage').then((module) => ({ default: module.PublishPage })),
 )
+const PublicationTypeChooserPage = lazy(() =>
+  import('../pages/publish/PublicationTypeChooserPage').then((module) => ({ default: module.PublicationTypeChooserPage })),
+)
 const MyPropertiesPage = lazy(() =>
   import('../pages/my-properties/MyPropertiesPage').then((module) => ({ default: module.MyPropertiesPage })),
 )
@@ -147,13 +150,16 @@ function getInitialFilters(): SearchFilters {
   }
 }
 
-type PageMode = 'home' | 'results' | 'detail' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard' | 'agent-application' | 'services' | 'materials' | 'service-submit' | 'material-submit' | 'my-services' | 'my-materials' | 'valuation'
+type PageMode = 'home' | 'results' | 'detail' | 'publish-choice' | 'publish' | 'my-properties' | 'account' | 'favorites' | 'edit' | 'auth-callback' | 'reset-password' | 'moderar' | 'privacy' | 'terms' | 'agent-profile' | 'agent-dashboard' | 'agent-application' | 'services' | 'materials' | 'service-submit' | 'material-submit' | 'my-services' | 'my-materials' | 'valuation'
 
 function getInitialPageMode(): PageMode {
   if (typeof window === 'undefined') {
     return 'home'
   }
   const path = window.location.pathname
+  if (path === '/publicar-inmueble') return 'publish'
+  if (path === '/publicar' && (new URLSearchParams(window.location.search).get('tipo') === 'propiedad' || new URLSearchParams(window.location.search).get('load_draft') === 'true')) return 'publish'
+  if (path === '/publicar') return 'publish-choice'
   if (PHASE_FOUR_VAL_ENABLED && path === '/valorar') return 'valuation'
   if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/publicar-servicio')) return 'service-submit'
   if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/mis-servicios')) return 'my-services'
@@ -378,7 +384,7 @@ export function CubitatApp() {
 
   // Guard protected routes from unauthenticated direct access
   useEffect(() => {
-    const protectedPages: PageMode[] = ['publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard', 'service-submit', 'material-submit', 'my-services', 'my-materials', ...(PHASE_THREE_UI_ENABLED ? ['agent-application' as const] : [])]
+    const protectedPages: PageMode[] = ['publish-choice', 'publish', 'my-properties', 'account', 'favorites', 'edit', 'moderar', 'agent-dashboard', 'service-submit', 'material-submit', 'my-services', 'my-materials', ...(PHASE_THREE_UI_ENABLED ? ['agent-application' as const] : [])]
     if (!isAuthLoading && protectedPages.includes(pageMode) && !user) {
       setPendingAuthPath(window.location.pathname + window.location.search + window.location.hash)
       openLogin()
@@ -707,12 +713,27 @@ export function CubitatApp() {
   }
 
   function navigatePublish(loadDraft?: boolean) {
-    const path = loadDraft ? '/publicar?load_draft=true' : '/publicar'
+    if (loadDraft) {
+      navigatePropertySubmission(true)
+      return
+    }
+    const path = '/publicar'
     if (!user) {
       setPendingAuthPath(path)
       openLogin()
       return
     }
+    window.history.pushState(null, '', path)
+    setPageMode('publish-choice')
+    setSeoResultsRoute(null)
+    setEditPropertyId(undefined)
+    setSelectedPropertyId(undefined)
+    window.scrollTo(0, 0)
+  }
+
+  function navigatePropertySubmission(loadDraft = false) {
+    const path = loadDraft ? '/publicar?tipo=propiedad&load_draft=true' : '/publicar-inmueble'
+    if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('publish')
     setSeoResultsRoute(null)
@@ -844,8 +865,8 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
-  function navigateServiceSubmission() {
-    const path = '/publicar-servicio'
+  function navigateServiceSubmission(fromChooser = false) {
+    const path = fromChooser ? '/publicar-servicio?origen=publicar' : '/publicar-servicio'
     if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('service-submit')
@@ -866,8 +887,8 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
-  function navigateMaterialSubmission() {
-    const path = '/publicar-material'
+  function navigateMaterialSubmission(fromChooser = false) {
+    const path = fromChooser ? '/publicar-material?origen=publicar' : '/publicar-material'
     if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('material-submit')
@@ -1219,6 +1240,17 @@ export function CubitatApp() {
           </div>
         )}
 
+        {pageMode === 'publish-choice' && user && (
+          <PublicationTypeChooserPage
+            onBack={navigateHome}
+            onChooseProperty={() => navigatePropertySubmission()}
+            onChooseService={() => navigateServiceSubmission(true)}
+            onChooseMaterial={() => navigateMaterialSubmission(true)}
+            servicesEnabled={PHASE_FOUR_SVC_ENABLED}
+            materialsEnabled={PHASE_FOUR_MAT_ENABLED}
+          />
+        )}
+
         {pageMode === 'publish' && user && (
           <PublishPage
             userId={user.id}
@@ -1254,7 +1286,7 @@ export function CubitatApp() {
             onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onEditProperty={navigateEditProperty}
-            onNewProperty={navigatePublish}
+            onNewProperty={navigatePropertySubmission}
             onSelectProperty={handleSelectProperty}
           />
         )}
@@ -1312,10 +1344,10 @@ export function CubitatApp() {
           <MaterialsMarketplacePage onRequireLogin={openLogin} />
         )}
         {PHASE_FOUR_SVC_ENABLED && ServiceProviderSubmissionPage && pageMode === 'service-submit' && user && (
-          <ServiceProviderSubmissionPage onBack={navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+          <ServiceProviderSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialListingSubmissionPage && pageMode === 'material-submit' && user && (
-          <MaterialListingSubmissionPage onBack={navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+          <MaterialListingSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
           <MyMaterialListingsPage
@@ -1401,7 +1433,7 @@ export function CubitatApp() {
           <Heart size={17} />
           <span>Favoritos</span>
         </button>
-        <button className={pageMode === 'publish' ? 'is-active' : ''} type="button" onClick={() => navigatePublish()}>
+        <button className={pageMode === 'publish' || pageMode === 'publish-choice' ? 'is-active' : ''} type="button" onClick={() => navigatePublish()}>
           <Building2 size={17} />
           <span>Publicar</span>
         </button>

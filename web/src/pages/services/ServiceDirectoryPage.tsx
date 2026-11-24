@@ -189,8 +189,8 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
           renderImage={(src, index, eager) => <MarketplaceCardImage src={src} alt={`${provider.displayName}, trabajo ${index + 1}`} eager={eager} className="property-photo-slide" fallback={<div className="marketplace-detail-image-fallback"><BriefcaseBusiness size={54} /><span>Foto no disponible</span></div>} />}
           favoriteAction={PHASE_FOUR_SVC_ENABLED && <SaveMarketplaceListingButton listingType="service" listingId={provider.id} listingTitle={provider.displayName} className="marketplace-detail-favorite" showLabel iconSize={19} />}
           mapLabel={`Cobertura declarada: ${[...provider.municipalities, provider.province].filter(Boolean).join(' · ')}`}
-          mapDescription="El mapa señala la provincia indicada por el profesional; no representa su domicilio ni un punto exacto de atención."
-          mapContent={<MarketplaceDetailMap center={getCubanProvinceMapCenter(provider.province)} locationLabel={provider.province} />}
+          mapDescription={provider.coordinates ? 'El punto es aproximado. El círculo representa un área de 1 km de diámetro y no revela la ubicación exacta del profesional.' : 'El mapa señala la provincia indicada por el profesional; no representa su domicilio ni un punto exacto de atención.'}
+          mapContent={<MarketplaceDetailMap center={provider.coordinates ? [provider.coordinates.longitude, provider.coordinates.latitude] : getCubanProvinceMapCenter(provider.province)} locationLabel={provider.province} />}
           contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="service" listingId={provider.id} listingTitle={provider.displayName} listingLocation={[...provider.municipalities, provider.province].filter(Boolean).join(', ')} onMissing={() => openProvider(provider, 'inquiry')} /></div>}
           contactPanel={(
             <>

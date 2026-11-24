@@ -4,6 +4,21 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
+## Coordenadas opcionales de Servicios y Materiales — candidata local — 2026-11-24
+
+- `migrations/20261124100000_marketplace_publication_coordinates.sql` añade un
+  punto opcional a ambas categorías. Un trigger separa el punto exacto a
+  `home_service_private_coordinates` o `material_private_coordinates`, con RLS
+  de propietario; las respuestas públicas reciben una coordenada redondeada a
+  0.005 grados. Las RPC de propiedad recuperan el punto exacto para editar.
+- Incluye lectura pública de la columna aproximada, inserción autenticada
+  acotada por los grants existentes y reemplazo explícito de las RPC de lectura
+  de propietario y actualización.
+- `tests/marketplace_publication_coordinates_local.sql` valida la privacidad,
+  el redondeo y la lectura exacta por propietario en Supabase local aislado.
+- Estado: candidata local en `feature/unified-publishing-coordinates`; no se ha
+  aplicado a ningún proyecto alojado ni desplegado la interfaz.
+
 ## Reportes de Servicios y Materiales — aplicada y verificada en producción — 2026-11-23
 
 - `migrations/20261123100000_marketplace_listing_reports.sql` agrega una cola común de reportes de marketplace. Solo `authenticated` puede leerla y RLS limita lectura/revisión a administradores; el Worker registra envíos mediante RPC de `service_role`, valida que el anuncio siga publicado y obtiene el título desde la base de datos. Resolver o descartar no cambia automáticamente el estado del anuncio.
