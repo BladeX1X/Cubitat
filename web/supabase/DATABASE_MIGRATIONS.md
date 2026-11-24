@@ -1298,3 +1298,9 @@ Read-only production inspection confirmed `saved_marketplace_listings`, versions
 Preflight con la conexión directa: ledger remoto de 167 versiones; se usó el conjunto completo de fuentes del release `ba3359065b838dbf4c155b78a6174f80058c5a2f` y el dry-run enumeró únicamente `20261123090000`. Aplicada sin respaldo a solicitud expresa del usuario. Postcheck: ledger de 168, versión registrada y definición confirmada. La CLI reportó un aviso no bloqueante al exportar caché pg-delta por un certificado auxiliar ausente; la aplicación terminó correctamente y las consultas posteriores verificaron el resultado.
 
 Frontend/Worker `cubitat1` desplegado en `0d79f4a9-9947-4b20-8eb1-91b3d887cf2a` al 100%; gates de lint, pruebas y build Fase 4 aprobados. Smoke HTTP de Inicio, Moderar y Recuperación: 200. QA autenticado AAL1 y revisión de requisito Supabase Auth independiente quedan pendientes. La credencial temporal compartida en el chat debe rotarse y actualizar el secreto de despliegue; no almacenarla en el repositorio.
+
+
+## Source reconciliation — 2026-11-24
+
+Production preflight for the publication coordinates release found recorded version 20261124090000 without its canonical migration source in main. Restored the historical source 20261124090000_disable_admin_aal2_requirement.sql from the local production-release workspace as a ledger reconciliation only. Production already records this version; this source is staged for Supabase CLI consistency and must not be re-applied. The migration preflight stopped before dry-run or DDL. Resume only after CI and exact-ledger verification.
+
