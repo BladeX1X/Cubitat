@@ -7,15 +7,17 @@ const mapMock = vi.hoisted(() => ({
 }))
 
 vi.mock('../maps/components/PropertyMap', () => ({
-  PropertyMap: ({ onSelectCluster, onViewportChange, selectedPropertyIds }: {
+  PropertyMap: ({ onSelectCluster, onViewportChange, onSelectProperty, selectedPropertyIds }: {
     onSelectCluster?: (ids: string[]) => void
     onViewportChange?: (ids: string[]) => void
+    onSelectProperty?: (id: string) => void
     selectedPropertyIds?: string[]
   }) => {
     mapMock.selectedPropertyIds = selectedPropertyIds ?? []
     return <div>
       <button type="button" onClick={() => onSelectCluster?.(Array.from({ length: 9 }, (_, index) => `property-${index + 1}`))}>Seleccionar grupo de 9</button>
       <button type="button" onClick={() => onViewportChange?.(['property-1', 'property-2', 'property-3', 'property-4'])}>Acercar y dividir en 4 + 5</button>
+      <button type="button" onClick={() => onSelectProperty?.('property-1')}>Seleccionar propiedad 1</button>
       <output data-testid="mobile-selected-map-ids">{selectedPropertyIds?.join(',') ?? ''}</output>
     </div>
   },
@@ -86,5 +88,20 @@ describe('ResultsMapView mobile selection', () => {
 
     expect(screen.getByTestId('mobile-selected-map-ids')).toHaveTextContent(selectedIds)
     expect(screen.getByLabelText('9 propiedades')).toBeInTheDocument()
+  })
+
+  it('does not display editorial labels on the map carousel cards', () => {
+    render(<ResultsMapView
+      viewMode="map"
+      onViewModeChange={vi.fn()}
+      properties={[{ ...properties[0]!, badge: 'destacado' }]}
+      onSelectProperty={vi.fn()}
+      filterBarProps={{} as never}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar propiedad 1' }))
+
+    expect(screen.getByLabelText(/Casa 1/i)).toBeInTheDocument()
+    expect(screen.queryByText('Destacado')).not.toBeInTheDocument()
   })
 })

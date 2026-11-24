@@ -44,10 +44,10 @@ describe('agentApplicationsRepository', () => {
     await expect(fetchPendingAgentApplications(1)).rejects.toThrow('No se pudieron cargar las postulaciones.')
   })
 
-  it('explains when a fresh admin verification is required for private documents', async () => {
+  it('explains when admin permission is missing for private documents', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'admin_aal2_required' }), { status: 403 })))
 
-    await expect(fetchAgentApplicationDocumentLinks('application-id')).rejects.toThrow(/nueva verificación de seguridad/i)
+    await expect(fetchAgentApplicationDocumentLinks('application-id')).rejects.toThrow(/permiso de administrador/i)
   })
 
   it('distinguishes a Storage signing failure from an authorization failure', async () => {

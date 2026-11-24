@@ -1,5 +1,8 @@
 import { supabase } from '../../../shared/lib/supabaseClient'
 
+// Reenable only alongside a migration restoring is_admin_aal2() enforcement.
+export const ADMIN_MFA_ENABLED = false
+
 export type AdminMfaStatus = {
   currentLevel: string | null
   verifiedFactorId: string | null

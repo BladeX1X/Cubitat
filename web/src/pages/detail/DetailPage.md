@@ -70,7 +70,7 @@ La migración `20260912010000_private_property_coordinates.sql` conserva el punt
 
 ## Área aproximada del mapa — 2026-09-23
 
-`DetailLocationMap` dibuja la zona pública como un polígono GeoJSON de `2 km` de radio mediante `createApproximateLocationArea`, no como un `circle-radius` en píxeles. Al acercar o alejar el mapa cambia su tamaño en pantalla, pero conserva la misma región geográfica aproximada.
+`DetailLocationMap` dibuja la zona pública como un polígono GeoJSON de `1 km` de diámetro (500 m de radio) mediante `createApproximateLocationArea`, no como un `circle-radius` en píxeles. Al acercar o alejar el mapa cambia su tamaño en pantalla, pero conserva la misma región geográfica aproximada.
 
 ## Recuperación del mapa de ubicación — 2026-11-12
 

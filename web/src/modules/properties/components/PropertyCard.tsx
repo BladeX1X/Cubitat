@@ -6,7 +6,6 @@ import {
   Ruler,
 } from 'lucide-react'
 import { formatPrice } from '../../../shared/lib/formatPrice'
-import { Badge } from '../../../shared/ui/badge'
 import {
   Carousel,
   CarouselContent,
@@ -25,6 +24,7 @@ import {
 import { PHASE_TWO_ENABLED } from '../../../shared/config/features'
 import { MarketplaceContactActions } from '../../../shared/ui/MarketplaceContactActions'
 import { publicPropertyLocation } from '../../../shared/lib/propertyLocation'
+import { CatalogCardFrame } from '../../../shared/ui/CatalogCardFrame'
 
 const VerificationBadge = PHASE_TWO_ENABLED
   ? lazy(() => import('../../kyc/components/VerificationBadge').then((module) => ({
@@ -75,9 +75,7 @@ export function PropertyCard({
   }, [carouselApi])
 
   return (
-    <article
-      className={`property-card ${isSelected ? 'is-selected' : ''}`}
-    >
+    <CatalogCardFrame className={`property-card ${isSelected ? 'is-selected' : ''}`}>
       <button
         className="property-card-hit-target"
         type="button"
@@ -85,7 +83,7 @@ export function PropertyCard({
         onClick={selectProperty}
       />
       <div
-        className="property-photo"
+        className="property-photo catalog-card__media"
         onPointerDown={(event) => {
           photoPointerStartRef.current = { x: event.clientX, y: event.clientY }
         }}
@@ -171,9 +169,6 @@ export function PropertyCard({
             ))}
           </div>
         )}
-        {property.badge ? (
-          <Badge className="property-badge">{property.badge}</Badge>
-        ) : null}
         <SavePropertyButton
           className="property-save"
           propertyId={property.id}
@@ -185,14 +180,14 @@ export function PropertyCard({
         />
       </div>
 
-      <div className="property-info">
+      <div className="property-info catalog-card__content">
         {/* Row 1: Badges */}
         <div className="property-badges-row flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="property-type-badge">
+            <span className="property-type-badge catalog-card__category">
               {property.propertyType === 'apartamento' ? 'DEPARTAMENTO' : property.propertyType === 'casa' ? 'CASA' : 'TERRENO'}
             </span>
-            <span className="property-operation-badge">
+            <span className="property-operation-badge catalog-card__category">
               {property.operation === 'alquiler' ? 'RENTA' : property.operation === 'venta' ? 'VENTA' : 'PERMUTA'}
             </span>
           </div>
@@ -209,10 +204,10 @@ export function PropertyCard({
         </div>
 
         {/* Row 2: Price */}
-        <div className="property-price-row">{priceLabel}</div>
+        <div className="property-price-row catalog-card__price">{priceLabel}</div>
 
         {/* Row 3: Description/Title */}
-        <h2 className="property-title">
+        <h2 className="property-title catalog-card__title">
           {property.title}
         </h2>
 
@@ -252,7 +247,7 @@ export function PropertyCard({
           onMissing={() => onSelect(property.id, true)}
         />
       </div>
-    </article>
+    </CatalogCardFrame>
   )
 }
 

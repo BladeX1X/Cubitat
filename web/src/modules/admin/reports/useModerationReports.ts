@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getErrorMessage } from '../core/errors'
-import type { PropertyReport } from '../core/types'
+import type { ModerationReport } from '../core/types'
 import { dismissReport, fetchModerationReports, resolveReport } from './reportsRepository'
 import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
 
 export function useModerationReports() {
-  const [reports, setReports] = useState<PropertyReport[]>([])
+  const [reports, setReports] = useState<ModerationReport[]>([])
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -38,10 +38,12 @@ export function useModerationReports() {
     void load(0)
   }, [load])
 
-  const resolve = useCallback(async (reportId: string, propertyId: string) => {
+  const resolve = useCallback(async (reportId: string) => {
+    const report = reports.find((item) => item.id === reportId)
+    if (!report) return
     setActionLoading(reportId)
     try {
-      await resolveReport(reportId, propertyId)
+      await resolveReport(report)
       setReports((current) => current.map((report) => (
         report.id === reportId ? { ...report, status: 'resolved' } : report
       )))
@@ -56,12 +58,14 @@ export function useModerationReports() {
     } finally {
       setActionLoading(null)
     }
-  }, [])
+  }, [reports])
 
   const dismiss = useCallback(async (reportId: string) => {
+    const report = reports.find((item) => item.id === reportId)
+    if (!report) return
     setActionLoading(reportId)
     try {
-      await dismissReport(reportId)
+      await dismissReport(report)
       setReports((current) => current.map((report) => (
         report.id === reportId ? { ...report, status: 'dismissed' } : report
       )))
@@ -76,7 +80,7 @@ export function useModerationReports() {
     } finally {
       setActionLoading(null)
     }
-  }, [])
+  }, [reports])
 
   return {
     reports,

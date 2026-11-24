@@ -7,6 +7,7 @@ import { cleanAuthUrl, getAuthUrlParams, isPasswordRecoveryFlow } from './authUr
 import { useSEO } from '../../shared/hooks/useSEO'
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '../../modules/auth/passwordPolicy'
 import {
+  ADMIN_MFA_ENABLED,
   getAdminMfaStatus,
   MfaVerificationError,
   verifyTotp,
@@ -106,9 +107,11 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
           throw new Error('Abre el enlace completo desde el correo de recuperacion para crear una nueva contrasena.')
         }
 
-        const mfaStatus = await getAdminMfaStatus()
-        if (mfaStatus.currentLevel !== 'aal2' && mfaStatus.verifiedFactorId) {
-          setMfaFactorId(mfaStatus.verifiedFactorId)
+        if (ADMIN_MFA_ENABLED) {
+          const mfaStatus = await getAdminMfaStatus()
+          if (mfaStatus.currentLevel !== 'aal2' && mfaStatus.verifiedFactorId) {
+            setMfaFactorId(mfaStatus.verifiedFactorId)
+          }
         }
         setHasRecoverySession(true)
         cleanAuthUrl('/recuperar-contrasena')
@@ -185,7 +188,7 @@ export function ResetPasswordPage({ onDone }: ResetPasswordPageProps) {
         weakPassword
           ? PASSWORD_POLICY_MESSAGE
           : mfaRequired
-            ? 'Por seguridad, verifica el segundo factor antes de guardar tu nueva contrasena.'
+            ? 'No pudimos actualizar la contrasena con este enlace. Solicita uno nuevo e intenta de nuevo.'
             : (error.message || 'No pudimos actualizar la contrasena.'),
       )
       return

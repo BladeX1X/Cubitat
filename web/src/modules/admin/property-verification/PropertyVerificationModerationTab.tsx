@@ -15,7 +15,7 @@ export function PropertyVerificationModerationTab() {
   const moderation = usePropertyVerificationModeration()
   if (moderation.loading) return <AdminLoadingState message="Cargando verificaciones documentales..." />
   if (moderation.error) return <AdminErrorState message={moderation.error} onRetry={moderation.loadPendingRequests} />
-  if (moderation.requests.length === 0) return <AdminEmptyState title="No hay verificaciones documentales pendientes" message="Las solicitudes de propiedades aparecerán aquí para revisión AAL2." />
+  if (moderation.requests.length === 0) return <AdminEmptyState title="No hay verificaciones documentales pendientes" message="Las solicitudes de propiedades aparecerán aquí para revisión administrativa." />
 
   return (
     <section aria-labelledby="property-verification-title" className="space-y-4">

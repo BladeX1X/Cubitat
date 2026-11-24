@@ -1,11 +1,18 @@
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, BriefcaseBusiness, MapPin } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { BriefcaseBusiness, CalendarDays, CheckCircle2, MapPin } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
 import { MarketplaceContactActions } from '../../shared/ui/MarketplaceContactActions'
 import { MarketplaceCardImage } from '../../shared/ui/MarketplaceCardImage'
+import { CatalogCardGallery } from '../../shared/ui/CatalogCardGallery'
+import { MarketplaceListingDetail } from '../../shared/ui/MarketplaceListingDetail'
 import { SaveMarketplaceListingButton } from '../../shared/ui/SaveMarketplaceListingButton'
+import { CatalogCardFrame } from '../../shared/ui/CatalogCardFrame'
 import { MarketplaceCardActions } from '../../shared/ui/MarketplaceCardActions'
+import { MarketplaceDetailMap } from '../../modules/marketplace/MarketplaceDetailMap'
+import { getCubanProvinceMapCenter } from '../../modules/maps/data/cubanProvinceMapCenters'
+import { MarketplaceReportPanel } from '../../shared/ui/MarketplaceReportPanel'
+import { FeaturedHomeServicesSection } from '../../shared/ui/FeaturedHomeServicesSection'
 import { CatalogExplorerLayout } from '../../modules/catalog-explorer/CatalogExplorerLayout'
 import { CatalogFilterToolbar } from '../../modules/catalog-explorer/CatalogFilterToolbar'
 import { CatalogMap } from '../../modules/catalog-explorer/CatalogMap'
@@ -21,16 +28,7 @@ import '../marketplace/MarketplaceDirectoryMap.css'
 
 type ServiceDirectoryPageProps = {
   onRequireLogin: () => void
-  onCreateProfile: () => void
-  onManageProfiles: () => void
-  reviewsEnabled: boolean
-  userId: string | null
 }
-
-const ServiceReviewsPanel = import.meta.env.VITE_PHASE4_REV_ENABLED === 'true'
-  || (import.meta.env.DEV && import.meta.env.VITE_PHASE4_UI_ENABLED === 'true')
-  ? lazy(() => import('../../modules/service-reviews/ServiceReviewsPanel').then((module) => ({ default: module.ServiceReviewsPanel })))
-  : null
 
 function getSlugFromPath(): string | null {
   const parts = window.location.pathname.split('/').filter(Boolean)
@@ -42,7 +40,7 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
 }
 
-export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManageProfiles, reviewsEnabled, userId }: ServiceDirectoryPageProps) {
+export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPageProps) {
   const [slug, setSlug] = useState<string | null>(getSlugFromPath)
   const [category, setCategory] = useState<HomeServiceCategory | ''>('')
   const [province, setProvince] = useState('')
@@ -176,35 +174,64 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
     if (loadError) return <main className="mx-auto min-h-[55vh] max-w-xl px-4 py-24 text-center" role="alert"><h1 className="text-2xl font-bold">No se pudo cargar el perfil</h1><p className="mt-2 text-neutral-600">Comprueba la conexión e inténtalo de nuevo.</p><Button className="mt-5" onClick={() => setReloadKey((key) => key + 1)}>Reintentar</Button><Button className="mt-5 ml-2" variant="outline" onClick={backToDirectory}>Volver al directorio</Button></main>
     if (!provider) return <main className="mx-auto min-h-[55vh] max-w-xl px-4 py-24 text-center"><h1 className="text-2xl font-bold">Servicio no disponible</h1><p className="mt-2 text-neutral-600">Este perfil no existe o todavía no está publicado.</p><Button className="mt-5" onClick={backToDirectory}>Volver al directorio</Button></main>
     return (
-      <main className="min-h-[75vh] bg-neutral-50 px-4 py-6 sm:px-6 sm:py-10">
-        <div className="mx-auto max-w-5xl">
-          <button type="button" onClick={backToDirectory} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-neutral-600 hover:bg-white hover:text-neutral-900"><ArrowLeft size={18} />Volver al directorio</button>
-          <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
-            {provider.galleryUrls.length > 0 && <div className="grid max-h-[420px] grid-cols-1 gap-1 overflow-hidden sm:grid-cols-2">{provider.galleryUrls.slice(0, 3).map((url, index) => <img key={`${url}-${index}`} src={url} alt={`${provider.displayName}, trabajo ${index + 1}`} loading="lazy" className={`h-56 w-full object-cover sm:h-72 ${index > 0 ? 'hidden sm:block' : ''}`} />)}</div>}
-            <div className="grid gap-8 p-5 sm:p-8 md:grid-cols-[1fr_320px]">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{HOME_SERVICE_CATEGORY_LABELS[provider.category]}</p>
-                <h1 className="mt-2 text-3xl font-black text-neutral-900">{provider.displayName}</h1>
-                <p className="mt-3 flex items-center gap-2 text-sm text-neutral-600"><MapPin size={16} />{provider.province}{provider.municipalities.length ? ` · ${provider.municipalities.join(', ')}` : ''}</p>
-                <p className="mt-6 whitespace-pre-line leading-7 text-neutral-700">{provider.description}</p>
-                <p className="mt-4 text-xs text-neutral-500">Actualizado {formatDate(provider.updatedAt)} · Perfil comercial; Cubitat no certifica licencias ni garantiza el servicio.</p>
-              </div>
-              <aside className="rounded-2xl bg-emerald-50 p-5">
-                <h2 className="text-lg font-bold text-neutral-900">Contactar</h2>
-                <div id="marketplace-contact"><MarketplaceContactActions listingType="service" listingId={provider.id} listingTitle={provider.displayName} listingLocation={[...provider.municipalities, provider.province].filter(Boolean).join(', ')} onMissing={() => openProvider(provider, 'inquiry')} /></div>
-                <form className="mt-4 space-y-3" onSubmit={submitInquiry}>
-                  <label className="block text-sm font-semibold text-neutral-800" htmlFor="service-inquiry">Mensaje para el profesional</label>
-                  <textarea id="service-inquiry" value={message} onChange={(event) => setMessage(event.target.value)} minLength={10} maxLength={3000} required rows={4} className="w-full rounded-xl border border-neutral-300 bg-white p-3 text-sm" placeholder="Cuéntale qué trabajo necesitas…" />
-                  <Button className="w-full" type="submit" disabled={inquiryState === 'sending'}>{inquiryState === 'sending' ? 'Enviando…' : 'Enviar consulta'}</Button>
-                  {inquiryState === 'sent' && <p role="status" className="text-sm text-emerald-800">Consulta enviada. No crea una contratación ni reserva.</p>}
-                  {inquiryState === 'error' && <p role="alert" className="text-sm text-red-700">No se pudo enviar. Inicia sesión y vuelve a intentarlo.</p>}
-                </form>
-              </aside>
+      <>
+        <MarketplaceListingDetail
+          backLabel="Volver al directorio"
+          breadcrumb="Servicios"
+          category={HOME_SERVICE_CATEGORY_LABELS[provider.category]}
+          title={provider.displayName}
+          location={[...provider.municipalities, provider.province].filter(Boolean).join(' · ')}
+          summary={`Actualizado ${formatDate(provider.updatedAt)}`}
+          images={provider.galleryUrls}
+          imageLabel={`Fotos de ${provider.displayName}`}
+          imageUnavailable={provider.photoUnavailable}
+          imageFallback={<div className="marketplace-detail-image-fallback"><BriefcaseBusiness size={54} /><span>{provider.photoUnavailable ? 'Fotos no disponibles temporalmente' : 'Fotos del servicio'}</span></div>}
+          renderImage={(src, index, eager) => <MarketplaceCardImage src={src} alt={`${provider.displayName}, trabajo ${index + 1}`} eager={eager} className="property-photo-slide" fallback={<div className="marketplace-detail-image-fallback"><BriefcaseBusiness size={54} /><span>Foto no disponible</span></div>} />}
+          favoriteAction={PHASE_FOUR_SVC_ENABLED && <SaveMarketplaceListingButton listingType="service" listingId={provider.id} listingTitle={provider.displayName} className="marketplace-detail-favorite" showLabel iconSize={19} />}
+          mapLabel={`Cobertura declarada: ${[...provider.municipalities, provider.province].filter(Boolean).join(' · ')}`}
+          mapDescription="El mapa señala la provincia indicada por el profesional; no representa su domicilio ni un punto exacto de atención."
+          mapContent={<MarketplaceDetailMap center={getCubanProvinceMapCenter(provider.province)} locationLabel={provider.province} />}
+          contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="service" listingId={provider.id} listingTitle={provider.displayName} listingLocation={[...provider.municipalities, provider.province].filter(Boolean).join(', ')} onMissing={() => openProvider(provider, 'inquiry')} /></div>}
+          contactPanel={(
+            <>
+              <h2>Contactar al profesional</h2>
+              <p className="marketplace-contact-meta"><CalendarDays size={12} aria-hidden="true" /> Actualizado {formatDate(provider.updatedAt)}</p>
+              <form className="marketplace-inquiry-form" onSubmit={submitInquiry}>
+                <label className="marketplace-inquiry-label" htmlFor="service-inquiry">Tu mensaje</label>
+                <textarea id="service-inquiry" value={message} onChange={(event) => setMessage(event.target.value)} minLength={10} maxLength={3000} required rows={4} disabled={inquiryState === 'sending'} className="marketplace-inquiry-textarea" placeholder="Cuéntale qué trabajo necesitas…" />
+                <Button className="marketplace-inquiry-submit" type="submit" disabled={inquiryState === 'sending'}>{inquiryState === 'sending' ? 'Enviando…' : 'Enviar consulta'}</Button>
+                {inquiryState === 'sent' && <p role="status" className="mt-3 text-sm text-emerald-800">Consulta enviada. No crea una contratación ni reserva.</p>}
+                {inquiryState === 'error' && <p role="alert" className="mt-3 text-sm text-red-700">No se pudo enviar. Inicia sesión y vuelve a intentarlo.</p>}
+              </form>
+            </>
+          )}
+          onBack={backToDirectory}
+          footer={<FeaturedHomeServicesSection excludeId={provider.id} />}
+        >
+          <section className="marketplace-detail-panel">
+            <h2>Información del servicio</h2>
+            <div className="marketplace-detail-facts">
+              <div className="marketplace-detail-fact"><strong>{HOME_SERVICE_CATEGORY_LABELS[provider.category]}</strong><span>Categoría</span></div>
+              <div className="marketplace-detail-fact"><strong>{provider.province}</strong><span>Provincia</span></div>
+              <div className="marketplace-detail-fact"><strong>{provider.municipalities.length || 'Consultar'}</strong><span>Municipios de cobertura</span></div>
+              <div className="marketplace-detail-fact"><strong>{formatDate(provider.updatedAt)}</strong><span>Última actualización</span></div>
             </div>
           </section>
-          {reviewsEnabled && ServiceReviewsPanel && <Suspense fallback={<p className="mt-6 text-sm text-neutral-500">Cargando reseñas…</p>}><ServiceReviewsPanel providerId={provider.id} userId={userId} onRequireLogin={onRequireLogin} /></Suspense>}
-        </div>
-      </main>
+          <section className="marketplace-detail-panel">
+            <h2>Descripción del servicio</h2>
+            <p>{provider.description}</p>
+          </section>
+          <section className="marketplace-detail-panel">
+            <h2>Área de servicio</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(provider.municipalities.length ? provider.municipalities : ['Cobertura por confirmar']).map((municipality) => <span key={municipality} className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><CheckCircle2 size={15} aria-hidden="true" />{municipality}</span>)}
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><MapPin size={15} aria-hidden="true" />{provider.province}</span>
+            </div>
+            <p className="text-xs">Perfil comercial. Cubitat no certifica licencias ni garantiza el servicio.</p>
+          </section>
+          <MarketplaceReportPanel listingType="service" listingId={provider.id} listingTitle={provider.displayName} />
+        </MarketplaceListingDetail>
+      </>
     )
   }
 
@@ -223,8 +250,29 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
       <p className="mt-2 text-sm text-neutral-600">Prueba otra palabra, categoría, provincia o municipio.</p>
     </section>
   ) : (
-    <section className={`grid gap-5 ${mapOpen ? 'sm:grid-cols-1' : 'sm:grid-cols-2 xl:grid-cols-3'}`} aria-label="Profesionales disponibles">
-      {providers.map((item, index) => <article key={item.id} className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><button type="button" onClick={() => openProvider(item)} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"><div className="h-48 bg-emerald-50"><MarketplaceCardImage src={item.galleryUrls[0]} alt="" eager={index < 2} className="h-full w-full object-cover" fallback={<div role="status" className="flex h-full items-center justify-center text-emerald-800"><BriefcaseBusiness size={36} /><span className="sr-only">Foto no disponible</span></div>} /></div><div className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{HOME_SERVICE_CATEGORY_LABELS[item.category]}</p><h2 className="mt-1 text-lg font-bold text-neutral-900">{item.displayName}</h2><p className="mt-2 flex items-center gap-1 text-sm text-neutral-600"><MapPin size={15} />{item.municipalities.length ? `${item.municipalities.join(', ')} · ` : ''}{item.province}</p><p className="mt-3 line-clamp-3 text-sm leading-6 text-neutral-600">{item.description}</p><span className="mt-4 inline-flex min-h-10 items-center font-bold text-emerald-800">Ver perfil →</span></div></button><MarketplaceCardActions listingType="service" listingId={item.id} listingTitle={item.displayName} listingLocation={[...item.municipalities, item.province].filter(Boolean).join(', ')} onMissing={() => openProvider(item, 'inquiry')} />{PHASE_FOUR_SVC_ENABLED && <SaveMarketplaceListingButton listingType="service" listingId={item.id} listingTitle={item.displayName} />}</article>)}
+    <section className="catalog-card-grid" aria-label="Profesionales disponibles">
+      {providers.map((item, index) => (
+        <CatalogCardFrame key={item.id} className="marketplace-listing-card">
+          <CatalogCardGallery
+            images={item.galleryUrls}
+            label={item.displayName}
+            eager={index < 2}
+            fallback={<div role="status" className="flex h-full items-center justify-center bg-emerald-50 text-emerald-800"><BriefcaseBusiness size={36} /><span className="sr-only">Foto no disponible</span></div>}
+            renderImage={(src, _imageIndex, eager) => <MarketplaceCardImage src={src} alt="" eager={eager} className="property-photo-slide" fallback={<div className="flex h-full items-center justify-center bg-emerald-50 text-emerald-800"><BriefcaseBusiness size={36} /><span className="sr-only">Foto no disponible</span></div>} />}
+            overlay={PHASE_FOUR_SVC_ENABLED && <SaveMarketplaceListingButton listingType="service" listingId={item.id} listingTitle={item.displayName} />}
+          />
+          <button type="button" onClick={() => openProvider(item)} className="catalog-card__open focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
+            <div className="catalog-card__content">
+              <p className="catalog-card__category">{HOME_SERVICE_CATEGORY_LABELS[item.category]}</p>
+              <h2 className="catalog-card__title">{item.displayName}</h2>
+              <p className="catalog-card__location"><MapPin size={15} />{item.municipalities.length ? `${item.municipalities.join(', ')} · ` : ''}{item.province}</p>
+              <p className="catalog-card__description mt-3">{item.description}</p>
+              <span className="catalog-card__more">Ver perfil →</span>
+            </div>
+          </button>
+          <MarketplaceCardActions listingType="service" listingId={item.id} listingTitle={item.displayName} listingLocation={[...item.municipalities, item.province].filter(Boolean).join(', ')} onMissing={() => openProvider(item, 'inquiry')} />
+        </CatalogCardFrame>
+      ))}
     </section>
   )
   const totalPages = Math.ceil(total / CATALOG_PAGE_SIZE)
@@ -235,7 +283,6 @@ export function ServiceDirectoryPage({ onRequireLogin, onCreateProfile, onManage
         {import.meta.env.MODE === 'phase34-dev' && <span className="marketplace-directory-dev-badge">Entorno de pruebas · DEV</span>}
         <header className="marketplace-directory-heading">
           <h1 className="font-black text-neutral-900">Servicios para el hogar</h1>
-          <div className="marketplace-directory-heading__actions"><Button type="button" className="min-h-11" onClick={onCreateProfile}>Publicar mi servicio</Button><Button type="button" variant="outline" className="min-h-11" onClick={onManageProfiles}>Mis perfiles</Button></div>
         </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="service-province-map" mapBusy={provinceCountsLoading} toolbar={

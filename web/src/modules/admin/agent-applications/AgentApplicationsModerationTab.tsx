@@ -167,7 +167,7 @@ export function AgentApplicationsModerationTab() {
     <section aria-labelledby="agent-applications-title" className="space-y-4">
       <header className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[#035f53]"><ShieldCheck className="h-4 w-4" /> Revisión con sesión AAL2</p>
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[#035f53]"><ShieldCheck className="h-4 w-4" /> Revisión administrativa</p>
           <h2 id="agent-applications-title" className="mt-1 text-lg font-bold text-neutral-900">Postulaciones de agentes</h2>
           <p className="mt-1 text-sm text-neutral-600">Los CV y títulos permanecen privados; sus enlaces expiran en dos minutos.</p>
         </div>

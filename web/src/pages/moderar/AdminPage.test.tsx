@@ -110,7 +110,11 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
   beforeEach(() => {
     mockUpdate.mockReset()
     mockEq.mockReset()
-    mockRpc.mockReset().mockResolvedValue({ data: databaseMetrics, error: null })
+    mockRpc.mockReset().mockImplementation((rpcName: string) => Promise.resolve(
+      rpcName === 'get_admin_property_contact_details'
+        ? { data: [], error: null }
+        : { data: databaseMetrics, error: null },
+    ))
     mockGetSession.mockReset().mockResolvedValue({
       data: { session: { access_token: 'admin-test-token' } },
       error: null,
@@ -140,6 +144,13 @@ describe('AdminPage - Panel de Moderacion y Reportes', () => {
     await waitFor(() => {
       expect(screen.getByText('Panel de moderación')).toBeInTheDocument()
     })
+  })
+
+  it('no muestra la sección de Beneficios comerciales en moderación', async () => {
+    render(<AdminPage userRole="admin" onNavigateHome={vi.fn()} onSessionExpired={vi.fn()} />)
+    await screen.findByText('Panel de moderación')
+    expect(screen.queryByRole('button', { name: 'Beneficios' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Beneficios comerciales' })).not.toBeInTheDocument()
   })
 
   it('oculta KYC cuando Fase 2 está deshabilitada en producción', async () => {

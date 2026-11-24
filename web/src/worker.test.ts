@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import worker, { fetchGoogleAnalyticsMetrics, getSupabaseProxyBodyLimit, type Env } from './worker'
+import worker, { createWorker, fetchGoogleAnalyticsMetrics, getSupabaseProxyBodyLimit, type Env } from './worker'
 
 function createEnv(assetResponse = new Response('<!doctype html><html></html>', {
   headers: { 'Content-Type': 'text/html' },
@@ -431,6 +431,44 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('forwards private moderation contacts only through an authenticated RPC allowlist', async () => {
+    const fetchMock = vi.fn(async () => new Response('[]', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const configuredWorker = createWorker({
+      additionalAuthenticatedRpcs: ['get_admin_property_contact_details'],
+    })
+    const path = '/api/supabase/rest/v1/rpc/get_admin_property_contact_details'
+    const body = JSON.stringify({ p_property_ids: ['11111111-1111-4111-8111-111111111111'] })
+
+    const anonymousResponse = await configuredWorker.fetch(
+      new Request(`https://cubitathome.com${path}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+      }),
+      createEnv(),
+      createContext(),
+    )
+    expect(anonymousResponse.status).toBe(403)
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    const authenticatedResponse = await configuredWorker.fetch(
+      new Request(`https://cubitathome.com${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-session' },
+        body,
+      }),
+      createEnv(),
+      createContext(),
+    )
+    expect(authenticatedResponse.status).toBe(200)
+    const forwardedCall = (fetchMock.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit | undefined]>)[0]
+    expect(forwardedCall?.[0]).toBe(
+      'https://example.supabase.co/rest/v1/rpc/get_admin_property_contact_details',
+    )
+    const forwardedRequest = forwardedCall?.[1]
+    expect(forwardedRequest?.method).toBe('POST')
+    expect(new Headers(forwardedRequest?.headers).get('authorization')).toBe('Bearer admin-session')
+  })
+
   it('rate limits authenticated AI moderation requests per user', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 }))
@@ -789,31 +827,10 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('returns 403 when an admin at aal1 requests metrics', async () => {
+  it('allows an authenticated admin at aal1 to request metrics without an MFA bypass lookup', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
-      .mockResolvedValueOnce(new Response('null', { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const response = await worker.fetch(
-      new Request('https://cubitathome.com/api/metrics', {
-        headers: { Authorization: `Bearer ${testJwt('aal1')}` },
-      }),
-      createEnv(),
-      createContext(),
-    )
-
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-  })
-
-  it('allows an admin at aal1 while the database MFA bypass has not expired', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify('2099-10-20T17:00:00Z'), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await worker.fetch(
@@ -825,7 +842,7 @@ describe('Cloudflare Worker security contract', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(fetchMock.mock.calls[2]?.[0]).toBe('https://example.supabase.co/rest/v1/rpc/get_admin_mfa_bypass_until')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('allows an admin at aal2 to request metrics', async () => {
@@ -912,13 +929,12 @@ describe('Cloudflare Worker security contract', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('blocks an aal1 admin from reevaluating another user property', async () => {
+  it('allows an authenticated admin at aal1 to reevaluate another user property', async () => {
     const propertyId = crypto.randomUUID()
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ user_id: 'owner-1' }]), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([{ role: 'admin' }]), { status: 200 }))
-      .mockResolvedValueOnce(new Response('null', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const response = await worker.fetch(
@@ -934,8 +950,8 @@ describe('Cloudflare Worker security contract', () => {
       createContext(),
     )
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
+    expect(response.status).toBe(202)
+    await expect(response.json()).resolves.toMatchObject({ status: 'processing' })
   })
 
   it('forwards only the allowlisted public and authenticated RPCs', async () => {

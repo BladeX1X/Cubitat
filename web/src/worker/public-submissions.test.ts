@@ -4,6 +4,7 @@ import {
   handlePublicPropertyContact,
   handlePublicContactSubmission,
   handlePublicReportSubmission,
+  handlePublicMarketplaceReportSubmission,
   type PublicSubmissionEnv,
 } from './public-submissions'
 
@@ -245,5 +246,20 @@ describe('public submission handlers', () => {
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({
       p_reporter_id: null,
     })
+  })
+
+  it('verifies and stores marketplace reports through the trusted database function', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, action: 'report-marketplace', hostname: 'cubitathome.com' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await handlePublicMarketplaceReportSubmission(new Request('https://cubitathome.com/api/public/marketplace-report', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnstile_token: 'valid-token', listing_type: 'material', listing_id: propertyId, reason: 'FRAUD', description: 'No corresponde al anuncio.' }),
+    }), createEnv(), null)
+    expect(response.status).toBe(201)
+    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('/rpc/submit_marketplace_listing_report_trusted'), expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ p_listing_type: 'material', p_listing_id: propertyId, p_reporter_id: null, p_reason: 'FRAUD', p_description: 'No corresponde al anuncio.' }),
+    }))
   })
 })

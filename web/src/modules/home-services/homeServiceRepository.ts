@@ -139,6 +139,7 @@ export async function fetchHomeServiceProviders(filters: {
   search?: string
   offset?: number
   pageSize?: number
+  coverOnly?: boolean
 } = {}): Promise<{ items: HomeServiceProvider[]; total: number }> {
   try {
     let query = supabase
@@ -156,7 +157,7 @@ export async function fetchHomeServiceProviders(filters: {
     const { data, error, count } = await query
     if (error) return logLoadFailure('fetch_provider_list', error)
     const items = (Array.isArray(data) ? data : []).map(parseProvider).filter((row): row is HomeServiceProvider => row !== null)
-    return { items: await signHomeServicePhotos(items, { coverOnly: true }), total: count ?? 0 }
+    return { items: await signHomeServicePhotos(items, { coverOnly: filters.coverOnly }), total: count ?? 0 }
   } catch (error) {
     return logLoadFailure('fetch_provider_list_exception', error)
   }

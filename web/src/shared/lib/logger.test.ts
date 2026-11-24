@@ -15,9 +15,13 @@ describe('logger.ts - Safe Frontend Logging', () => {
   it('sanitizes unknown errors correctly without exposing stack or raw objects', () => {
     expect(sanitizeErrorReason(null)).toBe('UNKNOWN_ERROR');
     expect(sanitizeErrorReason(undefined)).toBe('UNKNOWN_ERROR');
-    expect(sanitizeErrorReason(new Error('Failed to fetch user test@example.com'))).toBe('UNHANDLED_EXCEPTION');
+    expect(sanitizeErrorReason(new Error('Failed to fetch user test@example.com'))).toBe('NETWORK_REQUEST_FAILED');
+    expect(sanitizeErrorReason(new Error('permission denied for private contact row'))).toBe('ACCESS_DENIED');
+    expect(sanitizeErrorReason(new Error('unexpected private backend detail'))).toBe('CLIENT_ERROR');
     expect(sanitizeErrorReason({ code: 'AUTH_EXPIRED' })).toBe('BACKEND_ERROR');
     expect(sanitizeErrorReason({ name: 'TypeError' })).toBe('CLIENT_TYPE_ERROR');
+    expect(sanitizeErrorReason({ privateContact: '5551234567' })).toBe('UNRECOGNIZED_ERROR_OBJECT');
+    expect(sanitizeErrorReason({ message: { privateContact: '5551234567' } })).toBe('ERROR_OBJECT_MESSAGE');
   });
 
   it('preserves safe Supabase and PostgreSQL error codes without logging messages', () => {
@@ -48,6 +52,23 @@ describe('logger.ts - Safe Frontend Logging', () => {
     expect(sanitized).not.toContain('https://api.example.com/v1?token=123');
     expect(sanitized).not.toContain('5351234567');
     expect(sanitized).toBe('UNHANDLED_EXCEPTION');
+  });
+
+  it('classifies common RPC failures without exposing private error text', () => {
+    expect(sanitizeErrorReason({ message: 'JWT expired for admin@example.com' })).toBe('AUTH_TOKEN_ERROR');
+    expect(sanitizeErrorReason({ message: 'Could not find the function public.get_admin_property_contact_details' }))
+      .toBe('RPC_FUNCTION_UNAVAILABLE');
+    expect(sanitizeErrorReason({ message: 'permission denied for contact +5355512345' })).toBe('ACCESS_DENIED');
+    expect(sanitizeErrorReason({ message: 'Failed to fetch https://private.example/rpc?token=secret' }))
+      .toBe('NETWORK_REQUEST_FAILED');
+    expect(sanitizeErrorReason({ error: { code: '42501', message: 'permission denied for private contact 5551234567' } }))
+      .toBe('DATABASE_42501');
+    expect(sanitizeErrorReason({ error: { code: 'PGRST202', message: 'private response detail' } })).toBe('PGRST202');
+    expect(sanitizeErrorReason({ error: { cause: { error: { code: 'PGRST202' } } } })).toBe('PGRST202');
+    const nestedPrivateError = sanitizeErrorReason({ error: { error: 'Private email person@example.com, phone 5551234567' } });
+    expect(nestedPrivateError).toBe('UNCLASSIFIED_ERROR_MESSAGE');
+    expect(nestedPrivateError).not.toContain('person@example.com');
+    expect(nestedPrivateError).not.toContain('5551234567');
   });
 
   it('strips blocked sensitive keys (email, phone, token, id, etc.) from event context', () => {

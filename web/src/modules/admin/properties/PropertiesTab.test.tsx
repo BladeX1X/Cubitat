@@ -27,6 +27,7 @@ describe('PropertiesTab filters', () => {
       total: 1000,
       loading: false,
       error: null,
+      warning: null,
       actionLoading: null,
       notice: null,
       filters: defaultFilters,
@@ -55,6 +56,13 @@ describe('PropertiesTab filters', () => {
     expect(screen.getByRole('button', { name: 'Filtrar por tipo de inmueble' })).toBeInTheDocument()
     expect(screen.getByLabelText('Fecha inicial')).toBeInTheDocument()
     expect(screen.getByLabelText('Fecha final')).toBeInTheDocument()
+  })
+
+  it('keeps the list usable and explains when optional moderation data is unavailable', () => {
+    hookState.warning = 'No se pudieron cargar los datos privados de contacto.'
+    render(<PropertiesTab />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Puedes seguir revisando las publicaciones.')
   })
 
   it('applies a selected operation immediately', async () => {

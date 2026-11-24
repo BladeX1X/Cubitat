@@ -42,6 +42,7 @@ export function useModerationProperties() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const requestId = useRef(0)
@@ -63,12 +64,15 @@ export function useModerationProperties() {
     const currentRequest = ++requestId.current
     setLoading(true)
     setError(null)
+    setWarning(null)
     try {
       const result = await fetchModerationProperties(statusFilter, targetPage, filters)
       if (requestId.current !== currentRequest) return
       setProperties(result.properties)
       setTotal(result.total)
       setPage(targetPage)
+      const warnings = result.warnings ?? []
+      setWarning(warnings.length > 0 ? warnings.join(' ') : null)
     } catch (reason) {
       if (requestId.current !== currentRequest) return
       logSafeEvent({
@@ -268,6 +272,7 @@ export function useModerationProperties() {
     total,
     loading,
     error,
+    warning,
     actionLoading,
     notice,
     clearNotice: () => setNotice(null),

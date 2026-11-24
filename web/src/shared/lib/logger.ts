@@ -96,13 +96,25 @@ function sanitizeLogLevel(level: LogLevel): LogLevel {
  */
 export function sanitizeErrorReason(err: unknown): string {
   if (!err) return 'UNKNOWN_ERROR'
+  if (typeof err === 'string') return classifyErrorMessage(err) ?? 'UNHANDLED_EXCEPTION'
   if (typeof err !== 'object') return 'UNHANDLED_EXCEPTION'
+  return classifyStructuredError(err, 0, new WeakSet<object>()) ?? 'UNHANDLED_EXCEPTION'
+}
 
-  const value = err as Record<string, unknown>
+function classifyStructuredError(
+  input: object,
+  depth: number,
+  visited: WeakSet<object>,
+): string | undefined {
+  if (depth >= 4) return 'ERROR_NESTING_LIMIT'
+  if (visited.has(input)) return 'ERROR_CYCLE'
+  visited.add(input)
+
+  const value = input as Record<string, unknown>
   if (value.name === 'AbortError') return 'REQUEST_ABORTED'
   if (value.name === 'TypeError') return 'CLIENT_TYPE_ERROR'
   if (typeof value.code === 'string') {
-    if (/^PGRST\d{3}$/.test(value.code)) return value.code
+    if (/^PGRST[0-9]{3}$/.test(value.code)) return value.code
     if (/^[0-9A-Z]{5}$/.test(value.code)) return `DATABASE_${value.code}`
     return 'BACKEND_ERROR'
   }
@@ -112,7 +124,53 @@ export function sanitizeErrorReason(err: unknown): string {
     }
     return 'HTTP_REQUEST_FAILED'
   }
-  return 'UNHANDLED_EXCEPTION'
+
+  if (typeof value.message === 'string') {
+    const messageCode = classifyErrorMessage(value.message)
+    if (messageCode) return messageCode
+  }
+
+  for (const field of ['details', 'hint', 'cause', 'error'] as const) {
+    const fieldValue = value[field]
+    if (typeof fieldValue === 'string') {
+      const fieldCode = classifyErrorMessage(fieldValue)
+      if (fieldCode) return fieldCode
+      if (field === 'error') return 'UNCLASSIFIED_ERROR_MESSAGE'
+    } else if (fieldValue && typeof fieldValue === 'object') {
+      const nestedCode = classifyStructuredError(fieldValue, depth + 1, visited)
+      if (nestedCode) return nestedCode
+    }
+  }
+
+  if (value instanceof Error) return 'CLIENT_ERROR'
+  const safeShapeFields = ['name', 'code', 'status', 'message', 'details', 'hint', 'cause', 'error']
+    .filter((field) => Object.hasOwn(value, field) && value[field] !== undefined && value[field] !== null)
+    .map((field) => field.toUpperCase())
+  if (safeShapeFields.length > 0) return `ERROR_OBJECT_${safeShapeFields.join('_')}`
+  if (Array.isArray(input)) return 'ERROR_ARRAY'
+  return Object.keys(value).length === 0 ? 'EMPTY_ERROR_OBJECT' : 'UNRECOGNIZED_ERROR_OBJECT'
+}
+
+function classifyErrorMessage(message: string): string | undefined {
+  const normalized = message.toLowerCase()
+  if (/failed to fetch|networkerror|network request failed|load failed/.test(normalized)) {
+    return 'NETWORK_REQUEST_FAILED'
+  }
+  if (/invalid jwt|jwt expired|token expired|signature verification failed/.test(normalized)) {
+    return 'AUTH_TOKEN_ERROR'
+  }
+  if (/permission denied|not authorized|unauthorized|forbidden/.test(normalized)) {
+    return 'ACCESS_DENIED'
+  }
+  if (/schema cache/.test(normalized)) return 'POSTGREST_SCHEMA_CACHE'
+  if (/could not find the function|function .* does not exist|function not found/.test(normalized)) {
+    return 'RPC_FUNCTION_UNAVAILABLE'
+  }
+  if (/invalid input syntax|malformed array literal|invalid uuid/.test(normalized)) {
+    return 'INVALID_RPC_ARGUMENT'
+  }
+  if (/timeout|timed out|request aborted/.test(normalized)) return 'REQUEST_TIMEOUT'
+  return undefined
 }
 
 /**

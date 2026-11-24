@@ -4,6 +4,7 @@ import {
   handlePublicMarketplaceContact,
   handlePublicPropertyContact,
   handlePublicReportSubmission,
+  handlePublicMarketplaceReportSubmission,
   verifyTurnstile,
   type PublicSubmissionEnv,
 } from './worker/public-submissions';
@@ -227,47 +228,6 @@ async function getUserRole(userId: string, authHeader: string, env: Env): Promis
   return rows[0]?.role || null;
 }
 
-function getJwtAssuranceLevel(authHeader: string): string | null {
-  try {
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-    const claims = JSON.parse(atob(padded)) as { aal?: unknown };
-    return typeof claims.aal === 'string' ? claims.aal : null;
-  } catch {
-    return null;
-  }
-}
-
-function hasAdminSecondFactor(authHeader: string): boolean {
-  return getJwtAssuranceLevel(authHeader) === 'aal2';
-}
-
-async function hasActiveAdminMfaBypass(authHeader: string, env: Env): Promise<boolean> {
-  try {
-    const response = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/rpc/get_admin_mfa_bypass_until`, {
-      method: 'POST',
-      headers: {
-        apikey: env.VITE_SUPABASE_ANON_KEY,
-        Authorization: authHeader,
-        'Content-Type': 'application/json',
-      },
-      body: '{}',
-    });
-    if (!response.ok) return false;
-    const expiresAt: unknown = await response.json();
-    return typeof expiresAt === 'string' && Date.parse(expiresAt) > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-async function canAdminUseSensitiveFeatures(authHeader: string, env: Env): Promise<boolean> {
-  return hasAdminSecondFactor(authHeader) || hasActiveAdminMfaBypass(authHeader, env);
-}
-
 async function canModerateProperty(propertyId: string, userId: string, authHeader: string, env: Env): Promise<boolean> {
   const response = await fetch(
     `${env.VITE_SUPABASE_URL}/rest/v1/properties?id=eq.${encodeURIComponent(propertyId)}&select=id,user_id`,
@@ -293,8 +253,7 @@ async function canModerateProperty(propertyId: string, userId: string, authHeade
     return true;
   }
 
-  return (await getUserRole(userId, authHeader, env)) === 'admin'
-    && await canAdminUseSensitiveFeatures(authHeader, env);
+  return (await getUserRole(userId, authHeader, env)) === 'admin';
 }
 
 async function isRateLimited(
@@ -820,6 +779,21 @@ export function createWorker(options: WorkerOptions = {}) {
       return jsonResponse({ error: 'Method not allowed' }, 405);
     }
 
+    if (path === '/api/public/marketplace-report') {
+      if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+      const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
+      const rateLimit = await checkRateLimit(env, `${clientIp}:public-marketplace-report:v1`, 3, 300000);
+      if (!rateLimit.allowed) return rateLimitResponse(rateLimit.resetAt);
+      const authHeader = request.headers.get('Authorization') || '';
+      let reporterId: string | null = null;
+      if (authHeader) {
+        const reporter = await getAuthenticatedUser(authHeader, env);
+        if (!reporter) return jsonResponse({ error: 'Unauthorized' }, 401);
+        reporterId = reporter.id;
+      }
+      return withSecurityHeaders(await handlePublicMarketplaceReportSubmission(request, env, reporterId), url);
+    }
+
     if (path === '/api/public/marketplace-contact') {
       if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
       const clientIp = request.headers.get('cf-connecting-ip') || '127.0.0.1';
@@ -954,7 +928,7 @@ export function createWorker(options: WorkerOptions = {}) {
       }
 
       const role = await getUserRole(user.id, authHeader, env);
-      if (role !== 'admin' || !await canAdminUseSensitiveFeatures(authHeader, env)) {
+      if (role !== 'admin') {
         return jsonResponse({ error: 'Forbidden' }, 403);
       }
 

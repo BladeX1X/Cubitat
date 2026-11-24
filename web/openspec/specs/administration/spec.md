@@ -26,25 +26,25 @@ El sistema MUST limitar la administracion a usuarios con rol autorizado.
 - THEN el sistema MUST abrir login o redirigir a inicio
 - AND MUST evitar cualquier consulta de datos administrativos
 
-### Requirement: Sesion administrativa elevada
-El sistema MUST validar rol administrador y `aal2` en interfaz, Worker, RPC y RLS para funciones sensibles.
+### Requirement: Sesión administrativa
+El sistema MUST validar rol administrador en interfaz, Worker, RPC y RLS para funciones sensibles. Hasta una reactivación coordinada, MUST NOT exigir `aal2`.
 
-#### Scenario: Admin en AAL1 intenta saltarse el guard
-- GIVEN una sesion valida de administrador con `aal1`
-- WHEN consulta datos privados, metricas o bitacora, o intenta moderar contenido
-- THEN el backend MUST denegar la operacion
+#### Scenario: Administrador con sesión AAL1
+- GIVEN una sesión válida de administrador con `aal1`
+- WHEN consulta datos privados, métricas o bitácora, o modera contenido
+- THEN el backend MUST autorizarla según su rol y las demás reglas de negocio
 
-#### Scenario: Admin en AAL2
-- GIVEN una sesion valida de administrador con `aal2`
-- WHEN accede al panel o ejecuta una accion de moderacion permitida
-- THEN el sistema MUST autorizarla conforme a las politicas restantes
+#### Scenario: Usuario autenticado sin rol admin
+- GIVEN una sesión válida sin rol administrador
+- WHEN accede al panel o ejecuta una acción de moderación
+- THEN el backend MUST denegarla
 
 #### Scenario: RPC heredada de moderacion retirada
 - GIVEN un cliente anonimo, autenticado o administrador con cualquier AAL
 - WHEN intenta ejecutar `set_property_ai_moderation(uuid, property_status, text)`
 - THEN el backend MUST denegar EXECUTE incluso mediante la API directa de Supabase
 - AND el Worker MUST conservar exclusivamente `set_property_ai_moderation_trusted` para automatizacion con `service_role`
-- AND la moderacion humana MUST conservar las politicas existentes de admin AAL2
+- AND la moderacion humana MUST conservar la validación de rol admin
 
 ### Requirement: Gestion de publicaciones
 El sistema MUST permitir revisar estado y calidad de anuncios.
@@ -54,6 +54,7 @@ El sistema MUST permitir revisar estado y calidad de anuncios.
 - WHEN un admin la revisa
 - THEN el sistema MUST mostrar datos principales, propietario, contacto y estado
 - AND MUST obtener nombre y teléfono por la RPC privada `get_admin_property_contact_details` en sesión AAL2
+- AND el Worker de producción MUST permitir esa RPC solo en solicitudes autenticadas, mientras Supabase conserva la autorización administrativa de la función
 - AND MUST excluir `properties.contact_info` de la consulta general de propiedades
 - AND el admin SHOULD poder cambiar estado cuando la interfaz lo permita
 - AND toda accion sensible SHOULD quedar auditable
@@ -322,3 +323,25 @@ La lista de propiedades de moderación MUST aplicar los criterios de búsqueda e
 - AND MUST validar que la fecha inicial no sea posterior a la fecha final
 - AND MUST evitar consultas automáticas cuando el rango de fechas sea inválido
 - AND la vista de coincidencias pHash MUST conservar su consulta especializada
+
+### Requirement: Fallos complementarios aislados en moderación
+El listado principal de propiedades MUST permanecer disponible cuando fallen
+consultas opcionales de contacto, perfil o señales de duplicados.
+
+#### Scenario: Falla una consulta complementaria
+- GIVEN la consulta principal de propiedades devuelve resultados
+- WHEN falla la carga de contactos, datos de perfil o señales de duplicados
+- THEN MUST conservar y mostrar las propiedades devueltas
+- AND MUST indicar qué datos complementarios no están disponibles
+- AND MUST registrar el error sin exponer información personal
+
+### Requirement: Beneficios comerciales fuera de moderación
+El panel de moderación MUST NOT mostrar una sección para conceder beneficios comerciales.
+
+#### Scenario: Administrador abre moderación
+- GIVEN un administrador abre `/moderar`
+- WHEN se presenta la navegación de secciones
+- THEN MUST NOT mostrar «Beneficios»
+
+### Requirement: Reportes de Servicios y Materiales
+Moderación MUST listar reportes de inmuebles, servicios y materiales en orden temporal y permitir cerrar los reportes de marketplace como revisados o descartados con control de administrador.

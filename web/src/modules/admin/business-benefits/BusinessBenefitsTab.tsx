@@ -60,7 +60,7 @@ export function BusinessBenefitsTab() {
       await load()
     } catch (grantError) {
       const code = grantError instanceof Error ? grantError.message : 'UNKNOWN'
-      setFormError(code.startsWith('INVALID_') ? 'Revisa el UUID, las fechas y el motivo (mínimo 5 caracteres).' : 'No se pudo conceder el beneficio. Comprueba la sesión AAL2.')
+      setFormError(code.startsWith('INVALID_') ? 'Revisa el UUID, las fechas y el motivo (mínimo 5 caracteres).' : 'No se pudo conceder el beneficio. Comprueba tu acceso de administrador.')
       logSafeEvent({ module: 'admin', action: 'grant_business_benefit', level: 'error', code: sanitizeErrorReason(grantError) })
     } finally {
       setSaving(false)
@@ -85,11 +85,11 @@ export function BusinessBenefitsTab() {
   return (
     <section aria-labelledby="business-benefits-title" className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 id="business-benefits-title" className="text-lg font-bold">Beneficios comerciales</h2><p className="mt-1 text-sm text-neutral-600">Concesiones manuales con vigencia y auditoría. No representan pagos. Requiere sesión administrativa AAL2.</p></div>
+        <div><h2 id="business-benefits-title" className="text-lg font-bold">Beneficios comerciales</h2><p className="mt-1 text-sm text-neutral-600">Concesiones manuales con vigencia y auditoría. No representan pagos. Solo para administradores.</p></div>
         <Button type="button" variant="outline" disabled={loading || saving} onClick={() => void load()} aria-label="Actualizar beneficios"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} />Actualizar</Button>
       </header>
 
-      {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertTriangle size={18} />No se pudo cargar o actualizar. Comprueba AAL2 y la migración DEV.</div>}
+      {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertTriangle size={18} />No se pudo cargar o actualizar. Comprueba tu acceso de administrador y que la migración esté aplicada.</div>}
 
       <form onSubmit={(event) => void grant(event)} className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 sm:p-5">
         <label className="text-sm font-semibold">Tipo de objetivo<select value={targetType} onChange={(event) => setTargetType(event.target.value as BusinessBenefitTargetType)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{BUSINESS_BENEFIT_TARGET_TYPES.map((type) => <option key={type} value={type}>{TARGET_LABELS[type]}</option>)}</select></label>

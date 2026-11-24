@@ -4,6 +4,15 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
+## Reportes de Servicios y Materiales — aplicada y verificada en producción — 2026-11-23
+
+- `migrations/20261123100000_marketplace_listing_reports.sql` agrega una cola común de reportes de marketplace. Solo `authenticated` puede leerla y RLS limita lectura/revisión a administradores; el Worker registra envíos mediante RPC de `service_role`, valida que el anuncio siga publicado y obtiene el título desde la base de datos. Resolver o descartar no cambia automáticamente el estado del anuncio.
+- Preflight en `tohjzoncoosvjbjcakdl`: 168 versiones registradas, última `20261123090000`; tablas/columnas dependientes y `is_admin_aal2()` presentes; la versión objetivo no estaba aplicada. La CLI detectó una versión remota antigua sin fuente local (`20261120203809`); se añadió solo a un manifiesto temporal como ya aplicada, sin ejecutarla. `migration list` confirmó que la única pendiente era `20261123100000`.
+- Aplicada con `supabase migration up --db-url` usando un directorio temporal que contenía las fuentes locales y solo una migración pendiente; no se usó `db push` global ni `migration repair`. Sin respaldo, a solicitud explícita del usuario.
+- Postcheck: ledger 169 versiones con `20261123100000` como última; tabla y ambas RPC presentes; RLS habilitada y política de administrador; `anon` sin SELECT, `authenticated` con SELECT y `service_role` con EXECUTE en la RPC confiable.
+- Worker/UI desplegados como `cubitat1` versión `408b4581-fba4-4e0d-b459-e97a9e71dc36`. Gates: lint, 251 archivos/1,156 pruebas PASS/1 omitida, build `phase4-production` y verificadores PASS. `/`, `/resultados?operacion=venta`, `/servicios`, `/materiales`, `/moderar` y bundles de reporte/Moderación HTTP 200.
+- Pendiente: prueba autenticada de enviar y revisar un reporte; no se insertaron reportes de prueba.
+
 ## Moneda declarada en anuncios inmobiliarios — aplicada en producción — 2026-11-17
 
 - `migrations/20261116140000_property_price_currency.sql` agrega `price_currency`
@@ -1246,3 +1255,20 @@ dejaría dependencias y controles de seguridad fuera del bundle.
 Con las 64 fuentes aplicadas, `phase4_marketplace_rollout_local.sql` pasó
 14/14 y `public_property_contact_privileges_local.sql` terminó con rollback.
 No se ejecutó ninguna consulta de escritura en producción.
+
+
+## Favoritos SVC/MAT — verificación read-only de producción — 2026-11-23
+
+La consulta de producción confirmó que public.saved_marketplace_listings existe, las versiones 20261116100000 y 20261116120000 están registradas, `authenticated` tiene SELECT/INSERT/DELETE, `anon` y service_role carecen de SELECT, y hay tres políticas RLS. No se ejecutó DDL/DML. El ledger remoto contiene 167 versiones y no coincide con la huella de 101 que esperaba el paquete Phase 3/4; no repetir ese paquete ni aplicar SQL de favoritos duplicado hasta reconciliar el drift. Falta QA autenticado desde la UI. Evidencia: docs/FAVORITES_PRODUCTION_STATE_2026-11-23.md.
+
+
+## 2026-11-23 — Favoritos SVC/MAT
+
+Read-only production inspection confirmed `saved_marketplace_listings`, versions `20261116100000` and `20261116120000`, authenticated SELECT/INSERT/DELETE grants, and three owner RLS policies. The failure was the Worker allowlist; production Worker `bf754180-1310-4077-905c-65e70dbb0f3c` now includes the table. An invalid-JWT POST was rejected downstream with HTTP 401 and made no data change. The production migration ledger has 167 versions and still differs from the old workflow baseline. Do not repeat favorites DDL or the stale migration bundle. Authenticated UI QA remains pending.
+## MFA administrativo — aplicada y verificada en producción — 2026-11-23
+
+`20261123090000_disable_admin_mfa_requirement.sql` cambia `public.is_admin_aal2()` para delegar en `public.is_admin()`. El rol `admin` se conserva en RPC/RLS; se retira el requisito AAL2. Los factores TOTP existentes no se eliminan.
+
+Preflight con la conexión directa: ledger remoto de 167 versiones; se usó el conjunto completo de fuentes del release `ba3359065b838dbf4c155b78a6174f80058c5a2f` y el dry-run enumeró únicamente `20261123090000`. Aplicada sin respaldo a solicitud expresa del usuario. Postcheck: ledger de 168, versión registrada y definición confirmada. La CLI reportó un aviso no bloqueante al exportar caché pg-delta por un certificado auxiliar ausente; la aplicación terminó correctamente y las consultas posteriores verificaron el resultado.
+
+Frontend/Worker `cubitat1` desplegado en `0d79f4a9-9947-4b20-8eb1-91b3d887cf2a` al 100%; gates de lint, pruebas y build Fase 4 aprobados. Smoke HTTP de Inicio, Moderar y Recuperación: 200. QA autenticado AAL1 y revisión de requisito Supabase Auth independiente quedan pendientes. La credencial temporal compartida en el chat debe rotarse y actualizar el secreto de despliegue; no almacenarla en el repositorio.

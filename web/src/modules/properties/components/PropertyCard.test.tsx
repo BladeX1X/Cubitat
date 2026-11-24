@@ -54,6 +54,13 @@ describe('PropertyCard verified seller badge', () => {
   })
 })
 
+describe('PropertyCard editorial labels', () => {
+  it.each(['nuevo', 'destacado', 'exclusivo'] as const)('does not display the %s listing label', (badge) => {
+    render(<PropertyCard property={{ ...property, badge }} isSelected={false} onSelect={vi.fn()} />)
+    expect(screen.queryByText(badge)).not.toBeInTheDocument()
+  })
+})
+
 describe('PropertyCard contact actions', () => {
   it('opens the advertiser phone through the protected property contact endpoint', async () => {
     const onSelect = vi.fn()

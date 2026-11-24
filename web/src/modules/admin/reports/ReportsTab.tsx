@@ -40,7 +40,7 @@ export function ReportsTab() {
             key={report.id}
             report={report}
             actionLoading={state.actionLoading === report.id}
-            onResolve={() => void state.resolve(report.id, report.property_id)}
+            onResolve={() => void state.resolve(report.id)}
             onDismiss={() => void state.dismiss(report.id)}
           />
         ))}

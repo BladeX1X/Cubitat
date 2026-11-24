@@ -20,7 +20,7 @@ import { PWAInstallPrompt } from '../components/layout/PWAInstallPrompt'
 import { clearCachedProperties, saveCachedProperties, getCachedProperties, saveSingleCachedProperty, getCachedProperty } from '../shared/lib/offlineCache'
 import { removeLegacyPublicationDraft } from '../pages/publish/draftStorage'
 import { logSafeEvent, sanitizeErrorReason } from '../shared/lib/logger'
-import { PHASE_FOUR_MAT_ENABLED, PHASE_FOUR_REV_ENABLED, PHASE_FOUR_SVC_ENABLED, PHASE_FOUR_VAL_ENABLED, PHASE_TWO_ENABLED } from '../shared/config/features'
+import { PHASE_FOUR_MAT_ENABLED, PHASE_FOUR_SVC_ENABLED, PHASE_FOUR_VAL_ENABLED, PHASE_TWO_ENABLED } from '../shared/config/features'
 import { AccountPage } from '../pages/account/AccountPage'
 import { approximatePropertyCoordinates } from '../modules/maps/lib/propertyCoordinates'
 import { disablePushNotifications, reconcilePushSession } from '../modules/notifications/push/pushService'
@@ -1294,7 +1294,7 @@ export function CubitatApp() {
         )}
 
         {PHASE_FOUR_SVC_ENABLED && ServiceDirectoryPage && pageMode === 'services' && (
-          <ServiceDirectoryPage onRequireLogin={openLogin} onCreateProfile={navigateServiceSubmission} onManageProfiles={navigateMyServiceProfiles} reviewsEnabled={PHASE_FOUR_REV_ENABLED} userId={user?.id ?? null} />
+          <ServiceDirectoryPage onRequireLogin={openLogin} />
         )}
         {PHASE_FOUR_SVC_ENABLED && MyServiceProfilesPage && pageMode === 'my-services' && user && (
           <MyServiceProfilesPage
@@ -1309,7 +1309,7 @@ export function CubitatApp() {
           />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialsMarketplacePage && pageMode === 'materials' && (
-          <MaterialsMarketplacePage onRequireLogin={openLogin} onCreateListing={navigateMaterialSubmission} onManageListings={navigateMyMaterialListings} />
+          <MaterialsMarketplacePage onRequireLogin={openLogin} />
         )}
         {PHASE_FOUR_SVC_ENABLED && ServiceProviderSubmissionPage && pageMode === 'service-submit' && user && (
           <ServiceProviderSubmissionPage onBack={navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} />

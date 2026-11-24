@@ -27,7 +27,7 @@ type PropertyCardProps = {
   - Los perfiles propietarios `buyer`, `seller` y `admin` pueden mostrar «Vendedor verificado» bajo esas condiciones; el estado de verificación nunca se expone en la tarjeta.
   - Usa el fallback SVG local inmediato cuando el anuncio no tiene portada, evitando una descarga genérica remota en el LCP.
   - Usa `property.coverImage`, `property.images` y `property.coverTone`.
-  - Muestra badge editorial cuando existe.
+  - No muestra temporalmente las etiquetas editoriales «Nuevo», «Destacado» ni «Exclusivo».
   - Incluye flechas laterales solo cuando existen varias imagenes reales.
   - Incluye boton visual de guardar con icono de corazon.
 - El favorito compartido espera a que Supabase confirme la sesión; durante esa comprobación permanece deshabilitado con estado accesible para evitar abrir el inicio de sesión a una cuenta ya activa.
@@ -50,7 +50,6 @@ type PropertyCardProps = {
   `contact_info` en la consulta pública del catálogo.
 - Si falta el canal solicitado, la tarjeta permite abrir la ficha y enfocar el
   formulario protegido. Un error temporal muestra una opción recuperable.
-- El badge usa el componente compartido `Badge`.
 - El precio se calcula en `getPriceLabel`; alquiler agrega `/ mes` y permuta muestra `Permuta`.
 - Las flechas de imagen usan la galeria real de la propiedad (`property.images`) normalizada desde `src/modules/properties/utils/images.ts`.
 - Las referencias de `property_images` se muestran por `/api/supabase/storage/v1/object/property_images/...` porque el bucket es privado; las URLs `/object/public/` se corrigen al cargar desde DB o caché antes de llegar al carrusel.
@@ -120,6 +119,10 @@ Cada cambio visual importante debe verificarse con:
 
 ## Notas de Mantenimiento
 
+- La tarjeta usa `CatalogCardFrame` para compartir ancho, proporción de portada,
+  bordes, tipografía y acciones con los catálogos de Servicios y Materiales.
+  El catálogo centrado tiene un máximo de 72 rem; el panel puede expandirse si
+  se abre el mapa de escritorio.
 - Si se agregan nuevos datos de propiedad, actualizar `Property` y esta documentacion.
 - Mantener la tarjeta escaneable: no mostrar demasiadas amenidades ni texto largo dentro del listado.
 - En resultados, `prioritizeImage` se reserva para la primera tarjeta. Las imágenes Unsplash de catálogo se solicitan a 420 px y calidad 45; las demás usan `loading="lazy"` y `fetchPriority="low"`.

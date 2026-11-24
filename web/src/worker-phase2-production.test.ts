@@ -58,9 +58,12 @@ describe('Phase 2 production Worker', () => {
     await import('./worker-phase2-production')
     const options = mocks.createWorkerOptions.mock.calls.at(-1)?.[0] as {
       additionalAuthenticatedRpcs: string[]
+      additionalAuthenticatedWriteTables: string[]
     }
     expect(options.additionalAuthenticatedRpcs).toContain('list_active_agents_for_moderation')
     expect(options.additionalAuthenticatedRpcs).toContain('revoke_agent_access')
+    expect(options.additionalAuthenticatedRpcs).toContain('get_admin_property_contact_details')
+    expect(options.additionalAuthenticatedWriteTables).toContain('saved_marketplace_listings')
   })
 
   it('keeps Phase 3 application endpoints disabled in production by default', async () => {

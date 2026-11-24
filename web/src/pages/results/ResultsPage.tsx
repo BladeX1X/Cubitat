@@ -424,7 +424,7 @@ export function ResultsPage({
             </div>
           )}
 
-          <div className="property-catalog-grid">
+          <div className="property-catalog-grid catalog-card-grid">
             {loading ? (
               <PropertyCardSkeleton count={6} />
             ) : paginatedProperties.length > 0 ? (

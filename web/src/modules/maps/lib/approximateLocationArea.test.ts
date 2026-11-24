@@ -8,11 +8,11 @@ const EARTH_RADIUS_METERS = 6_371_000
 
 describe('createApproximateLocationArea', () => {
   it('creates a closed polygon around the approximate coordinate', () => {
-    const area = createApproximateLocationArea([-82.36, 23.12], 2_000, 16)
+    const area = createApproximateLocationArea([-82.36, 23.12], 500, 16)
     const ring = area.geometry.coordinates[0]
 
     expect(area.geometry.type).toBe('Polygon')
-    expect(area.properties.radiusMeters).toBe(2_000)
+    expect(area.properties.radiusMeters).toBe(500)
     expect(ring).toHaveLength(17)
     expect(ring.at(0)).toEqual(ring.at(-1))
   })
@@ -25,6 +25,15 @@ describe('createApproximateLocationArea', () => {
     for (const point of ring.slice(0, -1)) {
       expect(distanceMeters(center, point)).toBeCloseTo(APPROXIMATE_PROPERTY_AREA_RADIUS_METERS, -1)
     }
+  })
+
+  it('uses a 1 km diameter for the default approximate property area', () => {
+    const center: [number, number] = [-82.36, 23.12]
+    const area = createApproximateLocationArea(center)
+    const ring = area.geometry.coordinates[0]
+
+    expect(area.properties.radiusMeters).toBe(500)
+    expect(distanceMeters(ring[0], ring[32])).toBeCloseTo(1_000, -1)
   })
 })
 
