@@ -343,8 +343,8 @@ antes de esperar las teselas, que luego responden 200. Worker DEV
 - Los directorios ya consumen todas las páginas de resultados que coinciden con
   los filtros y tienen coordenadas públicas, no solo la página de tarjetas.
 - El adaptador de Comprar genera los clusters y notifica el área visible; los
-  catálogos filtran sus tarjetas por esos ids y resaltan las selecciones de
-  puntos o grupos.
+  catálogos filtran sus tarjetas por esos ids sin cambiar los bordes de las
+  tarjetas al seleccionar puntos o grupos.
 - La consulta carga solo la portada de cada anuncio. Las coordenadas pasan por
   el mismo redondeo público de privacidad que Comprar; nunca se solicita la
   tabla privada.
@@ -369,3 +369,12 @@ antes de esperar las teselas, que luego responden 200. Worker DEV
 - AND MUST explicar de forma accesible si faltan permisos, no hay señal o vence el tiempo de espera
 - AND MUST conservar las coordenadas según el almacenamiento privado existente del tipo de publicación
 - AND la política de permisos HTTP MUST permitir geolocalización únicamente al mismo origen (`geolocation=(self)`)
+
+### Control flotante del mapa en Comprar
+
+#### Scenario: Abrir y cerrar el mapa desde resultados
+- GIVEN una persona está consultando resultados de inmuebles
+- WHEN ve el control para cambiar entre lista y mapa
+- THEN el control MUST permanecer centrado y flotante al pie del viewport, como en Servicios y Materiales
+- AND MUST respetar el área segura inferior de dispositivos móviles
+- AND MUST indicar si abrirá u ocultará el mapa

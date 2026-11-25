@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BellPlus, List, Map } from 'lucide-react'
+import { BellPlus, List } from 'lucide-react'
 import type { Property, OperationType, PropertyType } from '../properties/types'
 import { SavePropertyButton } from '../properties/components/SavePropertyButton'
 import { PropertyMap } from '../maps/components/PropertyMap'
@@ -9,6 +9,7 @@ import { FilterBar } from '../search/components/FilterBar'
 import type { FilterBarProps } from '../search/components/FilterBar'
 import { MAP_FULLSCREEN_LAYER_STYLE } from '../../shared/ui/layers'
 import { orderPropertiesByIds } from './carouselOrder'
+import { MarketplaceMapToggle } from '../marketplace/MarketplaceMapToggle'
 
 const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartamento: 'DEPARTAMENTO',
@@ -198,6 +199,7 @@ function MapOverlay({
 
   return createPortal(
     <div
+      id="results-map-view"
       className="map-fullscreen-overlay"
       style={MAP_FULLSCREEN_LAYER_STYLE}
       role="dialog"
@@ -286,7 +288,7 @@ export function ResultsDesktopMapPanel({
 }: ResultsDesktopMapPanelProps) {
   return (
     <aside className="results-desktop-map-panel" aria-label="Mapa de resultados">
-      <div className="results-map-wrapper results-map-wrapper--desktop">
+      <div id="results-map-view" className="results-map-wrapper results-map-wrapper--desktop">
         <PropertyMap
           properties={properties}
           selectedPropertyId={selectedPropertyId}
@@ -368,27 +370,11 @@ export function ResultsMapView({
   return (
     <>
       {viewMode === 'list' || (viewMode === 'map' && isDesktopViewport) ? (
-        <div className="results-floating-actions" aria-label="Acciones de resultados">
-          <button
-            type="button"
-            className="results-floating-map"
-            onClick={() => onViewModeChange(viewMode === 'map' ? 'list' : 'map')}
-          >
-            {viewMode === 'map' ? <List size={14} /> : <Map size={14} />}
-            <span>{viewMode === 'map' ? 'Ocultar mapa' : 'Mostrar mapa'}</span>
-          </button>
-          {onCreateAlert ? (
-            <button
-              type="button"
-              className="results-floating-alert"
-              onClick={onCreateAlert}
-              disabled={creatingAlert}
-            >
-              <BellPlus size={14} />
-              <span>{creatingAlert ? 'Guardando...' : 'Crear alerta'}</span>
-            </button>
-          ) : null}
-        </div>
+        <MarketplaceMapToggle
+          open={viewMode === 'map'}
+          mapId="results-map-view"
+          onToggle={() => onViewModeChange(viewMode === 'map' ? 'list' : 'map')}
+        />
       ) : null}
 
       {viewMode === 'map' && !isDesktopViewport ? (
