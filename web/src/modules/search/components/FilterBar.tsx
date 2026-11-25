@@ -58,6 +58,8 @@ export function FilterBar({
     close: closeMobileFilterSheet,
   } = useMobileFilterSheet(isMoreOpen, setIsMoreOpen)
   const activeFiltersCount = getActiveExtraFiltersCount(filters)
+  const propertyNoun = totalResults === 1 ? 'inmueble' : 'inmuebles'
+  const resultNoun = totalResults === 1 ? 'resultado' : 'resultados'
   const handleFilterUpdate = (updatedFields: Partial<SearchFilters>) => {
     if (onChangeFilters) {
       onChangeFilters({
@@ -128,7 +130,7 @@ export function FilterBar({
           <strong>{filters.query || 'Cuba'}</strong>
           <span>{mobileSummaryParts.join(' · ')}</span>
         </div>
-        <small>{totalResults} inmuebles</small>
+        <small>{totalResults} {propertyNoun}</small>
       </div>
 
       <div
@@ -457,7 +459,7 @@ export function FilterBar({
               onClick={() => setIsMoreOpen(false)}
               className="bg-[#035f53] text-white hover:bg-[#024a41] rounded-full px-5 py-2 text-xs font-bold"
             >
-              Ver {totalResults} resultados
+              Ver {totalResults} {resultNoun}
             </Button>
           </div>
         </PopoverContent>
@@ -681,7 +683,7 @@ export function FilterBar({
                 </button>
               ) : null}
               <button type="button" className="mobile-filter-submit" onClick={closeMobileFilterSheet}>
-                Ver {totalResults} inmuebles
+              Ver {totalResults} {propertyNoun}
               </button>
             </div>
           </div>

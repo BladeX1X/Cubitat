@@ -87,6 +87,9 @@ Si se decide que el detalle sea otra pagina real, `ResultsPage` no debe renderiz
   sinteticos. La proyeccion de vendedor incluye perfiles `buyer`, `seller` y
   `admin` solo si su identidad KYC esta verificada y tienen al menos una
   propiedad publicada.
+- El encabezado, el resumen de filtros y las acciones de resultados usan la
+  lista filtrada para mantener el contador sincronizado con las tarjetas; en
+  mapa de escritorio el encabezado respeta además el grupo/área seleccionados.
 - Trust Score esta diferido por decision de producto. Resultados no debe mostrar
   filtros, badges ni puntuaciones hasta que exista un contrato de datos aprobado.
 - `Relevancia` conserva el orden base recibido por la pagina.
