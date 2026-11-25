@@ -7,10 +7,10 @@ muestra una referencia cartográfica pública sin coordenadas privadas.
 
 ## Privacidad de la ubicación
 
-- El pin indica la coordenada pública aproximada del anuncio.
+- La ficha no muestra pin ni marcador de ubicación.
 - El área visual tiene 500 m de radio (1 km de diámetro). Su centro se desplaza
   entre 120 y 240 m con rumbo y distancia seudoaleatorios derivados del ID del
-  anuncio; así el pin no queda siempre en el centro del círculo.
+  anuncio respecto a la referencia pública aproximada.
 - El desplazamiento permanece estable entre renderizados y es distinto por
   anuncio. No consulta ni revela las coordenadas privadas del anunciante.
 - Si solo hay una provincia, se usa su referencia provincial aproximada.

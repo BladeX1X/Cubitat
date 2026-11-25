@@ -11,9 +11,11 @@ texto del título, categoría, provincia y disponibilidad, detalle, precio
 declarado, consulta privada para el vendedor y acceso a solicitud de publicación.
 El catálogo pagina desde Supabase en bloques numerados de 15 resultados, muestra
 el total exacto de coincidencias y permite ir a cualquier página sin acumular
-anuncios anteriores. Un mapa
-opcional muestra anuncios disponibles agrupados por provincia y aplica esa
-provincia como filtro del catálogo.
+anuncios anteriores. Un mapa opcional muestra anuncios disponibles agrupados
+por provincia y aplica esa provincia como filtro del catálogo. El acceso al
+mapa flota en la parte inferior; en escritorio abre el panel junto a la lista
+y en móvil ocupa la pantalla con una acción flotante inferior para volver al
+catálogo. El encuadre inicial se ajusta a Cuba.
 
 Las tarjetas comparten las acciones Contactar y Consultar con el directorio de
 Servicios. Contactar abre directamente la llamada y Consultar abre WhatsApp con
@@ -34,10 +36,9 @@ actualización, descripción y aviso de inventario; conserva la galería origina
 con flechas/puntos y el formulario de consulta al vendedor.
 Sobre la galería aparecen Fotos y Mapa. Fotos abre todas las imágenes en un
 visor navegable sincronizado con el carrusel del hero; Mapa presenta la
-ubicación pública aproximada. Si el anuncio tiene coordenadas, conserva el pin
-como referencia y dibuja alrededor un círculo desplazado de forma estable por
-anuncio, de 1 km de diámetro. No superpone una tarjeta de ubicación ni revela
-coordenadas privadas.
+ubicación pública aproximada. Si el anuncio tiene coordenadas, dibuja un círculo
+desplazado de forma estable por anuncio, de 1 km de diámetro, sin pin. No
+superpone una tarjeta de ubicación ni revela coordenadas privadas.
 
 ## Reglas
 

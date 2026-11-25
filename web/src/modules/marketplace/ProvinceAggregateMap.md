@@ -9,11 +9,17 @@ la paginación del catálogo.
 ## Comportamiento adaptable
 
 - En móvil se abre como diálogo a pantalla completa, bloquea el desplazamiento
-  del documento y permite cerrar con el botón o con Escape.
+  del documento y ofrece «Ocultar mapa» como botón flotante inferior, además de
+  Escape. El diálogo se monta sobre `document.body` para ocupar el viewport y
+  evitar desplazamientos laterales heredados del layout.
 - En escritorio, al abrirlo desde Servicios o Materiales queda en la columna
   derecha a pantalla alta, junto al catálogo y con el mismo patrón de mapa
   visible que Comprar/Rentar; filtros y resultados permanecen en la columna
-  izquierda.
+  izquierda. El control para abrir/cerrar flota en la parte inferior.
+- Al abrirse, redimensiona el lienzo y encuadra Cuba para evitar empezar con la
+  vista desplazada hacia Florida aunque los conteos estén en Cuba.
+- El control que muestra el mapa queda fijo en la parte inferior de la ventana,
+  no dentro del flujo de encabezado del catálogo.
 - Carga MapLibre solo cuando el usuario abre el mapa; el mapa y su fallback de
   carga/error usan el mismo contenedor para no quedar ocultos bajo el layout.
 - En móvil, el fallback diferido ya es un diálogo con cierre accesible. El

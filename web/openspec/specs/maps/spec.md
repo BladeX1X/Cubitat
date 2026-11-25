@@ -18,6 +18,10 @@ debe cargarse bajo demanda para no retrasar los catálogos.
 - THEN se carga MapLibre y se ven conteos agrupados por provincia para todos los
   resultados que coinciden con los otros filtros
 - AND el mapa muestra una ubicación provincial aproximada, no direcciones
+- AND el control para abrir el mapa MUST flotar centrado en la parte inferior de la ventana
+- AND en escritorio, el mapa MUST aparecer junto a los resultados en una vista dividida, manteniendo visibles filtros y tarjetas
+- AND en móvil, el mapa MUST abrirse a pantalla completa, ajustarse al ancho del viewport sin desbordamiento horizontal y ofrecer un control flotante inferior para volver a la lista
+- AND el mapa MUST redimensionarse y encuadrar Cuba al abrirse, sin iniciar desplazado fuera de la isla
 - AND el indicador de carga se retira en cuanto el estilo y las capas interactivas están listos, sin esperar a todas las teselas visibles
 - AND en móvil el estado de carga conserva el diálogo de pantalla completa y el botón para cerrar
 
@@ -67,12 +71,13 @@ Las fichas de Servicios y Materiales MUST ofrecer una pestaña Mapa dentro del
 visor multimedia. El mapa MUST cargarse bajo demanda y mostrar una referencia
 aproximada, sin exponer coordenadas exactas.
 
-#### Scenario: Mostrar círculo y marcador aproximados
+#### Scenario: Mostrar solo el círculo aproximado
 - GIVEN el anuncio tiene coordenadas públicas aproximadas
 - WHEN el visitante abre la pestaña Mapa
-- THEN el mapa MUST mostrar un marcador en la referencia pública
-- AND MUST mostrar un círculo de 1 km de diámetro desplazado entre 120 y 240 m
-  del marcador
+- THEN el mapa MUST mostrar un círculo de 1 km de diámetro
+- AND MUST NOT mostrar un pin o marcador de ubicación
+- AND el centro del círculo MUST quedar desplazado entre 120 y 240 m de la
+  referencia pública aproximada
 - AND el desplazamiento MUST ser estable para el mismo anuncio y variar entre
   anuncios, sin usar ni revelar coordenadas privadas
 - AND el mapa MUST ocupar el espacio sin una tarjeta flotante de ubicación
