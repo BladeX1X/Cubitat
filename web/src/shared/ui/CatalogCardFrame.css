@@ -21,6 +21,11 @@
   box-shadow: 0 12px 28px rgb(15 45 37 / 14%);
 }
 
+.catalog-card.is-map-selected {
+  border-color: #047365;
+  box-shadow: 0 0 0 2px rgb(4 115 101 / 22%), 0 12px 28px rgb(15 45 37 / 14%);
+}
+
 .catalog-card__open {
   display: flex;
   width: 100%;

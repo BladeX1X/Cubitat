@@ -11,7 +11,7 @@ const { query, from, createSignedUrls, createSignedUrl, getUser } = vi.hoisted((
 vi.mock('../../shared/lib/supabaseClient', () => ({ supabase: { auth: { getUser }, from, storage: { from: () => ({ createSignedUrls, createSignedUrl }) } } }))
 vi.mock('../../shared/lib/logger', () => ({ logSafeEvent: vi.fn(), sanitizeErrorReason: vi.fn(() => 'test') }))
 
-import { createOwnedMaterialPhotoPreviews, fetchMaterialListings } from './materialRepository'
+import { createOwnedMaterialPhotoPreviews, fetchMaterialListings, fetchMaterialListingsForMap } from './materialRepository'
 
 describe('fetchMaterialListings filters and pagination', () => {
   beforeEach(() => {
@@ -41,6 +41,26 @@ describe('fetchMaterialListings filters and pagination', () => {
     expect(query.or).toHaveBeenCalledWith('title.ilike.%cemento%,description.ilike.%cemento%')
     expect(query.range).toHaveBeenCalledWith(24, 47)
     expect(result).toMatchObject({ total: 37, items: [{ id: '1', title: 'Cemento gris' }] })
+  })
+
+  it('loads every filtered map page with only cover images and public coordinates', async () => {
+    const rows = Array.from({ length: 61 }, (_, index) => ({
+      id: `material-${index}`, slug: `material-${index}`, title: `Material ${index}`, category: 'cemento',
+      description: 'Material de construcción', price: 12, currency: 'USD', province: 'La Habana',
+      coordinates: { latitude: 23.11, longitude: -82.36 }, availability: 'available', photo_urls: [],
+      updated_at: '2026-11-05T00:00:00Z',
+    }))
+    query.range.mockImplementation((start: number) => {
+      Object.assign(query, { data: rows.slice(start, start + 60), count: 61 })
+      return query
+    })
+
+    const items = await fetchMaterialListingsForMap({ province: 'La Habana', category: 'cemento' })
+
+    expect(items).toHaveLength(61)
+    expect(items[0]).toMatchObject({ coordinates: { latitude: 23.11, longitude: -82.36 }, photoUrls: [] })
+    expect(query.range.mock.calls).toEqual([[0, 59], [60, 119]])
+    expect(query.eq).toHaveBeenCalledWith('province', 'La Habana')
   })
 
   it('marks a referenced private photo unavailable when Storage cannot sign it', async () => {

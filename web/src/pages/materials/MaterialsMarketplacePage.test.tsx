@@ -1,24 +1,26 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MaterialsMarketplacePage } from './MaterialsMarketplacePage'
-import { fetchMaterialListing, fetchMaterialListings } from '../../modules/materials/materialRepository'
+import { fetchMaterialListing, fetchMaterialListings, fetchMaterialListingsForMap } from '../../modules/materials/materialRepository'
 
 vi.mock('../../shared/hooks/useSEO', () => ({ useSEO: vi.fn() }))
 vi.mock('../../shared/ui/MarketplaceContactActions', () => ({ MarketplaceContactActions: () => <div><button type="button">Contactar</button><button type="button">Consultar</button></div> }))
 vi.mock('../../modules/materials/materialRepository', () => ({
   fetchMaterialListing: vi.fn(),
   fetchMaterialListings: vi.fn(),
-  fetchMaterialProvinceCounts: vi.fn().mockResolvedValue([]),
+  fetchMaterialListingsForMap: vi.fn().mockResolvedValue([]),
   sendMaterialInquiry: vi.fn(),
 }))
 vi.mock('../../modules/marketplace/MarketplaceMapToggle', () => ({
   MarketplaceMapToggle: ({ onToggle }: { onToggle: () => void }) => <button type="button" onClick={onToggle}>Mostrar mapa</button>,
 }))
 vi.mock('../../modules/catalog-explorer/CatalogMap', () => ({
-  CatalogMap: ({ onSelectProvince, selectedProvince }: { onSelectProvince: (province: string) => void; selectedProvince: string }) => (
+  CatalogMap: ({ listings, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
     <div>
-      <span>Mapa de materiales: {selectedProvince || 'Toda Cuba'}</span>
-      <button type="button" onClick={() => onSelectProvince('Matanzas')}>Filtrar Matanzas en el mapa</button>
+      <span>Mapa con {listings.length} puntos</span>
+      <button type="button" onClick={() => onViewportChange(listings.slice(-1).map(({ id }) => id))}>Filtrar área visible</button>
+      <button type="button" onClick={() => onSelectListing(listings[0]?.id ?? '')}>Seleccionar punto</button>
+      <button type="button" onClick={() => onSelectCluster(listings.map(({ id }) => id))}>Seleccionar grupo</button>
     </div>
   ),
 }))
@@ -32,6 +34,7 @@ const listing = {
   price: 12,
   currency: 'USD' as const,
   province: 'La Habana',
+  coordinates: { latitude: 23.135, longitude: -82.383 },
   availability: 'available' as const,
   phone: null,
   whatsapp: null,
@@ -52,6 +55,8 @@ describe('MaterialsMarketplacePage filter loading', () => {
     vi.mocked(fetchMaterialListing).mockResolvedValue(listing)
     vi.mocked(fetchMaterialListings).mockReset()
     vi.mocked(fetchMaterialListings).mockResolvedValue({ items: [listing], total: 1 })
+    vi.mocked(fetchMaterialListingsForMap).mockReset()
+    vi.mocked(fetchMaterialListingsForMap).mockResolvedValue([listing])
   })
 
   it('renders the shared detail design with material-specific information', async () => {
@@ -143,21 +148,35 @@ describe('MaterialsMarketplacePage filter loading', () => {
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
   })
 
-  it('applies a map province without navigation and resets to the first page', async () => {
-    vi.mocked(fetchMaterialListings).mockResolvedValueOnce({ items: [listing], total: 31 })
+  it('uses all public coordinates and filters cards to the visible map area', async () => {
+    const secondListing = { ...listing, id: 'material-2', slug: 'madera', title: 'Madera', province: 'Santiago de Cuba', coordinates: { latitude: 20.02, longitude: -75.82 } }
+    vi.mocked(fetchMaterialListings).mockResolvedValueOnce({ items: [listing], total: 2 })
+    vi.mocked(fetchMaterialListingsForMap).mockResolvedValueOnce([listing, secondListing])
     render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Cemento gris')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Página 2' }))
-    await waitFor(() => expect(fetchMaterialListings).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 15, pageSize: 15 })))
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar Matanzas en el mapa' }))
+    expect(await screen.findByText('Mapa con 2 puntos')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar área visible' }))
+    expect(await screen.findByRole('heading', { name: 'Madera' })).toBeInTheDocument()
+    expect(screen.queryByText('Cemento gris')).not.toBeInTheDocument()
+    expect(screen.getByText('1 anuncio en el área visible')).toBeInTheDocument()
+    expect(fetchMaterialListingsForMap).toHaveBeenCalledWith(expect.objectContaining({ province: undefined }))
+    expect(window.location.pathname).toBe(initialPath)
+  })
 
-    await waitFor(() => expect(fetchMaterialListings).toHaveBeenLastCalledWith(expect.objectContaining({
-      province: 'Matanzas', offset: 0, pageSize: 15,
-    })))
-    expect(screen.getByText('Mapa de materiales: Matanzas')).toBeInTheDocument()
+  it('selects a map cluster and highlights the matching material cards', async () => {
+    const secondListing = { ...listing, id: 'material-2', slug: 'madera', title: 'Madera', province: 'Santiago de Cuba', coordinates: { latitude: 20.02, longitude: -75.82 } }
+    vi.mocked(fetchMaterialListingsForMap).mockResolvedValueOnce([listing, secondListing])
+    render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
+    await screen.findByText('Cemento gris')
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
+    await screen.findByText('Mapa con 2 puntos')
+    const initialPath = window.location.pathname
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar grupo' }))
+    expect(screen.getByRole('heading', { name: 'Cemento gris' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Madera' })).toBeInTheDocument()
+    expect(document.querySelectorAll('.catalog-card.is-map-selected')).toHaveLength(2)
     expect(window.location.pathname).toBe(initialPath)
   })
 

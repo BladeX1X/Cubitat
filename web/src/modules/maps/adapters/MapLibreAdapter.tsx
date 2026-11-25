@@ -4,6 +4,7 @@ import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
+import { createCatalogListingSourceData } from '../lib/catalogListingSourceData'
 import { shouldFitInitialBounds } from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
 import { observeElementResize } from '../lib/observeElementResize'
@@ -22,6 +23,8 @@ const MAP_OPTIONS = { center: [-79.5, 21.8] as [number, number], zoom: 5.15, min
 
 export function MapLibreAdapter({
   properties,
+  listings,
+  listingLabel = 'propiedades',
   selectedPropertyId,
   selectedPropertyIds,
   onSelectProperty,
@@ -76,8 +79,10 @@ export function MapLibreAdapter({
   }, [onViewportChange])
 
   const sourceData = useMemo(
-    () => createPropertySourceData(properties, selectedPropertyId, selectedPropertyIds),
-    [properties, selectedPropertyId, selectedPropertyIds],
+    () => listings
+      ? createCatalogListingSourceData(listings, selectedPropertyId, selectedPropertyIds)
+      : createPropertySourceData(properties, selectedPropertyId, selectedPropertyIds),
+    [listings, properties, selectedPropertyId, selectedPropertyIds],
   )
 
   useEffect(() => {
@@ -86,14 +91,17 @@ export function MapLibreAdapter({
 
   const bounds = useMemo(() => {
     const mapBounds = new maplibregl.LngLatBounds()
-    properties.forEach((property) => {
-      const coordinates = approximatePropertyCoordinates(property.coordinates, property.location)
+    const coordinatesToFit = listings
+      ? listings.map((listing) => ({ coordinates: listing.coordinates, location: listing.location }))
+      : properties.map((property) => ({ coordinates: property.coordinates, location: property.location }))
+    coordinatesToFit.forEach((item) => {
+      const coordinates = approximatePropertyCoordinates(item.coordinates, item.location)
       if (coordinates) {
         mapBounds.extend([coordinates.longitude, coordinates.latitude])
       }
     })
     return mapBounds
-  }, [properties])
+  }, [listings, properties])
 
   useEffect(() => {
     const map = mapRef.current
@@ -472,7 +480,7 @@ export function MapLibreAdapter({
           const id = feature.properties?.id as string | undefined
           return id ? [{
             id,
-            title: String(feature.properties?.title ?? 'propiedad'),
+            title: String(feature.properties?.title ?? 'anuncio'),
             label: String(feature.properties?.label ?? 'Ver'),
             coordinates: feature.geometry.coordinates as [number, number],
           }] : []
@@ -490,10 +498,10 @@ export function MapLibreAdapter({
           'aria-label',
           isCluster
             ? selectedCount === entries.length
-              ? `${entries.length} propiedades seleccionadas`
+              ? `${entries.length} ${listingLabel} seleccionados`
               : selectedCount > 0
-                ? `${selectedCount} de ${entries.length} propiedades seleccionadas`
-                : `${entries.length} propiedades agrupadas. Ver resultados del grupo`
+                ? `${selectedCount} de ${entries.length} ${listingLabel} seleccionados`
+                : `${entries.length} ${listingLabel} agrupados. Ver resultados del grupo`
             : `Ver ${entries[0].title}`,
         )
         element.addEventListener('click', () => {
@@ -535,7 +543,7 @@ export function MapLibreAdapter({
       if (stopRetryTimer !== undefined) window.clearTimeout(stopRetryTimer)
       clearFallbackMarkers()
     }
-  }, [mapReady, mapRef, sourceData])
+  }, [listingLabel, mapReady, mapRef, sourceData])
 
   // Fit the initial results once. Later filter changes update features/clusters
   // but preserve the camera position chosen by the user.
@@ -590,7 +598,7 @@ export function MapLibreAdapter({
       <div
         ref={containerRef}
         className="maplibre-canvas"
-        aria-label="Mapa de propiedades"
+        aria-label={`Mapa de ${listingLabel}`}
       />
       <MapLibreStatusOverlay
         status={mapStatus}

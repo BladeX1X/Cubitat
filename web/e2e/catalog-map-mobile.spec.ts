@@ -14,16 +14,15 @@ for (const { path, name } of [
         mapResponses.push({ url: response.url(), status: response.status() })
       }
     })
-    await page.route('**/rest/v1/home_service_providers**', async route => {
-      if (new URL(route.request().url()).hostname === '127.0.0.1') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
-      } else await route.continue()
-    })
-    await page.route('**/rest/v1/material_listings**', async route => {
-      if (new URL(route.request().url()).hostname === '127.0.0.1') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
-      } else await route.continue()
-    })
+    for (const table of ['home_service_providers', 'material_listings']) {
+      await page.route(`**/rest/v1/${table}**`, async route => {
+        if (route.request().method() === 'OPTIONS') {
+          await route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, OPTIONS', 'access-control-allow-headers': '*', 'access-control-max-age': '86400' } })
+          return
+        }
+        await route.fulfill({ status: 200, headers: { 'content-range': '*/0', 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' }, contentType: 'application/json', body: '[]' })
+      })
+    }
     await page.goto(path)
 
     const siteHeader = page.locator('.site-header')
