@@ -52,6 +52,8 @@ superpone una tarjeta de ubicación ni revela coordenadas privadas.
 - El mapa se carga bajo demanda y cuenta todas las páginas que cumplen texto,
   categoría y disponibilidad (sin agotados); no presenta direcciones ni
   ubicaciones exactas y no ofrece un filtro municipal inexistente.
+- Seleccionar un punto o grupo en el mapa filtra los anuncios correspondientes,
+  sin cambiar el borde de sus tarjetas.
 - En móvil, el encabezado principal se desplaza con la página para no tapar la
   búsqueda sticky; la barra permanece a 8 px del borde superior. La barra
   reutiliza Comprar: en pantallas de hasta 768 px presenta búsqueda y

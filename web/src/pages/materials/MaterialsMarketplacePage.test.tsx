@@ -170,7 +170,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
     expect(window.location.pathname).toBe(initialPath)
   })
 
-  it('selects a map cluster and highlights the matching material cards', async () => {
+  it('selects a map cluster without outlining the matching material cards', async () => {
     const secondListing = { ...listing, id: 'material-2', slug: 'madera', title: 'Madera', province: 'Santiago de Cuba', coordinates: { latitude: 20.02, longitude: -75.82 } }
     vi.mocked(fetchMaterialListingsForMap).mockResolvedValueOnce([listing, secondListing])
     render(<MaterialsMarketplacePage onRequireLogin={vi.fn()} />)
@@ -182,7 +182,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
     expect(screen.getByTestId('map-selection')).toHaveTextContent('material-1,material-2')
     expect(screen.getByRole('heading', { name: 'Cemento gris' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Madera' })).toBeInTheDocument()
-    expect(document.querySelectorAll('.catalog-card.is-map-selected')).toHaveLength(2)
+    expect(document.querySelectorAll('.catalog-card.is-map-selected')).toHaveLength(0)
     expect(window.location.pathname).toBe(initialPath)
   })
 

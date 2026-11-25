@@ -57,8 +57,8 @@ fuera del cliente. La consulta y el código del mapa MUST cargarse bajo demanda.
 #### Scenario: Seleccionar anuncios en el mapa
 - GIVEN uno o más anuncios aparecen en el mapa
 - WHEN el usuario pulsa un punto o un cluster
-- THEN se resaltan las tarjetas de los anuncios seleccionados y la lista muestra
-  ese punto o grupo como en Comprar
+- THEN la lista muestra los anuncios del punto o grupo seleccionado
+- AND las tarjetas mantienen su borde normal, sin contorno verde de selección
 - AND el mapa no navega automáticamente al detalle del anuncio
 - AND controles y clusters MUST mantener objetivos táctiles de al menos 48 × 48 px
 

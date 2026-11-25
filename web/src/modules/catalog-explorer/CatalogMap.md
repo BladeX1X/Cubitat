@@ -21,9 +21,9 @@ viewport igual que Comprar.
 - La lista se filtra con los ids dentro del viewport; una selección de punto o
   cluster conserva esos anuncios visibles hasta cerrar o cambiar filtros.
 - Los ids del viewport nunca se pasan como selección visual: al abrir el mapa
-  ningún punto ni tarjeta aparece resaltado hasta que el visitante selecciona
-  explícitamente un punto o cluster. El resaltado verde se limita entonces al
-  anuncio o grupo elegido, igual que en Comprar.
+  ningún punto aparece seleccionado hasta que el visitante elige explícitamente
+  un punto o cluster. La selección filtra la lista, sin añadir contorno de color
+  a las tarjetas.
 - El mapa redimensiona el lienzo al abrir y encuadra los puntos; el acceso
   desde el catálogo y el retorno móvil usan controles flotantes inferiores.
 - Los controles flotantes y el diálogo móvil se montan sobre `document.body` para

@@ -268,7 +268,7 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
   ) : (
     <section className="catalog-card-grid" aria-label="Profesionales disponibles">
       {displayedProviders.map((item, index) => (
-        <CatalogCardFrame key={item.id} className={`marketplace-listing-card${mapScope.listingIds?.includes(item.id) && mapScope.source === 'selection' ? ' is-map-selected' : ''}`}>
+        <CatalogCardFrame key={item.id} className="marketplace-listing-card">
           <CatalogCardGallery
             images={item.galleryUrls}
             label={item.displayName}
