@@ -304,3 +304,4 @@ antes de esperar las teselas, que luego responden 200. Worker DEV
 - AND MUST permitir ajustar el punto manualmente
 - AND MUST explicar de forma accesible si faltan permisos, no hay señal o vence el tiempo de espera
 - AND MUST conservar las coordenadas según el almacenamiento privado existente del tipo de publicación
+- AND la política de permisos HTTP MUST permitir geolocalización únicamente al mismo origen (`geolocation=(self)`)

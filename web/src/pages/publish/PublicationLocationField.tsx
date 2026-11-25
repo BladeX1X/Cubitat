@@ -36,7 +36,7 @@ export function PublicationLocationField({ province, municipality, latitude, lon
       },
       (error) => {
         setLocationError(error.code === error.PERMISSION_DENIED
-          ? 'No se concedió permiso para usar la ubicación del dispositivo.'
+          ? 'El acceso a la ubicación está bloqueado. Permítelo en la configuración del sitio del navegador y vuelve a intentarlo.'
           : error.code === error.POSITION_UNAVAILABLE
             ? 'No se pudo determinar la ubicación del dispositivo. Puedes marcarla en el mapa.'
             : 'La ubicación tardó demasiado. Inténtalo de nuevo o marca el punto en el mapa.')
