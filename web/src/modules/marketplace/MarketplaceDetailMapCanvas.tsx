@@ -90,7 +90,6 @@ export default function MarketplaceDetailMapCanvas({ center, listingId, location
               source: 'approximate-location-radius',
               paint: { 'line-color': '#00856f', 'line-width': 2 },
             })
-            new maplibregl.Marker({ color: '#006b5b' }).setLngLat([mapLongitude, mapLatitude]).addTo(map)
           }
         })
         map.on('error', (event) => {

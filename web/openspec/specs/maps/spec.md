@@ -67,12 +67,13 @@ Las fichas de Servicios y Materiales MUST ofrecer una pestaña Mapa dentro del
 visor multimedia. El mapa MUST cargarse bajo demanda y mostrar una referencia
 aproximada, sin exponer coordenadas exactas.
 
-#### Scenario: Mostrar círculo y marcador aproximados
+#### Scenario: Mostrar solo el círculo aproximado
 - GIVEN el anuncio tiene coordenadas públicas aproximadas
 - WHEN el visitante abre la pestaña Mapa
-- THEN el mapa MUST mostrar un marcador en la referencia pública
-- AND MUST mostrar un círculo de 1 km de diámetro desplazado entre 120 y 240 m
-  del marcador
+- THEN el mapa MUST mostrar un círculo de 1 km de diámetro
+- AND MUST NOT mostrar un pin o marcador de ubicación
+- AND el centro del círculo MUST quedar desplazado entre 120 y 240 m de la
+  referencia pública aproximada
 - AND el desplazamiento MUST ser estable para el mismo anuncio y variar entre
   anuncios, sin usar ni revelar coordenadas privadas
 - AND el mapa MUST ocupar el espacio sin una tarjeta flotante de ubicación
