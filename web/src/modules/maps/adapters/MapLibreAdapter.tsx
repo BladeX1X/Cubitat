@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-import '../lib/configureMapLibreWorker'
 import type { FeatureCollection, Point } from 'geojson'
 import type { MapAdapterProps } from '../types'
-import { getOpenFreeMapStyle } from '../lib/openFreeMapStyle'
 import { approximatePropertyCoordinates } from '../lib/propertyCoordinates'
 import { createPropertySourceData } from '../lib/propertySourceData'
-import { observeElementResize } from '../lib/observeElementResize'
 import { shouldFitInitialBounds } from '../lib/mapCamera'
 import { classifyMapError, classifyMapErrorResource } from '../lib/mapErrorDiagnostics'
-import { logSafeEvent, sanitizeErrorReason } from '../../../shared/lib/logger'
+import { observeElementResize } from '../lib/observeElementResize'
+import { logSafeEvent } from '../../../shared/lib/logger'
+import { useMapLibreMap } from '../hooks/useMapLibreMap'
+import { MapLibreStatusOverlay } from '../components/MapLibreStatusOverlay'
 
 const PROPERTY_SOURCE_ID = 'cubitat-properties'
 const CLUSTER_SELECTED_HALO_LAYER_ID = 'property-cluster-selected-halo'
@@ -19,6 +18,7 @@ const CLUSTER_COUNT_LAYER_ID = 'property-cluster-count'
 const PROPERTY_SELECTED_HALO_LAYER_ID = 'property-selected-halo'
 const PROPERTY_POINT_LAYER_ID = 'property-points'
 const PROPERTY_LABEL_LAYER_ID = 'property-labels'
+const MAP_OPTIONS = { center: [-79.5, 21.8] as [number, number], zoom: 5.15, minZoom: 2, maxZoom: 15 }
 
 export function MapLibreAdapter({
   properties,
@@ -30,14 +30,38 @@ export function MapLibreAdapter({
   locateTrigger,
 }: MapAdapterProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
   const onSelectPropertyRef = useRef(onSelectProperty)
   const onSelectClusterRef = useRef(onSelectCluster)
   const onViewportChangeRef = useRef(onViewportChange)
   const sourceDataRef = useRef<FeatureCollection<Point>>(createPropertySourceData([], undefined))
   const fallbackMarkersRef = useRef<maplibregl.Marker[]>([])
   const hasFittedInitialBoundsRef = useRef(false)
-  const [mapReady, setMapReady] = useState(false)
+  const reportedMapErrorsRef = useRef(new Set<string>())
+
+  const handleMapError = useCallback((error: unknown) => {
+    const errorEvent = error && typeof error === 'object'
+      ? error as maplibregl.ErrorEvent & { sourceId?: unknown }
+      : null
+    const resource = classifyMapErrorResource(errorEvent?.sourceId)
+    const code = classifyMapError(errorEvent?.error ?? error)
+    const signature = `${resource}:${code}`
+    if (reportedMapErrorsRef.current.has(signature)) return
+    reportedMapErrorsRef.current.add(signature)
+    logSafeEvent({
+      module: 'maps',
+      action: errorEvent?.error ? 'maplibre_resource' : 'init_maplibre',
+      level: 'error',
+      code,
+      context: errorEvent?.error ? { resource } : undefined,
+    })
+  }, [])
+
+  const { mapRef, status: mapStatus, retry: retryMap } = useMapLibreMap(
+    containerRef,
+    MAP_OPTIONS,
+    handleMapError,
+  )
+  const mapReady = mapStatus === 'ready'
 
   useEffect(() => {
     onSelectPropertyRef.current = onSelectProperty
@@ -70,87 +94,6 @@ export function MapLibreAdapter({
     })
     return mapBounds
   }, [properties])
-
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
-
-    const abortController = new AbortController()
-
-    async function initializeMap() {
-      if (!containerRef.current || mapRef.current) return
-
-      const style = await getOpenFreeMapStyle(abortController.signal)
-
-      mapRef.current = new maplibregl.Map({
-        container: containerRef.current,
-        style,
-        center: [-79.5, 21.8],
-        zoom: 5.15,
-        minZoom: 2,
-        maxZoom: 15,
-        attributionControl: false,
-      })
-
-      const reportedMapErrors = new Set<string>()
-      mapRef.current.on('error', (event) => {
-        if (abortController.signal.aborted) return
-
-        const errorEvent = event as maplibregl.ErrorEvent & { sourceId?: unknown }
-        const resource = classifyMapErrorResource(errorEvent.sourceId)
-        const code = classifyMapError(errorEvent.error)
-        const signature = `${resource}:${code}`
-        if (reportedMapErrors.has(signature)) return
-        reportedMapErrors.add(signature)
-
-        logSafeEvent({
-          module: 'maps',
-          action: 'maplibre_resource',
-          level: 'error',
-          code,
-          context: { resource },
-        })
-      })
-
-      mapRef.current.addControl(
-        new maplibregl.NavigationControl({ showCompass: false }),
-        'top-right',
-      )
-      mapRef.current.addControl(
-        new maplibregl.AttributionControl({ compact: true }),
-        'bottom-right',
-      )
-      const markMapReady = () => {
-        if (!abortController.signal.aborted) {
-          setMapReady(true)
-        }
-      }
-
-      mapRef.current.on('load', markMapReady)
-      mapRef.current.on('styledata', markMapReady)
-      mapRef.current.on('idle', markMapReady)
-      mapRef.current.on('render', markMapReady)
-      const readyFallback = window.setTimeout(markMapReady, 2000)
-
-      mapRef.current.once('remove', () => window.clearTimeout(readyFallback))
-    }
-
-    initializeMap().catch((error: unknown) => {
-      if (!abortController.signal.aborted) {
-        logSafeEvent({
-          module: 'maps',
-          action: 'init_maplibre',
-          level: 'error',
-          code: sanitizeErrorReason(error),
-        })
-      }
-    })
-
-    return () => {
-      abortController.abort()
-      mapRef.current?.remove()
-      mapRef.current = null
-    }
-  }, [])
 
   useEffect(() => {
     const map = mapRef.current
@@ -424,7 +367,6 @@ export function MapLibreAdapter({
       ? observeElementResize(container, () => {
           requestAnimationFrame(() => {
             if (mapRef.current !== map) return
-            map.resize()
             handleViewportChange()
           })
         })
@@ -450,7 +392,7 @@ export function MapLibreAdapter({
       map.off('pitchend', handleViewportChange)
       stopObservingResize()
     }
-  }, [mapReady])
+  }, [mapReady, mapRef])
 
   useEffect(() => {
     const map = mapRef.current
@@ -460,7 +402,7 @@ export function MapLibreAdapter({
     if (existingSource) {
       ;(existingSource as maplibregl.GeoJSONSource).setData(sourceData)
     }
-  }, [mapReady, sourceData])
+  }, [mapReady, mapRef, sourceData])
 
   // MapLibre 6 can finish the style without painting the GeoJSON layers when
   // an external style/source update races the first idle event. Keep a DOM
@@ -593,7 +535,7 @@ export function MapLibreAdapter({
       if (stopRetryTimer !== undefined) window.clearTimeout(stopRetryTimer)
       clearFallbackMarkers()
     }
-  }, [mapReady, sourceData])
+  }, [mapReady, mapRef, sourceData])
 
   // Fit the initial results once. Later filter changes update features/clusters
   // but preserve the camera position chosen by the user.
@@ -612,7 +554,7 @@ export function MapLibreAdapter({
       maxZoom: 13,
       duration: 500,
     })
-  }, [bounds, mapReady])
+  }, [bounds, mapReady, mapRef])
 
   // NOTE: We intentionally do NOT zoom/pan when selectedPropertyId changes.
   // The user already clicked the pin – no need to move the camera.
@@ -636,7 +578,7 @@ export function MapLibreAdapter({
       },
       { enableHighAccuracy: false, timeout: 5000 },
     )
-  }, [])
+  }, [mapRef])
 
   useEffect(() => {
     if (!locateTrigger) return
@@ -649,6 +591,11 @@ export function MapLibreAdapter({
         ref={containerRef}
         className="maplibre-canvas"
         aria-label="Mapa de propiedades"
+      />
+      <MapLibreStatusOverlay
+        status={mapStatus}
+        onRetry={retryMap}
+        errorHint="Puedes seguir usando los filtros y volver a intentarlo."
       />
     </div>
   )
