@@ -62,11 +62,26 @@ El sistema MUST mostrar un mapa estático o interactivo reducido en la ficha de 
 - THEN el sistema MUST mostrar estado alternativo estable
 - AND MUST evitar inicializar MapLibre con coordenadas invalidas
 
-### Requirement: Mapa provincial en fichas de Servicios y Materiales
+### Requirement: Mapa aproximado en fichas de Servicios y Materiales
 Las fichas de Servicios y Materiales MUST ofrecer una pestaña Mapa dentro del
-visor multimedia. El mapa MUST cargarse bajo demanda y mostrar solo una
-referencia de la provincia declarada, sin marcador de domicilio ni coordenadas
-exactas.
+visor multimedia. El mapa MUST cargarse bajo demanda y mostrar una referencia
+aproximada, sin exponer coordenadas exactas.
+
+#### Scenario: Mostrar círculo y marcador aproximados
+- GIVEN el anuncio tiene coordenadas públicas aproximadas
+- WHEN el visitante abre la pestaña Mapa
+- THEN el mapa MUST mostrar un marcador en la referencia pública
+- AND MUST mostrar un círculo de 1 km de diámetro desplazado entre 120 y 240 m
+  del marcador
+- AND el desplazamiento MUST ser estable para el mismo anuncio y variar entre
+  anuncios, sin usar ni revelar coordenadas privadas
+- AND el mapa MUST ocupar el espacio sin una tarjeta flotante de ubicación
+
+#### Scenario: Anuncio sin coordenadas públicas
+- GIVEN el anuncio solo declara provincia
+- WHEN el visitante abre la pestaña Mapa
+- THEN el mapa MUST mostrar una referencia provincial aproximada
+- AND MUST conservar una etiqueta accesible para identificar el mapa
 
 ### Requirement: Coordenadas privadas en publicaciones de Servicios y Materiales
 
@@ -84,8 +99,8 @@ exactas.
 #### Scenario: Abrir el mapa de un servicio o material
 - GIVEN una ficha pública de servicio o material con provincia declarada
 - WHEN el visitante selecciona Mapa
-- THEN se inicializa MapLibre centrado en una referencia de esa provincia
-- AND se explica que no representa la dirección exacta del anunciante
+- THEN se inicializa MapLibre centrado en una referencia aproximada
+- AND el mapa conserva su etiqueta accesible sin superponer una tarjeta de texto
 - AND un fallo muestra un estado recuperable sin interrumpir el resto de la ficha
 
 ### Requirement: Mapa de Búsqueda Grande con Filtros Integrados

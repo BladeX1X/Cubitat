@@ -20,7 +20,6 @@ type MarketplaceListingDetailProps = {
   renderImage: (src: string, index: number, eager: boolean) => ReactNode
   favoriteAction?: ReactNode
   mapLabel: string
-  mapDescription?: string
   mapContent: ReactNode
   contactActions: ReactNode
   contactPanel: ReactNode
@@ -45,7 +44,6 @@ export function MarketplaceListingDetail({
   renderImage,
   favoriteAction,
   mapLabel,
-  mapDescription,
   mapContent,
   contactActions,
   contactPanel,
@@ -174,10 +172,6 @@ export function MarketplaceListingDetail({
             />
           ) : (
             <section className="marketplace-detail-modal-map" aria-label={mapLabel}>
-              <div className="marketplace-detail-modal-map-copy">
-                <strong>{mapLabel}</strong>
-                {mapDescription && <span>{mapDescription}</span>}
-              </div>
               {mapContent}
             </section>
           )}

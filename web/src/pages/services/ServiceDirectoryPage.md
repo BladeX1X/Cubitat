@@ -28,9 +28,10 @@ muestran categoría, municipio y provincia de cobertura, descripción y fecha de
 actualización; conserva la galería original con flechas/puntos y el formulario
 público para contactar al profesional.
 Los botones Fotos y Mapa aparecen sobre la galería. Fotos abre el carrusel
-completo y mantiene sincronizada la imagen seleccionada; Mapa enseña la
-provincia declarada como cobertura, sin indicar el domicilio ni un punto exacto
-de atención.
+completo y mantiene sincronizada la imagen seleccionada; Mapa muestra una
+referencia aproximada. Con coordenadas públicas, conserva el pin y dibuja un
+círculo de 1 km de diámetro cuyo centro se desplaza de manera estable por
+anuncio. No muestra una tarjeta superpuesta ni coordenadas privadas.
 
 La tarjeta lateral de contacto adopta la presentación de Comprar (encabezado,
 fecha de actualización, etiqueta, campo y CTA), adaptada al mensaje para el

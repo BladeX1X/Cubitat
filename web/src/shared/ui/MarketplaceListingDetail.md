@@ -14,7 +14,9 @@ campos de una categoría como si fueran de otra.
   controles accesibles cuando hay más de una foto.
 - La galería del hero incluye Fotos y Mapa. Abren un visor modal compartido:
   Fotos permite navegar todas las imágenes y sincroniza la selección con el
-  carrusel del hero; Mapa muestra la zona aproximada declarada por el anuncio.
+  carrusel del hero; Mapa muestra la zona aproximada declarada por el anuncio
+  sin una tarjeta de texto superpuesta. La etiqueta de ubicación permanece como
+  nombre accesible del mapa.
 - En móvil, galería arriba, datos debajo y acciones compactas solo con icono.
 - Debajo del hero, secciones específicas y formulario lateral que pasa a una
   columna normal en pantallas estrechas.

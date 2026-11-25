@@ -291,28 +291,6 @@
   background: #e8eeeb;
 }
 
-.marketplace-detail-modal-map-copy {
-  position: absolute;
-  z-index: 4;
-  top: 16px;
-  left: 16px;
-  display: grid;
-  max-width: min(420px, calc(100% - 32px));
-  gap: 3px;
-  border-radius: 10px;
-  background: rgb(255 255 255 / 96%);
-  padding: 10px 14px;
-  box-shadow: 0 3px 12px rgb(0 0 0 / 16%);
-  color: #202826;
-  font-size: 13px;
-}
-
-.marketplace-detail-modal-map-copy span {
-  color: #59636e;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
 .marketplace-detail-image-fallback {
   display: flex;
   width: 100%;

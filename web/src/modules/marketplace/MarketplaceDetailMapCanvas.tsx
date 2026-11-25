@@ -3,16 +3,17 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../maps/lib/configureMapLibreWorker'
 import { getOpenFreeMapStyle } from '../maps/lib/openFreeMapStyle'
-import { createApproximateLocationArea } from '../maps/lib/approximateLocationArea'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
+import { createMarketplaceApproximateArea } from './marketplaceLocationPrivacy'
 
 type MarketplaceDetailMapCanvasProps = {
   center: [number, number] | null
+  listingId: string
   locationLabel: string
   showApproximateArea: boolean
 }
 
-export default function MarketplaceDetailMapCanvas({ center, locationLabel, showApproximateArea }: MarketplaceDetailMapCanvasProps) {
+export default function MarketplaceDetailMapCanvas({ center, listingId, locationLabel, showApproximateArea }: MarketplaceDetailMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [loading, setLoading] = useState(true)
@@ -75,7 +76,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel, show
           if (hasCoordinates) {
             map.addSource('approximate-location-radius', {
               type: 'geojson',
-              data: createApproximateLocationArea([mapLongitude, mapLatitude]),
+              data: createMarketplaceApproximateArea([mapLongitude, mapLatitude], listingId),
             })
             map.addLayer({
               id: 'approximate-location-radius-fill',
@@ -107,7 +108,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel, show
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [latitude, longitude, hasCoordinates, retryCount])
+  }, [latitude, longitude, hasCoordinates, listingId, retryCount])
 
   return (
     <div className="relative h-full w-full bg-neutral-100">

@@ -34,8 +34,10 @@ actualización, descripción y aviso de inventario; conserva la galería origina
 con flechas/puntos y el formulario de consulta al vendedor.
 Sobre la galería aparecen Fotos y Mapa. Fotos abre todas las imágenes en un
 visor navegable sincronizado con el carrusel del hero; Mapa presenta la
-provincia declarada como referencia aproximada, ya que no hay dirección exacta
-disponible.
+ubicación pública aproximada. Si el anuncio tiene coordenadas, conserva el pin
+como referencia y dibuja alrededor un círculo desplazado de forma estable por
+anuncio, de 1 km de diámetro. No superpone una tarjeta de ubicación ni revela
+coordenadas privadas.
 
 ## Reglas
 
