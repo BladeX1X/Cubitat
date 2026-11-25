@@ -15,8 +15,7 @@ describe('MarketplaceListingDetail media controls', () => {
         imageLabel="Fotos de Plomero"
         imageFallback={<span>Sin fotos</span>}
         renderImage={(src) => <img src={src} alt="Foto de trabajo" />}
-        mapLabel="Cobertura declarada: La Habana"
-        mapDescription="La ubicación exacta no está disponible."
+        mapLabel="Mapa del servicio en La Habana"
         mapContent={<div>Mapa aproximado de La Habana</div>}
         contactActions={<div />}
         contactPanel={<div />}
@@ -33,7 +32,8 @@ describe('MarketplaceListingDetail media controls', () => {
 
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Mapa' }))
     expect(screen.getByText('Mapa aproximado de La Habana')).toBeInTheDocument()
-    expect(screen.getByText('La ubicación exacta no está disponible.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Mapa del servicio en La Habana' })).toBeInTheDocument()
+    expect(screen.queryByText('La ubicación exacta no está disponible.')).not.toBeInTheDocument()
 
     fireEvent.keyDown(dialog, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -51,7 +51,7 @@ describe('MarketplaceListingDetail media controls', () => {
         imageLabel="Fotos de Cemento gris"
         imageFallback={<span>Sin fotos</span>}
         renderImage={(src) => <img src={src} alt={src} />}
-        mapLabel="Ubicación declarada: Granma"
+        mapLabel="Mapa de material en Granma"
         mapContent={<div>Mapa</div>}
         contactActions={<div />}
         contactPanel={<div />}
