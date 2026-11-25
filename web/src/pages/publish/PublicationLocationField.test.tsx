@@ -49,4 +49,13 @@ describe('PublicationLocationField', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Usar mi ubicación' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Este navegador no permite obtener la ubicación del dispositivo.')
   })
+
+  it('explains how to recover when the browser blocks location permission', async () => {
+    const getCurrentPosition = vi.fn((_success: PositionCallback, error: PositionErrorCallback) => error({ code: 1, message: 'denied', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as GeolocationPositionError))
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } })
+    render(<PublicationLocationField province="La Habana" municipality="Playa" latitude={null} longitude={null} onProvinceChange={vi.fn()} onMunicipalityChange={vi.fn()} onCoordinatesChange={vi.fn()} onClear={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Usar mi ubicación' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Permítelo en la configuración del sitio del navegador')
+  })
 })

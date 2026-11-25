@@ -450,6 +450,6 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 
 - En el paso de zona se eligen provincia y municipio desde las opciones oficiales compartidas con el catálogo; el mapa centra la zona seleccionada.
 - Ambos campos son obligatorios para avanzar. Cambiar de provincia limpia la selección municipal y las coordenadas del punto anterior.
-- «Usar mi ubicación» invoca geolocalización solo tras pulsarlo y con permiso del navegador; el mapa se centra y permite corregir el marcador.
+- «Usar mi ubicación» invoca geolocalización solo tras pulsarlo y con permiso del navegador; la política HTTP permite geolocalización únicamente al mismo origen (`geolocation=(self)`), el mapa se centra y permite corregir el marcador. Si el usuario ya bloqueó el permiso, se le indica que lo habilite en la configuración del sitio.
 - El perfil de servicio incorpora el municipio elegido en sus municipios de cobertura, conservando las zonas adicionales.
 - Para Materiales la provincia y las coordenadas siguen guardándose con el contrato existente; el municipio se usa para orientar el mapa y no requiere migración.

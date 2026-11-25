@@ -168,7 +168,7 @@ function withSecurityHeaders(
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), interest-cohort=()');
   headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
   if (forceNoIndex || shouldDisallowIndexing(url)) {
