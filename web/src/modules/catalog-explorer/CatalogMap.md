@@ -5,6 +5,11 @@
 Punto único de entrada a los mapas de los catálogos. Selecciona el modo de
 propiedades o conteo provincial y mantiene diferido el código pesado de mapas.
 
+Ambos modos interactivos reutilizan `useMapLibreMap` y
+`MapLibreStatusOverlay`, también usados por Comprar. Esto estandariza el estilo,
+los controles, el redimensionado y los estados de carga/error sin mezclar las
+capas ni los datos: SVC/MAT conservan agregación y filtros por provincia.
+
 ## Carga diferida de conteos provinciales
 
 - Antes de que se descargue `ProvinceAggregateMap`, `ProvinceMapStatus` mantiene

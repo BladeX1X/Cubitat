@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     getSource: vi.fn(() => ({ setData: vi.fn(), getClusterExpansionZoom: vi.fn().mockResolvedValue(7) })),
     queryRenderedFeatures: vi.fn((): ProvinceMapFeatureLike[] => []),
     resize: vi.fn(),
+    off: vi.fn(),
     on: vi.fn(),
     once: vi.fn(),
     easeTo: vi.fn(),

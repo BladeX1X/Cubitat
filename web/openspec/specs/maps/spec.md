@@ -5,6 +5,22 @@ Visualizar la ubicación de los inmuebles e integrar la búsqueda geográfica in
 
 ## Requirements
 
+### Requirement: Ciclo de vida compartido de MapLibre
+Los mapas interactivos de Comprar y de los catálogos de Servicios y Materiales
+MUST usar una misma base de inicialización MapLibre para cargar el estilo
+OpenFreeMap, instalar los controles de navegación y atribución, observar el
+tamaño del contenedor, detectar errores y permitir reintentar.
+
+#### Scenario: Usar la base compartida con capas propias
+- GIVEN Comprar muestra propiedades y Servicios o Materiales muestra conteos
+  agregados por provincia
+- WHEN se abre cualquiera de esos mapas
+- THEN se usa el mismo ciclo de vida, estados de carga/error, controles y
+  comportamiento de redimensionado
+- AND cada mapa conserva sus propias capas, interacciones y datos
+- AND Servicios y Materiales MUST seguir mostrando conteos por provincia, sin
+  exponer ubicaciones de anuncios individuales
+
 ### Requirement: Mapas agregados por provincia en Servicios y Materiales
 El sistema MUST permitir abrir opcionalmente un mapa agregado en los directorios
 de Servicios y Materiales. El mapa MUST usar conteos completos que respeten los

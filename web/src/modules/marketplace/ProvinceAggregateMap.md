@@ -22,6 +22,10 @@ la paginación del catálogo.
   no dentro del flujo de encabezado del catálogo.
 - Carga MapLibre solo cuando el usuario abre el mapa; el mapa y su fallback de
   carga/error usan el mismo contenedor para no quedar ocultos bajo el layout.
+- Comparte con Comprar el hook `useMapLibreMap` y el overlay de estado: estilo,
+  controles de navegación/atribución, observación de tamaño, limpieza, error y
+  reintento. Las capas provinciales y el filtrado del catálogo siguen siendo
+  propios de Servicios y Materiales; no se muestran coordenadas individuales.
 - En móvil, el fallback diferido ya es un diálogo con cierre accesible. El
   indicador del mapa se retira cuando el estilo y las capas están listos; no
   espera a que todas las teselas y fuentes terminen de descargar.
