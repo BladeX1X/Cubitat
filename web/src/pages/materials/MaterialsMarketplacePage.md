@@ -144,3 +144,9 @@ respuesta correcta sin anuncio.
 ## Reportes y recomendaciones
 
 La ficha permite reportar el anuncio de material con Turnstile; el Worker valida y registra el envío en la cola unificada de Moderación. Al final se muestran perfiles que tengan activo profile_featured, con portada firmada y excluyendo agotados por el catálogo de origen.
+
+El control de mapa del catálogo permanece en el flujo de página para que no
+cubra las tarjetas ni sus acciones en móvil. En las fichas, el área circular usa
+la misma geometría geodésica de Comprar (500 m de radio / 1 km de diámetro) y
+solo se dibuja si se guardaron coordenadas; el centro provincial se muestra como
+contexto sin marcador de precisión.

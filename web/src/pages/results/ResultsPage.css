@@ -450,7 +450,7 @@
   }
 
   .app-shell.is-results-page .results-desktop-shell .property-actions {
-    margin-top: 2px;
+    margin-top: auto;
     padding-top: 8px;
   }
 
@@ -1213,21 +1213,18 @@
 }
 
 .results-floating-actions {
-  position: fixed;
-  right: 0;
-  bottom: calc(18px + env(safe-area-inset-bottom));
-  left: 0;
-  z-index: 120;
+  position: static;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 0 16px;
-  pointer-events: none;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px auto 14px;
+  padding: 0;
 }
 
 .results-floating-actions button {
-  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1670,13 +1667,9 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 
 @media (max-width: 1020px) {
   .app-shell.is-results-page .results-floating-actions {
-    position: static;
-    inset: auto;
     z-index: auto;
     width: 100%;
-    margin: 0 auto 2px;
-    padding: 0;
-    pointer-events: auto;
+    margin: 8px auto 12px;
   }
 }
 

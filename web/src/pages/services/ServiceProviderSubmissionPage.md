@@ -61,3 +61,12 @@ solo por propietario/admin AAL2 o desde una fila publicada. El E2E
 `service-publish-images.spec.ts` simula un INSERT confirmado cuya respuesta se
 pierde y verifica que el reintento reutilice ID y fotos; no valida escritura real
 en Supabase.
+
+## Publicación guiada — 2026-11-24
+
+La creación y edición recorren cuatro pasos: datos del profesional/servicio,
+provincia y zonas de cobertura con punto aproximado opcional, galería y contacto.
+El marco compartido `PublicationStepLayout` muestra el avance y valida los
+obligatorios del paso activo antes de avanzar. El envío, carga de fotos,
+actualización y reintentos permanecen en este formulario; las coordenadas siguen
+siendo privadas y el directorio no las expone como dirección exacta.

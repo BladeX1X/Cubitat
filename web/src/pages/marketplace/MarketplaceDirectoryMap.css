@@ -1,14 +1,11 @@
 /* Shared split view for the Services and Materials directories. */
 .marketplace-map-floating-actions {
-  position: fixed;
-  right: 0;
-  bottom: calc(18px + env(safe-area-inset-bottom));
-  left: 0;
-  z-index: 120;
+  position: static;
   display: flex;
   justify-content: center;
-  padding: 0 16px;
-  pointer-events: none;
+  width: fit-content;
+  max-width: 100%;
+  margin: 8px auto 14px;
 }
 
 .marketplace-map-floating-toggle {
@@ -18,7 +15,6 @@
   padding-inline: 20px;
   box-shadow: 0 10px 24px rgba(17, 24, 39, 0.2);
   font-weight: 800;
-  pointer-events: auto;
 }
 
 .marketplace-directory-map-page {
@@ -286,7 +282,7 @@
 
 @media (max-width: 620px) {
   .marketplace-map-floating-actions {
-    bottom: calc(82px + env(safe-area-inset-bottom));
+    margin-top: 6px;
   }
 
   .marketplace-directory-heading {

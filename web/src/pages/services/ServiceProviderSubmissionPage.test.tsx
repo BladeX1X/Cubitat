@@ -30,6 +30,23 @@ vi.mock('../publish/PublicationLocationField', () => ({
   PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(23.12345, -82.34567)}>Marcar punto</button>,
 }))
 
+async function advanceServiceTo(targetStep: number) {
+  const labels = ['Servicio', 'Zona y mapa', 'Fotos', 'Contacto']
+  const currentHeading = screen.getByRole('heading', { level: 2 }).textContent ?? ''
+  let current = labels.indexOf(currentHeading) + 1
+  if (current < 1) current = 1
+  while (current < targetStep) {
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: labels[current] })).toBeVisible())
+    current += 1
+  }
+}
+
+async function submitService() {
+  await advanceServiceTo(4)
+  fireEvent.submit(document.querySelector('form')!)
+}
+
 describe('ServiceProviderSubmissionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -40,19 +57,28 @@ describe('ServiceProviderSubmissionPage', () => {
     serviceMocks.removePhotos.mockResolvedValue(undefined)
   })
 
+  it('requires the service name before advancing from the first step', () => {
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: /^Servicio$/ })).toBeVisible()
+    expect(screen.getByLabelText('Nombre del profesional o negocio')).toBeInvalid()
+  })
+
   it('previews a multi-photo selection and uploads every optimized image in order', async () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:service-preview'), revokeObjectURL: vi.fn() })
     render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba para verificar la carga de una galería completa.' } })
+    await advanceServiceTo(3)
     const first = new File(['one'], 'trabajo-1.jpg', { type: 'image/jpeg' })
     const second = new File(['two'], 'trabajo-2.png', { type: 'image/png' })
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [first, second] } })
 
     expect(await screen.findByText('2 de 10 fotos. La primera será la portada del anuncio.')).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitService()
 
     await waitFor(() => expect(serviceMocks.uploadPhotos).toHaveBeenCalledWith([
       expect.objectContaining({ name: 'trabajo-1.webp', type: 'image/webp' }),
@@ -70,8 +96,9 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con ubicación geográfica para el profesional.' } })
+    await advanceServiceTo(2)
     fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitService()
     await waitFor(() => expect(serviceMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 23.12345, longitude: -82.34567 } }), expect.any(String)))
   })
 
@@ -81,9 +108,10 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con error controlado en la carga de fotos.' } })
+    await advanceServiceTo(3)
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [new File(['one'], 'trabajo.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitService()
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar todas las fotos. El perfil no se actualizó; vuelve a intentarlo.')
     expect(serviceMocks.create).not.toHaveBeenCalled()
@@ -95,10 +123,11 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con rechazo definitivo de permisos al guardar.' } })
+    await advanceServiceTo(3)
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [new File(['one'], 'trabajo.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
 
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitService()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/permiso de la cuenta/i)
     expect(serviceMocks.removePhotos).toHaveBeenCalledWith(['owner/photo-1.webp', 'owner/photo-2.webp'])
@@ -111,10 +140,11 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con respuesta de red ambigua al guardar.' } })
+    await advanceServiceTo(3)
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [new File(['one'], 'trabajo.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
 
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitService()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo confirmar el guardado/i)
     expect(serviceMocks.removePhotos).not.toHaveBeenCalled()
@@ -127,13 +157,13 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio para comprobar el reintento seguro tras perder la respuesta de red.' } })
+    await advanceServiceTo(3)
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [new File(['one'], 'trabajo.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
 
-    const submit = () => fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
-    submit()
+    await submitService()
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo confirmar el guardado/i)
-    submit()
+    fireEvent.submit(document.querySelector('form')!)
 
     expect(await screen.findByText('Perfil enviado a revisión')).toBeInTheDocument()
     expect(serviceMocks.uploadPhotos).toHaveBeenCalledTimes(1)
@@ -149,12 +179,12 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba mientras se prepara una foto seleccionada.' } })
+    await advanceServiceTo(3)
     fireEvent.change(screen.getByLabelText('Fotos de tus trabajos'), { target: { files: [new File(['photo'], 'trabajo.jpg', { type: 'image/jpeg' })] } })
 
     expect(await screen.findByText('Preparando tus fotos…')).toBeInTheDocument()
-    const form = screen.getByRole('button', { name: 'Preparando fotos…' }).closest('form')!
-    expect(screen.getByRole('button', { name: 'Preparando fotos…' })).toBeDisabled()
-    fireEvent.submit(form)
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled()
+    fireEvent.submit(document.querySelector('form')!)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Espera a que terminen de prepararse las fotos antes de enviar.')
     expect(serviceMocks.create).not.toHaveBeenCalled()

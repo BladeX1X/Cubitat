@@ -158,3 +158,9 @@ la regla de visibilidad pública.
 ## Reportes y recomendaciones
 
 La ficha incluye el reporte de servicio protegido por Turnstile; se registra en la cola unificada de Moderación. Al final muestra hasta tres perfiles con el beneficio activo profile_featured, excluyendo el perfil actual. Las fotos recomendadas se firman solo para portada.
+
+El control de mapa del catálogo permanece en el flujo de página para que no
+cubra las tarjetas ni sus acciones en móvil. En las fichas, el área circular usa
+la misma geometría geodésica de Comprar (500 m de radio / 1 km de diámetro) y
+solo se dibuja si se guardaron coordenadas; el centro provincial se muestra como
+contexto sin marcador de precisión.

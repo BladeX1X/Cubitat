@@ -204,7 +204,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
         favoriteAction={PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={listing.id} listingTitle={listing.title} className="marketplace-detail-favorite" showLabel iconSize={19} />}
         mapLabel={`Ubicación declarada: ${listing.province}`}
         mapDescription={listing.coordinates ? 'El punto es aproximado. El círculo representa un área de 1 km de diámetro y no revela la dirección exacta.' : 'El mapa muestra una referencia provincial. El anunciante no publicó una dirección exacta.'}
-        mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} locationLabel={listing.province} />}
+          mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} locationLabel={listing.province} showApproximateArea={Boolean(listing.coordinates)} />}
         contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={listing.province} onMissing={() => openListing(listing, 'inquiry')} /></div>}
         contactPanel={(
           <>
@@ -296,6 +296,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
           <h1 className="font-black text-neutral-900">Materiales de construcción</h1>
         </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
+        <MarketplaceMapToggle mapId="materials-province-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => setMapOpen((open) => !open)} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="materials-province-map" mapBusy={provinceCountsLoading} toolbar={
           <CatalogFilterToolbar label="Filtros de materiales" resultLabel="anuncios" resultCount={total} activeFiltersCount={[category, province, availability, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setAvailability(''); setSearch(''); setCurrentPage(1) }}
             search={<label><span className="sr-only">Buscar material</span><input aria-label="Buscar material" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1) }} className="marketplace-filter-search" placeholder="Cemento, tubería…" /></label>}
@@ -318,7 +319,6 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
             <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />
           </div>
         </CatalogExplorerLayout>
-        <MarketplaceMapToggle mapId="materials-province-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => setMapOpen((open) => !open)} />
       </div>
     </main>
   )

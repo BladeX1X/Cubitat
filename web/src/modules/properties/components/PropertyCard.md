@@ -134,3 +134,9 @@ En Chrome sobre Worker DEV, pulsar el corazón de una propiedad abre «Guardar f
 ## Imágenes de tarjetas públicas — QA DEV — 2026-11-13
 
 En Chromium contra `/resultados`, se desplazó cada una de las 13 tarjetas de la primera página para activar carga diferida. Las 13 imágenes terminaron cargando y decodificándose; no hubo respuestas HTTP fallidas en las rutas proxy de Storage observadas. Esta comprobación es pública y no cubre otras páginas, la galería completa de una ficha ni Storage privado del editor.
+
+## Pie alineado de tarjeta — 2026-11-24
+
+La fila de acciones ocupa el espacio libre debajo de las especificaciones en el
+grid desktop de Comprar. Las tarjetas mantienen la misma altura y los botones
+Contactar/Consultar quedan alineados aunque varíe el texto o el número de datos.

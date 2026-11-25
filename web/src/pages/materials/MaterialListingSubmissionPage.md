@@ -95,3 +95,11 @@ como borradores propios.
 cuya respuesta se pierde: el anunciante cambia el título, reintenta, el cliente
 recupera por RPC el anuncio propio pendiente y actualiza su mismo ID con el nuevo
 título. No crea datos reales ni llama a Supabase remoto.
+
+## Publicación guiada — 2026-11-24
+
+La creación y edición recorren cinco pasos: producto/categoría, provincia y
+punto aproximado opcional, precio/moneda/disponibilidad/descripción, galería y
+contacto. `PublicationStepLayout` es compartido con Servicios e Inmuebles; los
+campos, validación de precio, carga de fotos, guardado/reintento y edición siguen
+siendo propios del anuncio de materiales. Se conservan las coordenadas privadas.

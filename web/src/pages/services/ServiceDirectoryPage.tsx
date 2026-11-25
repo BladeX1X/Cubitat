@@ -190,7 +190,7 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
           favoriteAction={PHASE_FOUR_SVC_ENABLED && <SaveMarketplaceListingButton listingType="service" listingId={provider.id} listingTitle={provider.displayName} className="marketplace-detail-favorite" showLabel iconSize={19} />}
           mapLabel={`Cobertura declarada: ${[...provider.municipalities, provider.province].filter(Boolean).join(' · ')}`}
           mapDescription={provider.coordinates ? 'El punto es aproximado. El círculo representa un área de 1 km de diámetro y no revela la ubicación exacta del profesional.' : 'El mapa señala la provincia indicada por el profesional; no representa su domicilio ni un punto exacto de atención.'}
-          mapContent={<MarketplaceDetailMap center={provider.coordinates ? [provider.coordinates.longitude, provider.coordinates.latitude] : getCubanProvinceMapCenter(provider.province)} locationLabel={provider.province} />}
+          mapContent={<MarketplaceDetailMap center={provider.coordinates ? [provider.coordinates.longitude, provider.coordinates.latitude] : getCubanProvinceMapCenter(provider.province)} locationLabel={provider.province} showApproximateArea={Boolean(provider.coordinates)} />}
           contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="service" listingId={provider.id} listingTitle={provider.displayName} listingLocation={[...provider.municipalities, provider.province].filter(Boolean).join(', ')} onMissing={() => openProvider(provider, 'inquiry')} /></div>}
           contactPanel={(
             <>
@@ -285,6 +285,7 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
           <h1 className="font-black text-neutral-900">Servicios para el hogar</h1>
         </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
+        <MarketplaceMapToggle mapId="service-province-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => setMapOpen((open) => !open)} />
         <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="service-province-map" mapBusy={provinceCountsLoading} toolbar={
           <CatalogFilterToolbar label="Filtros de profesionales" resultLabel="profesionales" resultCount={total} activeFiltersCount={[category, province, municipality, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setMunicipality(''); setSearch(''); setCurrentPage(1) }}
             search={<label><span className="sr-only">Buscar servicio</span><input aria-label="Buscar servicio" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1) }} className="marketplace-filter-search" placeholder="Plomería, electricidad…" /></label>}
@@ -307,7 +308,6 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
             <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />
           </div>
         </CatalogExplorerLayout>
-        <MarketplaceMapToggle mapId="service-province-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => setMapOpen((open) => !open)} />
       </div>
     </main>
   )

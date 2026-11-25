@@ -438,3 +438,10 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - AND MUST NOT modificar publicaciones ya enviadas al servidor
 - WHEN el usuario elige reanudar un borrador desde Mis publicaciones o editar una propiedad
 - THEN MUST abrir directamente los datos guardados que corresponden a esa acción
+
+### Flujo por pasos para Servicios y Materiales — 2026-11-24
+
+- Servicio se captura en cuatro pasos: perfil, cobertura con coordenadas aproximadas, fotos y contacto/envío.
+- Material se captura en cinco pasos: producto, ubicación con coordenadas, precio/detalles, fotos y contacto/envío.
+- Ambos formularios reutilizan `PublicationStepLayout`, pero mantienen sus campos, validaciones, galerías y procesos de guardado propios.
+- «Continuar» valida únicamente los campos obligatorios del paso actual; pasos previos pueden revisarse. Enviar conserva los repositorios y mecanismos de reintento ya existentes.
