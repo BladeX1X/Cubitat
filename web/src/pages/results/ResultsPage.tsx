@@ -241,7 +241,11 @@ export function ResultsPage({
     const visibleIds = new Set(mapResultScope.propertyIds)
     return sortedProperties.filter((property) => visibleIds.has(property.id))
   }, [isDesktopViewport, mapResultScope.propertyIds, sortedProperties, viewMode])
-  const heading = seoRoute?.heading ?? `${viewMode === 'map' && isDesktopViewport && mapResultScope.propertyIds !== null ? listedProperties.length : properties.length} propiedades en Cuba`
+  const headingCount =
+    viewMode === 'map' && isDesktopViewport && mapResultScope.propertyIds !== null
+      ? listedProperties.length
+      : sortedProperties.length
+  const heading = seoRoute?.heading ?? `${headingCount} ${headingCount === 1 ? 'propiedad' : 'propiedades'} en Cuba`
   const totalPages = Math.ceil(listedProperties.length / PAGE_SIZE)
   const paginatedProperties = listedProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
@@ -324,7 +328,7 @@ export function ResultsPage({
         isSticky={isSticky}
         onClearFilters={onClearFilters}
         onChangeFilters={onChangeFilters}
-        totalResults={properties.length}
+        totalResults={sortedProperties.length}
         onCreateAlert={handleCreateSearchAlert}
         creatingAlert={creatingSearchAlert}
         alertMessage={alertMessage}
@@ -344,7 +348,7 @@ export function ResultsPage({
           isSticky: false,
           onClearFilters,
           onChangeFilters,
-          totalResults: properties.length,
+          totalResults: sortedProperties.length,
           onCreateAlert: handleCreateSearchAlert,
           creatingAlert: creatingSearchAlert,
           alertMessage,

@@ -290,5 +290,10 @@ describe('ResultsPage', () => {
 
     expect(screen.getByText('Propiedad Verificada')).toBeInTheDocument()
     expect(screen.queryByText('Propiedad No Verificada')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('1 propiedad en Cuba')
+    expect(screen.getByText('1 inmueble')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /filtros/i }))
+    expect(screen.getByRole('button', { name: 'Ver 1 resultado' })).toBeInTheDocument()
   })
 })

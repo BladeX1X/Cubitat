@@ -165,6 +165,8 @@ proyecciones canonicas del backend.
 - WHEN el sistema filtra los resultados
 - THEN MUST conservar unicamente propiedades marcadas por la proyeccion
   canonica de agentes o vendedores verificados
+- AND el encabezado, el resumen de búsqueda y las acciones para ver resultados
+  MUST mostrar la cantidad filtrada, no el total anterior al filtro
 
 #### Scenario: Trust Score diferido
 - GIVEN Trust Score no forma parte del alcance aprobado actual
