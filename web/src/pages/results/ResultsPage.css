@@ -1212,56 +1212,28 @@
   display: none;
 }
 
-.results-floating-actions {
-  position: static;
+.marketplace-map-floating-actions {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 850;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
   width: fit-content;
   max-width: 100%;
-  margin: 10px auto 14px;
-  padding: 0;
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
-.results-floating-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+.marketplace-map-floating-toggle {
   min-height: 48px;
-  padding: 0 16px;
-  border: 0;
+  gap: 8px;
   border-radius: 999px;
+  padding-inline: 20px;
   box-shadow: 0 10px 24px rgba(17, 24, 39, 0.18);
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
-}
-
-.results-floating-actions button:active {
-  transform: scale(0.96);
-}
-
-.results-floating-map {
-  background: #fff;
-  color: #111827;
-}
-
-.results-floating-alert {
-  background: #315ee8;
-  color: #fff;
-}
-
-.results-floating-alert:disabled {
-  opacity: 0.72;
-}
-
-.results-floating-actions button svg {
-  width: 14px;
-  height: 14px;
+  font-weight: 800;
+  pointer-events: auto;
 }
 
 .results-map-wrapper {
@@ -1666,19 +1638,11 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
 }
 
 @media (max-width: 1020px) {
-  .app-shell.is-results-page .results-floating-actions {
-    z-index: auto;
-    width: 100%;
-    margin: 8px auto 12px;
-  }
+  .marketplace-map-floating-actions { bottom: calc(16px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 620px) {
-  .app-shell.is-results-page .results-floating-actions button {
-    min-height: 40px;
-    padding-inline: 14px;
-    font-size: 11px;
-  }
+  .marketplace-map-floating-toggle { min-height: 48px; padding-inline: 18px; font-size: 0.875rem; }
 
   .app-shell.is-results-page .results-map-wrapper {
     margin: 0 -10px;
@@ -1897,7 +1861,7 @@ body.has-map-fullscreen-overlay [data-radix-popper-content-wrapper] {
   .app-shell.is-results-page .filter-control,
   .app-shell.is-results-page .filter-alert-control,
   .app-shell.is-results-page .filter-more-control,
-  .app-shell.is-results-page .results-floating-actions button,
+  .marketplace-map-floating-toggle,
   .app-shell.is-results-page .results-pagination > button,
   .app-shell.is-results-page .property-contact-btn,
   .app-shell.is-results-page .property-whatsapp-btn {

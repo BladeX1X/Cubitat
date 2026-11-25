@@ -251,6 +251,7 @@ describe('ResultsPage', () => {
     }
     const firstRender = render(<ResultsPage {...props} />)
 
+    expect(document.body.querySelector('.marketplace-map-floating-actions')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
     expect(window.history.state).toEqual({
       searchContext: 'preserved',

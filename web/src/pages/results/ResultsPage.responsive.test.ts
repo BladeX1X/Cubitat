@@ -21,12 +21,17 @@ describe('Results mobile touch targets', () => {
     expect(styles).toMatch(/\.app-shell\.is-results-page \.sort-button[\s\S]*?min-height:\s*48px/)
     expect(styles).toMatch(/\.app-shell\.is-results-page \.property-save[\s\S]*?width:\s*48px;[\s\S]*?height:\s*48px;/)
     expect(styles).toMatch(/\.app-shell\.is-results-page \.property-contact-btn,[\s\S]*?height:\s*48px\s*!important/)
-    expect(styles).toMatch(/\.app-shell\.is-results-page \.results-floating-actions button[\s\S]*?height:\s*48px\s*!important/)
+    expect(styles).toMatch(/\.marketplace-map-floating-toggle,[\s\S]*?height:\s*48px\s*!important/)
     expect(styles).toMatch(/\.app-shell\.is-results-page \.results-pagination > div button\s*\{[^}]*?min-width:\s*48px;[^}]*?min-height:\s*48px;/)
   })
 
   it('anchors property contact buttons to the bottom of equal-height cards', () => {
     expect(styles).toMatch(/\.app-shell\.is-results-page \.results-desktop-shell \.property-actions\s*\{[^}]*?margin-top:\s*auto;/)
+  })
+
+  it('keeps the results map toggle floating at the bottom with the shared marketplace control', () => {
+    expect(styles).toMatch(/\.marketplace-map-floating-actions\s*\{[^}]*?position:\s*fixed;[^}]*?bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)/)
+    expect(styles).toMatch(/\.marketplace-map-floating-toggle\s*\{[^}]*?min-height:\s*48px/)
   })
 
   it('uses a 16px font for search inputs on touch screens', () => {
