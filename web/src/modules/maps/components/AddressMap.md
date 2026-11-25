@@ -9,6 +9,7 @@ Mapa interactivo para elegir coordenadas privadas durante la publicación y edic
 - La descarga compartida del estilo se limita a 12 segundos, aborta su petición y libera la caché de la promesa al fallar; así el botón de reintento puede iniciar una descarga nueva.
 - Si falla la inicialización antes del primer `load` o vence el tiempo, informa del problema y ofrece `Reintentar mapa`.
 - Un fallo aislado de tesela se registra con categoría y código seguros, sin URL ni texto original; errores equivalentes se limitan por instancia. No desmonta el mapa si la carga puede continuar. La pérdida del contexto WebGL sí activa recuperación.
+- Al cambiar provincia o municipio, el mapa vuela al centro aproximado disponible. Al cargar o modificar coordenadas desde el formulario (incluida la ubicación del dispositivo), centra la vista en ese punto y sincroniza el marcador. Al quitar las coordenadas, elimina el marcador.
 - El reintento cancela la inicialización anterior y conserva el resto del formulario y las coordenadas actuales.
 - Configura el worker JavaScript empaquetado de MapLibre mediante `configureMapLibreWorker`; sin ello el fallback SPA puede servir HTML al worker y dejar el mapa en blanco aunque el estilo y los controles estén presentes.
 - `AddressMap.test.tsx` cubre fallos de estilo/runtime, errores de tesela antes y después de `load`, la deduplicación de eventos, la recuperación y el límite de espera.

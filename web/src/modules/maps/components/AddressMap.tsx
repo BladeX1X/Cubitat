@@ -387,11 +387,21 @@ export function AddressMap({ province, municipality, latitude, longitude, onCoor
     }
   }, [province, municipality, mapReady])
 
-  // Update marker if lat/lng change externally
+  // Recenter the map and marker when coordinates are loaded or chosen externally
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     if (latitude !== null && longitude !== null) {
+      mapRef.current.flyTo({
+        center: [longitude, latitude],
+        zoom: 14,
+        speed: 1.4,
+        curve: 1.2,
+        essential: true,
+      })
       placeMarker(longitude, latitude)
+    } else if (markerRef.current) {
+      markerRef.current.remove()
+      markerRef.current = null
     }
   }, [latitude, longitude, mapReady])
 

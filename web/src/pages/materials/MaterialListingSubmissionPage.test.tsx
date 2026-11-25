@@ -25,7 +25,7 @@ vi.mock('../../shared/lib/catalogPhotos', () => ({
   compressCatalogPhoto: materialMocks.compressPhoto,
 }))
 vi.mock('../publish/PublicationLocationField', () => ({
-  PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(20.01234, -75.81234)}>Marcar punto</button>,
+  PublicationLocationField: ({ province, municipality, onProvinceChange, onMunicipalityChange, onCoordinatesChange }: { province: string; municipality: string; onProvinceChange: (value: string) => void; onMunicipalityChange: (value: string) => void; onCoordinatesChange: (latitude: number, longitude: number) => void }) => <div><label>Provincia<select required value={province} onChange={(event) => onProvinceChange(event.target.value)}><option value="">Selecciona</option><option value="La Habana">La Habana</option><option value="Santiago de Cuba">Santiago de Cuba</option></select></label><label>Municipio<select required value={municipality} onChange={(event) => onMunicipalityChange(event.target.value)}><option value="">Selecciona</option><option value="Playa">Playa</option><option value="Santiago de Cuba">Santiago de Cuba</option></select></label><button type="button" onClick={() => onCoordinatesChange(20.01234, -75.81234)}>Marcar punto</button></div>,
 }))
 
 async function advanceMaterialTo(targetStep: number) {
@@ -34,6 +34,7 @@ async function advanceMaterialTo(targetStep: number) {
   let current = labels.indexOf(currentHeading) + 1
   if (current < 1) current = 1
   while (current < targetStep) {
+    if (current === 2 && !(screen.getByLabelText('Municipio') as HTMLSelectElement).value) fireEvent.change(screen.getByLabelText('Municipio'), { target: { value: (screen.getByLabelText('Provincia') as HTMLSelectElement).value === 'Santiago de Cuba' ? 'Santiago de Cuba' : 'Playa' } })
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
     await waitFor(() => expect(screen.getByRole('heading', { name: labels[current] })).toBeVisible())
     current += 1
@@ -73,6 +74,17 @@ describe('MaterialListingSubmissionPage', () => {
     expect(screen.getByLabelText('Nombre del producto')).toBeInvalid()
   })
 
+  it('requires a province and municipality before leaving the location step', async () => {
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de ubicación QA' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Ubicación' })).toBeVisible())
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Ubicación' })).toBeVisible()
+    expect(screen.getByLabelText('Provincia')).toBeInvalid()
+  })
+
   it('prepares a selected batch as WebP, previews it and saves every photo in order', async () => {
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
@@ -106,6 +118,7 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'Santiago de Cuba' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba con más de veinte caracteres para guardar.' } })
     await advanceMaterialTo(2)
+    if (!(screen.getByLabelText('Municipio') as HTMLSelectElement).value) fireEvent.change(screen.getByLabelText('Municipio'), { target: { value: 'Santiago de Cuba' } })
     fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
     await submitMaterial()
 

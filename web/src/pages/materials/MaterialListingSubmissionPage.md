@@ -9,7 +9,10 @@ imágenes nuevas. Las cargas directas desde el navegador están bloqueadas por l
 protección de Storage y no se usan.
 
 El formulario comparte el marco visual de publicación con Inmuebles y
-Servicios. El punto opcional se marca con `AddressMap`; al editar se recupera
+Servicios. El paso de ubicación exige provincia y municipio de Cuba y centra
+`AddressMap` en el área seleccionada; el botón «Usar mi ubicación» solicita al
+navegador permiso explícito y centra el mapa en las coordenadas recibidas. El
+punto se puede ajustar con un clic o arrastrando el marcador. Al editar se recupera
 desde la RPC del propietario y al guardar se envía junto con los campos del
 material. La tabla pública conserva solo la referencia aproximada; la ubicación
 exacta queda en `material_private_coordinates`. Si se quita el punto, el

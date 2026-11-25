@@ -3,6 +3,7 @@ import { BriefcaseBusiness } from 'lucide-react'
 import { createHomeServiceProvider, fetchMyHomeServiceProviders, updateHomeServiceProvider } from '../../modules/home-services/homeServiceRepository'
 import { compressHomeServicePhoto, HOME_SERVICE_PHOTO_MAX_BYTES, HOME_SERVICE_PHOTO_MAX_COUNT, isHomeServicePhotoPath, removeUnattachedHomeServicePhotos, uploadHomeServicePhotos, validateHomeServicePhotoFiles } from '../../modules/home-services/homeServicePhotos'
 import { HOME_SERVICE_CATEGORIES, HOME_SERVICE_CATEGORY_LABELS, type HomeServiceCategory } from '../../modules/home-services/types'
+import { cubanMunicipalities } from '../../shared/data/cubaLocations'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
 import { MultiPhotoUploadField, type ExistingUploadPhoto } from '../../shared/ui/MultiPhotoUploadField'
@@ -28,6 +29,7 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
   const [category, setCategory] = useState<HomeServiceCategory>('plomeria')
   const [description, setDescription] = useState('')
   const [province, setProvince] = useState('')
+  const [municipality, setMunicipality] = useState('')
   const [municipalities, setMunicipalities] = useState('')
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null)
   const [phone, setPhone] = useState('')
@@ -54,6 +56,11 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
       invalidControl.reportValidity()
       return
     }
+    if (step === 2 && (!province || !municipality)) {
+      setError('Selecciona una provincia y un municipio para continuar.')
+      return
+    }
+    setError('')
     setStep((current) => Math.min(servicePublicationSteps.length, current + 1))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -72,7 +79,9 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
       setCategory(profile.category)
       setDescription(profile.description)
       setProvince(profile.province)
-      setMunicipalities(profile.municipalities.join(', '))
+      const profileMunicipality = profile.municipalities.find((value) => cubanMunicipalities[profile.province]?.includes(value)) ?? ''
+      setMunicipality(profileMunicipality)
+      setMunicipalities(profile.municipalities.filter((value) => value !== profileMunicipality).join(', '))
       setCoordinates(profile.coordinates ?? null)
       setPhone(profile.phone || '')
       setWhatsapp(profile.whatsapp || '')
@@ -136,7 +145,7 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
         category,
         description,
         province,
-        municipalities: municipalities.split(',').map((value) => value.trim()).filter(Boolean).slice(0, 30),
+        municipalities: Array.from(new Set([municipality, ...municipalities.split(',').map((value) => value.trim())].filter(Boolean))).slice(0, 30),
         coordinates,
         phone: phone.trim() || null,
         whatsapp: whatsapp.trim() || null,
@@ -182,9 +191,8 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
             <label className="text-sm font-semibold">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} required minLength={30} maxLength={5000} rows={6} className="mt-1 block w-full rounded-xl border border-neutral-300 px-3 py-2" placeholder="Describe el trabajo que realizas y tu experiencia." /></label>
             </div>
             <div data-publication-step="2" hidden={step !== 2}>
-            <label className="text-sm font-semibold">Provincia<input value={province} onChange={(event) => setProvince(event.target.value)} required minLength={2} maxLength={100} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
-            <label className="text-sm font-semibold">Municipios o zonas<input value={municipalities} onChange={(event) => setMunicipalities(event.target.value)} maxLength={1000} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" placeholder="Separados por comas" /></label>
-            <div data-publication-wide="true"><PublicationLocationField province={province} municipality={municipalities.split(',')[0]?.trim() || ''} latitude={coordinates?.latitude ?? null} longitude={coordinates?.longitude ?? null} onCoordinatesChange={(latitude, longitude) => setCoordinates({ latitude, longitude })} onClear={() => setCoordinates(null)} /></div>
+            <div data-publication-wide="true"><PublicationLocationField province={province} municipality={municipality} latitude={coordinates?.latitude ?? null} longitude={coordinates?.longitude ?? null} onProvinceChange={(value) => { setProvince(value); setMunicipality(''); setCoordinates(null) }} onMunicipalityChange={(value) => { setMunicipality(value); setCoordinates(null) }} onCoordinatesChange={(latitude, longitude) => setCoordinates({ latitude, longitude })} onClear={() => setCoordinates(null)} /></div>
+            <label className="mt-4 block text-sm font-semibold">Otros municipios o zonas de cobertura<input value={municipalities} onChange={(event) => setMunicipalities(event.target.value)} maxLength={1000} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" placeholder="Opcional; separados por comas" /></label>
             </div>
             <div data-publication-step="3" hidden={step !== 3} data-publication-wide="true"><MultiPhotoUploadField label="Fotos de tus trabajos" files={photoFiles} existingPhotos={galleryReferences.map((reference, index): ExistingUploadPhoto => ({ id: reference, src: galleryUrls[index] }))} maxCount={HOME_SERVICE_PHOTO_MAX_COUNT} maxSizeLabel={`${Math.floor(HOME_SERVICE_PHOTO_MAX_BYTES / 1024 / 1024)} MiB`} isCompressing={compressingPhotos || saving} onSelectFiles={(files) => void handlePhotoSelection(files)} onRemoveFile={(index) => setPhotoFiles((previous) => previous.filter((_, current) => current !== index))} onRemoveExisting={(photo) => { const index = galleryReferences.indexOf(photo.id); if (index < 0) return; const reference = galleryReferences[index]; setGalleryReferences((previous) => previous.filter((_, current) => current !== index)); setGalleryUrls((previous) => previous.filter((_, current) => current !== index)); if (isHomeServicePhotoPath(reference)) setRemovedPhotoPaths((previous) => [...previous, reference]) }} /></div>
             <div data-publication-step="4" hidden={step !== 4}>

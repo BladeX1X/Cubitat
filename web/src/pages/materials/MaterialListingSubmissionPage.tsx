@@ -43,6 +43,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   const [category, setCategory] = useState<MaterialCategory>('cemento')
   const [description, setDescription] = useState('')
   const [province, setProvince] = useState('')
+  const [municipality, setMunicipality] = useState('')
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null)
   const [price, setPrice] = useState('')
   const [currency, setCurrency] = useState<MaterialCurrency>('USD')
@@ -73,6 +74,11 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       invalidControl.reportValidity()
       return
     }
+    if (step === 2 && (!province || !municipality)) {
+      setError('Selecciona una provincia y un municipio para continuar.')
+      return
+    }
+    setError('')
     setStep((current) => Math.min(materialPublicationSteps.length, current + 1))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -92,6 +98,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       setCategory(listing.category)
       setDescription(listing.description)
       setProvince(listing.province)
+      setMunicipality('')
       setCoordinates(listing.coordinates ?? null)
       setPrice(listing.price == null ? '' : String(listing.price))
       setCurrency(listing.currency)
@@ -230,8 +237,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
             <label className="text-sm font-semibold">Categoría<select value={category} onChange={(event) => setCategory(event.target.value as MaterialCategory)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{MATERIAL_CATEGORIES.map((value) => <option key={value} value={value}>{MATERIAL_CATEGORY_LABELS[value]}</option>)}</select></label>
             </div>
             <div data-publication-step="2" hidden={step !== 2}>
-            <label className="text-sm font-semibold">Provincia<input value={province} onChange={(event) => setProvince(event.target.value)} required minLength={2} maxLength={100} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
-            <div data-publication-wide="true"><PublicationLocationField province={province} municipality="" latitude={coordinates?.latitude ?? null} longitude={coordinates?.longitude ?? null} onCoordinatesChange={(latitude, longitude) => setCoordinates({ latitude, longitude })} onClear={() => setCoordinates(null)} /></div>
+            <div data-publication-wide="true"><PublicationLocationField province={province} municipality={municipality} latitude={coordinates?.latitude ?? null} longitude={coordinates?.longitude ?? null} onProvinceChange={(value) => { setProvince(value); setMunicipality(''); setCoordinates(null) }} onMunicipalityChange={(value) => { setMunicipality(value); setCoordinates(null) }} onCoordinatesChange={(latitude, longitude) => setCoordinates({ latitude, longitude })} onClear={() => setCoordinates(null)} /></div>
             </div>
             <div data-publication-step="3" hidden={step !== 3}>
             <label className="text-sm font-semibold">Disponibilidad<select value={availability} onChange={(event) => setAvailability(event.target.value as MaterialListing['availability'])} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{MATERIAL_AVAILABILITIES.map((value) => <option key={value} value={value}>{AVAILABILITY_LABELS[value]}</option>)}</select></label>
