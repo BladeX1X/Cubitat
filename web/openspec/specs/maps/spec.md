@@ -12,28 +12,33 @@ OpenFreeMap, instalar los controles de navegación y atribución, observar el
 tamaño del contenedor, detectar errores y permitir reintentar.
 
 #### Scenario: Usar la base compartida con capas propias
-- GIVEN Comprar muestra propiedades y Servicios o Materiales muestra conteos
-  agregados por provincia
+- GIVEN Comprar, Servicios o Materiales muestran resultados con coordenadas
+  públicas aproximadas
 - WHEN se abre cualquiera de esos mapas
 - THEN se usa el mismo ciclo de vida, estados de carga/error, controles y
   comportamiento de redimensionado
-- AND cada mapa conserva sus propias capas, interacciones y datos
-- AND Servicios y Materiales MUST seguir mostrando conteos por provincia, sin
-  exponer ubicaciones de anuncios individuales
+- AND se conservan las capas, clusters y selecciones particulares de cada flujo
 
-### Requirement: Mapas agregados por provincia en Servicios y Materiales
-El sistema MUST permitir abrir opcionalmente un mapa agregado en los directorios
-de Servicios y Materiales. El mapa MUST usar conteos completos que respeten los
-filtros del catálogo excepto la provincia activa, y MUST aplicar la provincia
-seleccionada como filtro del catálogo. El mapa MUST ocultar coordenadas exactas y
-debe cargarse bajo demanda para no retrasar los catálogos.
+### Requirement: Mapas de anuncios en Servicios y Materiales
+Los directorios de Servicios y Materiales MUST reutilizar el mapa de puntos de
+Comprar con coordenadas públicas aproximadas. Al abrir el mapa MUST cargar todos
+los resultados que coincidan con los filtros activos (incluida provincia y
+municipio), no solo la página actual, y MUST mantener las coordenadas exactas
+fuera del cliente. La consulta y el código del mapa MUST cargarse bajo demanda.
 
 #### Scenario: Abrir mapa de catálogo
 - GIVEN el usuario está en el directorio de Servicios o Materiales
 - WHEN abre “Mostrar mapa”
-- THEN se carga MapLibre y se ven conteos agrupados por provincia para todos los
-  resultados que coinciden con los otros filtros
-- AND el mapa muestra una ubicación provincial aproximada, no direcciones
+- THEN se cargan todos los anuncios filtrados con sus coordenadas públicas y se
+  muestran con clusters como en Comprar
+- AND el primer encuadre incluye los anuncios cargados, sin pines de anuncios
+  fuera de los filtros activos
+- AND la lista incluye inicialmente la página actual y después sigue el área
+  visible del mapa
+- AND cada consulta de mapa recorre las páginas del catálogo y carga solo la
+  imagen de portada para no descargar galerías completas
+- AND anuncios sin coordenadas públicas se omiten del mapa
+- AND mapa y marcadores nunca consultan coordenadas privadas
 - AND el control para abrir el mapa MUST flotar centrado en la parte inferior de la ventana
 - AND en escritorio, el mapa MUST aparecer junto a los resultados en una vista dividida, manteniendo visibles filtros y tarjetas
 - AND en móvil, el mapa MUST abrirse a pantalla completa, ajustarse al ancho del viewport sin desbordamiento horizontal y ofrecer un control flotante inferior para volver a la lista
@@ -41,18 +46,21 @@ debe cargarse bajo demanda para no retrasar los catálogos.
 - AND el indicador de carga se retira en cuanto el estilo y las capas interactivas están listos, sin esperar a todas las teselas visibles
 - AND en móvil el estado de carga conserva el diálogo de pantalla completa y el botón para cerrar
 
-#### Scenario: Filtrar desde un conteo provincial
-- GIVEN el mapa agregado muestra provincias con resultados
-- WHEN el usuario pulsa el número o el círculo de una provincia
-- THEN el directorio aplica el filtro provincial y actualiza tarjetas y total
-- AND el mapa conserva conteos calculados bajo los filtros restantes
+#### Scenario: Filtrar la lista según el área visible
+- GIVEN el mapa muestra anuncios agrupados
+- WHEN el usuario desplaza o acerca el mapa
+- THEN las tarjetas y el total muestran solo anuncios cuyas coordenadas públicas
+  quedan dentro del área visible, igual que Comprar
+- AND la provincia, municipio, categoría, disponibilidad y texto de búsqueda
+  siguen aplicándose al mapa y a la lista
 
-#### Scenario: Expandir conteos agrupados
-- GIVEN varias provincias están agrupadas en un cluster
-- WHEN el usuario pulsa el número o el círculo del cluster
-- THEN el mapa acerca la vista para separar los marcadores
-- AND en móvil el texto de ayuda MUST distinguir grupos (acercar) de provincias (filtrar)
-- AND las marcas provinciales y controles de zoom MUST ofrecer objetivos táctiles de al menos 48 × 48 px
+#### Scenario: Seleccionar anuncios en el mapa
+- GIVEN uno o más anuncios aparecen en el mapa
+- WHEN el usuario pulsa un punto o un cluster
+- THEN se resaltan las tarjetas de los anuncios seleccionados y la lista muestra
+  ese punto o grupo como en Comprar
+- AND el mapa no navega automáticamente al detalle del anuncio
+- AND controles y clusters MUST mantener objetivos táctiles de al menos 48 × 48 px
 
 #### Scenario: Mapa cerrado o con error
 - GIVEN el mapa está cerrado o su estilo no carga
@@ -275,12 +283,13 @@ catálogos en escritorio.
 - THEN MUST cancelar la petición anterior y liberar su estado compartido
 - AND MUST iniciar una nueva descarga en lugar de reutilizar la promesa atascada
 
-#### Scenario: Filtrar un catálogo desde el mapa provincial
+#### Scenario: Filtrar un catálogo desde el mapa de anuncios
 - GIVEN el mapa de Servicios o Materiales está abierto junto al catálogo
-- WHEN el usuario selecciona una provincia en el mapa
-- THEN MUST aplicar la provincia como filtro de servidor y volver a la página 1
-- AND MUST mantener el mapa abierto sin recargar ni navegar el documento
-- AND en Servicios MUST limpiar el municipio, que depende de la provincia.
+- WHEN el usuario desplaza el mapa o selecciona un anuncio o cluster
+- THEN MUST mostrar únicamente las tarjetas de los anuncios públicos dentro del
+  viewport o grupo seleccionado, como en Comprar
+- AND MUST mantener aplicados los filtros del catálogo y conservar el mapa abierto
+- AND MUST usar las coordenadas públicas aproximadas, nunca las privadas.
 
 ### Verificación en DEV — 2026-11-13
 
@@ -322,6 +331,19 @@ antes de esperar las teselas, que luego responden 200. Worker DEV
 - Las fichas SVC/MAT usan la misma geometría de ubicación aproximada que Comprar: radio de 500 m, diámetro de 1 km, solo cuando el anuncio tiene coordenadas.
 - Si solo existe provincia, el mapa usa el centro provincial como contexto, sin pin ni círculo que sugieran precisión inexistente.
 - El cambio de Fotos/Mapa reutiliza el visor de la ficha; la visualización del mapa sigue siendo diferida.
+
+### Mapas de catálogo SVC/MAT basados en Comprar — implementación local 2026-11-25
+
+- Los directorios ya consumen todas las páginas de resultados que coinciden con
+  los filtros y tienen coordenadas públicas, no solo la página de tarjetas.
+- El adaptador de Comprar genera los clusters y notifica el área visible; los
+  catálogos filtran sus tarjetas por esos ids y resaltan las selecciones de
+  puntos o grupos.
+- La consulta carga solo la portada de cada anuncio. Las coordenadas pasan por
+  el mismo redondeo público de privacidad que Comprar; nunca se solicita la
+  tabla privada.
+- Verificado en local cuando pasen lint, la suite completa y el E2E móvil. La
+  integración y verificación en producción siguen pendientes.
 
 ### Publicación de Servicios y Materiales: selección de zona y ubicación del dispositivo — 2026-11-24
 

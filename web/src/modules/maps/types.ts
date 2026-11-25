@@ -11,8 +11,18 @@ export type MapZone = {
   path: string
 }
 
+export type CatalogMapListing = {
+  id: string
+  title: string
+  location: string
+  coordinates: { latitude: number; longitude: number } | null | undefined
+  label: string
+}
+
 export type MapAdapterProps = {
   properties: Property[]
+  listings?: CatalogMapListing[]
+  listingLabel?: string
   selectedZoneId?: string
   selectedPropertyId?: string
   selectedPropertyIds?: string[]

@@ -166,6 +166,24 @@ export async function fetchHomeServiceProviders(filters: {
   }
 }
 
+/** Loads the full filtered public catalog for clustering and viewport matching. */
+export async function fetchHomeServiceProvidersForMap(filters: {
+  category?: HomeServiceCategory
+  province?: string
+  municipality?: string
+  search?: string
+} = {}): Promise<HomeServiceProvider[]> {
+  const items: HomeServiceProvider[] = []
+  let total = 0
+  do {
+    const page = await fetchHomeServiceProviders({ ...filters, offset: items.length, pageSize: 60, coverOnly: true })
+    items.push(...page.items)
+    total = page.total
+    if (page.items.length === 0) break
+  } while (items.length < total)
+  return items
+}
+
 export async function fetchHomeServiceProvinceCounts(filters: {
   category?: HomeServiceCategory
   municipality?: string

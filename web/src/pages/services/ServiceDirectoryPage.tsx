@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { BriefcaseBusiness, CalendarDays, CheckCircle2, MapPin } from 'lucide-react'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
@@ -19,9 +19,9 @@ import { CatalogMap } from '../../modules/catalog-explorer/CatalogMap'
 import { CatalogPagination, CATALOG_PAGE_SIZE } from '../../modules/catalog-explorer/CatalogPagination'
 import { MarketplaceMapToggle } from '../../modules/marketplace/MarketplaceMapToggle'
 import { HOME_SERVICE_CATEGORIES, HOME_SERVICE_CATEGORY_LABELS, type HomeServiceCategory, type HomeServiceProvider } from '../../modules/home-services/types'
-import { fetchHomeServiceProvider, fetchHomeServiceProviders, fetchHomeServiceProvinceCounts, sendHomeServiceInquiry } from '../../modules/home-services/homeServiceRepository'
-import type { ProvinceCount } from '../../modules/marketplace/provinceAggregates'
-import { ProvinceMapStatus } from '../../modules/marketplace/ProvinceMapStatus'
+import { fetchHomeServiceProvider, fetchHomeServiceProviders, fetchHomeServiceProvidersForMap, sendHomeServiceInquiry } from '../../modules/home-services/homeServiceRepository'
+import { EMPTY_CATALOG_MAP_SCOPE, selectCatalogMapGroup, updateCatalogMapViewport } from '../../modules/catalog-explorer/catalogMapScope'
+import type { CatalogMapListing } from '../../modules/maps/types'
 import { cubanMunicipalities, cubanProvinces } from '../../shared/data/cubaLocations'
 import { PHASE_FOUR_SVC_ENABLED } from '../../shared/config/features'
 import '../marketplace/MarketplaceDirectoryMap.css'
@@ -56,9 +56,11 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
   const [inquiryState, setInquiryState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [focusDetailTarget, setFocusDetailTarget] = useState<'inquiry' | null>(null)
   const [mapOpen, setMapOpen] = useState(false)
-  const [provinceCounts, setProvinceCounts] = useState<ProvinceCount[]>([])
-  const [provinceCountsLoading, setProvinceCountsLoading] = useState(false)
-  const [provinceCountsError, setProvinceCountsError] = useState(false)
+  const [mapProviders, setMapProviders] = useState<HomeServiceProvider[]>([])
+  const [mapLoading, setMapLoading] = useState(false)
+  const [mapError, setMapError] = useState(false)
+  const [mapReloadKey, setMapReloadKey] = useState(0)
+  const [mapScope, setMapScope] = useState(EMPTY_CATALOG_MAP_SCOPE)
   const hasLoadedRef = useRef(false)
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -117,14 +119,29 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
   useEffect(() => {
     if (slug || !mapOpen) return
     let active = true
-    setProvinceCountsLoading(true)
-    setProvinceCountsError(false)
-    void fetchHomeServiceProvinceCounts({ category: category || undefined, municipality: municipality || undefined, search })
-      .then((counts) => { if (active) setProvinceCounts(counts) })
-      .catch(() => { if (active) setProvinceCountsError(true) })
-      .finally(() => { if (active) setProvinceCountsLoading(false) })
+    setMapLoading(true)
+    setMapError(false)
+    setMapScope(EMPTY_CATALOG_MAP_SCOPE)
+    void fetchHomeServiceProvidersForMap({ category: category || undefined, province: province || undefined, municipality: municipality || undefined, search })
+      .then((items) => { if (active) setMapProviders(items) })
+      .catch(() => { if (active) setMapError(true) })
+      .finally(() => { if (active) setMapLoading(false) })
     return () => { active = false }
-  }, [slug, mapOpen, category, municipality, search])
+  }, [slug, mapOpen, category, province, municipality, search, mapReloadKey])
+
+  const visibleMapProviders = useMemo(() => {
+    if (!mapOpen || mapScope.listingIds === null) return null
+    const ids = new Set(mapScope.listingIds)
+    return mapProviders.filter((item) => ids.has(item.id))
+  }, [mapOpen, mapProviders, mapScope.listingIds])
+  const displayedProviders = visibleMapProviders ?? providers
+  const mapListings = useMemo<CatalogMapListing[]>(() => mapProviders.map((item) => ({
+    id: item.id,
+    title: item.displayName,
+    location: [...item.municipalities, item.province].filter(Boolean).join(', '),
+    coordinates: item.coordinates,
+    label: HOME_SERVICE_CATEGORY_LABELS[item.category],
+  })), [mapProviders])
 
   function openProvider(item: HomeServiceProvider, target: 'inquiry' | null = null) {
     setLoading(true)
@@ -243,15 +260,15 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
       <p className="mt-2 text-sm text-neutral-600">Comprueba la conexión e inténtalo de nuevo.</p>
       <Button className="mt-5" onClick={() => setReloadKey((key) => key + 1)}>Reintentar</Button>
     </section>
-  ) : providers.length === 0 ? (
+  ) : displayedProviders.length === 0 ? (
     <section className="rounded-2xl border border-dashed border-neutral-300 bg-white px-5 py-14 text-center">
       <h2 className="text-lg font-bold">No encontramos profesionales con esos filtros</h2>
       <p className="mt-2 text-sm text-neutral-600">Prueba otra palabra, categoría, provincia o municipio.</p>
     </section>
   ) : (
     <section className="catalog-card-grid" aria-label="Profesionales disponibles">
-      {providers.map((item, index) => (
-        <CatalogCardFrame key={item.id} className="marketplace-listing-card">
+      {displayedProviders.map((item, index) => (
+        <CatalogCardFrame key={item.id} className={`marketplace-listing-card${mapScope.listingIds?.includes(item.id) && mapScope.source === 'selection' ? ' is-map-selected' : ''}`}>
           <CatalogCardGallery
             images={item.galleryUrls}
             label={item.displayName}
@@ -284,9 +301,9 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
           <h1 className="font-black text-neutral-900">Servicios para el hogar</h1>
         </header>
         <div id="catalog-pagination-start" style={{ height: '1px', marginBottom: '-1px' }} />
-        <MarketplaceMapToggle mapId="service-province-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => setMapOpen((open) => !open)} />
-        <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="service-province-map" mapBusy={provinceCountsLoading} toolbar={
-          <CatalogFilterToolbar label="Filtros de profesionales" resultLabel="profesionales" resultCount={total} activeFiltersCount={[category, province, municipality, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setMunicipality(''); setSearch(''); setCurrentPage(1) }}
+        <MarketplaceMapToggle mapId="service-coordinate-map" open={mapOpen} className={mapOpen ? 'is-map-open' : ''} onToggle={() => { setMapScope(EMPTY_CATALOG_MAP_SCOPE); setMapOpen((open) => !open) }} />
+        <CatalogExplorerLayout className="marketplace-directory-layout" catalogClassName="marketplace-directory-catalog" mapClassName="marketplace-directory-map" mapOpen={mapOpen} mapId="service-coordinate-map" mapBusy={mapLoading} toolbar={
+          <CatalogFilterToolbar label="Filtros de profesionales" resultLabel="profesionales" resultCount={visibleMapProviders?.length ?? total} activeFiltersCount={[category, province, municipality, search].filter(Boolean).length} onClearFilters={() => { setCategory(''); setProvince(''); setMunicipality(''); setSearch(''); setCurrentPage(1) }}
             search={<label><span className="sr-only">Buscar servicio</span><input aria-label="Buscar servicio" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1) }} className="marketplace-filter-search" placeholder="Plomería, electricidad…" /></label>}
             filters={<>
               <label><span className="sr-only">Categoría</span><select aria-label="Categoría" value={category} onChange={(event) => { setCategory(event.target.value as HomeServiceCategory | ''); setCurrentPage(1) }}><option value="">Todas las categorías</option>{HOME_SERVICE_CATEGORIES.map((value) => <option key={value} value={value}>{HOME_SERVICE_CATEGORY_LABELS[value]}</option>)}</select></label>
@@ -295,16 +312,16 @@ export function ServiceDirectoryPage({ onRequireLogin }: ServiceDirectoryPagePro
             </>}
           />
         } map={
-          provinceCountsError
-            ? <ProvinceMapStatus error onClose={() => setMapOpen(false)} resultLabel="profesionales" />
-            : <CatalogMap mode="province-counts" counts={provinceCounts} selectedProvince={province} onClose={() => setMapOpen(false)} onSelectProvince={(nextProvince) => { setProvince((current) => current === nextProvince ? '' : nextProvince); setMunicipality(''); setCurrentPage(1) }} resultLabel="profesionales" />
+          mapError
+            ? <div role="alert" className="map-card map-error-state"><p>No se pudieron cargar las ubicaciones.</p><Button onClick={() => setMapReloadKey((key) => key + 1)}>Reintentar</Button><Button variant="outline" onClick={() => setMapOpen(false)}>Cerrar mapa</Button></div>
+            : <CatalogMap mode="listings" listings={mapListings} listingLabel="profesionales" selectedListingId={mapScope.listingIds?.[0]} selectedListingIds={mapScope.source === 'selection' ? mapScope.listingIds ?? undefined : undefined} onSelectListing={(id) => setMapScope(selectCatalogMapGroup([id]))} onSelectCluster={(ids) => setMapScope(selectCatalogMapGroup(ids))} onViewportChange={(ids) => setMapScope((scope) => updateCatalogMapViewport(scope, ids))} onClose={() => setMapOpen(false)} />
         }>
 
           <div className="marketplace-directory-results" aria-busy={loading}>
-            <p className="mb-4 text-sm text-neutral-600">{total} {total === 1 ? 'profesional disponible' : 'profesionales disponibles'}</p>
+            <p className="mb-4 text-sm text-neutral-600">{visibleMapProviders ? `${visibleMapProviders.length} ${visibleMapProviders.length === 1 ? 'profesional en el área visible' : 'profesionales en el área visible'}` : `${total} ${total === 1 ? 'profesional disponible' : 'profesionales disponibles'}`}</p>
             {loading && <span role="status" aria-label="Actualizando profesionales" className="sr-only">Actualizando resultados…</span>}
             {resultsContent}
-            <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />
+            {!visibleMapProviders && <CatalogPagination currentPage={currentPage} totalPages={totalPages} disabled={loading} onPageChange={handlePageChange} />}
           </div>
         </CatalogExplorerLayout>
       </div>

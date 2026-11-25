@@ -158,6 +158,7 @@ export async function fetchMaterialListings(filters: {
   search?: string
   offset?: number
   pageSize?: number
+  coverOnly?: boolean
 } = {}): Promise<{ items: MaterialListing[]; total: number }> {
   try {
     let query = supabase
@@ -175,10 +176,28 @@ export async function fetchMaterialListings(filters: {
     const { data, error, count } = await query
     if (error) return throwLoadError('fetch_material_list', error)
     const listings = (Array.isArray(data) ? data : []).map(parseMaterial).filter((row): row is MaterialListing => row !== null)
-    return { items: await signMaterialPhotos(listings), total: count ?? listings.length }
+    return { items: await signMaterialPhotos(listings, { coverOnly: filters.coverOnly, transformCover: filters.coverOnly }), total: count ?? listings.length }
   } catch (error) {
     return throwLoadError('fetch_material_list_exception', error)
   }
+}
+
+/** Loads all public, filtered listing coordinates for clustering and viewport matching. */
+export async function fetchMaterialListingsForMap(filters: {
+  category?: MaterialCategory
+  province?: string
+  availability?: Exclude<MaterialListing['availability'], 'out_of_stock'>
+  search?: string
+} = {}): Promise<MaterialListing[]> {
+  const items: MaterialListing[] = []
+  let total = 0
+  do {
+    const page = await fetchMaterialListings({ ...filters, offset: items.length, pageSize: 60, coverOnly: true })
+    items.push(...page.items)
+    total = page.total
+    if (page.items.length === 0) break
+  } while (items.length < total)
+  return items
 }
 
 export async function fetchMaterialProvinceCounts(filters: {

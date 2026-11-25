@@ -1,24 +1,26 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServiceDirectoryPage } from './ServiceDirectoryPage'
-import { fetchHomeServiceProvider, fetchHomeServiceProviders } from '../../modules/home-services/homeServiceRepository'
+import { fetchHomeServiceProvider, fetchHomeServiceProviders, fetchHomeServiceProvidersForMap } from '../../modules/home-services/homeServiceRepository'
 
 vi.mock('../../shared/hooks/useSEO', () => ({ useSEO: vi.fn() }))
 vi.mock('../../shared/ui/MarketplaceContactActions', () => ({ MarketplaceContactActions: () => <div><button type="button">Contactar</button><button type="button">Consultar</button></div> }))
 vi.mock('../../modules/home-services/homeServiceRepository', () => ({
   fetchHomeServiceProvider: vi.fn(),
   fetchHomeServiceProviders: vi.fn(),
-  fetchHomeServiceProvinceCounts: vi.fn().mockResolvedValue([]),
+  fetchHomeServiceProvidersForMap: vi.fn().mockResolvedValue([]),
   sendHomeServiceInquiry: vi.fn(),
 }))
 vi.mock('../../modules/marketplace/MarketplaceMapToggle', () => ({
   MarketplaceMapToggle: ({ onToggle }: { onToggle: () => void }) => <button type="button" onClick={onToggle}>Mostrar mapa</button>,
 }))
 vi.mock('../../modules/catalog-explorer/CatalogMap', () => ({
-  CatalogMap: ({ onSelectProvince, selectedProvince }: { onSelectProvince: (province: string) => void; selectedProvince: string }) => (
+  CatalogMap: ({ listings, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
     <div>
-      <span>Mapa de servicios: {selectedProvince || 'Toda Cuba'}</span>
-      <button type="button" onClick={() => onSelectProvince('Matanzas')}>Filtrar Matanzas en el mapa</button>
+      <span>Mapa con {listings.length} puntos</span>
+      <button type="button" onClick={() => onViewportChange(listings.slice(-1).map(({ id }) => id))}>Filtrar área visible</button>
+      <button type="button" onClick={() => onSelectListing(listings[0]?.id ?? '')}>Seleccionar punto</button>
+      <button type="button" onClick={() => onSelectCluster(listings.map(({ id }) => id))}>Seleccionar grupo</button>
     </div>
   ),
 }))
@@ -31,6 +33,7 @@ const provider = {
   description: 'Reparación de tuberías y grifería.',
   province: 'La Habana',
   municipalities: ['Centro Habana'],
+  coordinates: { latitude: 23.135, longitude: -82.383 },
   phone: null,
   whatsapp: null,
   galleryUrls: [],
@@ -50,6 +53,8 @@ describe('ServiceDirectoryPage filter loading', () => {
     vi.mocked(fetchHomeServiceProvider).mockResolvedValue(provider)
     vi.mocked(fetchHomeServiceProviders).mockReset()
     vi.mocked(fetchHomeServiceProviders).mockResolvedValue({ items: [provider], total: 1 })
+    vi.mocked(fetchHomeServiceProvidersForMap).mockReset()
+    vi.mocked(fetchHomeServiceProvidersForMap).mockResolvedValue([provider])
   })
 
   it('renders the shared detail design with service-specific information', async () => {
@@ -139,26 +144,35 @@ describe('ServiceDirectoryPage filter loading', () => {
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
   })
 
-  it('applies a map province without navigation and resets the municipality and page', async () => {
-    vi.mocked(fetchHomeServiceProviders).mockResolvedValueOnce({ items: [provider], total: 31 })
+  it('uses all public coordinates and filters cards to the visible map area', async () => {
+    const secondProvider = { ...provider, id: 'provider-2', slug: 'segundo', displayName: 'Segundo profesional', coordinates: { latitude: 20.02, longitude: -75.82 } }
+    vi.mocked(fetchHomeServiceProviders).mockResolvedValueOnce({ items: [provider], total: 2 })
+    vi.mocked(fetchHomeServiceProvidersForMap).mockResolvedValueOnce([provider, secondProvider])
     render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
     expect(await screen.findByText('Fontanero del Centro')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Página 2' }))
-    await waitFor(() => expect(fetchHomeServiceProviders).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 15, pageSize: 15 })))
-    fireEvent.change(screen.getByRole('combobox', { name: 'Provincia' }), { target: { value: 'La Habana' } })
-    await waitFor(() => expect(fetchHomeServiceProviders).toHaveBeenLastCalledWith(expect.objectContaining({ province: 'La Habana', offset: 0 })))
-    fireEvent.change(screen.getByRole('combobox', { name: 'Municipio' }), { target: { value: 'Playa' } })
-    await waitFor(() => expect(fetchHomeServiceProviders).toHaveBeenLastCalledWith(expect.objectContaining({ municipality: 'Playa' })))
-
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Filtrar Matanzas en el mapa' }))
+    expect(await screen.findByText('Mapa con 2 puntos')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar área visible' }))
+    expect(await screen.findByText('Segundo profesional')).toBeInTheDocument()
+    expect(screen.queryByText('Fontanero del Centro')).not.toBeInTheDocument()
+    expect(screen.getByText('1 profesional en el área visible')).toBeInTheDocument()
+    expect(fetchHomeServiceProvidersForMap).toHaveBeenCalledWith(expect.objectContaining({ province: undefined }))
+    expect(window.location.pathname).toBe(initialPath)
+  })
 
-    await waitFor(() => expect(fetchHomeServiceProviders).toHaveBeenLastCalledWith(expect.objectContaining({
-      province: 'Matanzas', municipality: undefined, offset: 0, pageSize: 15,
-    })))
-    expect(screen.getByText('Mapa de servicios: Matanzas')).toBeInTheDocument()
+  it('selects a map point without navigating and highlights its card', async () => {
+    const secondProvider = { ...provider, id: 'provider-2', slug: 'segundo', displayName: 'Segundo profesional' }
+    vi.mocked(fetchHomeServiceProvidersForMap).mockResolvedValueOnce([provider, secondProvider])
+    render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
+    await screen.findByText('Fontanero del Centro')
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
+    await screen.findByText('Mapa con 2 puntos')
+    const initialPath = window.location.pathname
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar punto' }))
+    expect(screen.getByText('Fontanero del Centro')).toBeInTheDocument()
+    expect(screen.queryByText('Segundo profesional')).not.toBeInTheDocument()
+    expect(document.querySelector('.catalog-card.is-map-selected')).toBeInTheDocument()
     expect(window.location.pathname).toBe(initialPath)
   })
 
