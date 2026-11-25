@@ -15,9 +15,10 @@ vi.mock('../../modules/marketplace/MarketplaceMapToggle', () => ({
   MarketplaceMapToggle: ({ onToggle }: { onToggle: () => void }) => <button type="button" onClick={onToggle}>Mostrar mapa</button>,
 }))
 vi.mock('../../modules/catalog-explorer/CatalogMap', () => ({
-  CatalogMap: ({ listings, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
+  CatalogMap: ({ listings, selectedListingId, selectedListingIds, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; selectedListingId?: string; selectedListingIds?: string[]; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
     <div>
       <span>Mapa con {listings.length} puntos</span>
+      <output data-testid="map-selection">{[selectedListingId, ...(selectedListingIds ?? [])].filter(Boolean).join(',')}</output>
       <button type="button" onClick={() => onViewportChange(listings.slice(-1).map(({ id }) => id))}>Filtrar área visible</button>
       <button type="button" onClick={() => onSelectListing(listings[0]?.id ?? '')}>Seleccionar punto</button>
       <button type="button" onClick={() => onSelectCluster(listings.map(({ id }) => id))}>Seleccionar grupo</button>
@@ -153,7 +154,11 @@ describe('ServiceDirectoryPage filter loading', () => {
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
     expect(await screen.findByText('Mapa con 2 puntos')).toBeInTheDocument()
+    expect(screen.getByTestId('map-selection')).toBeEmptyDOMElement()
+    expect(document.querySelector('.catalog-card.is-map-selected')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Filtrar área visible' }))
+    expect(screen.getByTestId('map-selection')).toBeEmptyDOMElement()
+    expect(document.querySelector('.catalog-card.is-map-selected')).not.toBeInTheDocument()
     expect(await screen.findByText('Segundo profesional')).toBeInTheDocument()
     expect(screen.queryByText('Fontanero del Centro')).not.toBeInTheDocument()
     expect(screen.getByText('1 profesional en el área visible')).toBeInTheDocument()
@@ -170,6 +175,7 @@ describe('ServiceDirectoryPage filter loading', () => {
     await screen.findByText('Mapa con 2 puntos')
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Seleccionar punto' }))
+    expect(screen.getByTestId('map-selection')).toHaveTextContent('provider-1')
     expect(screen.getByText('Fontanero del Centro')).toBeInTheDocument()
     expect(screen.queryByText('Segundo profesional')).not.toBeInTheDocument()
     expect(document.querySelector('.catalog-card.is-map-selected')).toBeInTheDocument()
