@@ -29,7 +29,7 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     expect(await page.evaluate(() => localStorage.getItem('cubitat_publish_draft'))).toBeNull()
   })
 
-  test('en DEV pregunta antes de sustituir un borrador local al crear una propiedad', async ({ page }) => {
+  test('al crear una propiedad abre el formulario vacío y no pregunta por el borrador local', async ({ page }) => {
     const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
     await mockDirectSupabaseReads(page)
     await page.route('**/auth/v1/user', async route => route.fulfill({
@@ -64,15 +64,12 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
       db.close()
     }, ownerId)
 
-    await page.goto('/publicar')
-    await expect(page.getByRole('dialog')).toContainText('¿Quieres continuar donde lo dejaste?')
-    await expect(page.getByRole('button', { name: 'Continuar borrador' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Empezar una propiedad nueva' })).toBeVisible()
-    await expect(page.getByText('Borrador local de prueba')).not.toBeVisible()
-
-    await page.getByRole('button', { name: 'Continuar borrador' }).click()
+    await page.goto('/publicar-inmueble')
     await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
-    await expect(page.getByRole('group', { name: 'Foto 1: draft.webp' })).toBeVisible()
+    await expect(page.getByText('Propiedad - Dirección y Ubicación')).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText('Borrador local de prueba')).not.toBeVisible()
+    await expect(page.getByRole('group', { name: 'Foto 1: draft.webp' })).toHaveCount(0)
   })
 
   test('debería guiar por los pasos de dirección, información, características y guardar borrador', async ({ page }) => {

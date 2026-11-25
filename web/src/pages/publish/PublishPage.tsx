@@ -5,7 +5,6 @@ import { useSEO } from '../../shared/hooks/useSEO'
 import { PROPERTY_IMAGE_RULES, validateImageFile } from '../../shared/lib/imageSecurity'
 import { compressPublicationImage } from './compressPublicationImage'
 import { usePublicationDraft } from './usePublicationDraft'
-import { readCompleteDraft, removeCompleteDraft } from './completeDraftStorage'
 import { uploadPropertyImage } from './uploadPropertyImage'
 import { uploadPublicationImages } from './uploadPublicationImages'
 import { editablePropertyAddress, publicPropertyLocation } from '../../shared/lib/propertyLocation'
@@ -276,71 +275,7 @@ type PublishPageProps = {
 }
 
 export function PublishPage(props: PublishPageProps) {
-  const needsDraftChoice = props.resumeDraft === false && !props.editPropertyId
-  const [draftEntry, setDraftEntry] = useState<'checking' | 'choice' | 'error' | 'resume' | 'new'>(
-    needsDraftChoice ? 'checking' : 'resume',
-  )
-  const [choiceError, setChoiceError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!needsDraftChoice || draftEntry !== 'checking') return
-    let cancelled = false
-    void readCompleteDraft(props.userId).then(draft => {
-      if (!cancelled) setDraftEntry(draft ? 'choice' : 'new')
-    }).catch(() => {
-      if (!cancelled) setDraftEntry('error')
-    })
-    return () => { cancelled = true }
-  }, [props.userId, needsDraftChoice, draftEntry])
-
-  async function startNewProperty() {
-    setChoiceError(null)
-    try {
-      await removeCompleteDraft(props.userId)
-      setDraftEntry('new')
-    } catch {
-      setChoiceError('No se pudo liberar el borrador guardado. Inténtalo de nuevo; tus datos siguen intactos.')
-    }
-  }
-
-  if (draftEntry === 'checking') {
-    return <div role="status" className="min-h-[50vh] flex items-center justify-center text-sm text-neutral-600">Comprobando si tienes un borrador guardado…</div>
-  }
-
-  if (draftEntry === 'error') {
-    return (
-      <main className="min-h-[60vh] bg-neutral-100/40 px-4 py-16">
-        <section role="alert" className="mx-auto max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h1 className="text-xl font-bold text-neutral-900">No pudimos comprobar tus borradores</h1>
-          <p className="mt-2 text-sm text-neutral-600">Para proteger tus datos, no abrimos un anuncio nuevo hasta confirmar si tienes uno pendiente.</p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Button type="button" onClick={() => setDraftEntry('checking')} className="bg-[#035f53] text-white hover:bg-[#024a41]">Reintentar</Button>
-            <Button type="button" variant="outline" onClick={props.onBack}>Volver</Button>
-          </div>
-        </section>
-      </main>
-    )
-  }
-
-  if (draftEntry === 'choice') {
-    return (
-      <main className="min-h-[60vh] bg-neutral-100/40 px-4 py-16">
-        <section role="dialog" aria-modal="true" aria-labelledby="publication-draft-choice-title" className="mx-auto max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#035f53]">Borrador guardado</p>
-          <h1 id="publication-draft-choice-title" className="mt-2 text-2xl font-bold text-neutral-900">¿Quieres continuar donde lo dejaste?</h1>
-          <p className="mt-3 text-sm leading-6 text-neutral-600">Hay un anuncio sin terminar guardado en este dispositivo. Puedes reanudarlo o empezar otra propiedad. Si empiezas otra, se reemplazará este borrador local; las publicaciones ya enviadas no cambiarán.</p>
-          {choiceError && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{choiceError}</p>}
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button type="button" onClick={() => setDraftEntry('resume')} className="bg-[#035f53] text-white hover:bg-[#024a41]">Continuar borrador</Button>
-            <Button type="button" variant="outline" onClick={() => void startNewProperty()}>Empezar una propiedad nueva</Button>
-          </div>
-          <Button type="button" variant="ghost" onClick={props.onBack} className="mt-3">Volver</Button>
-        </section>
-      </main>
-    )
-  }
-
-  const restoreDraft = props.editPropertyId !== undefined || draftEntry === 'resume'
+  const restoreDraft = props.editPropertyId !== undefined || props.resumeDraft !== false
   return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null, restoreDraft])} {...props} restoreDraft={restoreDraft} />
 }
 

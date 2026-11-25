@@ -139,13 +139,20 @@ Pruebas de lote parcial/total y reintento, lifecycle de recuperación/autoguarda
 
 Pendiente QA física de recarga/cierre en navegadores móviles y Storage real; no equivale a verificación de producción.
 
-## Crear un anuncio nuevo con un borrador existente — 2026-11-14
+## Crear un anuncio nuevo con un borrador existente — comportamiento anterior, histórico — 2026-11-14
 
 - `/publicar` para una creación nueva comprueba si existe un borrador local y, si existe, pregunta antes de montar el formulario. Esto evita que «Nueva propiedad» restaure y sobrescriba silenciosamente los datos de otra sesión de creación.
 - «Continuar borrador» recupera los campos, las fotos y el paso guardado. «Empezar una propiedad nueva» explica que sustituirá el borrador local y lo elimina solo después de esa selección. No afecta anuncios enviados al servidor.
 - El acceso explícito para reanudar desde Mis publicaciones (`load_draft=true`) y la edición por ID siguen abriendo directamente el borrador correspondiente.
 - Si la lectura del almacenamiento local falla, se bloquea temporalmente el formulario nuevo y se ofrece reintentar para proteger los datos.
 - Pruebas de integridad cubren la elección, el inicio limpio, la reanudación y el error recuperable. Desplegado en DEV `cubitat1-phase2-dev` versión `a9b9fc82-a254-46e1-8223-80e2895e42f9`; E2E Chromium 3/3 contra el Worker, con APIs simuladas.
+
+## Publicar vivienda con borrador local existente — 2026-11-24
+
+- «Publicar vivienda» abre directamente un formulario vacío en el primer paso, sin preguntar si se quiere continuar el borrador anterior.
+- El autoguardado de la publicación nueva sustituye el borrador local de creación de esa cuenta; las publicaciones ya enviadas no cambian.
+- La acción explícita de reanudar desde Mis publicaciones (`load_draft=true`) y la edición por ID conservan la restauración de sus datos.
+- La regresión de integridad verifica el inicio vacío y el reemplazo por autoguardado; Playwright verifica que `/publicar-inmueble` no muestre el diálogo ni fotos/datos del borrador anterior.
 
 ## Aislamiento de borradores sin UID — 2026-11-14
 

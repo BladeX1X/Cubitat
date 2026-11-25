@@ -205,11 +205,13 @@ El sistema MUST proteger el progreso del usuario mediante borradores locales aut
 
 #### Scenario: Crear una propiedad cuando ya existe un borrador local
 - GIVEN el anunciante elige crear una propiedad nueva y existe un borrador sin terminar en este dispositivo
-- WHEN abre `/publicar` sin `load_draft=true`
-- THEN el sistema MUST ofrecer continuar el borrador o empezar una propiedad nueva antes de cargar sus datos en el formulario
-- AND MUST NOT restaurar ni sobrescribir el borrador hasta que el usuario elija una opción
-- AND al empezar otra propiedad MUST explicar que el borrador local será reemplazado y eliminarlo solo después de la elección explícita
-- AND al continuar MUST restaurar sus campos, fotos y paso guardados
+- WHEN abre `/publicar-inmueble` sin una solicitud explícita para reanudar
+- THEN el sistema MUST abrir directamente el formulario vacío en su primer paso
+- AND MUST NOT mostrar un diálogo para decidir sobre el borrador anterior
+- AND MUST NOT cargar los campos, fotos ni paso del borrador anterior
+- AND el autoguardado del nuevo formulario MUST sustituir el borrador local anterior de esa cuenta; los anuncios enviados al servidor MUST permanecer intactos
+- WHEN el usuario reanuda explícitamente el borrador desde Mis publicaciones con `load_draft=true`
+- THEN el sistema MUST restaurar sus campos, fotos y paso guardados
 
 #### Scenario: Reintentar la recuperación del borrador
 - GIVEN la lectura del borrador local falla de forma transitoria
@@ -429,10 +431,10 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 
 ### Scenario: Crear una propiedad cuando existe un borrador local
 - GIVEN el usuario inicia `/publicar` para crear una propiedad y existe un borrador local sin terminar
-- WHEN la pantalla comprueba el borrador
-- THEN MUST ofrecer continuar el borrador o empezar una propiedad nueva antes de mostrar o guardar datos del formulario
-- AND continuar MUST restaurar campos, fotos y paso guardados
-- AND empezar una propiedad nueva MUST explicar que reemplazará el borrador local y eliminarlo solo tras la elección explícita
+- WHEN el usuario elige «Publicar vivienda» y abre `/publicar-inmueble`
+- THEN MUST mostrar directamente un formulario nuevo, vacío y en el paso inicial
+- AND MUST NOT mostrar la antigua pantalla de elección ni restaurar datos del borrador anterior
+- AND el autoguardado MUST reemplazar el borrador local de creación anterior; las publicaciones enviadas al servidor MUST permanecer intactas
 - AND MUST NOT modificar publicaciones ya enviadas al servidor
 - WHEN el usuario elige reanudar un borrador desde Mis publicaciones o editar una propiedad
 - THEN MUST abrir directamente los datos guardados que corresponden a esa acción
