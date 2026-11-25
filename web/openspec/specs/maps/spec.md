@@ -280,3 +280,9 @@ lint; Vitest 228 archivos, 1,047 PASS/1 omitida; build general y `phase34-dev`.
 Playwright local y contra Worker DEV: 2/2 móvil; el estilo/capas quedan visibles
 antes de esperar las teselas, que luego responden 200. Worker DEV
 `f1b8d5b7-816f-4193-9da3-717cfd8eba7f`, 100%. Producción intacta.
+
+### Mapas en fichas de Servicios y Materiales — 2026-11-24
+
+- Las fichas SVC/MAT usan la misma geometría de ubicación aproximada que Comprar: radio de 500 m, diámetro de 1 km, solo cuando el anuncio tiene coordenadas.
+- Si solo existe provincia, el mapa usa el centro provincial como contexto, sin pin ni círculo que sugieran precisión inexistente.
+- El cambio de Fotos/Mapa reutiliza el visor de la ficha; la visualización del mapa sigue siendo diferida.

@@ -146,3 +146,10 @@ Prueba manual:
   tres, dos o una columna según el viewport, y 154 px de imagen en móvil.
 - La regresión queda cubierta por `PageLoadingState.test.tsx` y por una traza
   móvil con red y CPU limitadas antes de desplegar.
+
+## Alineación de acciones y controles del catálogo — 2026-11-24
+
+En la grilla de Comprar, el pie de las tarjetas coloca Contactar y Consultar al
+mismo nivel aunque cambien las especificaciones o el título. El control de mapa
+se ubica en el flujo del documento junto al catálogo, por lo que no se superpone
+a las acciones en pantallas móviles.

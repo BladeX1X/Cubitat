@@ -28,6 +28,28 @@ vi.mock('../publish/PublicationLocationField', () => ({
   PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(20.01234, -75.81234)}>Marcar punto</button>,
 }))
 
+async function advanceMaterialTo(targetStep: number) {
+  const labels = ['Producto', 'Ubicación', 'Precio y detalles', 'Fotos', 'Contacto']
+  const currentHeading = screen.getByRole('heading', { level: 2 }).textContent ?? ''
+  let current = labels.indexOf(currentHeading) + 1
+  if (current < 1) current = 1
+  while (current < targetStep) {
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: labels[current] })).toBeVisible())
+    current += 1
+  }
+  while (current > targetStep) {
+    fireEvent.click(screen.getByRole('button', { name: 'Paso anterior' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: labels[current - 2] })).toBeVisible())
+    current -= 1
+  }
+}
+
+async function submitMaterial() {
+  await advanceMaterialTo(5)
+  fireEvent.submit(document.querySelector('form')!)
+}
+
 describe('MaterialListingSubmissionPage', () => {
   afterEach(() => vi.unstubAllGlobals())
 
@@ -43,11 +65,20 @@ describe('MaterialListingSubmissionPage', () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:material-preview'), revokeObjectURL: vi.fn() })
   })
 
+  it('requires a product name before advancing from the first step', () => {
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: /^Producto$/ })).toBeVisible()
+    expect(screen.getByLabelText('Nombre del producto')).toBeInvalid()
+  })
+
   it('prepares a selected batch as WebP, previews it and saves every photo in order', async () => {
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
+    await advanceMaterialTo(4)
     fireEvent.change(screen.getByLabelText(/Fotos del producto/), { target: { files: [
       new File(['one'], 'producto-1.jpg', { type: 'image/jpeg' }),
       new File(['two'], 'producto-2.png', { type: 'image/png' }),
@@ -58,7 +89,7 @@ describe('MaterialListingSubmissionPage', () => {
     await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
     expect(materialMocks.compressPhoto).toHaveBeenCalledTimes(2)
 
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitMaterial()
     await waitFor(() => expect(materialMocks.uploadPhotos).toHaveBeenCalledWith('listing-qa', [
       expect.objectContaining({ name: 'producto-1.webp', type: 'image/webp' }),
       expect.objectContaining({ name: 'producto-2.webp', type: 'image/webp' }),
@@ -74,8 +105,9 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material con ubicación QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'Santiago de Cuba' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba con más de veinte caracteres para guardar.' } })
+    await advanceMaterialTo(2)
     fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar a revisión' }).closest('form')!)
+    await submitMaterial()
 
     await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } }), expect.any(String)))
     await waitFor(() => expect(materialMocks.update).toHaveBeenCalledWith('listing-qa', expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } })))
@@ -95,6 +127,8 @@ describe('MaterialListingSubmissionPage', () => {
 
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} listingId={listingId} />)
 
+    await screen.findByRole('heading', { name: 'Edita tu anuncio' })
+    await advanceMaterialTo(4)
     const image = await screen.findByRole('img', { name: 'Fotos del producto, foto 1' })
     expect(image).toHaveAttribute('src', signedUrl)
     expect(materialMocks.createPreviews).toHaveBeenCalledWith(listingId, [photoPath])
@@ -107,9 +141,10 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
+    await advanceMaterialTo(4)
     fireEvent.change(screen.getByLabelText(/Fotos del producto/), { target: { files: [new File(['one'], 'producto.jpg', { type: 'image/jpeg' })] } })
 
-    const submit = await screen.findByRole('button', { name: 'Preparando fotos…' })
+    const submit = screen.getByRole('button', { name: 'Continuar' })
     expect(submit).toBeDisabled()
     fireEvent.submit(submit.closest('form')!)
     expect(await screen.findByRole('alert')).toHaveTextContent('Espera a que terminen de prepararse las fotos antes de enviar.')
@@ -122,6 +157,10 @@ describe('MaterialListingSubmissionPage', () => {
       .mockImplementationOnce(async (file: File) => new File([file], 'producto-1.webp', { type: 'image/webp' }))
       .mockRejectedValueOnce(new Error('CATALOG_PHOTO_COMPRESSION_FAILED'))
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
+    await advanceMaterialTo(4)
     fireEvent.change(screen.getByLabelText(/Fotos del producto/), { target: { files: [
       new File(['one'], 'producto-1.jpg', { type: 'image/jpeg' }),
       new File(['two'], 'producto-2.png', { type: 'image/png' }),
@@ -144,14 +183,17 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
+    await advanceMaterialTo(4)
     fireEvent.change(screen.getByLabelText(/Fotos del producto/), { target: { files: [new File(['one'], 'producto.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar a revisión' }))
+    await submitMaterial()
     expect(await screen.findByRole('alert')).toHaveTextContent('El anuncio quedó guardado como pendiente, pero no se pudieron cargar las fotos. Vuelve a intentarlo para adjuntarlas.')
     expect(materialMocks.create).toHaveBeenCalledTimes(1)
+    await advanceMaterialTo(4)
     expect(await screen.findByRole('img', { name: 'Fotos del producto, foto 1' })).toBeInTheDocument()
 
+    await advanceMaterialTo(5)
     fireEvent.click(screen.getByRole('button', { name: 'Enviar a revisión' }))
     expect(await screen.findByRole('heading', { name: 'Anuncio enviado a revisión' })).toBeInTheDocument()
     expect(materialMocks.create).toHaveBeenCalledTimes(1)
@@ -168,7 +210,7 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar a revisión' }))
+    await submitMaterial()
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo confirmar el guardado/i)
     const firstSlug = materialMocks.create.mock.calls[0]?.[1]
     expect(firstSlug).toMatch(/^material-de-prueba-qa-[0-9a-f]{32}$/)
@@ -188,10 +230,11 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
+    await advanceMaterialTo(4)
     fireEvent.change(screen.getByLabelText(/Fotos del producto/), { target: { files: [new File(['one'], 'producto.jpg', { type: 'image/jpeg' })] } })
     await screen.findByText('1 de 10 fotos. La primera será la portada del anuncio.')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar a revisión' }))
+    await submitMaterial()
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo confirmar el guardado/i)
     expect(materialMocks.removePhotos).not.toHaveBeenCalled()
     expect(materialMocks.uploadPhotos).toHaveBeenCalledTimes(1)

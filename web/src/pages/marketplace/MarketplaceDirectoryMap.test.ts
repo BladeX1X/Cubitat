@@ -14,8 +14,9 @@ describe('Marketplace directory responsive layout', () => {
       .toMatch(/pageMode === 'services' \|\| pageMode === 'materials' \? 'is-directory-page'/)
   })
 
-  it('keeps the floating map action above the mobile navigation', () => {
-    expect(styles).toMatch(/@media\s*\(max-width:\s*620px\)[\s\S]*?\.marketplace-map-floating-actions\s*\{\s*bottom:\s*calc\(82px\s*\+\s*env\(safe-area-inset-bottom\)\);/)
+  it('keeps the map action in document flow so it cannot cover catalog cards', () => {
+    expect(styles).toMatch(/\.marketplace-map-floating-actions\s*\{\s*position:\s*static;/)
+    expect(styles).not.toMatch(/\.marketplace-map-floating-actions\s*\{[^}]*position:\s*fixed/)
   })
 
   it('keeps catalog actions in the compact directory heading', () => {

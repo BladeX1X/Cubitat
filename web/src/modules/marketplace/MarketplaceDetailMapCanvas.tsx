@@ -3,14 +3,16 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../maps/lib/configureMapLibreWorker'
 import { getOpenFreeMapStyle } from '../maps/lib/openFreeMapStyle'
+import { createApproximateLocationArea } from '../maps/lib/approximateLocationArea'
 import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 type MarketplaceDetailMapCanvasProps = {
   center: [number, number] | null
   locationLabel: string
+  showApproximateArea: boolean
 }
 
-export default function MarketplaceDetailMapCanvas({ center, locationLabel }: MarketplaceDetailMapCanvasProps) {
+export default function MarketplaceDetailMapCanvas({ center, locationLabel, showApproximateArea }: MarketplaceDetailMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [loading, setLoading] = useState(true)
@@ -18,7 +20,7 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
   const [retryCount, setRetryCount] = useState(0)
   const longitude = center?.[0]
   const latitude = center?.[1]
-  const hasCoordinates = center !== null
+  const hasCoordinates = center !== null && showApproximateArea
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -71,15 +73,9 @@ export default function MarketplaceDetailMapCanvas({ center, locationLabel }: Ma
           setLoading(false)
           setUnavailable(false)
           if (hasCoordinates) {
-            const circleCoordinates = Array.from({ length: 65 }, (_, index) => {
-              const angle = (index / 64) * Math.PI * 2
-              const latitudeOffset = (500 / 111_320) * Math.sin(angle)
-              const longitudeOffset = (500 / (111_320 * Math.cos(mapLatitude * Math.PI / 180))) * Math.cos(angle)
-              return [mapLongitude + longitudeOffset, mapLatitude + latitudeOffset]
-            })
             map.addSource('approximate-location-radius', {
               type: 'geojson',
-              data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [circleCoordinates] } },
+              data: createApproximateLocationArea([mapLongitude, mapLatitude]),
             })
             map.addLayer({
               id: 'approximate-location-radius-fill',

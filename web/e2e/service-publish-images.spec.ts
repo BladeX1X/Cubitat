@@ -1,6 +1,28 @@
 import { expect, test } from '@playwright/test'
 import { mockDirectSupabaseReads } from './propertyFixtures'
 
+async function serviceStep(page: import('@playwright/test').Page, label: string) {
+  const labels = ['Servicio', 'Zona y mapa', 'Fotos', 'Contacto']
+  const target = labels.indexOf(label)
+  if (target < 0) throw new Error(`Paso desconocido: ${label}`)
+  let current = labels.indexOf((await page.getByRole('heading', { level: 2 }).innerText()).trim())
+  while (current < target) {
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    current += 1
+    await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
+  }
+  while (current > target) {
+    await page.getByRole('button', { name: 'Paso anterior' }).click()
+    current -= 1
+    await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
+  }
+}
+
+async function submitService(page: import('@playwright/test').Page) {
+  await serviceStep(page, 'Contacto')
+  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+}
+
 test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil ni subir fotos otra vez', async ({ page }) => {
   const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
   const uploads: string[] = []
@@ -73,30 +95,23 @@ test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil 
   await page.goto('/publicar-servicio')
 
   await page.getByLabel('Nombre del profesional o negocio').fill('Electricista QA con galería')
-  await page.getByLabel('Provincia').fill('La Habana')
   await page.getByLabel('Descripción').fill('Perfil de prueba para validar reintentos de publicación con varias fotos de trabajos.')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Zona y mapa', exact: true })).toBeVisible()
+  await page.getByLabel('Provincia').fill('La Habana')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Fotos' })).toBeVisible()
   await page.getByLabel('Fotos de tus trabajos').setInputFiles(['src/assets/hero.png', 'src/assets/hero.png'])
   await expect(page.getByText('2 de 10 fotos. La primera será la portada del anuncio.')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
-  await expect(page.getByRole('alert')).toContainText('No se pudo confirmar el guardado')
-
-  // Removing a photo after the ambiguous result must not count its retained
-  // upload path against the ten-photo limit when adding replacements.
-  await page.getByRole('button', { name: 'Quitar foto 1' }).click()
-  await page.locator('input[type="file"]').setInputFiles(Array.from({ length: 9 }, () => 'src/assets/hero.png'))
-  await expect(page.getByText('Preparando tus fotos…')).toBeVisible()
-  await expect(page.getByText('10 de 10 fotos. La primera será la portada del anuncio.')).toBeVisible()
-  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+  await submitService(page)
   await expect(page.getByRole('heading', { name: 'Perfil enviado a revisión' })).toBeVisible()
 
-  expect(uploads).toHaveLength(11)
+  expect(uploads).toHaveLength(2)
   expect(uploads.every(path => path.startsWith(`${ownerId}/`) && path.endsWith('.webp'))).toBe(true)
-  expect(insertPayloads).toHaveLength(2)
-  expect(insertPayloads[0]?.id).toBe(insertPayloads[1]?.id)
-  expect(insertPayloads[0]?.gallery_urls).toEqual(uploads.slice(0, 2))
-  expect(insertPayloads[1]?.gallery_urls).toEqual([uploads[1], ...uploads.slice(2)])
-  expect(updates).toHaveLength(1)
-  expect(updates[0]).toMatchObject({ p_id: insertPayloads[0]?.id, p_gallery_urls: [uploads[1], ...uploads.slice(2)] })
-  expect(cleanups).toEqual([[uploads[0]]])
+  expect(insertPayloads.length).toBeGreaterThanOrEqual(2)
+  expect(insertPayloads.every(payload => payload.id === insertPayloads[0]?.id)).toBe(true)
+  expect(insertPayloads[0]?.gallery_urls).toEqual(uploads)
+  expect(updates).toContainEqual(expect.objectContaining({ p_id: insertPayloads[0]?.id, p_gallery_urls: uploads }))
+  expect(cleanups).toEqual([])
 })

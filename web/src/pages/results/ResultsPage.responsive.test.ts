@@ -25,6 +25,10 @@ describe('Results mobile touch targets', () => {
     expect(styles).toMatch(/\.app-shell\.is-results-page \.results-pagination > div button\s*\{[^}]*?min-width:\s*48px;[^}]*?min-height:\s*48px;/)
   })
 
+  it('anchors property contact buttons to the bottom of equal-height cards', () => {
+    expect(styles).toMatch(/\.app-shell\.is-results-page \.results-desktop-shell \.property-actions\s*\{[^}]*?margin-top:\s*auto;/)
+  })
+
   it('uses a 16px font for search inputs on touch screens', () => {
     expect(styles).toMatch(/\.app-shell\.is-results-page \.filter-search-field input[\s\S]*?font-size:\s*16px/)
     expect(styles).toMatch(/\.map-overlay-filterbar \.filter-search-field input[\s\S]*?font-size:\s*16px/)
