@@ -277,7 +277,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
   ) : (
     <section className="catalog-card-grid" aria-label="Materiales disponibles">
       {displayedListings.map((item, index) => (
-        <CatalogCardFrame key={item.id} className={`marketplace-listing-card${mapScope.listingIds?.includes(item.id) && mapScope.source === 'selection' ? ' is-map-selected' : ''}`}>
+        <CatalogCardFrame key={item.id} className="marketplace-listing-card">
           <CatalogCardGallery
             images={item.photoUrls}
             label={item.title}

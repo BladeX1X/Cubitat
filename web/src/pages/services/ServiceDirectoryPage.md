@@ -48,6 +48,8 @@ y el centro de cuenta, respectivamente.
 - El mapa se carga bajo demanda y usa conteos de todas las páginas que cumplen
   texto, categoría y municipio; seleccionar una provincia aplica el filtro del
   catálogo. El mapa muestra ubicaciones provinciales aproximadas, no domicilios.
+- Seleccionar un punto o grupo en el mapa filtra a los profesionales
+  correspondientes, sin cambiar el borde de sus tarjetas.
 - En móvil, el encabezado principal se desplaza con la página para no tapar la
   búsqueda sticky; la barra permanece a 8 px del borde superior. La barra
   reutiliza Comprar: en pantallas de hasta 768 px presenta búsqueda y

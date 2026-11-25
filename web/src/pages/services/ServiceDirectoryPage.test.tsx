@@ -166,7 +166,7 @@ describe('ServiceDirectoryPage filter loading', () => {
     expect(window.location.pathname).toBe(initialPath)
   })
 
-  it('selects a map point without navigating and highlights its card', async () => {
+  it('selects a map point without navigating or outlining its card', async () => {
     const secondProvider = { ...provider, id: 'provider-2', slug: 'segundo', displayName: 'Segundo profesional' }
     vi.mocked(fetchHomeServiceProvidersForMap).mockResolvedValueOnce([provider, secondProvider])
     render(<ServiceDirectoryPage onRequireLogin={vi.fn()} />)
@@ -178,7 +178,7 @@ describe('ServiceDirectoryPage filter loading', () => {
     expect(screen.getByTestId('map-selection')).toHaveTextContent('provider-1')
     expect(screen.getByText('Fontanero del Centro')).toBeInTheDocument()
     expect(screen.queryByText('Segundo profesional')).not.toBeInTheDocument()
-    expect(document.querySelector('.catalog-card.is-map-selected')).toBeInTheDocument()
+    expect(document.querySelector('.catalog-card.is-map-selected')).not.toBeInTheDocument()
     expect(window.location.pathname).toBe(initialPath)
   })
 
