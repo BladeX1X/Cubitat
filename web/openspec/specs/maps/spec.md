@@ -286,3 +286,21 @@ antes de esperar las teselas, que luego responden 200. Worker DEV
 - Las fichas SVC/MAT usan la misma geometría de ubicación aproximada que Comprar: radio de 500 m, diámetro de 1 km, solo cuando el anuncio tiene coordenadas.
 - Si solo existe provincia, el mapa usa el centro provincial como contexto, sin pin ni círculo que sugieran precisión inexistente.
 - El cambio de Fotos/Mapa reutiliza el visor de la ficha; la visualización del mapa sigue siendo diferida.
+
+### Publicación de Servicios y Materiales: selección de zona y ubicación del dispositivo — 2026-11-24
+
+#### Scenario: Centrar el mapa en provincia y municipio seleccionados
+- GIVEN un anunciante publica o edita un servicio o un material
+- WHEN selecciona provincia y municipio
+- THEN MUST mostrar los municipios válidos para la provincia seleccionada
+- AND MUST centrar el mapa en la localidad elegida
+- AND MUST reiniciar el municipio y el punto previamente marcado al cambiar la provincia
+- AND MUST exigir una provincia y un municipio antes de avanzar
+
+#### Scenario: Usar la ubicación del dispositivo en publicación
+- GIVEN el navegador está en un origen seguro compatible con geolocalización
+- WHEN el anunciante pulsa «Usar mi ubicación» y concede permiso
+- THEN MUST centrar el mapa y colocar el marcador en las coordenadas obtenidas
+- AND MUST permitir ajustar el punto manualmente
+- AND MUST explicar de forma accesible si faltan permisos, no hay señal o vence el tiempo de espera
+- AND MUST conservar las coordenadas según el almacenamiento privado existente del tipo de publicación

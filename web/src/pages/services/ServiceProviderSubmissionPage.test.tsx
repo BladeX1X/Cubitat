@@ -27,7 +27,7 @@ vi.mock('../../modules/home-services/homeServicePhotos', () => ({
   validateHomeServicePhotoFiles: (files: readonly File[], existing: number) => existing + files.length > 10 ? 'TOO_MANY' : null,
 }))
 vi.mock('../publish/PublicationLocationField', () => ({
-  PublicationLocationField: ({ onCoordinatesChange }: { onCoordinatesChange: (latitude: number, longitude: number) => void }) => <button type="button" onClick={() => onCoordinatesChange(23.12345, -82.34567)}>Marcar punto</button>,
+  PublicationLocationField: ({ province, municipality, onProvinceChange, onMunicipalityChange, onCoordinatesChange }: { province: string; municipality: string; onProvinceChange: (value: string) => void; onMunicipalityChange: (value: string) => void; onCoordinatesChange: (latitude: number, longitude: number) => void }) => <div><label>Provincia<select required value={province} onChange={(event) => onProvinceChange(event.target.value)}><option value="">Selecciona</option><option value="La Habana">La Habana</option></select></label><label>Municipio<select required value={municipality} onChange={(event) => onMunicipalityChange(event.target.value)}><option value="">Selecciona</option><option value="Playa">Playa</option></select></label><button type="button" onClick={() => onCoordinatesChange(23.12345, -82.34567)}>Marcar punto</button></div>,
 }))
 
 async function advanceServiceTo(targetStep: number) {
@@ -36,6 +36,7 @@ async function advanceServiceTo(targetStep: number) {
   let current = labels.indexOf(currentHeading) + 1
   if (current < 1) current = 1
   while (current < targetStep) {
+    if (current === 2 && !(screen.getByLabelText('Municipio') as HTMLSelectElement).value) fireEvent.change(screen.getByLabelText('Municipio'), { target: { value: 'Playa' } })
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
     await waitFor(() => expect(screen.getByRole('heading', { name: labels[current] })).toBeVisible())
     current += 1
@@ -63,6 +64,18 @@ describe('ServiceProviderSubmissionPage', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: /^Servicio$/ })).toBeVisible()
     expect(screen.getByLabelText('Nombre del profesional o negocio')).toBeInvalid()
+  })
+
+  it('requires a province and municipality before leaving the coverage step', async () => {
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Servicio de ubicación QA' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción suficientemente larga para validar la zona de cobertura.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Zona y mapa' })).toBeVisible())
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Zona y mapa' })).toBeVisible()
+    expect(screen.getByLabelText('Provincia')).toBeInvalid()
   })
 
   it('previews a multi-photo selection and uploads every optimized image in order', async () => {
@@ -97,6 +110,7 @@ describe('ServiceProviderSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con ubicación geográfica para el profesional.' } })
     await advanceServiceTo(2)
+    if (!(screen.getByLabelText('Municipio') as HTMLSelectElement).value) fireEvent.change(screen.getByLabelText('Municipio'), { target: { value: 'Playa' } })
     fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
     await submitService()
     await waitFor(() => expect(serviceMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 23.12345, longitude: -82.34567 } }), expect.any(String)))

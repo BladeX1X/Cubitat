@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ getStyle: vi.fn(), emitLoad: true, mapInstance: null as unknown, logSafeEvent: vi.fn() }))
+const mocks = vi.hoisted(() => ({ getStyle: vi.fn(), emitLoad: true, mapInstance: null as unknown, logSafeEvent: vi.fn(), flyTo: vi.fn(), markerRemove: vi.fn() }))
 type MockMapHandler = (payload?: unknown) => void
 
 vi.mock('maplibre-gl', () => {
@@ -13,7 +13,7 @@ vi.mock('maplibre-gl', () => {
       return this
     }
     addControl() { return this }
-    flyTo() { return this }
+    flyTo(options: unknown) { mocks.flyTo(options); return this }
     remove() { return this }
     constructor() { mocks.mapInstance = this }
   }
@@ -21,7 +21,7 @@ vi.mock('maplibre-gl', () => {
     setLngLat() { return this }
     addTo() { return this }
     on() { return this }
-    remove() { return this }
+    remove() { mocks.markerRemove(); return this }
   }
   class MockControl {}
   return { Map: MockMap, Marker: MockMarker, NavigationControl: MockControl, setWorkerUrl: vi.fn() }
@@ -44,6 +44,8 @@ describe('AddressMap recovery', () => {
     mocks.emitLoad = true
     mocks.mapInstance = null
     mocks.logSafeEvent.mockClear()
+    mocks.flyTo.mockClear()
+    mocks.markerRemove.mockClear()
   })
 
   it('shows a recoverable error and retries after the map style request fails', async () => {
@@ -84,6 +86,16 @@ describe('AddressMap recovery', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cargar el mapa')
     expect(screen.getByRole('button', { name: 'Reintentar mapa' })).toBeInTheDocument()
+  })
+
+  it('recenters on selected coordinates and removes the marker when coordinates are cleared', async () => {
+    mocks.getStyle.mockResolvedValue({ version: 8, sources: {}, layers: [] })
+    const { rerender } = render(<AddressMap {...props} latitude={23.1} longitude={-82.4} />)
+    await waitFor(() => expect(mocks.mapInstance).not.toBeNull())
+    await waitFor(() => expect(mocks.flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-82.4, 23.1], zoom: 14 })))
+
+    rerender(<AddressMap {...props} latitude={null} longitude={null} />)
+    await waitFor(() => expect(mocks.markerRemove).toHaveBeenCalled())
   })
 
   it('does not treat an isolated tile error as fatal while the initial map can still load', async () => {

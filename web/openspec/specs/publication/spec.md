@@ -445,3 +445,11 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - Material se captura en cinco pasos: producto, ubicación con coordenadas, precio/detalles, fotos y contacto/envío.
 - Ambos formularios reutilizan `PublicationStepLayout`, pero mantienen sus campos, validaciones, galerías y procesos de guardado propios.
 - «Continuar» valida únicamente los campos obligatorios del paso actual; pasos previos pueden revisarse. Enviar conserva los repositorios y mecanismos de reintento ya existentes.
+
+### Ubicación administrativa y ubicación del dispositivo en Servicios y Materiales — 2026-11-24
+
+- En el paso de zona se eligen provincia y municipio desde las opciones oficiales compartidas con el catálogo; el mapa centra la zona seleccionada.
+- Ambos campos son obligatorios para avanzar. Cambiar de provincia limpia la selección municipal y las coordenadas del punto anterior.
+- «Usar mi ubicación» invoca geolocalización solo tras pulsarlo y con permiso del navegador; el mapa se centra y permite corregir el marcador.
+- El perfil de servicio incorpora el municipio elegido en sus municipios de cobertura, conservando las zonas adicionales.
+- Para Materiales la provincia y las coordenadas siguen guardándose con el contrato existente; el municipio se usa para orientar el mapa y no requiere migración.
