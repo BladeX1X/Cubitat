@@ -18,6 +18,10 @@ debe cargarse bajo demanda para no retrasar los catálogos.
 - THEN se carga MapLibre y se ven conteos agrupados por provincia para todos los
   resultados que coinciden con los otros filtros
 - AND el mapa muestra una ubicación provincial aproximada, no direcciones
+- AND el control para abrir el mapa MUST flotar centrado en la parte inferior de la ventana
+- AND en escritorio, el mapa MUST aparecer junto a los resultados en una vista dividida, manteniendo visibles filtros y tarjetas
+- AND en móvil, el mapa MUST abrirse a pantalla completa, ajustarse al ancho del viewport sin desbordamiento horizontal y ofrecer un control flotante inferior para volver a la lista
+- AND el mapa MUST redimensionarse y encuadrar Cuba al abrirse, sin iniciar desplazado fuera de la isla
 - AND el indicador de carga se retira en cuanto el estilo y las capas interactivas están listos, sin esperar a todas las teselas visibles
 - AND en móvil el estado de carga conserva el diálogo de pantalla completa y el botón para cerrar
 

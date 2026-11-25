@@ -12,6 +12,10 @@ propiedades o conteo provincial y mantiene diferido el código pesado de mapas.
   estado dentro de la columna del mapa.
 - `ProvinceAggregateMap` retira su indicador al instalar el estilo y las capas
   interactivas; las teselas pueden continuar cargando a continuación.
+- El mapa provincial redimensiona el lienzo al abrir y encuadra Cuba; el acceso
+  desde el catálogo y el retorno móvil usan controles flotantes inferiores.
+- Los controles flotantes y el diálogo móvil se montan sobre `document.body` para
+  permanecer anclados al viewport incluso dentro de layouts con transformaciones.
 - El fallback de mapas de propiedades conserva el estado genérico de carga.
 
 ## Verificación

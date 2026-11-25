@@ -9,10 +9,12 @@ const mocks = vi.hoisted(() => ({
     addControl: vi.fn(),
     addLayer: vi.fn(),
     addSource: vi.fn(),
+    fitBounds: vi.fn(),
     getCanvas: vi.fn(() => ({ style: {} })),
     getLayer: vi.fn(() => true),
     getSource: vi.fn(() => ({ setData: vi.fn(), getClusterExpansionZoom: vi.fn().mockResolvedValue(7) })),
     queryRenderedFeatures: vi.fn((): ProvinceMapFeatureLike[] => []),
+    resize: vi.fn(),
     on: vi.fn(),
     once: vi.fn(),
     easeTo: vi.fn(),
@@ -80,6 +82,8 @@ describe('ProvinceAggregateMap', () => {
     await waitFor(() => expect(screen.queryByText('Cargando mapa…')).not.toBeInTheDocument())
     expect(mocks.map.addSource).toHaveBeenCalled()
     expect(mocks.map.addLayer).toHaveBeenCalled()
+    expect(mocks.map.resize).toHaveBeenCalledOnce()
+    expect(mocks.map.fitBounds).toHaveBeenCalledWith([[-85.1, 19.5], [-73.5, 23.5]], { padding: 28, maxZoom: 5.8, duration: 0 })
     expect(mocks.map.setPaintProperty).toHaveBeenCalledWith(
       'cubitat-marketplace-province-points',
       'circle-radius',
@@ -117,6 +121,28 @@ describe('ProvinceAggregateMap', () => {
     act(() => (clickHandler as (event: { point: { x: number; y: number } }) => void)({ point: { x: 20, y: 30 } }))
 
     expect(onSelectProvince).toHaveBeenCalledWith('La Habana')
+    expect(screen.getByRole('button', { name: 'Ocultar mapa' })).toBeInTheDocument()
+  })
+
+  it('closes the full-screen mobile map from its floating bottom action', async () => {
+    mocks.getStyle.mockResolvedValue({ version: 8, sources: {}, layers: [] })
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    const onClose = vi.fn()
+    render(<ProvinceAggregateMap counts={counts} selectedProvince="" onSelectProvince={vi.fn()} onClose={onClose} />)
+
+    expect(document.body.querySelector('.marketplace-province-map')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Ocultar mapa' }))
+
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('zooms into a tapped group, then filters when the province marker is tapped', async () => {

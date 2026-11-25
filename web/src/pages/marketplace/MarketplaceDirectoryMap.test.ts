@@ -14,9 +14,19 @@ describe('Marketplace directory responsive layout', () => {
       .toMatch(/pageMode === 'services' \|\| pageMode === 'materials' \? 'is-directory-page'/)
   })
 
-  it('keeps the map action in document flow so it cannot cover catalog cards', () => {
-    expect(styles).toMatch(/\.marketplace-map-floating-actions\s*\{\s*position:\s*static;/)
-    expect(styles).not.toMatch(/\.marketplace-map-floating-actions\s*\{[^}]*position:\s*fixed/)
+  it('keeps the map action floating above the bottom safe area', () => {
+    expect(readFileSync(resolve(process.cwd(), 'src/modules/marketplace/MarketplaceMapToggle.tsx'), 'utf8'))
+      .toMatch(/createPortal\(actions, document\.body\)/)
+    expect(styles).toMatch(/\.marketplace-map-floating-actions\s*\{[^}]*position:\s*fixed/)
+    expect(styles).toMatch(/\.marketplace-map-floating-actions\s*\{[^}]*bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)/)
+    expect(styles).toMatch(/\.marketplace-map-bottom-actions\s*\{[^}]*bottom:\s*0;[^}]*padding:[^;]*env\(safe-area-inset-bottom\)/)
+  })
+
+  it('keeps the desktop split map and the full-screen mobile map layout', () => {
+    expect(styles).toMatch(/@media\s*\(min-width:\s*1021px\)[\s\S]*?\.marketplace-directory-layout\.is-map-open\s*\{[^}]*grid-template-columns:/)
+    expect(styles).toMatch(/\.marketplace-directory-layout\.is-map-open \.marketplace-directory-map\s*\{[^}]*position:\s*sticky/)
+    expect(readFileSync(resolve(process.cwd(), 'src/modules/marketplace/ProvinceAggregateMap.tsx'), 'utf8'))
+      .toMatch(/fixed inset-0 h-\[100dvh\] w-full/)
   })
 
   it('keeps catalog actions in the compact directory heading', () => {
