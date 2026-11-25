@@ -46,35 +46,34 @@ beforeEach(() => {
 })
 
 describe('publication integrity', () => {
-  it('asks before a new property replaces an existing local draft', async () => {
+  it('opens a blank property form directly and replaces any existing local draft', async () => {
     render(<PublishPage {...{ userId: 'A', onBack: vi.fn(), onSubmitSuccess: vi.fn(), resumeDraft: false }} />)
 
-    expect(await screen.findByRole('dialog')).toHaveTextContent(/anuncio sin terminar/i)
+    expect(await screen.findByRole('heading', { name: 'Publicar propiedad' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByDisplayValue('Ana')).not.toBeInTheDocument()
-    expect(saveCompleteDraft).not.toHaveBeenCalled()
-
-    fireEvent.click(screen.getByRole('button', { name: /continuar borrador/i }))
-
-    expect(await screen.findByDisplayValue('Ana')).toBeInTheDocument()
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenCalledWith('A', expect.objectContaining({
+      formData: expect.objectContaining({ contactName: '', contactPhone: '', description: '' }),
+      images: [],
+      step: 1,
+    }), undefined))
+    expect(readCompleteDraft).not.toHaveBeenCalled()
+    expect(removeCompleteDraft).not.toHaveBeenCalled()
   })
 
-  it('removes the local draft only after the user chooses to start a new property', async () => {
-    render(<PublishPage {...{ userId: 'A', onBack: vi.fn(), onSubmitSuccess: vi.fn(), resumeDraft: false }} />)
+  it('restores a saved draft only when resumption is explicitly requested', async () => {
+    render(<PublishPage {...{ userId: 'A', onBack: vi.fn(), onSubmitSuccess: vi.fn(), resumeDraft: true }} />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /empezar una propiedad nueva/i }))
-
-    expect(removeCompleteDraft).toHaveBeenCalledWith('A')
-    expect(await screen.findByRole('heading', { name: 'Publicar propiedad' })).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Ana')).not.toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Ana')).toBeInTheDocument()
+    expect(readCompleteDraft).toHaveBeenCalledWith('A', undefined)
   })
 
   it('opens a clean new form when there is no saved draft', async () => {
-    vi.mocked(readCompleteDraft).mockResolvedValueOnce(null)
     render(<PublishPage {...{ userId: 'A', onBack: vi.fn(), onSubmitSuccess: vi.fn(), resumeDraft: false }} />)
 
     expect(await screen.findByRole('heading', { name: 'Publicar propiedad' })).toBeInTheDocument()
     expect(screen.queryByDisplayValue('Ana')).not.toBeInTheDocument()
-    expect(removeCompleteDraft).not.toHaveBeenCalled()
+    expect(readCompleteDraft).not.toHaveBeenCalled()
   })
 
   it('offers a retry when the saved draft cannot be loaded', async () => {
