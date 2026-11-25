@@ -15,9 +15,10 @@ vi.mock('../../modules/marketplace/MarketplaceMapToggle', () => ({
   MarketplaceMapToggle: ({ onToggle }: { onToggle: () => void }) => <button type="button" onClick={onToggle}>Mostrar mapa</button>,
 }))
 vi.mock('../../modules/catalog-explorer/CatalogMap', () => ({
-  CatalogMap: ({ listings, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
+  CatalogMap: ({ listings, selectedListingId, selectedListingIds, onViewportChange, onSelectListing, onSelectCluster }: { listings: Array<{ id: string }>; selectedListingId?: string; selectedListingIds?: string[]; onViewportChange: (ids: string[]) => void; onSelectListing: (id: string) => void; onSelectCluster: (ids: string[]) => void }) => (
     <div>
       <span>Mapa con {listings.length} puntos</span>
+      <output data-testid="map-selection">{[selectedListingId, ...(selectedListingIds ?? [])].filter(Boolean).join(',')}</output>
       <button type="button" onClick={() => onViewportChange(listings.slice(-1).map(({ id }) => id))}>Filtrar área visible</button>
       <button type="button" onClick={() => onSelectListing(listings[0]?.id ?? '')}>Seleccionar punto</button>
       <button type="button" onClick={() => onSelectCluster(listings.map(({ id }) => id))}>Seleccionar grupo</button>
@@ -157,7 +158,11 @@ describe('MaterialsMarketplacePage filter loading', () => {
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar mapa' }))
     expect(await screen.findByText('Mapa con 2 puntos')).toBeInTheDocument()
+    expect(screen.getByTestId('map-selection')).toBeEmptyDOMElement()
+    expect(document.querySelector('.catalog-card.is-map-selected')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Filtrar área visible' }))
+    expect(screen.getByTestId('map-selection')).toBeEmptyDOMElement()
+    expect(document.querySelector('.catalog-card.is-map-selected')).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Madera' })).toBeInTheDocument()
     expect(screen.queryByText('Cemento gris')).not.toBeInTheDocument()
     expect(screen.getByText('1 anuncio en el área visible')).toBeInTheDocument()
@@ -174,6 +179,7 @@ describe('MaterialsMarketplacePage filter loading', () => {
     await screen.findByText('Mapa con 2 puntos')
     const initialPath = window.location.pathname
     fireEvent.click(screen.getByRole('button', { name: 'Seleccionar grupo' }))
+    expect(screen.getByTestId('map-selection')).toHaveTextContent('material-1,material-2')
     expect(screen.getByRole('heading', { name: 'Cemento gris' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Madera' })).toBeInTheDocument()
     expect(document.querySelectorAll('.catalog-card.is-map-selected')).toHaveLength(2)

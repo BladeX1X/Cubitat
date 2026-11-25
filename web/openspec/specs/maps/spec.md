@@ -62,6 +62,12 @@ fuera del cliente. La consulta y el código del mapa MUST cargarse bajo demanda.
 - AND el mapa no navega automáticamente al detalle del anuncio
 - AND controles y clusters MUST mantener objetivos táctiles de al menos 48 × 48 px
 
+#### Scenario: Abrir el mapa sin selección previa
+- GIVEN el usuario abre el mapa de Servicios o Materiales
+- WHEN se calcula el primer viewport y se actualiza la lista
+- THEN ningún cluster, punto ni tarjeta MUST aparecer seleccionado por defecto
+- AND el resaltado del mapa y de las tarjetas MUST aparecer solo después de una selección explícita
+
 #### Scenario: Mapa cerrado o con error
 - GIVEN el mapa está cerrado o su estilo no carga
 - WHEN se usa el catálogo

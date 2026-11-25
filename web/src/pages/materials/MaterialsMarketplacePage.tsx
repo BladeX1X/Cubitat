@@ -20,7 +20,7 @@ import { CatalogPagination, CATALOG_PAGE_SIZE } from '../../modules/catalog-expl
 import { MarketplaceMapToggle } from '../../modules/marketplace/MarketplaceMapToggle'
 import { PHASE_FOUR_MAT_ENABLED } from '../../shared/config/features'
 import { fetchMaterialListing, fetchMaterialListings, fetchMaterialListingsForMap, sendMaterialInquiry } from '../../modules/materials/materialRepository'
-import { EMPTY_CATALOG_MAP_SCOPE, selectCatalogMapGroup, updateCatalogMapViewport } from '../../modules/catalog-explorer/catalogMapScope'
+import { EMPTY_CATALOG_MAP_SCOPE, getSelectedCatalogMapListingIds, selectCatalogMapGroup, updateCatalogMapViewport } from '../../modules/catalog-explorer/catalogMapScope'
 import type { CatalogMapListing } from '../../modules/maps/types'
 import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, type MaterialCategory, type MaterialListing } from '../../modules/materials/types'
 import { cubanProvinces } from '../../shared/data/cubaLocations'
@@ -325,7 +325,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
         } map={
           mapError
             ? <div role="alert" className="map-card map-error-state"><p>No se pudieron cargar las ubicaciones.</p><Button onClick={() => setMapReloadKey((key) => key + 1)}>Reintentar</Button><Button variant="outline" onClick={() => setMapOpen(false)}>Cerrar mapa</Button></div>
-            : <CatalogMap mode="listings" listings={mapListings} listingLabel="anuncios" selectedListingId={mapScope.listingIds?.[0]} selectedListingIds={mapScope.source === 'selection' ? mapScope.listingIds ?? undefined : undefined} onSelectListing={(id) => setMapScope(selectCatalogMapGroup([id]))} onSelectCluster={(ids) => setMapScope(selectCatalogMapGroup(ids))} onViewportChange={(ids) => setMapScope((scope) => updateCatalogMapViewport(scope, ids))} onClose={() => setMapOpen(false)} />
+            : <CatalogMap mode="listings" listings={mapListings} listingLabel="anuncios" selectedListingId={getSelectedCatalogMapListingIds(mapScope)?.[0]} selectedListingIds={getSelectedCatalogMapListingIds(mapScope)} onSelectListing={(id) => setMapScope(selectCatalogMapGroup([id]))} onSelectCluster={(ids) => setMapScope(selectCatalogMapGroup(ids))} onViewportChange={(ids) => setMapScope((scope) => updateCatalogMapViewport(scope, ids))} onClose={() => setMapOpen(false)} />
         }>
 
           <div className="marketplace-directory-results" aria-busy={loading}>
