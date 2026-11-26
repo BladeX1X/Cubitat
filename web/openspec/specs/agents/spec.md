@@ -473,3 +473,17 @@ F3 candidatas y sus objetos/bucket continúan pendientes de reconciliación en
 DEV conforme al handoff, y la base de producción no se modificó. No habilitar
 la bandera ni desplegar el perfil hasta confirmar el esquema, permisos, bucket,
 secretos y una prueba de extremo a extremo en un entorno persistente autorizado.
+
+## Panel enfocado en captación — 2026-11-25
+
+- GIVEN un agente verificado que abre el Panel de Agente
+- WHEN consulta su panel
+- THEN la sección principal MUST enfocarse en compartir su enlace de registro
+- AND MUST permitir recuperar un enlace activo ya guardado, crearlo bajo acción
+  explícita y copiarlo
+- AND MUST NOT mostrar oportunidades ni herramientas para registrarlas o
+  gestionarlas
+- AND MUST NOT mostrar el resumen ni el catálogo de publicaciones del agente
+- AND MUST NOT inferir registros o pagos a partir de visitas; esos conteos solo
+  se mostrarán cuando exista una fuente de servidor confiable para atribución y
+  pagos confirmados
