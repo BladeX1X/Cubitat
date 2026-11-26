@@ -360,6 +360,10 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
   consulta de datos, firma de Storage y precondiciones de KYC/estado
 - AND MUST NOT devolver rutas, tokens, URLs firmadas ni mensajes brutos de infraestructura
 - AND MUST limitar los logs a etapa, estado HTTP y causa enumerada, sin ID de postulación
+- AND MUST normalizar respuestas de RPC anidadas en la propiedad `error` con
+  profundidad acotada antes de clasificar autorización, KYC/estado, duplicado,
+  caché del esquema o fallos de transporte
+- AND MUST NOT presentar mensajes brutos ni valores internos de esas respuestas
 
 ### Requisito: Confidencialidad del motivo de rechazo
 

@@ -85,4 +85,28 @@ describe('agentApplicationsRepository', () => {
 
     await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/HTTP 502/i)
   })
+
+  it('unwraps an authorization error returned inside the error field', async () => {
+    query.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { error: { code: '42501', message: 'Admin AAL2 required.' } },
+    })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/permiso de administrador/i)
+  })
+
+  it('classifies a plain-text authorization error inside the error field', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: { error: 'Admin AAL2 required.' } })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/permiso de administrador/i)
+  })
+
+  it('unwraps KYC preconditions without exposing the raw server message', async () => {
+    query.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { error: { code: '22023', message: 'El perfil necesita KYC aprobado antes de activar el rol de agente.' } },
+    })
+
+    await expect(reviewAgentApplication('application-id', 'approved')).rejects.toThrow(/Comprueba el estado de la postulación y que el perfil cumpla los requisitos de KYC/i)
+  })
 })
