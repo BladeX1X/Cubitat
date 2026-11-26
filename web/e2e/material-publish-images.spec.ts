@@ -10,12 +10,23 @@ async function materialStep(page: import('@playwright/test').Page, label: string
     await page.getByRole('button', { name: 'Continuar' }).click()
     current += 1
     await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
+    if (labels[current] === 'Ubicación') await chooseMaterialLocation(page)
   }
   while (current > target) {
     await page.getByRole('button', { name: 'Paso anterior' }).click()
     current -= 1
     await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
   }
+}
+
+async function chooseMaterialLocation(page: import('@playwright/test').Page) {
+  await page.getByRole('combobox', { name: 'Provincia' }).selectOption({ label: 'La Habana' })
+  await page.getByRole('combobox', { name: 'Municipio' }).selectOption({ label: 'Playa' })
+  const map = page.locator('.maplibregl-canvas')
+  await expect(map).toBeVisible({ timeout: 15_000 })
+  const bounds = await map.boundingBox()
+  if (!bounds) throw new Error('El mapa de ubicación no tiene tamaño visible')
+  await map.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } })
 }
 
 async function submitMaterial(page: import('@playwright/test').Page) {
@@ -131,7 +142,7 @@ test('Materiales conserva varias fotos tras un fallo y permite reintentar sin du
   await page.getByLabel('Nombre del producto').fill('Material QA con varias fotos')
   await page.getByRole('button', { name: 'Continuar' }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Ubicación', exact: true })).toBeVisible()
-  await page.getByLabel('Provincia').fill('La Habana')
+  await chooseMaterialLocation(page)
   await page.getByRole('button', { name: 'Continuar' }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Precio y detalles' })).toBeVisible()
   await page.getByLabel('Descripción').fill('Anuncio sintético E2E para validar la carga de varias fotos.')
@@ -254,7 +265,7 @@ test('Materiales reutiliza el anuncio propio si se pierde la respuesta al crearl
   await page.goto('/publicar-material')
   await page.getByLabel('Nombre del producto').fill('Cemento para reparación QA')
   await page.getByRole('button', { name: 'Continuar' }).click()
-  await page.getByLabel('Provincia').fill('La Habana')
+  await chooseMaterialLocation(page)
   await page.getByRole('button', { name: 'Continuar' }).click()
   await page.getByLabel('Descripción').fill('Anuncio sintético para comprobar el reintento de creación.')
 

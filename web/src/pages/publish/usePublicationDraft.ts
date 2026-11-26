@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readCompleteDraft, saveCompleteDraft, removeCompleteDraft, type CompletePublicationDraft } from './completeDraftStorage'
+import { removeLegacyPublicationDraft } from './draftStorage'
 
 /** The form is keyed by owner/property, so no state crosses an identity change. */
 export function usePublicationDraft(
@@ -30,6 +31,9 @@ export function usePublicationDraft(
   useEffect(() => {
     if (waitingForProperty) return
     if (!restoreDraft) {
+      // Starting a fresh property must not leave an ownerless legacy draft in
+      // this browser or make it available to a later account/session.
+      removeLegacyPublicationDraft()
       setError(null)
       setReady(true)
       return

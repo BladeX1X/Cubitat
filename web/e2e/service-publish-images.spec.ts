@@ -10,12 +10,23 @@ async function serviceStep(page: import('@playwright/test').Page, label: string)
     await page.getByRole('button', { name: 'Continuar' }).click()
     current += 1
     await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
+    if (labels[current] === 'Zona y mapa') await chooseServiceLocation(page)
   }
   while (current > target) {
     await page.getByRole('button', { name: 'Paso anterior' }).click()
     current -= 1
     await expect(page.getByRole('heading', { level: 2, name: labels[current], exact: true })).toBeVisible()
   }
+}
+
+async function chooseServiceLocation(page: import('@playwright/test').Page) {
+  await page.getByRole('combobox', { name: 'Provincia' }).selectOption({ label: 'La Habana' })
+  await page.getByRole('combobox', { name: 'Municipio' }).selectOption({ label: 'Playa' })
+  const map = page.locator('.maplibregl-canvas')
+  await expect(map).toBeVisible({ timeout: 15_000 })
+  const bounds = await map.boundingBox()
+  if (!bounds) throw new Error('El mapa de ubicación no tiene tamaño visible')
+  await map.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } })
 }
 
 async function submitService(page: import('@playwright/test').Page) {
@@ -98,7 +109,7 @@ test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil 
   await page.getByLabel('Descripción').fill('Perfil de prueba para validar reintentos de publicación con varias fotos de trabajos.')
   await page.getByRole('button', { name: 'Continuar' }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Zona y mapa', exact: true })).toBeVisible()
-  await page.getByLabel('Provincia').fill('La Habana')
+  await chooseServiceLocation(page)
   await page.getByRole('button', { name: 'Continuar' }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Fotos' })).toBeVisible()
   await page.getByLabel('Fotos de tus trabajos').setInputFiles(['src/assets/hero.png', 'src/assets/hero.png'])

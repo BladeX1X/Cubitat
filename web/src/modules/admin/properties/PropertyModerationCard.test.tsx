@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { ModerationProperty } from '../core/types'
 import { PropertyModerationCard } from './PropertyModerationCard'
@@ -88,6 +88,24 @@ describe('PropertyModerationCard visibility actions', () => {
     />)
 
     expect(screen.getByText('CUP 125,000')).toBeInTheDocument()
+  })
+
+  it('replaces unavailable moderation photos with an accessible fallback', () => {
+    const propertyWithPhotos = property('pending_review')
+    propertyWithPhotos.cover_image = 'https://images.example.invalid/cover.webp'
+    propertyWithPhotos.images = ['https://images.example.invalid/gallery.webp']
+
+    render(<PropertyModerationCard
+      property={propertyWithPhotos} expanded actionLoading={false}
+      onToggle={vi.fn()} onApprove={vi.fn()} onReject={vi.fn()} onHide={vi.fn()}
+      onRestore={vi.fn()} onReevaluate={vi.fn()} onDelete={vi.fn()}
+    />)
+
+    fireEvent.error(screen.getByRole('img', { name: 'Casa de prueba' }))
+    expect(screen.getByText('Imagen no disponible')).toBeInTheDocument()
+
+    fireEvent.error(screen.getByRole('img', { name: 'Imagen de propiedad 1' }))
+    expect(screen.getAllByText('Imagen no disponible')).toHaveLength(2)
   })
 
   it('shows the related publication when the DEV duplicate flag is present', () => {

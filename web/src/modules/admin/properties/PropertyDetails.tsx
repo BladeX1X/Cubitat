@@ -2,7 +2,7 @@ import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
 import { AdvertiserContextPanel } from '../advertiser-context/AdvertiserContextPanel'
 import { ExchangePreferencesSummary } from '../../properties/components/ExchangePreferencesSummary'
-import { normalizePropertyImageReference } from '../../properties/utils/images'
+import { ModerationPropertyImage } from './ModerationPropertyImage'
 
 export function PropertyDetails({ property }: { property: ModerationProperty }) {
   return (
@@ -50,8 +50,8 @@ export function PropertyDetails({ property }: { property: ModerationProperty }) 
         <div>
           <h4 className="text-sm font-bold text-neutral-800 mb-2">Imágenes</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {property.images.map((image) => (
-              <img key={image} src={normalizePropertyImageReference(image)} alt="Imagen de propiedad" loading="lazy" className="h-28 w-full rounded-xl object-cover bg-neutral-100" />
+            {property.images.map((image, index) => (
+              <ModerationPropertyImage key={`${image}-${index}`} src={image} alt={`Imagen de propiedad ${index + 1}`} className="h-28 w-full rounded-xl object-cover bg-neutral-100" />
             ))}
           </div>
         </div>

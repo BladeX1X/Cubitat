@@ -41,6 +41,14 @@ El sistema MUST requerir una sesion valida para iniciar, continuar o editar una 
 - AND el sistema MUST mostrar progreso del flujo
 - AND el sistema MUST permitir salir sin perder un borrador guardado
 
+#### Scenario: Iniciar una publicación nueva sin restaurar un borrador heredado
+- GIVEN el usuario abre el acceso de publicación nueva sin solicitar la reanudación explícita
+- WHEN la aplicación inicia el formulario vacío
+- THEN MUST eliminar la clave local heredada `cubitat_publish_draft` porque no identifica a su propietario
+- AND MUST NOT cargar ese contenido en el formulario ni asociarlo a la cuenta actual
+- AND MUST conservar los borradores aislados por usuario y los anuncios ya enviados
+- AND la reanudación solicitada explícitamente desde Mis publicaciones MUST conservar su comportamiento
+
 #### Scenario: Recorrer el asistente desde un teléfono estrecho
 - GIVEN un usuario autenticado abre `/publicar` con un viewport de 320 píxeles
 - WHEN recorre los ocho pasos, incluidos mapa, selección de imagen, precio y contacto

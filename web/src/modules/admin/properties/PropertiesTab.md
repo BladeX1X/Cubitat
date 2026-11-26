@@ -23,3 +23,7 @@ La fecha inicial no puede superar la final; con rango inválido no se envía la 
 ## Escalabilidad
 
 La paginación ocurre en la consulta del servidor; el navegador no descarga todos los anuncios. Las consultas de texto parcial (`ilike`) y el conteo exacto pueden requerir índices dedicados si el catálogo crece mucho más allá de miles de filas; medir antes de agregar una migración.
+
+## Imágenes no disponibles
+
+La portada y la galería del detalle usan `ModerationPropertyImage`. Si la referencia falta o la carga falla, el componente reemplaza la imagen rota por un marcador accesible («Sin imagen» o «Imagen no disponible») sin bloquear la revisión. Una foto ausente no se corrige ni elimina automáticamente de la publicación.
