@@ -50,7 +50,9 @@ acceso, el moderador debe indicar un motivo de 3–500 caracteres. La operación
 registra un evento inmutable, libera la plaza provincial si existe y cambia el rol a
 `buyer` dentro de la misma transacción; conserva la cuenta, anuncios e historial.
 También lista agentes heredados que no tengan plaza asignada para que puedan
-retirarse; los perfiles `admin` no aparecen ni pueden ser objetivo del RPC.
+retirarse. Un perfil `admin` aparece solo si tiene una plaza provincial activa;
+la tarjeta muestra su rol y no ofrece retirar los permisos administrativos.
+El RPC de retiro continúa limitado a perfiles `agent`.
 La migración `20261106100000_agent_access_revocation.sql` contiene estas RPC y
 el evento inmutable; su presencia remota debe confirmarse por entorno antes de
 desplegar la interfaz.

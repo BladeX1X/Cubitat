@@ -28,6 +28,7 @@ const activeAgent = {
   full_name: 'Agente QA',
   province: 'La Habana',
   assigned_at: '2026-11-03T18:00:00.000Z',
+  account_role: 'agent' as const,
 }
 
 describe('AgentApplicationsModerationTab', () => {
@@ -85,6 +86,15 @@ describe('AgentApplicationsModerationTab', () => {
 
     await waitFor(() => expect(repository.revokeAgentAccess).toHaveBeenCalledWith(activeAgent.agent_id, 'Incumplimiento de las reglas.'))
     expect(await screen.findByRole('status')).toHaveTextContent(/cuenta y anuncios se conservaron/i)
+  })
+
+  it('shows an assigned administrator but does not offer to revoke administrator access', async () => {
+    repository.fetchActiveAgentsForModeration.mockResolvedValueOnce([{ ...activeAgent, account_role: 'admin' }])
+    render(<AgentApplicationsModerationTab />)
+
+    expect(await screen.findByText(/Administrador con plaza de agente/)).toBeInTheDocument()
+    expect(screen.getByText(/no se puede retirar desde esta acción/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Retirar acceso' })).not.toBeInTheDocument()
   })
 
   it('starts review through the AAL2-protected RPC repository action', async () => {

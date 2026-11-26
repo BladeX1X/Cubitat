@@ -31,6 +31,7 @@ export type ActiveAgent = {
   full_name: string
   province: string
   assigned_at: string | null
+  account_role: 'agent' | 'admin'
 }
 
 export const AGENT_APPLICATIONS_PAGE_SIZE = 20
