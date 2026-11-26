@@ -67,3 +67,15 @@ cuando el correo se abre en otro navegador o dispositivo.
 No activar `detectSessionInUrl` mientras `AuthCallbackPage` mantenga el
 intercambio explicito: ambos mecanismos juntos consumen dos veces el codigo y
 el segundo intento termina en `PKCE code verifier not found in storage`.
+
+## Atribución de registro con Google
+
+Si el visitante abrió un enlace `?ref=AG-XXXXXXXX`, `trackReferral()` conserva
+el código validado en `sessionStorage` durante el retorno desde Google. Después
+de intercambiar el código PKCE y confirmar que el proveedor es Google, el
+callback intenta `attribute_own_oauth_agent_signup` con ese código antes de
+continuar. La base de datos solo acepta cuentas buyer recién creadas por Google,
+con menos de 15 minutos, y resuelve el código contra un enlace activo de un
+agente verificado. Los logins de cuentas existentes se ignoran. Si la RPC falla,
+el inicio de sesión sigue adelante, se registra un diagnóstico saneado y el
+código permanece en la sesión para reintentar.

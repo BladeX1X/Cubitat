@@ -4281,3 +4281,10 @@ Rama ugfix/detail-page-consistent-width: formulario de reportes de Servicios/Ma
 Aplicada únicamente `20261123100000_marketplace_listing_reports.sql` a `tohjzoncoosvjbjcakdl`, sin respaldo a solicitud expresa. El ledger pasó de 168 a 169 versiones; una versión antigua registrada remotamente (`20261120203809`) no tenía fuente en este checkout y se representó como ya aplicada solo en el manifiesto temporal. `migration list` confirmó que solo la migración nueva estaba pendiente y `migration up` la registró junto con su ejecución. Postcheck confirmó tabla, dos RPC, RLS y grants.
 
 `cubitat1` publicado como `408b4581-fba4-4e0d-b459-e97a9e71dc36`. Lint, 251 archivos/1,156 PASS/1 omitida, build Fase 4 y verificadores PASS. Home, resultados, Servicios, Materiales, Moderación y bundles clave HTTP 200. Prueba autenticada de envío/revisión pendiente; no se crearon reportes de prueba.
+
+## Registro Google desde enlace de agente — 2026-11-25
+
+- Implementación en `feature/google-referral-attribution`: el callback OAuth lee el código de referido de la sesión de la misma pestaña e invoca `attribute_own_oauth_agent_signup` sin bloquear la sesión si la atribución falla.
+- La migración candidata `20261125110000_oauth_agent_signup_attribution.sql` solo permite una cuenta Google buyer recién creada (15 minutos), código activo y agente con KYC verificado; la atribución se conserva en el ledger privado e inmutable.
+- La RPC requiere `authenticated` y la allowlist del Worker. El test pgTAP `oauth_agent_signup_attribution_local.sql` pasó 10/10 dentro de una transacción con rollback.
+- Pendiente CI, integración en `main`, aplicación del workflow de migración exacta sin respaldo y despliegue del Worker/UI; no presentar como producción verificada hasta probar una alta nueva con Google y un login Google existente.

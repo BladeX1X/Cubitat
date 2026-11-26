@@ -12,7 +12,7 @@ con el repositorio de referidos; no accede directamente a tablas.
   compartible sin aprovisionarlo ni reactivarlo.
 - Crear un enlace sigue requiriendo la acción explícita del agente; la carga del
   panel es de solo lectura.
-- El enlace atribuye cuentas nuevas creadas mediante registro por correo.
+- El enlace atribuye cuentas nuevas creadas por correo y Google.
 - La RPC valida rol y KYC en el servidor y rechaza enlaces pausados sin
   reactivarlos.
 - La sección «Usuarios captados» obtiene un agregado mediante

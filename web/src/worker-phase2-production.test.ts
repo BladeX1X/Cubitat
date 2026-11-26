@@ -65,6 +65,7 @@ describe('Phase 2 production Worker', () => {
     expect(options.additionalAuthenticatedRpcs).toContain('review_agent_application')
     expect(options.additionalAuthenticatedRpcs).toContain('get_admin_property_contact_details')
     expect(options.additionalAuthenticatedRpcs).toContain('get_own_agent_acquisition_metrics')
+    expect(options.additionalAuthenticatedRpcs).toContain('attribute_own_oauth_agent_signup')
     expect(options.additionalAuthenticatedWriteTables).toContain('saved_marketplace_listings')
   })
 
