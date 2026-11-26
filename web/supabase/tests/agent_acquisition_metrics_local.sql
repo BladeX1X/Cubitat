@@ -11,11 +11,18 @@ INSERT INTO auth.users (
   ('00000000-0000-0000-0000-000000000000', 'f2510000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'acq-agent-one@local.invalid', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Acquisition Agent One"}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', 'f2510000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'acq-agent-two@local.invalid', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Acquisition Agent Two"}', now(), now());
 
-ALTER TABLE public.profiles DISABLE TRIGGER on_profile_role_update;
+INSERT INTO public.agent_applications (
+  id, user_id, province, education_title, cv_path, diploma_path
+) VALUES
+  ('f2510000-0000-0000-0000-000000000101', 'f2510000-0000-0000-0000-000000000001', 'La Habana', 'Synthetic agent profile', 'f2510000-0000-0000-0000-000000000001/f2510000-0000-0000-0000-000000000101/cv.pdf', 'f2510000-0000-0000-0000-000000000001/f2510000-0000-0000-0000-000000000101/diploma.pdf'),
+  ('f2510000-0000-0000-0000-000000000102', 'f2510000-0000-0000-0000-000000000002', 'La Habana', 'Synthetic agent profile', 'f2510000-0000-0000-0000-000000000002/f2510000-0000-0000-0000-000000000102/cv.pdf', 'f2510000-0000-0000-0000-000000000002/f2510000-0000-0000-0000-000000000102/diploma.pdf');
+INSERT INTO public.agent_province_assignments (application_id, agent_id, province)
+VALUES
+  ('f2510000-0000-0000-0000-000000000101', 'f2510000-0000-0000-0000-000000000001', 'La Habana'),
+  ('f2510000-0000-0000-0000-000000000102', 'f2510000-0000-0000-0000-000000000002', 'La Habana');
 UPDATE public.profiles
 SET role = 'agent'::public.user_role, verification_status = 'verified'
 WHERE id IN ('f2510000-0000-0000-0000-000000000001', 'f2510000-0000-0000-0000-000000000002');
-ALTER TABLE public.profiles ENABLE TRIGGER on_profile_role_update;
 
 INSERT INTO public.agent_referral_links (agent_id, code, active)
 VALUES
