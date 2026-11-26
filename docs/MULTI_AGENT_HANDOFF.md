@@ -4288,3 +4288,7 @@ Aplicada únicamente `20261123100000_marketplace_listing_reports.sql` a `tohjzon
 - La migración candidata `20261125110000_oauth_agent_signup_attribution.sql` solo permite una cuenta Google buyer recién creada (15 minutos), código activo y agente con KYC verificado; la atribución se conserva en el ledger privado e inmutable.
 - La RPC requiere `authenticated` y la allowlist del Worker. El test pgTAP `oauth_agent_signup_attribution_local.sql` pasó 10/10 dentro de una transacción con rollback.
 - Pendiente CI, integración en `main`, aplicación del workflow de migración exacta sin respaldo y despliegue del Worker/UI; no presentar como producción verificada hasta probar una alta nueva con Google y un login Google existente.
+
+### 2026-11-26 — Cierre atribución Google de referidos
+
+PR #288 integrado y controles requeridos `quality`/`database-security` PASS. Migración aplicada con el workflow dedicado, sin respaldo; ledger exacto, checksum y postcheck de permisos verificados. Worker `cubitat1` `250879f7-8306-4281-96fc-65e6d84c2616` al 100 %. Producción y bundles HTTP 200. Falta prueba autenticada controlada de una nueva alta Google y de una cuenta existente. El preview externo DEV del PR reportó fallo; no es un check requerido y el despliegue productivo se verificó aparte.
