@@ -71,7 +71,19 @@ jobs:
           set -euo pipefail
           set +x
           candidate='20261126120000'
-          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *'postgres.tohjzoncoosvjbjcakdl'* ]]; then
+          if [[ -z "$SUPABASE_DB_URL" ]]; then
+            echo 'Database URL does not identify the reviewed Cubitat production project.'
+            exit 1
+          fi
+          connection_target=${SUPABASE_DB_URL##*@}
+          connection_host=${connection_target%%:*}
+          connection_host=${connection_host%%/*}
+          connection_userinfo=${SUPABASE_DB_URL#*://}
+          connection_userinfo=${connection_userinfo%%@*}
+          connection_username=${connection_userinfo%%:*}
+          if [[ "$connection_host" != 'db.tohjzoncoosvjbjcakdl.supabase.co' ]] &&
+            { [[ "$connection_host" != *.pooler.supabase.com ]] ||
+              [[ "$connection_username" != 'postgres.tohjzoncoosvjbjcakdl' ]]; }; then
             echo 'Database URL does not identify the reviewed Cubitat production project.'
             exit 1
           fi
