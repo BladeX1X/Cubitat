@@ -101,7 +101,7 @@ jobs:
           done <<<"$remote_versions"
           local_versions=$(find "$MIGRATION_WORKDIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
             | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
-          pending=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u)
+          pending=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
           [[ "$pending" == "$candidate" ]] || { echo 'Pending migrations are not exactly the reviewed candidate; stopping.'; exit 1; }
           schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
           SELECT
