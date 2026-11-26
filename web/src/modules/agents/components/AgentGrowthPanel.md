@@ -15,13 +15,14 @@ con el repositorio de referidos; no accede directamente a tablas.
 - El enlace atribuye cuentas nuevas creadas mediante registro por correo.
 - La RPC valida rol y KYC en el servidor y rechaza enlaces pausados sin
   reactivarlos.
+- La sección «Usuarios captados» obtiene un agregado mediante
+  `get_own_agent_acquisition_metrics()`. La RPC exige agente/admin verificado y
+  devuelve solo la cantidad atribuida al agente autenticado, sin datos de cuenta.
+- Las altas se cuentan desde que el ledger de atribución está activo. Si no se
+  pueden leer, se muestra un error con reintento y no se inventa un cero.
+- El conteo de usuarios con plan pagado queda como «Aún no disponible» hasta que
+  existan suscripciones y pagos confirmados; nunca se deriva de clics.
 - Esta vista no consulta ni presenta oportunidades, publicaciones, visitas,
   contactos atribuidos ni comisiones.
 - Muestra carga, error de lectura con reintento, enlace listo y resultado de
   copia con controles táctiles accesibles.
-
-## Métricas futuras
-
-Los conteos de registros atribuidos y usuarios con un plan pagado requieren
-fuentes confiables del servidor y confirmación de pagos. No deben inferirse de
-visitas ni mostrarse como cero hasta que esos datos estén disponibles.

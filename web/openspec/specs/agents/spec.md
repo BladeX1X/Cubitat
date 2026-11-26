@@ -485,5 +485,24 @@ secretos y una prueba de extremo a extremo en un entorno persistente autorizado.
   gestionarlas
 - AND MUST NOT mostrar el resumen ni el catálogo de publicaciones del agente
 - AND MUST NOT inferir registros o pagos a partir de visitas; esos conteos solo
-  se mostrarán cuando exista una fuente de servidor confiable para atribución y
-  pagos confirmados
+  se mostrarán cuando exista una fuente de servidor confiable para cada métrica:
+  el registro de atribución para altas y un registro de pagos confirmados para
+  usuarios pagadores
+
+### Requisito: Conteo privado de usuarios captados
+
+- GIVEN un agente verificado que abre el panel
+- WHEN consulta los usuarios captados por su enlace
+- THEN MUST ver únicamente el total agregado de cuentas atribuidas a su propio agente desde que existe el registro de atribución
+- AND MUST obtener el conteo mediante una RPC autenticada que valida rol y verificación en el servidor
+- AND MUST NOT recibir nombres, correos, UUID ni filas individuales del ledger de atribución
+- AND MUST mostrar un error y permitir reintentar cuando no pueda obtener la cifra, sin sustituirla por cero
+- AND MUST NOT mostrar un número de usuarios pagadores hasta que exista una fuente de suscripciones/pagos confirmados; debe indicar que el dato aún no está disponible
+
+#### Escenario: altas propias y pagos aún no habilitados
+
+- GIVEN dos altas atribuidas al agente y ninguna integración de cobros habilitada
+- WHEN el agente consulta su panel
+- THEN ve dos usuarios registrados
+- AND ve que el total de usuarios con plan pagado aún no está disponible
+- AND otro agente no puede consultar esos dos registros ni los datos individuales

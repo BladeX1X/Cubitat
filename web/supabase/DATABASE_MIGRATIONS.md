@@ -1304,3 +1304,11 @@ Frontend/Worker `cubitat1` desplegado en `0d79f4a9-9947-4b20-8eb1-91b3d887cf2a` 
 
 Production preflight for the publication coordinates release found recorded version 20261124090000 without its canonical migration source in main. Restored the historical source 20261124090000_disable_admin_aal2_requirement.sql from the local production-release workspace as a ledger reconciliation only. Production already records this version; this source is staged for Supabase CLI consistency and must not be re-applied. The migration preflight stopped before dry-run or DDL. Resume only after CI and exact-ledger verification.
 
+
+## Candidata local — métricas de captación de agente — 2026-11-25
+
+La migración `20261125100000_agent_acquisition_metrics.sql` depende del ledger de altas `20261103170000_agent_signup_referral_attribution.sql`. Agrega `get_own_agent_acquisition_metrics()`, una RPC `SECURITY DEFINER` con `search_path` fijo que exige `auth.uid()` y perfil agent/admin verificado y devuelve solo un conteo por agente. `anon`, `service_role` y clientes autenticados no tienen acceso directo al ledger; solo `authenticated` puede llamar la función. La cifra de pagadores se devuelve como `NULL` y la disponibilidad como `false` porque el sistema no tiene procesamiento de pagos de suscripción. No aplicar a una base hosted hasta conciliar el ledger y seguir el workflow productivo vigente; no ejecutar `db push` global ni reparar migraciones.
+
+Contrato de seguridad/aislamiento: `supabase/tests/agent_acquisition_metrics_local.sql`. La acción `database-security` debe ejecutar ese contrato después de replay de migraciones. La función se añade a la allowlist autenticada de `worker-phase2-production.ts`.
+
+Tras integrar y aprobar los checks requeridos, aplicar únicamente mediante el workflow manual `Apply agent acquisition metrics migration to production`, indicando la frase de confirmación `APPLY AGENT ACQUISITION METRICS WITHOUT BACKUP` conforme a la instrucción expresa del usuario. El workflow valida el proyecto esperado, el ledger remoto, todas las fuentes canónicas registradas, el prerequisito de atribución, el estado previo de esquema, un dry-run de una sola versión y privilegios posteriores. No ejecutar `db push` desde la estación local ni incluir otras migraciones.

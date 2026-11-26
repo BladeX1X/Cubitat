@@ -73,6 +73,7 @@ const worker = createWorker({
     'get_admin_property_image_hash_status',
     'get_admin_property_image_duplicate_candidates',
     'ensure_agent_referral_link',
+    'get_own_agent_acquisition_metrics',
     'list_active_agents_for_moderation',
     'revoke_agent_access',
     'review_agent_application',
