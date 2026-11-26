@@ -22,8 +22,10 @@ el resumen inmobiliario ni la lista de publicaciones del agente.
   crea ni reactiva códigos.
 - No se presentan oportunidades ni herramientas para gestionarlas, y tampoco
   publicaciones, vistas o contactos de inmuebles.
-- Conteos de registros referidos y pagos confirmados quedan pendientes de una
-  fuente de atribución y pagos verificada por servidor.
+- El total de registros atribuidos se consulta desde una fuente privada del
+  servidor y solo muestra el agregado propio del agente. El total de usuarios
+  con plan pagado permanece no disponible hasta que exista el procesamiento y
+  registro de suscripciones/pagos.
 
 ## Verificación
 

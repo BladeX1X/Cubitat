@@ -2,17 +2,22 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentGrowthPanel } from './AgentGrowthPanel'
 import { ensureAgentReferralCode, loadAgentReferralCode } from '../referrals/agentReferralRepository'
+import { loadAgentAcquisitionMetrics } from '../referrals/agentAcquisitionMetricsRepository'
 
 vi.mock('../referrals/agentReferralRepository', () => ({
   ensureAgentReferralCode: vi.fn(),
   loadAgentReferralCode: vi.fn(),
   getAgentReferralLink: (code: string) => `https://cubitat.example/?ref=${code}`,
 }))
+vi.mock('../referrals/agentAcquisitionMetricsRepository', () => ({
+  loadAgentAcquisitionMetrics: vi.fn(),
+}))
 
 describe('AgentGrowthPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(loadAgentReferralCode).mockResolvedValue(null)
+    vi.mocked(loadAgentAcquisitionMetrics).mockResolvedValue({ registeredUsers: 0, paidUsers: null })
     vi.mocked(ensureAgentReferralCode).mockResolvedValue('AG-12AB34CD')
   })
 
@@ -24,6 +29,26 @@ describe('AgentGrowthPanel', () => {
     expect(screen.getByRole('button', { name: 'Crear mi enlace' })).toBeInTheDocument()
     expect(screen.queryByText(/oportunidades/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/propiedades captadas/i)).not.toBeInTheDocument()
+  })
+
+  it('shows referral signups from the server and does not invent payment counts', async () => {
+    vi.mocked(loadAgentAcquisitionMetrics).mockResolvedValue({ registeredUsers: 7, paidUsers: null })
+    render(<AgentGrowthPanel />)
+
+    expect(await screen.findByRole('heading', { name: 'Usuarios captados' })).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.getByText('Usuarios con plan pagado')).toBeInTheDocument()
+    expect(screen.getByText('Aún no disponible')).toBeInTheDocument()
+    expect(screen.getByText(/El cobro de planes todavía no está habilitado/i)).toBeInTheDocument()
+  })
+
+  it('does not show a fabricated zero when the signup count cannot be loaded', async () => {
+    vi.mocked(loadAgentAcquisitionMetrics).mockRejectedValue(new Error('private backend details'))
+    render(<AgentGrowthPanel />)
+
+    expect(await screen.findByText('No se pudieron cargar los usuarios captados.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reintentar conteo' })).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
   it('creates a referral link only after the agent explicitly asks for it', async () => {

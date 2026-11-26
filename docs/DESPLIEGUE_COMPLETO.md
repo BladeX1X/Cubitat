@@ -1159,3 +1159,11 @@ La ficha pública ya no carga ni presenta el panel de reseñas; perfiles, opinio
 ## Reportes de Servicios/Materiales y perfiles destacados — implementación local — 2026-11-23
 
 Se implementó el formulario con Turnstile, ruta Worker y migración aislada 20261123100000_marketplace_listing_reports.sql; Moderación combina reportes de inmuebles y marketplace y revisa estos últimos sin pausar anuncios. Las fichas incorporan la denuncia adaptada y perfiles profile_featured vigentes. Gates locales: lint PASS; suite 250 archivos, 1,156 PASS/1 omitida; build estándar PASS. La migración no se aplicó y no se desplegó: el workflow productivo de esquema F3/F4 exige un respaldo exitoso reciente y no admite aplicar solo esta versión. No se intentó eludir esa condición.
+
+## Métricas de usuarios captados en Panel de Agente — implementación local — 2026-11-25
+
+La interfaz privada añade conteos agregados de altas registradas desde el enlace del agente. La lectura usa `get_own_agent_acquisition_metrics()`; la RPC valida rol/KYC y devuelve únicamente el total propio, sin datos personales. La captura del conteo tiene estados de carga, fallo y reintento, y no muestra un cero ficticio si el servicio falla. La segunda tarjeta deja los usuarios con plan pagado como «Aún no disponible»: no existe todavía un ledger real de suscripciones/pagos y no se atribuyen pagos a clics. Se requiere promover la migración junto al bundle mediante el flujo coordinado de base de datos; no se aplicó a un proyecto remoto en esta implementación local.
+
+### Promoción productiva
+
+Después de integrar los cambios y superar `quality` y `database-security`, ejecutar primero el workflow `Apply agent acquisition metrics migration to production` desde `main`. Requiere la frase explícita `APPLY AGENT ACQUISITION METRICS WITHOUT BACKUP`, comprueba el proyecto y el ledger exactos y detiene la ejecución si encuentra cualquier migración pendiente adicional. No crea respaldo por instrucción del usuario. Solo después de una migración verificada, publicar frontend y Worker con `npm run deploy` desde el release integrado, que construye el perfil `phase4-production` y verifica sitemap y bundles antes del guard de producción. Completar un smoke autenticado del panel y las rutas públicas antes de registrar producción como verificada.

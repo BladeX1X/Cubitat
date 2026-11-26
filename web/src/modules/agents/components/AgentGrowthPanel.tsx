@@ -2,12 +2,29 @@ import { useCallback, useEffect, useState } from 'react'
 import { Copy, Link2, RefreshCw } from 'lucide-react'
 import { Button } from '../../../shared/ui/button'
 import { ensureAgentReferralCode, getAgentReferralLink, loadAgentReferralCode } from '../referrals/agentReferralRepository'
+import { loadAgentAcquisitionMetrics, type AgentAcquisitionMetrics } from '../referrals/agentAcquisitionMetricsRepository'
 
 export function AgentGrowthPanel() {
   const [loading, setLoading] = useState(true)
   const [referralLink, setReferralLink] = useState<string | null>(null)
   const [referralBusy, setReferralBusy] = useState(false)
   const [referralMessage, setReferralMessage] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState<AgentAcquisitionMetrics | null>(null)
+  const [metricsLoading, setMetricsLoading] = useState(true)
+  const [metricsFailed, setMetricsFailed] = useState(false)
+
+  const reloadMetrics = useCallback(async () => {
+    setMetricsLoading(true)
+    setMetricsFailed(false)
+    try {
+      setMetrics(await loadAgentAcquisitionMetrics())
+    } catch {
+      setMetrics(null)
+      setMetricsFailed(true)
+    } finally {
+      setMetricsLoading(false)
+    }
+  }, [])
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -24,7 +41,10 @@ export function AgentGrowthPanel() {
     }
   }, [])
 
-  useEffect(() => { void reload() }, [reload])
+  useEffect(() => {
+    void reload()
+    void reloadMetrics()
+  }, [reload, reloadMetrics])
 
   async function handleCreateReferralLink() {
     if (referralBusy) return
@@ -60,6 +80,32 @@ export function AgentGrowthPanel() {
         <h2 id="agent-growth-title" className="mt-1 text-xl font-black text-neutral-900">Captación de usuarios</h2>
         <p className="mt-1 text-sm text-neutral-600">Comparte tu enlace para invitar a nuevas personas a crear su cuenta en Cubitat.</p>
       </header>
+
+      <section aria-labelledby="agent-users-title" className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+        <div>
+          <h3 id="agent-users-title" className="font-bold text-neutral-900">Usuarios captados</h3>
+          <p className="mt-1 text-sm text-neutral-600">Personas que crearon su cuenta desde tu enlace.</p>
+        </div>
+        {metricsLoading ? <p role="status" className="mt-4 text-sm text-neutral-600">Cargando usuarios captados…</p> : metricsFailed ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <p role="alert" className="text-sm text-red-700">No se pudieron cargar los usuarios captados.</p>
+            <Button type="button" variant="outline" onClick={() => void reloadMetrics()} className="min-h-11">Reintentar conteo</Button>
+          </div>
+        ) : metrics ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <article className="rounded-lg bg-neutral-50 p-4">
+              <p className="text-sm font-semibold text-neutral-600">Usuarios registrados</p>
+              <p className="mt-1 text-3xl font-black text-[#035f53]">{metrics.registeredUsers}</p>
+              <p className="mt-1 text-xs text-neutral-600">Altas atribuidas desde que se habilitó el registro por enlace.</p>
+            </article>
+            <article className="rounded-lg bg-neutral-50 p-4">
+              <p className="text-sm font-semibold text-neutral-600">Usuarios con plan pagado</p>
+              <p className="mt-1 text-lg font-bold text-neutral-700">{metrics.paidUsers ?? 'Aún no disponible'}</p>
+              <p className="mt-1 text-xs text-neutral-600">El cobro de planes todavía no está habilitado.</p>
+            </article>
+          </div>
+        ) : null}
+      </section>
 
       {loading ? <div role="status" className="rounded-xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">Cargando tu enlace de captación…</div> : (
         <section aria-labelledby="agent-signup-link-title" className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
