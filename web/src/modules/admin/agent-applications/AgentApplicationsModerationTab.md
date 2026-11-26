@@ -57,6 +57,12 @@ desplegar la interfaz.
 
 ## Diagnóstico de fallos
 
+La respuesta de la RPC puede llegar dentro de la propiedad `error`. El cliente
+normaliza hasta tres niveles de envoltura para recuperar código, estado y
+mensaje de forma segura; solo los compara con condiciones conocidas. Nunca
+presenta el mensaje bruto del servidor. Las pruebas cubren autorización y
+precondiciones KYC en respuestas envueltas.
+
 Los errores de documentos se diferencian por permiso AAL2, límite temporal,
 postulación ausente, consulta de base de datos y firma de Storage. El Worker
 registra únicamente fase, estado HTTP y una causa enumerada; nunca guarda ID,

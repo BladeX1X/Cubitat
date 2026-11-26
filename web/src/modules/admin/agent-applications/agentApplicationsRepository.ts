@@ -35,18 +35,31 @@ export type ActiveAgent = {
 
 export const AGENT_APPLICATIONS_PAGE_SIZE = 20
 
-function getSafeRpcError(error: unknown): { code: string; name: string; status: number | null; message: string; keys: string[] } {
+function getSafeRpcError(
+  error: unknown,
+  depth = 0,
+): { code: string; name: string; status: number | null; message: string; keys: string[] } {
+  if (typeof error === 'string') {
+    const normalized = error.toUpperCase()
+    const code = /^(?:[A-Z0-9]{5}|PGRST\d{3})$/.test(normalized) ? normalized : ''
+    return { code, name: 'String', status: null, message: error.toLowerCase().slice(0, 300), keys: [] }
+  }
   if (!error || typeof error !== 'object') {
     return { code: '', name: typeof error, status: null, message: '', keys: [] }
   }
 
   const value = error as Record<string, unknown>
-  const code = typeof value.code === 'string' ? value.code : ''
-  const name = typeof value.name === 'string' ? value.name : 'Object'
-  const status = typeof value.status === 'number' && Number.isInteger(value.status) ? value.status : null
-  const message = typeof value.message === 'string' ? value.message.toLowerCase().slice(0, 300) : ''
+  const nested = depth < 3 && 'error' in value ? getSafeRpcError(value.error, depth + 1) : null
+  const code = typeof value.code === 'string' ? value.code : nested?.code ?? ''
+  const name = typeof value.name === 'string' ? value.name : nested?.name ?? 'Object'
+  const status = typeof value.status === 'number' && Number.isInteger(value.status)
+    ? value.status
+    : nested?.status ?? null
+  const message = typeof value.message === 'string'
+    ? value.message.toLowerCase().slice(0, 300)
+    : nested?.message ?? ''
   const keys = Object.keys(value).filter((key) => /^[a-z][a-z0-9_]{0,30}$/i.test(key)).slice(0, 8)
-  return { code, name, status, message, keys }
+  return { code, name, status, message, keys: nested ? nested.keys : keys }
 }
 
 function getReviewRpcErrorMessage(error: unknown): string {
