@@ -1,0 +1,188 @@
+name: Apply agent admin moderation list migration to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type APPLY AGENT ADMIN MODERATION LIST WITHOUT BACKUP to confirm
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubitat-production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  apply-reviewed-migration:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out reviewed main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Confirm production migration without backup
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRMATION" != 'APPLY AGENT ADMIN MODERATION LIST WITHOUT BACKUP' ]]; then
+            echo 'Confirmation phrase mismatch; production was not changed.'
+            exit 1
+          fi
+
+      - name: Stage canonical migration ledger and pinned candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/cubitat-agent-admin-list-production"
+          mkdir -p "$root/supabase/migrations" "$root/supabase/templates"
+          cp web/supabase/config.toml "$root/supabase/config.toml"
+          cp web/supabase/templates/confirmation.html \
+            web/supabase/templates/recovery.html \
+            web/supabase/templates/password_changed_notification.html \
+            "$root/supabase/templates/"
+          candidate='20261126120000_agent_admin_assignment_moderation_list.sql'
+          actual_hash=$(sha256sum "web/supabase/migrations/$candidate" | cut -d' ' -f1)
+          [[ "$actual_hash" == 'b99f0c2e02181c152f3b21790ce8b570b463c2e96a6d3b61612329aa13df8551' ]] || {
+            echo 'Candidate migration differs from the reviewed source; stopping.'; exit 1;
+          }
+          cp "web/supabase/migrations/$candidate" "$root/supabase/migrations/"
+          echo "MIGRATION_WORKDIR=$root" >> "$GITHUB_ENV"
+          echo 'Pinned candidate migration checksum confirmed.'
+
+      - name: Verify production target, exact ledger, and current RPC state
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          candidate='20261126120000'
+          if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *'postgres.tohjzoncoosvjbjcakdl'* ]]; then
+            echo 'Database URL does not identify the reviewed Cubitat production project.'
+            exit 1
+          fi
+          remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
+            -c 'select version from supabase_migrations.schema_migrations order by version')
+          if grep -Fxq "$candidate" <<<"$remote_versions"; then
+            echo 'Candidate migration is already registered; stop for reconciliation.'
+            exit 1
+          fi
+          shopt -s nullglob
+          while IFS= read -r version; do
+            [[ -z "$version" ]] && continue
+            if [[ ! "$version" =~ ^[0-9]{14}$ ]]; then
+              echo 'Production ledger contains a non-canonical migration version.'
+              exit 1
+            fi
+            matches=(web/supabase/migrations/"${version}"_*.sql)
+            if [[ ${#matches[@]} -ne 1 ]]; then
+              echo 'A production migration has no unique canonical source in this release.'
+              exit 1
+            fi
+            cp "${matches[0]}" "$MIGRATION_WORKDIR/supabase/migrations/"
+          done <<<"$remote_versions"
+          local_versions=$(find "$MIGRATION_WORKDIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' \
+            -printf '%f\n' | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
+          pending=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
+          [[ "$pending" == "$candidate" ]] || {
+            echo 'Pending migrations are not exactly the reviewed candidate; stopping.'
+            printf 'Pending migrations: %s\n' "$pending"
+            exit 1
+          }
+          schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT
+            (to_regclass('public.profiles') IS NOT NULL)::text,
+            (to_regclass('public.agent_province_assignments') IS NOT NULL)::text,
+            (to_regprocedure('public.is_admin_aal2()') IS NOT NULL)::text,
+            (to_regprocedure('public.list_active_agents_for_moderation()') IS NOT NULL)::text,
+            (position('account_role' IN pg_get_function_result('public.list_active_agents_for_moderation()'::regprocedure)) = 0)::text,
+            (SELECT prosecdef FROM pg_proc WHERE oid='public.list_active_agents_for_moderation()'::regprocedure)::text,
+            (has_function_privilege('authenticated','public.list_active_agents_for_moderation()','EXECUTE'))::text,
+            ((NOT has_function_privilege('anon','public.list_active_agents_for_moderation()','EXECUTE')) AND
+             (NOT has_function_privilege('service_role','public.list_active_agents_for_moderation()','EXECUTE')))::text,
+            ((SELECT count(*) = 2 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid
+              JOIN pg_namespace n ON n.oid=t.typnamespace
+              WHERE n.nspname='public' AND t.typname='user_role' AND e.enumlabel IN ('agent','admin')))::text;
+          SQL
+          )
+          [[ "$schema_state" == 'true|true|true|true|true|true|true|true|true' ]] || {
+            echo 'Production schema is not in the reviewed pre-migration state; stopping.'
+            exit 1
+          }
+          echo 'Production target, ledger, current RPC, roles, and grants verified.'
+
+      - name: Dry-run exactly the reviewed migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          set +e
+          output=$(supabase db push --workdir "$MIGRATION_WORKDIR" --db-url "$SUPABASE_DB_URL" --dry-run --include-all --yes 2>&1)
+          status=$?
+          set -e
+          safe=$(printf '%s\n' "$output" | sed -E 's#(postgres(ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@#\1[REDACTED]@#g')
+          printf '%s\n' "$safe"
+          [[ "$status" -eq 0 ]] || { echo 'Dry-run failed; production was not changed.'; exit "$status"; }
+          versions=$(grep -Eo '202[0-9]{11}' <<<"$output" | sort -u || true)
+          [[ "$versions" == '20261126120000' ]] || {
+            echo 'Dry-run did not select exactly the reviewed migration; stopping.'
+            exit 1
+          }
+
+      - name: Apply the reviewed migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          supabase db push --workdir "$MIGRATION_WORKDIR" --db-url "$SUPABASE_DB_URL" --include-all --yes
+
+      - name: Verify production function contract, security, and grants
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            function_oid oid := to_regprocedure('public.list_active_agents_for_moderation()');
+            function_definition text;
+            function_result text;
+          BEGIN
+            function_definition := pg_get_functiondef(function_oid);
+            function_result := pg_get_function_result(function_oid);
+            IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261126120000')
+              OR function_oid IS NULL
+              OR function_result NOT LIKE '%account_role text%'
+              OR position('profile.role = ''admin''' IN function_definition) = 0
+              OR position('assignment.id IS NOT NULL' IN function_definition) = 0
+              OR position('search_path=pg_catalog' IN coalesce((SELECT array_to_string(proconfig, ',' ) FROM pg_proc WHERE oid=function_oid), '')) = 0
+              OR NOT (SELECT prosecdef FROM pg_proc WHERE oid=function_oid)
+              OR NOT has_function_privilege('authenticated',function_oid,'EXECUTE')
+              OR has_function_privilege('anon',function_oid,'EXECUTE')
+              OR has_function_privilege('service_role',function_oid,'EXECUTE') THEN
+              RAISE EXCEPTION 'agent_admin_moderation_list_postcheck_failed';
+            END IF;
+          END;
+          $$;
+          SELECT 'Cubitat production administrator assignment list migration verified';
+          SQL
