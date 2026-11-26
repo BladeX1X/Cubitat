@@ -75,6 +75,7 @@ const worker = createWorker({
     'ensure_agent_referral_link',
     'list_active_agents_for_moderation',
     'revoke_agent_access',
+    'review_agent_application',
   ],
 });
 

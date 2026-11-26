@@ -76,6 +76,9 @@ function getReviewRpcErrorMessage(error: unknown): string {
   if (code === 'PGRST202' || code === 'PGRST203' || /schema cache|function .* does not exist/i.test(message)) {
     return 'La base de datos aún no reconoce la función de revisión. Requiere actualizar la caché del esquema.'
   }
+  if (/operaci[oó]n no permitida/i.test(message)) {
+    return 'El Worker de producción bloqueó esta función administrativa. Requiere actualizar su lista de funciones administrativas permitidas.'
+  }
   if (name === 'TypeError' || /failed to fetch|networkerror|network request failed|fetch failed|timed? ?out/i.test(message)) {
     return 'No se pudo establecer conexión con Supabase para guardar la decisión. Comprueba la conexión e inténtalo de nuevo.'
   }
