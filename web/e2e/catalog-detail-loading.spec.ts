@@ -71,7 +71,7 @@ test('Servicios keeps a loading state while opening a detail after the directory
   // slow first render as a broken detail route.
   await expect(page.getByText(service.display_name)).toBeVisible({ timeout: 15_000 })
   const states = await observeDetailStates(page)
-  await page.locator('article button').first().click()
+  await page.getByRole('button', { name: /Ver perfil/ }).click()
   await expect(page).toHaveURL(/\/servicios\/qa-perfil-plomeria$/)
   expect(detailRequestStarted).toBe(true)
   await expect(page.getByRole('main', { name: 'Cargando ficha de servicio' })).toBeVisible()
@@ -111,7 +111,7 @@ test('Materiales keeps a loading state while opening a detail after the catalog 
   await page.goto('/materiales')
   await expect(page.getByText(material.title)).toBeVisible({ timeout: 15_000 })
   const states = await observeDetailStates(page)
-  await page.locator('article button').first().click()
+  await page.getByRole('button', { name: /Ver anuncio/ }).click()
   await expect(page).toHaveURL(/\/materiales\/qa-cemento-gris$/)
   expect(detailRequestStarted).toBe(true)
   await expect(page.getByRole('main', { name: 'Cargando anuncio' })).toBeVisible()

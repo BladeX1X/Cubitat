@@ -154,6 +154,12 @@ Pendiente QA física de recarga/cierre en navegadores móviles y Storage real; n
 - La acción explícita de reanudar desde Mis publicaciones (`load_draft=true`) y la edición por ID conservan la restauración de sus datos.
 - La regresión de integridad verifica el inicio vacío y el reemplazo por autoguardado; Playwright verifica que `/publicar-inmueble` no muestre el diálogo ni fotos/datos del borrador anterior.
 
+## Inicio limpio con clave heredada — 2026-11-26
+
+- Al iniciar una publicación nueva sin pedir reanudar, `usePublicationDraft` elimina la clave global antigua `cubitat_publish_draft`, que no tiene propietario identificable. No lee su contenido ni modifica borradores aislados por UID o publicaciones enviadas.
+- La regresión de `publish.spec.ts` comprueba la limpieza asíncrona de esa clave. Los recorridos de edición/reanudación explícita y publicación de Servicio/Material siguen pasando.
+- Validación local: lint, Vitest y build PASS; Playwright Chromium completo 73 PASS y 5 omitidos por requerir sesión/servicios QA. No verificado en producción.
+
 ## Aislamiento de borradores sin UID — 2026-11-14
 
 - La clave global heredada `cubitat_publish_draft` no identifica a su propietario. Leerla y asignarla al primer UID autenticado podía mostrar datos de una cuenta anterior en una cuenta distinta del mismo navegador.

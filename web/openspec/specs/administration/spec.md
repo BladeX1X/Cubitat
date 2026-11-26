@@ -335,6 +335,13 @@ consultas opcionales de contacto, perfil o señales de duplicados.
 - AND MUST indicar qué datos complementarios no están disponibles
 - AND MUST registrar el error sin exponer información personal
 
+#### Scenario: Imagen de propiedad no disponible durante moderación
+- GIVEN una propiedad de moderación tiene una portada o foto de galería cuya URL no puede cargarse
+- WHEN se presenta la tarjeta o el detalle
+- THEN MUST mostrar un marcador accesible «Imagen no disponible» en esa posición
+- AND MUST mantener visibles el resto de los datos y controles de moderación
+- AND MUST NOT mostrar el ícono de imagen rota del navegador
+
 ### Requirement: Beneficios comerciales fuera de moderación
 El panel de moderación MUST NOT mostrar una sección para conceder beneficios comerciales.
 

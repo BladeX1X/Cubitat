@@ -1,7 +1,7 @@
 import { render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackPage } from './AuthCallbackPage'
-import { getSignupReferralCode } from '../../modules/referrals/utils/tracker'
+import { getSignupReferralCode, trackReferral } from '../../modules/referrals/utils/tracker'
 
 const {
   cleanAuthUrlMock,
@@ -92,6 +92,25 @@ describe('AuthCallbackPage PKCE exchange', () => {
 
   it('attributes a new Google signup from the referral code captured before OAuth', async () => {
     sessionStorage.setItem('cubitat_signup_referral_code', 'ag-bc7d3fde')
+    rpcMock.mockResolvedValue({ data: true, error: null })
+    const onContinue = vi.fn()
+
+    render(<AuthCallbackPage onContinue={onContinue} />)
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith('attribute_own_oauth_agent_signup', {
+        p_referral_code: 'AG-BC7D3FDE',
+      })
+      expect(onContinue).toHaveBeenCalledOnce()
+    })
+    expect(getSignupReferralCode()).toBeNull()
+  })
+
+  it('preserves the referral from the invitation URL through the Google OAuth callback', async () => {
+    window.history.replaceState(null, '', '/?ref=AG-BC7D3FDE')
+    expect(trackReferral()).toBe('AG-BC7D3FDE')
+    expect(window.location.search).toBe('')
+    window.history.replaceState(null, '', '/auth/callback?flow=oauth&code=pkce-code')
     rpcMock.mockResolvedValue({ data: true, error: null })
     const onContinue = vi.fn()
 

@@ -22,11 +22,11 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
       }))
     })
 
-    await page.goto('/publicar')
+    await page.goto('/publicar-inmueble')
     await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page.getByText('Borrador privado sin cuenta asignada')).toHaveCount(0)
-    expect(await page.evaluate(() => localStorage.getItem('cubitat_publish_draft'))).toBeNull()
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('cubitat_publish_draft'))).toBeNull()
   })
 
   test('al crear una propiedad abre el formulario vacío y no pregunta por el borrador local', async ({ page }) => {
@@ -113,7 +113,7 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     })
 
     // 3. Navegar a la página de publicar
-    await page.goto('/publicar')
+    await page.goto('/publicar-inmueble')
 
     // Verificar cabecera
     await expect(page.locator('h1')).toHaveText('Publicar propiedad')

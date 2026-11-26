@@ -111,7 +111,7 @@ for (const catalog of [
       await expect(page.getByText(/no ha asociado WhatsApp a este anuncio/i)).toHaveAttribute('role', 'status')
       await page.getByRole('button', { name: /Abrir anuncio y enviar una consulta/ }).click()
       await expect(page).toHaveURL(new RegExp(`${catalog.detail}$`))
-      await expect(page.getByLabel(catalog.listingType === 'service' ? 'Mensaje para el profesional' : 'Enviar consulta al vendedor')).toBeFocused()
+      await expect(page.getByLabel('Tu mensaje')).toBeFocused()
     })
 
     test('conserva el mensaje y solicita iniciar sesión antes de enviar', async ({ page }) => {
@@ -121,7 +121,7 @@ for (const catalog of [
       await page.getByRole('button', { name: 'Consultar' }).click()
       await page.getByRole('button', { name: /Abrir anuncio y enviar una consulta/ }).click()
 
-      const inquiry = page.getByLabel(catalog.listingType === 'service' ? 'Mensaje para el profesional' : 'Enviar consulta al vendedor')
+      const inquiry = page.getByLabel('Tu mensaje')
       const message = 'Quisiera consultar la disponibilidad y recibir más detalles del anuncio.'
       await inquiry.fill(message)
       await page.getByRole('button', { name: 'Enviar consulta' }).click()
@@ -142,7 +142,7 @@ for (const catalog of [
         onInquiry: (path, body) => { submittedInquiry = { path, body } },
       })
       await page.goto(`${catalog.path}/${catalog.listingType === 'service' ? serviceRow.slug : materialRow.slug}`)
-      const inquiry = page.getByLabel(catalog.listingType === 'service' ? 'Mensaje para el profesional' : 'Enviar consulta al vendedor')
+      const inquiry = page.getByLabel('Tu mensaje')
       await inquiry.fill('Quisiera consultar la disponibilidad y recibir más detalles del anuncio.')
       await page.getByRole('button', { name: 'Enviar consulta' }).click()
 

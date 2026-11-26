@@ -26,7 +26,7 @@ test('el asistente de publicación conserva sus pasos dentro del viewport móvil
       refresh_token: 'dummy-refresh', user: { id: owner, email: 'test@example.com', user_metadata: { full_name: 'Test User' } },
     }))
   }, ownerId)
-  await page.goto('/publicar')
+  await page.goto('/publicar-inmueble')
   await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
   await expectNoOverflow()
 
@@ -185,7 +185,7 @@ test('la foto seleccionada se procesa y aparece con miniatura y tamaño válido'
       user: { id: ownerId, email: 'test@example.com', user_metadata: { full_name: 'Test User' } },
     }))
   }, ownerId)
-  await page.goto('/publicar')
+  await page.goto('/publicar-inmueble')
 
   await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
   await page.getByPlaceholder('Ej: Calle 23 #456 e/ H e I').fill('Calle QA s/n')
@@ -280,7 +280,7 @@ test('conserva todas las fotos tras un fallo y las guarda al reintentar', async 
       user: { id: ownerId, email: 'test@example.com', user_metadata: { full_name: 'Test User' } },
     }))
   }, ownerId)
-  await page.goto('/publicar')
+  await page.goto('/publicar-inmueble')
 
   await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
   await page.getByPlaceholder('Ej: Calle 23 #456 e/ H e I').fill('Calle QA s/n')
@@ -328,7 +328,8 @@ test('conserva todas las fotos tras un fallo y las guarda al reintentar', async 
   expect(propertyInsertCount).toBe(1)
   expect(propertyPayload).not.toBeNull()
   const images = propertyPayload?.images as string[]
-  expect(images).toEqual(uploadedPaths.map(path => `${page.url().replace(/\/publicar$/, '')}/api/supabase/storage/v1/object/property_images/${path}`))
+  const appOrigin = new URL(page.url()).origin
+  expect(images).toEqual(uploadedPaths.map(path => `${appOrigin}/api/supabase/storage/v1/object/property_images/${path}`))
   expect(propertyPayload?.cover_image).toBe(images[0])
   expect(propertyPayload?.user_id).toBe(ownerId)
   expect(propertyPayload?.status).toBe('pending_review')
@@ -381,7 +382,7 @@ test('limpia solo la foto nueva cuando la propiedad se rechaza por permisos', as
       user: { id: ownerId, email: 'test@example.com', user_metadata: { full_name: 'Test User' } },
     }))
   }, ownerId)
-  await page.goto('/publicar')
+  await page.goto('/publicar-inmueble')
 
   await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
   await page.getByPlaceholder('Ej: Calle 23 #456 e/ H e I').fill('Calle QA s/n')

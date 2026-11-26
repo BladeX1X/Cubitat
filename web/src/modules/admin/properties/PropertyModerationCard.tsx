@@ -4,9 +4,9 @@ import { Button } from '../../../shared/ui/button'
 import { formatDate, formatPrice } from '../core/formatters'
 import { STATUS_LABELS } from '../core/constants'
 import type { ModerationProperty } from '../core/types'
-import { getPropertyCoverImage } from '../../properties/utils/images'
 import { PropertyDetails } from './PropertyDetails'
 import { ImageDuplicateComparison } from './ImageDuplicateComparison'
+import { ModerationPropertyImage } from './ModerationPropertyImage'
 
 const TrustScoreDisclosure = import.meta.env.DEV || import.meta.env.VITE_PHASE2_UI_ENABLED === 'true'
   ? lazy(() => import('../trust-score').then((module) => ({ default: module.TrustScoreDisclosure })))
@@ -33,11 +33,7 @@ export function PropertyModerationCard({
     <article className="bg-white rounded-2xl shadow-[0_4px_14px_rgba(10,31,28,0.04)] border border-neutral-100 overflow-hidden">
       <div className="flex flex-col sm:flex-row">
         <div className="sm:w-56 h-40 sm:h-auto bg-neutral-100 shrink-0">
-          {property.cover_image ? (
-            <img src={getPropertyCoverImage(property.cover_image)} alt={property.title} loading="lazy" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">Sin imagen</div>
-          )}
+          <ModerationPropertyImage src={property.cover_image} alt={property.title} className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 p-5 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2 items-start justify-between">
