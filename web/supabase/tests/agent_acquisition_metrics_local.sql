@@ -20,9 +20,11 @@ INSERT INTO public.agent_province_assignments (application_id, agent_id, provinc
 VALUES
   ('f2510000-0000-0000-0000-000000000101', 'f2510000-0000-0000-0000-000000000001', 'La Habana'),
   ('f2510000-0000-0000-0000-000000000102', 'f2510000-0000-0000-0000-000000000002', 'La Habana');
+ALTER TABLE public.profiles DISABLE TRIGGER on_profile_role_update;
 UPDATE public.profiles
 SET role = 'agent'::public.user_role, verification_status = 'verified'
 WHERE id IN ('f2510000-0000-0000-0000-000000000001', 'f2510000-0000-0000-0000-000000000002');
+ALTER TABLE public.profiles ENABLE TRIGGER on_profile_role_update;
 
 INSERT INTO public.agent_referral_links (agent_id, code, active)
 VALUES
