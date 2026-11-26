@@ -1,12 +1,14 @@
 import { render, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackPage } from './AuthCallbackPage'
+import { getSignupReferralCode } from '../../modules/referrals/utils/tracker'
 
 const {
   cleanAuthUrlMock,
   consumeAuthReturnPathMock,
   exchangeCodeForSessionMock,
   getAuthUrlParamsMock,
+  rpcMock,
   setSessionMock,
   verifyOtpMock,
 } = vi.hoisted(() => ({
@@ -14,6 +16,7 @@ const {
   consumeAuthReturnPathMock: vi.fn(),
   exchangeCodeForSessionMock: vi.fn(),
   getAuthUrlParamsMock: vi.fn(),
+  rpcMock: vi.fn(),
   setSessionMock: vi.fn(),
   verifyOtpMock: vi.fn(),
 }))
@@ -26,6 +29,7 @@ vi.mock('../../shared/lib/supabaseClient', () => ({
       setSession: setSessionMock,
       verifyOtp: verifyOtpMock,
     },
+    rpc: rpcMock,
   },
 }))
 
@@ -41,6 +45,7 @@ vi.mock('../../modules/auth/utils/authRedirects', () => ({
 describe('AuthCallbackPage PKCE exchange', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
     window.history.replaceState(null, '', '/auth/callback?flow=oauth&code=pkce-code')
     getAuthUrlParamsMock.mockReturnValue({
       code: 'pkce-code',
@@ -64,6 +69,11 @@ describe('AuthCallbackPage PKCE exchange', () => {
     consumeAuthReturnPathMock.mockReturnValue(null)
   })
 
+  afterEach(() => {
+    sessionStorage.clear()
+    window.history.replaceState(null, '', '/')
+  })
+
   it('exchanges the OAuth code once and continues without an error screen', async () => {
     const onContinue = vi.fn()
 
@@ -78,6 +88,33 @@ describe('AuthCallbackPage PKCE exchange', () => {
 
     expect(window.location.pathname).toBe('/')
     expect(cleanAuthUrlMock).not.toHaveBeenCalled()
+  })
+
+  it('attributes a new Google signup from the referral code captured before OAuth', async () => {
+    sessionStorage.setItem('cubitat_signup_referral_code', 'ag-bc7d3fde')
+    rpcMock.mockResolvedValue({ data: true, error: null })
+    const onContinue = vi.fn()
+
+    render(<AuthCallbackPage onContinue={onContinue} />)
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith('attribute_own_oauth_agent_signup', {
+        p_referral_code: 'AG-BC7D3FDE',
+      })
+      expect(onContinue).toHaveBeenCalledOnce()
+    })
+    expect(getSignupReferralCode()).toBeNull()
+  })
+
+  it('keeps referral signup available for retry if attribution RPC fails without blocking login', async () => {
+    sessionStorage.setItem('cubitat_signup_referral_code', 'AG-BC7D3FDE')
+    rpcMock.mockResolvedValue({ data: null, error: new Error('temporary failure') })
+    const onContinue = vi.fn()
+
+    render(<AuthCallbackPage onContinue={onContinue} />)
+
+    await waitFor(() => expect(onContinue).toHaveBeenCalledOnce())
+    expect(getSignupReferralCode()).toBe('AG-BC7D3FDE')
   })
 
   it('creates the session explicitly for legacy callback tokens', async () => {

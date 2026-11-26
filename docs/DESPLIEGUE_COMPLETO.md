@@ -1167,3 +1167,9 @@ La interfaz privada añade conteos agregados de altas registradas desde el enlac
 ### Promoción productiva
 
 Después de integrar los cambios y superar `quality` y `database-security`, ejecutar primero el workflow `Apply agent acquisition metrics migration to production` desde `main`. Requiere la frase explícita `APPLY AGENT ACQUISITION METRICS WITHOUT BACKUP`, comprueba el proyecto y el ledger exactos y detiene la ejecución si encuentra cualquier migración pendiente adicional. No crea respaldo por instrucción del usuario. Solo después de una migración verificada, publicar frontend y Worker con `npm run deploy` desde el release integrado, que construye el perfil `phase4-production` y verifica sitemap y bundles antes del guard de producción. Completar un smoke autenticado del panel y las rutas públicas antes de registrar producción como verificada.
+
+## Atribución de registros OAuth de agente — 2026-11-25
+
+La nueva cuenta creada mediante Google puede atribuirse al enlace abierto en la misma pestaña: la aplicación conserva el código validado en `sessionStorage` y el callback invoca una RPC autenticada. PostgreSQL limita la operación a una cuenta Google `buyer` creada en los últimos 15 minutos, resuelve el código contra el enlace activo y el agente verificado y escribe en el ledger inmutable. No se atribuyen logins de cuentas existentes. La RPC se expone por la allowlist autenticada del Worker, no por una llamada pública.
+
+Antes del despliegue productivo, integrar CI `quality` y `database-security`; desde `main`, ejecutar el workflow dedicado `Apply Google referral attribution migration to production` con la confirmación `APPLY GOOGLE REFERRAL ATTRIBUTION WITHOUT BACKUP`; revisar su preflight/dry-run/postcheck; luego publicar con `npm run deploy` y comprobar callback OAuth en una cuenta de prueba nueva y en una cuenta preexistente. La migración no debe aplicarse con `db push` global.

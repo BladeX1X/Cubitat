@@ -12,13 +12,21 @@ The server remains responsible for eligibility, uniqueness, and persistence.
 - Does not read leads, contacts, or commissions.
 - Initial dashboard loads read the existing active code only; they do not
   provision or reactivate a link.
-- Generic visit attribution remains in `modules/referrals/utils/tracker.ts`.
+- Signup-code capture and temporary storage belong to
+  `modules/referrals/utils/tracker.ts`; visit attribution remains disabled.
 - Worker contact submission and server-side attribution belong to the public
   referral-capture module, which consumes the code format without importing
   agent dashboard queries.
 - The dashboard may compose this contract but must not call its RPC directly.
 
-New-account signup attribution is approved. Database privileges permit only authenticated users to call the reviewed link provisioning RPC; it checks the caller's agent/admin role and verified KYC, and refuses an existing paused link. Visit-attribution, visit-count, contact-attribution, and commission RPCs remain revoked. The browser sends the public code only during email signup; Auth resolves it server-side.
+New-account signup attribution is active for email and Google. Email signup
+sends the captured code to Auth metadata and the Auth trigger resolves it.
+Google OAuth returns to the callback with the code in same-tab session storage;
+the callback invokes `attribute_own_oauth_agent_signup(text)`. The server accepts
+only a recent Google-created buyer account and resolves the active, verified
+agent link. The function is executable only by authenticated sessions and does
+not expose ledger rows. Visit-attribution, visit-count, contact-attribution,
+and commission RPCs remain revoked.
 
 The `ensure_agent_referral_link()` migration also rejects an existing
 `active=false` link and never reactivates it with `ON CONFLICT`. Standard and

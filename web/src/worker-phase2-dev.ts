@@ -78,6 +78,7 @@ const worker = createWorker({
     'review_agent_application',
     'list_active_agents_for_moderation',
     'revoke_agent_access',
+    'attribute_own_oauth_agent_signup',
   ],
 });
 

@@ -13,10 +13,13 @@ secundarios que no forman parte de esa decisión permanecen suspendidos:
 - El dashboard MUST NOT consultar visitas, contactos atribuidos ni comisiones.
 - La aplicación MUST quitar `ref` de la URL conservando los demás parámetros y
   hash. Puede conservar temporalmente un código validado en `sessionStorage`
-  solo para el registro por correo; MUST NOT enviarlo en formularios de contacto.
-- La atribución de altas MUST resolverse dentro del trigger de Auth con el
-  código, el estado activo del enlace y la elegibilidad KYC/rol del agente.
-  Metadata del navegador nunca identifica directamente al agente.
+  para registro por correo o retorno Google en la misma pestaña; MUST NOT
+  enviarlo en formularios de contacto.
+- La atribución de altas por correo MUST resolverse dentro del trigger de Auth.
+  Para Google, el callback autenticado MUST invocar la RPC de atribución, que
+  valida en servidor la antigüedad de la cuenta, el proveedor Google, el estado
+  activo del enlace y la elegibilidad KYC/rol del agente. Metadata editable del
+  navegador nunca identifica directamente al agente.
 - El Worker DEV MUST ignorar `referral_code` en solicitudes de contacto cuando
   `AGENT_REFERRALS_ENABLED=false`.
 - Un enlace existente marcado `active=false` MUST permanecer pausado; una
@@ -76,11 +79,24 @@ El sistema MUST asignar un identificador de referido único a cada usuario verif
 - WHEN se crea una cuenta
 - THEN la cuenta MUST crearse sin atribución y sin bloquear el registro
 
-#### Scenario: Registro por proveedor OAuth
-- GIVEN una persona nueva que inicia OAuth desde una URL referida
-- WHEN Auth crea la cuenta sin transmitir metadata de signup confiable
-- THEN el sistema MUST NOT atribuirla mediante parámetros de retorno manipulables
-- AND OAuth attribution permanece pendiente de un intento firmado de corta duración
+#### Scenario: Registro nuevo con Google desde un enlace de agente
+- GIVEN una persona nueva que abrió un enlace `?ref=AG-XXXXXXXX` en el mismo
+  navegador y mantiene el código validado en `sessionStorage`
+- WHEN Google crea la cuenta y la persona vuelve a `/auth/callback`
+- THEN el callback MUST enviar el código guardado a una RPC autenticada
+- AND la RPC MUST atribuir solo cuentas Google con `created_at` dentro de los
+  últimos 15 minutos y perfil `buyer`
+- AND la RPC MUST resolver el código a un enlace activo de un perfil elegible
+  `agent`/`admin` con KYC verificado y MUST rechazar la autoatribución
+- AND una cuenta ya existente, un enlace pausado o una RPC fallida MUST NOT
+  bloquear el inicio de sesión ni crear una atribución
+- AND la aplicación MUST limpiar el código cuando la RPC responda sin error y
+  conservarlo si la RPC falla para permitir reintentar dentro de la ventana
+
+#### Scenario: Inicio de sesión con Google de una cuenta existente
+- GIVEN una cuenta Google creada hace más de 15 minutos
+- WHEN la persona inicia sesión desde una pestaña que tiene un código referido
+- THEN la RPC MUST rechazar la atribución y MUST NOT modificar el registro previo
 
 ---
 

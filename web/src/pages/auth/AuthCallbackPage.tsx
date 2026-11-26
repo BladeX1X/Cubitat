@@ -5,6 +5,8 @@ import { supabase } from '../../shared/lib/supabaseClient'
 import { cleanAuthUrl, getAuthUrlParams } from './authUrlParams'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { consumeAuthReturnPath } from '../../modules/auth/utils/authRedirects'
+import { clearSignupReferralCode, getSignupReferralCode } from '../../modules/referrals/utils/tracker'
+import { logSafeEvent, sanitizeErrorReason } from '../../shared/lib/logger'
 
 type AuthCallbackPageProps = {
   onContinue: (targetPath?: string) => void
@@ -95,6 +97,26 @@ export function AuthCallbackPage({ onContinue }: AuthCallbackPageProps) {
           || (providers.length > 0 && (providers.length > 1 || !providers.includes('email')))
 
         if (isOAuth) {
+          const isGoogleOAuth = provider === 'google' || providers.includes('google')
+          const referralCode = isGoogleOAuth ? getSignupReferralCode() : null
+          if (referralCode) {
+            try {
+              const { error: attributionError } = await supabase.rpc('attribute_own_oauth_agent_signup', {
+                p_referral_code: referralCode,
+              })
+              if (attributionError) throw attributionError
+              clearSignupReferralCode()
+            } catch (attributionError) {
+              // Account creation and sign-in must succeed even if the optional attribution RPC is unavailable.
+              logSafeEvent({
+                module: 'referrals',
+                action: 'oauth_signup_attribution',
+                level: 'warn',
+                code: sanitizeErrorReason(attributionError),
+              })
+            }
+          }
+
           const next = consumeAuthReturnPath()
           if (next) {
             window.history.replaceState(null, '', next)

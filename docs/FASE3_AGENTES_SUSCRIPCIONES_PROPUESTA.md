@@ -228,3 +228,7 @@ Agregar un dominio de suscripciones separado de F4-BIZ:
 La matriz provisional no autoriza cobros ni bloqueos automáticos. Las reglas
 descritas arriba deben tratarse como límites de la primera salida hasta resolver
 los puntos pendientes y redactar los criterios finales.
+
+## Actualización posterior — atribución Google desde enlace — 2026-11-25
+
+La atribución de registros por Google ya tiene una implementación candidata en `feature/google-referral-attribution`. Usa el código de la misma sesión del navegador y una RPC autenticada que solo atribuye cuentas Google nuevas, perfil buyer, código activo y agente verificado. No atribuye cuentas existentes ni activa visitas/contactos/comisiones. Lint, suite local, builds y contrato pgTAP 10/10 pasaron; pendiente integrar, migrar con workflow exacto y desplegar. [[Cubitat - Atribución Google de enlaces referidos 2026-11-25]]
