@@ -232,3 +232,7 @@ los puntos pendientes y redactar los criterios finales.
 ## Actualización posterior — atribución Google desde enlace — 2026-11-25
 
 La atribución de registros por Google ya tiene una implementación candidata en `feature/google-referral-attribution`. Usa el código de la misma sesión del navegador y una RPC autenticada que solo atribuye cuentas Google nuevas, perfil buyer, código activo y agente verificado. No atribuye cuentas existentes ni activa visitas/contactos/comisiones. Lint, suite local, builds y contrato pgTAP 10/10 pasaron; pendiente integrar, migrar con workflow exacto y desplegar. [[Cubitat - Atribución Google de enlaces referidos 2026-11-25]]
+
+## Atribución Google de referidos — producción — 2026-11-26
+
+PR #288 integrado; `quality` y `database-security` PASS. Migración `20261125110000_oauth_agent_signup_attribution.sql` aplicada por workflow dedicado sin respaldo conforme a instrucción expresa; checksum, único cambio, dry-run y postcheck PASS. Worker `cubitat1` versión `250879f7-8306-4281-96fc-65e6d84c2616` al 100 %. Sitio y bundles principal/callback HTTP 200; el callback publicado contiene la RPC y el almacenamiento del referido está presente en el bundle principal. Falta QA autenticado real con una cuenta Google nueva y una existente.
