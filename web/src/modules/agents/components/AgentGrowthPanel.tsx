@@ -11,7 +11,7 @@ import {
   type AgentLeadKind,
   type AgentLeadStatus,
 } from '../agentGrowthRepository'
-import { ensureAgentReferralCode, getAgentReferralLink } from '../referrals/agentReferralRepository'
+import { ensureAgentReferralCode, getAgentReferralLink, loadAgentReferralCode } from '../referrals/agentReferralRepository'
 
 const STATUS_LABELS: Record<AgentLeadStatus, string> = {
   new: 'Nuevo',
@@ -52,7 +52,21 @@ export function AgentGrowthPanel() {
     setLoading(true)
     setLoadError(false)
     try {
-      setData(await loadAgentGrowthDashboard())
+      const [dashboardResult, referralCodeResult] = await Promise.allSettled([
+        loadAgentGrowthDashboard(),
+        loadAgentReferralCode(),
+      ])
+      if (dashboardResult.status === 'rejected') throw dashboardResult.reason
+      setData(dashboardResult.value)
+
+      if (referralCodeResult.status === 'fulfilled') {
+        const savedLink = referralCodeResult.value ? getAgentReferralLink(referralCodeResult.value) : null
+        setReferralLink(savedLink)
+        setReferralMessage(savedLink ? 'Tu enlace guardado está listo para compartir.' : null)
+      } else {
+        setReferralLink(null)
+        setReferralMessage('No se pudo recuperar el enlace guardado. Vuelve a cargar el panel.')
+      }
     } catch {
       setLoadError(true)
     } finally {

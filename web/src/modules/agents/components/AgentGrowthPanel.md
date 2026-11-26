@@ -9,8 +9,10 @@ componente coordina acciones mediante repositorios; no accede a tablas.
 
 ## Reglas de datos
 
-- El agente verificado puede crear/recuperar explícitamente un código único y
-  copiar el enlace de registro; cargar el panel no aprovisiona códigos.
+- Al cargar el panel, el repositorio vuelve a leer el código activo propio y
+  restaura el enlace compartible sin aprovisionarlo ni reactivarlo.
+- Crear un enlace nuevo sigue requiriendo la acción explícita del agente; cargar
+  el panel no escribe ni aprovisiona códigos.
 - El enlace atribuye solo cuentas nuevas creadas por registro de correo. No
   registra visitas, contactos atribuidos ni comisiones.
 - La RPC de aprovisionamiento solo está disponible a `authenticated`; el servidor
