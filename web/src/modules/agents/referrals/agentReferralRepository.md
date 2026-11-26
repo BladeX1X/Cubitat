@@ -2,13 +2,16 @@
 
 ## Responsibility
 
-Owns the agent-facing referral-code contract: provisioning/retrieval through
-`ensure_agent_referral_link()` and construction of the shareable `?ref=` URL.
+Owns the agent-facing referral-code contract: reading the caller's existing
+active code through the owner-scoped RLS policy, provisioning/retrieval through
+`ensure_agent_referral_link()`, and construction of the shareable `?ref=` URL.
 The server remains responsible for eligibility, uniqueness, and persistence.
 
 ## Boundaries
 
 - Does not read leads, contacts, or commissions.
+- Initial dashboard loads read the existing active code only; they do not
+  provision or reactivate a link.
 - Generic visit attribution remains in `modules/referrals/utils/tracker.ts`.
 - Worker contact submission and server-side attribution belong to the public
   referral-capture module, which consumes the code format without importing

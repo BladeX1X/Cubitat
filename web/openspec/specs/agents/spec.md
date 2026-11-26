@@ -61,12 +61,12 @@ exponen en esta tarjeta.
   El requisito de postulación permanece parcialmente implementado y no debe
   considerarse cerrado.
 
-Hasta implementar los contratos descritos en esta especificación, el panel
-MUST NOT aprovisionar códigos ni consultar repositorios de referidos, contactos
-atribuidos o comisiones. Las oportunidades consentidas siguen disponibles de
-forma independiente. El Worker MUST descartar atribución de referido por
-defecto y solo aceptarla cuando el entorno la habilite explícitamente; la
-configuración productiva permanece desactivada.
+La atribución de cuentas nuevas por registro de correo está habilitada como
+capacidad acotada. El panel MAY leer el enlace activo propio y permitir que el
+agente lo cree explícitamente. Cargar o recargar el panel MUST NOT aprovisionar
+un enlace. El panel MUST NOT consultar visitas, contactos atribuidos ni
+comisiones mientras esas capacidades sigan pausadas. Las oportunidades
+consentidas siguen disponibles de forma independiente.
 Mientras continúe la pausa técnica, PostgreSQL MUST revocar `EXECUTE` de `anon`,
 `authenticated` y `service_role` en las RPC de creación de enlaces, atribución
 de visitas y mutación de comisiones; ocultar la UI o la allowlist del Worker no
@@ -325,9 +325,11 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - GIVEN un agente verificado
 - WHEN abre `/panel-agente`
 - THEN MUST ver el registro y seguimiento de oportunidades
-- AND MUST ocultar el enlace de referido, métricas de atribución y comisiones
-  hasta que la atribución de registros y los pagos vinculados estén
-  implementados y revisados
+- AND MUST poder crear y copiar su enlace personal de registro por correo
+- AND si ya existe un enlace activo, MUST volver a mostrarlo al recargar el panel
+- AND la lectura al recargar MUST NOT aprovisionar ni reactivar enlaces
+- AND MUST mantener ocultos visitas, contactos atribuidos y comisiones mientras
+  sus capacidades sigan pausadas
 - AND MUST poder filtrar por tipo/estado
 - AND MUST conservar las métricas actuales de propiedades, vistas y contactos
 - AND MUST presentar carga, vacío, error y reintento

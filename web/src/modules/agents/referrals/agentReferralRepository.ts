@@ -2,6 +2,22 @@ import { supabase } from '../../../shared/lib/supabaseClient'
 
 const AGENT_REFERRAL_CODE_PATTERN = /^AG-[0-9A-F]{8}$/i
 
+/** Reads the caller's active link under the existing owner-scoped RLS policy. */
+export async function loadAgentReferralCode(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('agent_referral_links')
+    .select('code')
+    .eq('active', true)
+    .maybeSingle()
+
+  if (error) throw new Error(`agent_referral_link_read_failed:${error.code || 'QUERY_ERROR'}`)
+  if (data === null) return null
+  if (typeof data.code !== 'string' || !AGENT_REFERRAL_CODE_PATTERN.test(data.code.trim())) {
+    throw new Error('agent_referral_link_read_failed:INVALID_FORMAT')
+  }
+  return data.code.trim().toUpperCase()
+}
+
 /** Ensures the authenticated, verified agent has one stable active referral code. */
 export async function ensureAgentReferralCode(): Promise<string> {
   const { data, error } = await supabase.rpc('ensure_agent_referral_link')

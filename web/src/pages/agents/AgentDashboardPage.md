@@ -27,8 +27,10 @@ el registro y seguimiento de oportunidades.
   contadores se muestran como no disponibles, no como cero.
 - Las tablas privadas y RPC del módulo validan nuevamente la identidad, el rol y
   el acceso; la condición visual de la página no es autorización de servidor.
-- Enlaces de referido, visitas, atribución de contactos y comisiones están
-  pendientes de definición y no se muestran en el panel. Las oportunidades de
+- El panel conserva los enlaces de referido en el servidor. Al volver a cargar,
+  lee el código activo propio mediante RLS y reconstruye el enlace compartible;
+  no crea un código durante esa lectura. Visitas, atribución de contactos y
+  comisiones siguen pendientes y no se muestran. Las oportunidades de
   propiedad/cliente requieren autorización y sus consultas siguen protegidas
   por RLS.
 - Cambiar etapa de oportunidad se hace con RPC que agrega un evento inmutable.

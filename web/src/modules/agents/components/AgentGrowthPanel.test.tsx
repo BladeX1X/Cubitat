@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentGrowthPanel } from './AgentGrowthPanel'
 import { createAgentLead, loadAgentGrowthDashboard, updateAgentLeadStatus } from '../agentGrowthRepository'
-import { ensureAgentReferralCode } from '../referrals/agentReferralRepository'
+import { ensureAgentReferralCode, loadAgentReferralCode } from '../referrals/agentReferralRepository'
 
 vi.mock('../agentGrowthRepository', () => ({
   createAgentLead: vi.fn(),
@@ -12,12 +12,14 @@ vi.mock('../agentGrowthRepository', () => ({
 
 vi.mock('../referrals/agentReferralRepository', () => ({
   ensureAgentReferralCode: vi.fn(),
+  loadAgentReferralCode: vi.fn(),
   getAgentReferralLink: (code: string) => `https://cubitat.example/?ref=${code}`,
 }))
 
 describe('AgentGrowthPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(loadAgentReferralCode).mockResolvedValue(null)
     vi.mocked(loadAgentGrowthDashboard).mockResolvedValue({
       referralCode: 'AG-12AB34CD', leads: [], contacts: [], commissions: [], leadEvents: [], commissionEvents: [], referralVisits: 4, failedModules: [], failureCodes: {},
     })
@@ -50,6 +52,15 @@ describe('AgentGrowthPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear mi enlace' }))
     expect(await screen.findByLabelText('Tu enlace de registro')).toHaveValue('https://cubitat.example/?ref=AG-12AB34CD')
     expect(ensureAgentReferralCode).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores the server-saved link after reloading the panel without creating another', async () => {
+    vi.mocked(loadAgentReferralCode).mockResolvedValueOnce('AG-12AB34CD')
+    render(<AgentGrowthPanel />)
+
+    expect(await screen.findByLabelText('Tu enlace de registro')).toHaveValue('https://cubitat.example/?ref=AG-12AB34CD')
+    expect(screen.getByRole('button', { name: 'Copiar enlace' })).toBeInTheDocument()
+    expect(ensureAgentReferralCode).not.toHaveBeenCalled()
   })
 
   it('requires confirmation of prospect permission before creating a property lead', async () => {
