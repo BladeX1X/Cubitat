@@ -447,6 +447,15 @@ sesión autenticada. El proxy no sustituye la autorización de PostgreSQL: la RP
 continúa exigiendo AAL2 y validando las transiciones y precondiciones definidas
 por la migración. Las solicitudes anónimas siguen bloqueadas en el borde.
 
+### Contrato del proxy de revisión en producción — 2026-11-25
+
+El Worker productivo incluye `review_agent_application` en su lista explícita
+de RPC autenticadas permitidas, junto con las operaciones administrativas de
+agentes. Sin esta entrada, el proxy devuelve `Operación no permitida.` antes de
+que PostgREST ejecute la decisión. La prueba `worker-phase2-production.test.ts`
+verifica que la lista de producción conserve esta RPC. PostgreSQL sigue siendo
+responsable de autorizar y validar cada transición.
+
 ## Perfil productivo preparado (2026-11-03)
 
 La rama candidata añade el perfil `phase3-production`, que requiere la URL y

@@ -94,3 +94,10 @@ error, aunque no se validó la lista de agentes activos ni una revocación.
 - En el momento de esta comprobación HTTP aún faltaba inspeccionar los datos en sesión; el pendiente quedó cerrado después con la verificación autenticada de dos notas que consta arriba.
 - Esta evidencia supersede las notas anteriores de este archivo que describían este módulo de historial como solo local o pendiente de despliegue; no certifica otros endpoints ni todos los flujos F3.
 - Privacidad esperada: la nota queda solo para moderación AAL2; Mi cuenta muestra estado genérico. Producción y datos de Supabase sin cambios.
+
+### Lista de RPC de moderación en producción — 2026-11-25
+
+El Worker productivo debe permitir explícitamente `review_agent_application`
+en el proxy autenticado. Si la lista perimetral bloquea una RPC administrativa,
+la interfaz identifica `Operación no permitida.` como rechazo del Worker y señala
+que falta habilitar la función, sin exponer contenido arbitrario del servidor.

@@ -62,6 +62,7 @@ describe('Phase 2 production Worker', () => {
     }
     expect(options.additionalAuthenticatedRpcs).toContain('list_active_agents_for_moderation')
     expect(options.additionalAuthenticatedRpcs).toContain('revoke_agent_access')
+    expect(options.additionalAuthenticatedRpcs).toContain('review_agent_application')
     expect(options.additionalAuthenticatedRpcs).toContain('get_admin_property_contact_details')
     expect(options.additionalAuthenticatedWriteTables).toContain('saved_marketplace_listings')
   })

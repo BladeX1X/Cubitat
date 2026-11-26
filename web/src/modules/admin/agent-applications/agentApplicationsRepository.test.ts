@@ -62,10 +62,10 @@ describe('agentApplicationsRepository', () => {
     await expect(reviewAgentApplication('application-id', 'approved')).rejects.toThrow(/KYC/i)
   })
 
-  it('describes agent-list failures as loading failures, not save failures', async () => {
+  it('describes an agent-list proxy denial without calling it a save failure', async () => {
     query.rpc.mockResolvedValueOnce({ data: null, error: { error: 'Operación no permitida.' } })
 
-    await expect(fetchActiveAgentsForModeration()).rejects.toThrow(/No se pudo cargar la lista de agentes activos/i)
+    await expect(fetchActiveAgentsForModeration()).rejects.toThrow(/Worker de producción bloqueó esta función administrativa/i)
   })
 
   it('reports when the hosted PostgREST schema has not loaded the review RPC', async () => {
@@ -99,6 +99,12 @@ describe('agentApplicationsRepository', () => {
     query.rpc.mockResolvedValueOnce({ data: null, error: { error: 'Admin AAL2 required.' } })
 
     await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/permiso de administrador/i)
+  })
+
+  it('explains when the application Worker blocks the review RPC', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: 'Operación no permitida.' })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/Worker de producción bloqueó esta función administrativa/i)
   })
 
   it('unwraps KYC preconditions without exposing the raw server message', async () => {

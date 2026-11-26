@@ -53,9 +53,13 @@ ruta dentro de `AdminMfaGate`; el RPC de revisión persiste transiciones
 permitidas y eventos inmutables. Los fallos registran fase, estado HTTP y una
 causa enumerada, sin IDs, rutas ni contenido sensible; la UI traduce errores
 conocidos de AAL2, PostgREST, KYC/estado y Storage a mensajes accionables.
-El proxy Supabase del Worker DEV reenvía `review_agent_application` solo con
-sesión autenticada; PostgreSQL mantiene la autorización AAL2 y valida las
-transiciones.
+El proxy Supabase de los Workers DEV y producción reenvía
+`review_agent_application` solo con sesión autenticada; PostgreSQL mantiene la
+autorización administrativa y valida las transiciones. La lista explícita del
+Worker de producción debe incluir esta RPC además de las consultas y revocación
+administrativas relacionadas; la prueba de perfil de producción fija ese
+contrato para evitar que la aplicación muestre `Operación no permitida.` al
+guardar una decisión.
 
 ## Aviso administrativo por correo
 
