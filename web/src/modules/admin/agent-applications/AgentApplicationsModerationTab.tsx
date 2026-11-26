@@ -189,9 +189,9 @@ export function AgentApplicationsModerationTab() {
           <article key={agent.agent_id} className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h4 className="break-words font-semibold text-neutral-900">{agent.full_name}</h4>
-              <p className="text-sm text-neutral-600">{agent.province} · Agente activo · ID {agent.agent_id.slice(0, 8)}</p>
+              <p className="text-sm text-neutral-600">{agent.province} · {agent.account_role === 'admin' ? 'Administrador con plaza de agente' : 'Agente activo'} · ID {agent.agent_id.slice(0, 8)}</p>
             </div>
-            {revocationTargetId === agent.agent_id ? <div className="w-full space-y-2 sm:max-w-xl">
+            {agent.account_role === 'admin' ? <p className="text-sm text-neutral-500">El acceso de administrador no se puede retirar desde esta acción.</p> : revocationTargetId === agent.agent_id ? <div className="w-full space-y-2 sm:max-w-xl">
               <label htmlFor={`agent-revocation-reason-${agent.agent_id}`} className="block text-sm font-semibold text-neutral-800">Motivo para retirar el acceso</label>
               <Textarea id={`agent-revocation-reason-${agent.agent_id}`} value={revocationReason} maxLength={500} onChange={(event) => setRevocationReason(event.target.value)} placeholder="Describe brevemente la razón administrativa." />
               <div className="flex flex-col gap-2 sm:flex-row">

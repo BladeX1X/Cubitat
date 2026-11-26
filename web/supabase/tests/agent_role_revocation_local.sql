@@ -2,7 +2,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(14);
+SELECT plan(16);
 
 SELECT has_table('public', 'agent_role_moderation_events', 'agent role revocation audit table exists');
 SELECT ok(
@@ -23,8 +23,14 @@ SELECT has_function('public', 'list_active_agents_for_moderation', ARRAY[]::text
 SELECT has_function('public', 'revoke_agent_access', ARRAY['uuid', 'text'], 'agent access revocation RPC exists');
 SELECT ok(
   pg_get_functiondef('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%LEFT JOIN public.agent_province_assignments%'
-    AND pg_get_functiondef('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%profile.role = ''agent''%',
-  'active-agent list includes legacy agents even without a provincial assignment and excludes admins'
+    AND pg_get_functiondef('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%profile.role = ''agent''%'
+    AND pg_get_functiondef('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%profile.role = ''admin''%'
+    AND pg_get_functiondef('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%assignment.id IS NOT NULL%',
+  'active-agent list includes legacy agents and assigned admins without exposing unassigned admins'
+);
+SELECT ok(
+  pg_get_function_result('public.list_active_agents_for_moderation()'::regprocedure) ILIKE '%role text%',
+  'active-agent list returns role so the UI can protect administrator access'
 );
 SELECT ok(
   pg_get_functiondef('public.revoke_agent_access(uuid,text)'::regprocedure) ILIKE '%role IS DISTINCT FROM ''agent''%'

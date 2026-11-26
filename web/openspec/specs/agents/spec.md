@@ -158,7 +158,9 @@ clientes, seguimiento, atribución de contactos y comisiones auditables.
 - AND MUST cambiar únicamente el rol del perfil a `buyer`
 - AND MUST conservar la cuenta, publicaciones e historial del usuario
 - AND MUST NOT permitir retirar el rol `admin` ni actuar sin AAL2
-- AND la lista de agentes activos MUST devolver solo nombre, provincia (o indicar que no tiene plaza) e identificador para moderación
+- AND la lista de agentes activos MUST devolver nombre, provincia, rol e identificador para moderación
+- AND MUST incluir perfiles `admin` solo cuando tengan una plaza provincial activa
+- AND la interfaz MUST explicar que el acceso administrativo no se retira desde la acción para agentes
 
 #### Scenario: Validar y retener un currículum
 - GIVEN una postulación nueva

@@ -4,6 +4,26 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
+## Lista administrativa de agentes con plaza de administrador — candidata en PR — 2026-11-26
+
+- `migrations/20261126120000_agent_admin_assignment_moderation_list.sql`
+  amplía la respuesta de `list_active_agents_for_moderation()` con el rol e
+  incluye perfiles `admin` únicamente si tienen una asignación provincial
+  activa. Los perfiles administradores sin plaza permanecen fuera de la lista.
+- La interfaz identifica la plaza de un administrador y no muestra la acción
+  de retiro; `revoke_agent_access()` conserva su restricción al rol `agent`.
+- `tests/agent_role_revocation_local.sql` cubre la forma y el alcance de la RPC.
+- Hallazgo productivo verificado en lectura: había una plaza activa asociada a
+  un perfil `admin`, mientras la RPC listaba solo perfiles `agent`; por eso
+  Moderación mostraba un estado vacío. No se modificó ninguna fila productiva.
+- Estado: candidata en PR #290; aún no aplicada. Tras integrar código y
+  migración, ejecutar únicamente `Apply agent admin moderation list migration
+  to production` desde `main`. El workflow exige la confirmación
+  `APPLY AGENT ADMIN MODERATION LIST WITHOUT BACKUP`, verifica proyecto,
+  ledger, checksum, estado inicial y dry-run de una sola versión, y comprueba
+  la firma, seguridad y permisos posteriores. No crea respaldo por instrucción
+  expresa del usuario. No aplicar desde el Dashboard ni con `db push` global.
+
 ## Coordenadas opcionales de Servicios y Materiales — candidata local — 2026-11-24
 
 - `migrations/20261124100000_marketplace_publication_coordinates.sql` añade un
