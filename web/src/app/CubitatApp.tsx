@@ -867,8 +867,8 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
-  function navigateServiceSubmission(fromChooser = false) {
-    const path = fromChooser ? '/publicar-servicio?origen=publicar' : '/publicar-servicio'
+  function navigateServiceSubmission(fromChooser = false, draftId?: string) {
+    const path = draftId ? `/publicar-servicio?draft_id=${encodeURIComponent(draftId)}` : fromChooser ? '/publicar-servicio?origen=publicar' : '/publicar-servicio'
     if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('service-submit')
@@ -889,8 +889,8 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
-  function navigateMaterialSubmission(fromChooser = false) {
-    const path = fromChooser ? '/publicar-material?origen=publicar' : '/publicar-material'
+  function navigateMaterialSubmission(fromChooser = false, draftId?: string) {
+    const path = draftId ? `/publicar-material?draft_id=${encodeURIComponent(draftId)}` : fromChooser ? '/publicar-material?origen=publicar' : '/publicar-material'
     if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('material-submit')
@@ -1341,16 +1341,18 @@ export function CubitatApp() {
             onNavigateMyProperties={navigateMyProperties}
             onNavigateMyServices={navigateMyServiceProfiles}
             onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
+            userId={user.id}
+            onResumeDraft={(draftId) => navigateServiceSubmission(false, draftId)}
           />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialsMarketplacePage && pageMode === 'materials' && (
           <MaterialsMarketplacePage onRequireLogin={openLogin} />
         )}
         {PHASE_FOUR_SVC_ENABLED && ServiceProviderSubmissionPage && pageMode === 'service-submit' && user && (
-          <ServiceProviderSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+          <ServiceProviderSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialListingSubmissionPage && pageMode === 'material-submit' && user && (
-          <MaterialListingSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} />
+          <MaterialListingSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
           <MyMaterialListingsPage
@@ -1362,6 +1364,8 @@ export function CubitatApp() {
             onNavigateMyProperties={navigateMyProperties}
             onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
             onNavigateMyMaterials={navigateMyMaterialListings}
+            userId={user.id}
+            onResumeDraft={(draftId) => navigateMaterialSubmission(false, draftId)}
           />
         )}
         {PHASE_FOUR_VAL_ENABLED && PropertyValuationPage && pageMode === 'valuation' && (

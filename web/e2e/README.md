@@ -100,6 +100,12 @@ verifica que se reutilicen el identificador y las rutas de las fotos, y que el
 perfil existente se actualice en vez de duplicarse. Es una prueba con API
 interceptada, no una escritura real en Supabase.
 
+El mismo spec verifica varios borradores manuales de Servicio, su reanudación y
+que «Salir sin guardar» conserve la última instantánea guardada. El spec de
+Materiales verifica el mismo ciclo de guardado, salida y reanudación. Ambos usan
+IndexedDB real del navegador y APIs interceptadas; no escriben filas ni fotos en
+Supabase.
+
 `search-alerts.spec.ts` recorre dos variantes: creación desde una sesión
 autenticada con navegación a Mi cuenta y eliminación; y creación como visitante
 tras conservar los filtros, iniciar sesión y reanudar la alerta. La

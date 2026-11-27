@@ -10,6 +10,9 @@ const materialMocks = vi.hoisted(() => ({
   removePhotos: vi.fn(),
   update: vi.fn(),
   uploadPhotos: vi.fn(),
+  saveDraft: vi.fn(),
+  readDraft: vi.fn(),
+  removeDraft: vi.fn(),
 }))
 
 vi.mock('../../modules/materials/materialRepository', () => ({
@@ -23,6 +26,11 @@ vi.mock('../../modules/materials/materialRepository', () => ({
 
 vi.mock('../../shared/lib/catalogPhotos', () => ({
   compressCatalogPhoto: materialMocks.compressPhoto,
+}))
+vi.mock('../publish/marketplaceDraftStorage', () => ({
+  saveMarketplaceDraft: materialMocks.saveDraft,
+  readMarketplaceDraft: materialMocks.readDraft,
+  removeMarketplaceDraft: materialMocks.removeDraft,
 }))
 vi.mock('../publish/PublicationLocationField', () => ({
   PublicationLocationField: ({ province, municipality, onProvinceChange, onMunicipalityChange, onCoordinatesChange }: { province: string; municipality: string; onProvinceChange: (value: string) => void; onMunicipalityChange: (value: string) => void; onCoordinatesChange: (latitude: number, longitude: number) => void }) => <div><label>Provincia<select required value={province} onChange={(event) => onProvinceChange(event.target.value)}><option value="">Selecciona</option><option value="La Habana">La Habana</option><option value="Santiago de Cuba">Santiago de Cuba</option></select></label><label>Municipio<select required value={municipality} onChange={(event) => onMunicipalityChange(event.target.value)}><option value="">Selecciona</option><option value="Playa">Playa</option><option value="Santiago de Cuba">Santiago de Cuba</option></select></label><button type="button" onClick={() => onCoordinatesChange(20.01234, -75.81234)}>Marcar punto</button></div>,
@@ -67,15 +75,40 @@ describe('MaterialListingSubmissionPage', () => {
   })
 
   it('requires a product name before advancing from the first step', () => {
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 
     expect(screen.getByRole('heading', { level: 2, name: /^Producto$/ })).toBeVisible()
     expect(screen.getByLabelText('Nombre del producto')).toBeInvalid()
   })
 
+  it('offers CUP and saves the chosen currency with the material listing', async () => {
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="owner-1" />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Cemento de prueba' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+    await advanceMaterialTo(3)
+    fireEvent.change(screen.getByLabelText('Moneda'), { target: { value: 'CUP' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción válida para probar precio en pesos cubanos.' } })
+    await submitMaterial()
+    await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ currency: 'CUP' }), expect.any(String)))
+  })
+
+  it('keeps the last manually saved material draft when exiting unsaved changes', async () => {
+    const back = vi.fn()
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    render(<MaterialListingSubmissionPage onBack={back} onRequireLogin={vi.fn()} userId="owner-1" />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Cemento guardado' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await waitFor(() => expect(materialMocks.saveDraft).toHaveBeenCalledOnce())
+    expect(materialMocks.saveDraft.mock.calls[0][0].value.title).toBe('Cemento guardado')
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Cambio no guardado' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salir sin guardar' }))
+    expect(back).toHaveBeenCalledOnce()
+    expect(materialMocks.removeDraft).not.toHaveBeenCalled()
+  })
+
   it('requires a province and municipality before leaving the location step', async () => {
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de ubicación QA' } })
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
     await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Ubicación' })).toBeVisible())
@@ -86,7 +119,7 @@ describe('MaterialListingSubmissionPage', () => {
   })
 
   it('prepares a selected batch as WebP, previews it and saves every photo in order', async () => {
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
@@ -113,7 +146,7 @@ describe('MaterialListingSubmissionPage', () => {
   })
 
   it('saves the selected coordinates with the material listing', async () => {
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material con ubicación QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'Santiago de Cuba' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba con más de veinte caracteres para guardar.' } })
@@ -138,7 +171,7 @@ describe('MaterialListingSubmissionPage', () => {
     }])
     materialMocks.createPreviews.mockResolvedValue({ photos: [{ path: photoPath, url: signedUrl }], unavailableCount: 0 })
 
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} listingId={listingId} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" listingId={listingId} />)
 
     await screen.findByRole('heading', { name: 'Edita tu anuncio' })
     await advanceMaterialTo(4)
@@ -150,7 +183,7 @@ describe('MaterialListingSubmissionPage', () => {
   it('does not submit while the selected photos are still being prepared', async () => {
     let resolveCompression!: (photo: File) => void
     materialMocks.compressPhoto.mockReturnValueOnce(new Promise<File>((resolve) => { resolveCompression = resolve }))
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
@@ -169,7 +202,7 @@ describe('MaterialListingSubmissionPage', () => {
     materialMocks.compressPhoto
       .mockImplementationOnce(async (file: File) => new File([file], 'producto-1.webp', { type: 'image/webp' }))
       .mockRejectedValueOnce(new Error('CATALOG_PHOTO_COMPRESSION_FAILED'))
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
@@ -192,7 +225,7 @@ describe('MaterialListingSubmissionPage', () => {
     materialMocks.uploadPhotos
       .mockRejectedValueOnce(new Error('MATERIAL_PHOTO_UPLOAD_FAILED'))
       .mockResolvedValueOnce(['owner/listing/photo-1.webp'])
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
@@ -218,7 +251,7 @@ describe('MaterialListingSubmissionPage', () => {
     materialMocks.create
       .mockRejectedValueOnce(new Error('MATERIAL_LISTING_CREATE_FAILED'))
       .mockResolvedValueOnce('listing-recovered')
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })
@@ -239,7 +272,7 @@ describe('MaterialListingSubmissionPage', () => {
     materialMocks.update
       .mockRejectedValueOnce(new Error('MATERIAL_LISTING_UPDATE_FAILED'))
       .mockResolvedValueOnce(undefined)
-    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material de prueba QA' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para el anuncio.' } })

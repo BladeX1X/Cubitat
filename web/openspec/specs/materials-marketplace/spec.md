@@ -239,3 +239,9 @@ provincial declarada por el vendedor.
 - WHEN el visitante abre Mapa
 - THEN se carga un mapa centrado en una referencia aproximada de esa provincia
 - AND se informa que la ubicación no es una dirección exacta
+
+### Borradores y monedas — 2026-11-27
+
+- El formulario de alta permite guardar varios borradores locales, aislados por usuario y tipo; Mis materiales permite reanudar o eliminar cada uno.
+- Cada borrador manual conserva los campos, paso y fotos seleccionadas. «Salir sin guardar» descarta únicamente lo posterior al último guardado manual.
+- El selector de moneda ofrece claramente Dólares (USD) y Pesos cubanos (CUP); `currency` persiste la selección. Los códigos históricos EUR/MIXED se conservan por compatibilidad con filas existentes.

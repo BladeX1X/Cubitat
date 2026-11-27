@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ServiceProviderSubmissionPage } from './ServiceProviderSubmissionPage'
 
 const serviceMocks = vi.hoisted(() => ({
@@ -9,12 +9,20 @@ const serviceMocks = vi.hoisted(() => ({
   removePhotos: vi.fn(),
   update: vi.fn(),
   uploadPhotos: vi.fn(),
+  saveDraft: vi.fn(),
+  readDraft: vi.fn(),
+  removeDraft: vi.fn(),
 }))
 
 vi.mock('../../modules/home-services/homeServiceRepository', () => ({
   createHomeServiceProvider: serviceMocks.create,
   fetchMyHomeServiceProviders: serviceMocks.fetchMine,
   updateHomeServiceProvider: serviceMocks.update,
+}))
+vi.mock('../publish/marketplaceDraftStorage', () => ({
+  saveMarketplaceDraft: serviceMocks.saveDraft,
+  readMarketplaceDraft: serviceMocks.readDraft,
+  removeMarketplaceDraft: serviceMocks.removeDraft,
 }))
 
 vi.mock('../../modules/home-services/homeServicePhotos', () => ({
@@ -49,6 +57,7 @@ async function submitService() {
 }
 
 describe('ServiceProviderSubmissionPage', () => {
+  afterEach(() => vi.unstubAllGlobals())
   beforeEach(() => {
     vi.clearAllMocks()
     serviceMocks.fetchMine.mockResolvedValue([])
@@ -59,15 +68,37 @@ describe('ServiceProviderSubmissionPage', () => {
   })
 
   it('requires the service name before advancing from the first step', () => {
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 
     expect(screen.getByRole('heading', { level: 2, name: /^Servicio$/ })).toBeVisible()
     expect(screen.getByLabelText('Nombre del profesional o negocio')).toBeInvalid()
   })
 
+  it('saves independent local drafts and keeps the last saved version when exiting', async () => {
+    const back = vi.fn()
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    const { unmount } = render(<ServiceProviderSubmissionPage onBack={back} onRequireLogin={vi.fn()} userId="owner-1" />)
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Plomería guardada' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await waitFor(() => expect(serviceMocks.saveDraft).toHaveBeenCalledTimes(1))
+    const firstId = serviceMocks.saveDraft.mock.calls[0][0].id
+    expect(serviceMocks.saveDraft.mock.calls[0][0].value.displayName).toBe('Plomería guardada')
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Cambio sin guardar' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salir sin guardar' }))
+    expect(back).toHaveBeenCalledOnce()
+    expect(serviceMocks.removeDraft).not.toHaveBeenCalled()
+    unmount()
+
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="owner-1" />)
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Otro servicio' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await waitFor(() => expect(serviceMocks.saveDraft).toHaveBeenCalledTimes(2))
+    expect(serviceMocks.saveDraft.mock.calls[1][0].id).not.toBe(firstId)
+  })
+
   it('requires a province and municipality before leaving the coverage step', async () => {
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Servicio de ubicación QA' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción suficientemente larga para validar la zona de cobertura.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
@@ -80,7 +111,7 @@ describe('ServiceProviderSubmissionPage', () => {
 
   it('previews a multi-photo selection and uploads every optimized image in order', async () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:service-preview'), revokeObjectURL: vi.fn() })
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba para verificar la carga de una galería completa.' } })
@@ -105,7 +136,7 @@ describe('ServiceProviderSubmissionPage', () => {
   })
 
   it('saves the selected coordinates with the service profile', async () => {
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con ubicación geográfica para el profesional.' } })
@@ -118,7 +149,7 @@ describe('ServiceProviderSubmissionPage', () => {
 
   it('does not create the profile when a multi-photo upload fails', async () => {
     serviceMocks.uploadPhotos.mockRejectedValue(new Error('HOME_SERVICE_PHOTO_UPLOAD_FAILED'))
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con error controlado en la carga de fotos.' } })
@@ -133,7 +164,7 @@ describe('ServiceProviderSubmissionPage', () => {
 
   it('cleans new photos only when the profile write is definitively rejected', async () => {
     serviceMocks.create.mockRejectedValueOnce(new Error('HOME_SERVICE_PROFILE_PERMISSION_DENIED'))
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con rechazo definitivo de permisos al guardar.' } })
@@ -150,7 +181,7 @@ describe('ServiceProviderSubmissionPage', () => {
 
   it('preserves uploaded photos when the profile write response is ambiguous', async () => {
     serviceMocks.create.mockRejectedValueOnce(new Error('HOME_SERVICE_PROFILE_CREATE_FAILED'))
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba con respuesta de red ambigua al guardar.' } })
@@ -167,7 +198,7 @@ describe('ServiceProviderSubmissionPage', () => {
 
   it('reuses the profile id and uploaded photos when retrying an ambiguous save', async () => {
     serviceMocks.create.mockRejectedValueOnce(new Error('HOME_SERVICE_PROFILE_CREATE_FAILED'))
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio para comprobar el reintento seguro tras perder la respuesta de red.' } })
@@ -189,7 +220,7 @@ describe('ServiceProviderSubmissionPage', () => {
   it('prevents submission while photos are still being prepared', async () => {
     let resolveCompression!: (photo: File) => void
     serviceMocks.compressPhoto.mockReturnValueOnce(new Promise<File>((resolve) => { resolveCompression = resolve }))
-    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} />)
+    render(<ServiceProviderSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" />)
     fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Electricista de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Servicio de prueba mientras se prepara una foto seleccionada.' } })

@@ -106,3 +106,13 @@ punto aproximado opcional, precio/moneda/disponibilidad/descripción, galería y
 contacto. `PublicationStepLayout` es compartido con Servicios e Inmuebles; los
 campos, validación de precio, carga de fotos, guardado/reintento y edición siguen
 siendo propios del anuncio de materiales. Se conservan las coordenadas privadas.
+
+## Borradores y moneda
+
+Los anuncios nuevos ofrecen «Guardar borrador» y «Salir sin guardar». Se pueden
+guardar varios en IndexedDB, aislados por cuenta y tipo `material`, con los
+campos, el paso y las fotos seleccionadas; Mis materiales permite reanudarlos o
+eliminarlos. Salir sin guardar conserva intacto el último borrador manual.
+Materiales admite USD y CUP en el selector y persiste el código en el campo
+`currency`; se muestran con las etiquetas «Dólares (USD)» y «Pesos cubanos
+(CUP)». Se mantienen códigos históricos adicionales que ya acepta la base.

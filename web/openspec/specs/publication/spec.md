@@ -483,6 +483,14 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - Ambos formularios reutilizan `PublicationStepLayout`, pero mantienen sus campos, validaciones, galerías y procesos de guardado propios.
 - «Continuar» valida únicamente los campos obligatorios del paso actual; pasos previos pueden revisarse. Enviar conserva los repositorios y mecanismos de reintento ya existentes.
 
+### Borradores de Servicios y Materiales — 2026-11-27
+
+- Los formularios de alta de Servicio y Material permiten guardar múltiples borradores locales en IndexedDB, separados por usuario y tipo de publicación.
+- Mis servicios y Mis materiales muestran esos borradores con acciones para continuar o eliminar.
+- La instantánea manual incluye los campos, paso actual y fotos seleccionadas. «Salir sin guardar» conserva la última instantánea manual y descarta cambios posteriores; al salir de un formulario nuevo sin haber guardado, no se crea un borrador.
+- Al publicar con éxito se elimina el borrador local correspondiente.
+- Materiales muestra explícitamente Dólares (USD) y Pesos cubanos (CUP); la moneda elegida se persiste en el anuncio.
+
 ### Ubicación administrativa y ubicación del dispositivo en Servicios y Materiales — 2026-11-24
 
 - En el paso de zona se eligen provincia y municipio desde las opciones oficiales compartidas con el catálogo; el mapa centra la zona seleccionada.
