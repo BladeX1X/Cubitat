@@ -41,8 +41,17 @@ function getSafeRpcError(
   depth = 0,
 ): { code: string; name: string; status: number | null; message: string; keys: string[] } {
   if (typeof error === 'string') {
+    const trimmed = error.trim()
+    if (depth < 3 && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
+      try {
+        return getSafeRpcError(JSON.parse(trimmed), depth + 1)
+      } catch {
+        // Treat non-JSON server text as a message; never display it verbatim.
+      }
+    }
     const normalized = error.toUpperCase()
-    const code = /^(?:[A-Z0-9]{5}|PGRST\d{3})$/.test(normalized) ? normalized : ''
+    const codeMatch = normalized.match(/\b(?:[A-Z0-9]{5}|PGRST\d{3})\b/)
+    const code = codeMatch?.[0] ?? ''
     return { code, name: 'String', status: null, message: error.toLowerCase().slice(0, 300), keys: [] }
   }
   if (!error || typeof error !== 'object') {
@@ -65,7 +74,7 @@ function getSafeRpcError(
 
 function getReviewRpcErrorMessage(error: unknown): string {
   const diagnostic = getSafeRpcError(error)
-  const { code, status, name, message, keys } = diagnostic
+  const { code, status, name, message } = diagnostic
   if (code === '42501' || status === 403 || /admin aal2 required|permission denied/i.test(message)) {
     return 'No tienes permiso de administrador para guardar esta decisión.'
   }
@@ -84,7 +93,10 @@ function getReviewRpcErrorMessage(error: unknown): string {
     return 'No se pudo establecer conexión con Supabase para guardar la decisión. Comprueba la conexión e inténtalo de nuevo.'
   }
 
-  const detail = code || (status !== null ? `HTTP ${status}` : `tipo ${name}; campos: ${keys.join(', ') || 'ninguno'}`)
+  const detail = code || (status !== null ? `HTTP ${status}` : '')
+  if (!detail) {
+    return 'No se pudo guardar la decisión administrativa. Actualiza la lista e inténtalo de nuevo.'
+  }
   return `No se pudo guardar la decisión administrativa (diagnóstico: ${detail}).`
 }
 

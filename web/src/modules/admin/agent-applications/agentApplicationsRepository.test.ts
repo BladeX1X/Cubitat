@@ -101,6 +101,23 @@ describe('agentApplicationsRepository', () => {
     await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/permiso de administrador/i)
   })
 
+  it('classifies serialized authorization errors without exposing their raw contents', async () => {
+    query.rpc.mockResolvedValueOnce({
+      data: null,
+      error: JSON.stringify({ code: '42501', message: 'Admin AAL2 required.' }),
+    })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(/permiso de administrador/i)
+  })
+
+  it('returns an actionable fallback for unknown plain-text RPC errors', async () => {
+    query.rpc.mockResolvedValueOnce({ data: null, error: 'Unexpected internal database failure.' })
+
+    await expect(reviewAgentApplication('application-id', 'reviewing')).rejects.toThrow(
+      'No se pudo guardar la decisión administrativa. Actualiza la lista e inténtalo de nuevo.',
+    )
+  })
+
   it('explains when the application Worker blocks the review RPC', async () => {
     query.rpc.mockResolvedValueOnce({ data: null, error: 'Operación no permitida.' })
 
