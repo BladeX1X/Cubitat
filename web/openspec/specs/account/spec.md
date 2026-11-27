@@ -31,6 +31,14 @@ El sistema MUST conectar cuenta, favoritos, mis publicaciones y alertas sin perd
 - AND MUST mantener datos de usuario disponibles
 - AND MUST proteger cada destino si la sesion expira
 
+#### Scenario: Gestionar servicios y materiales con la interfaz de publicaciones
+- GIVEN un usuario autenticado abre Mis servicios o Mis materiales
+- WHEN la pantalla carga sus anuncios propios
+- THEN la pantalla MUST reutilizar la estructura visual de Mis publicaciones: encabezado destacado, panel blanco, contador, acción de creación y filtros por estado
+- AND MUST mostrar las publicaciones en tarjetas adaptables con contenido y acciones propios de servicios o materiales
+- AND MUST conservar los estados de carga, error, vacío y reintento
+- AND MUST NOT permitir editar anuncios publicados de servicios ni anuncios archivados de materiales cuando sus flujos actuales no lo permiten
+
 #### Scenario: Acceder a servicios y materiales desde la cuenta
 - GIVEN un usuario autenticado está en cualquiera de las secciones del área privada
 - WHEN Servicios o Materiales están habilitados en producción

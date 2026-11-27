@@ -18,8 +18,15 @@ de edición que los devuelva a moderación.
   acceso a Cuenta, Favoritos, Mis publicaciones y Mis materiales cuando están
   habilitados. Los roles agente/admin conservan también el acceso al Panel de
   Agente en esta vista.
+- Reutiliza `AccountListingsFrame` para coincidir con Mis publicaciones:
+  encabezado destacado, contador, creación, filtros de estado y cuadrícula de
+  tarjetas responsive. Las tarjetas muestran categoría, ubicación, descripción
+  e imagen cuando está disponible.
+- Los perfiles publicados permanecen de solo lectura; los demás estados
+  editables mantienen la acción Editar.
 
 ## Verificación
 
-Probar con dos cuentas distintas que cada una solo ve sus perfiles, además de
-estados pendientes/rechazados/pausados y rechazo seguro de un ID ajeno.
+Las pruebas de página verifican la interfaz compartida, conteo y filtro de
+publicados. Probar con dos cuentas distintas que cada una solo ve sus perfiles,
+además de estados pendientes/rechazados/pausados y rechazo seguro de un ID ajeno.

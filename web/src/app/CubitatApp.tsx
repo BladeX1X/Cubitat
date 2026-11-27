@@ -1331,7 +1331,6 @@ export function CubitatApp() {
         )}
         {PHASE_FOUR_SVC_ENABLED && MyServiceProfilesPage && pageMode === 'my-services' && user && (
           <MyServiceProfilesPage
-            onBack={navigateServices}
             onCreate={navigateServiceSubmission}
             onEdit={navigateEditServiceProfile}
             onNavigateAccount={navigateAccount}
@@ -1354,7 +1353,6 @@ export function CubitatApp() {
         )}
         {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
           <MyMaterialListingsPage
-            onBack={navigateMaterials}
             onCreate={navigateMaterialSubmission}
             onEdit={navigateEditMaterialListing}
             onNavigateAccount={navigateAccount}

@@ -12,6 +12,10 @@ estado y permite editar los que no están archivados.
 - El propietario puede reintentar la lectura; si una actualización posterior
   falla, la lista previamente cargada sigue visible junto al error.
 - Los anuncios archivados no se pueden editar desde esta pantalla.
+- Reutiliza `AccountListingsFrame` para coincidir con Mis publicaciones:
+  encabezado destacado, contador, creación, filtros de estado y cuadrícula de
+  tarjetas responsive con categoría, ubicación, precio, disponibilidad e
+  imagen cuando está disponible.
 - La propiedad se determina en el servidor; el cliente no envía `owner_id`.
 - La gestión se integra en `AccountLayout`, con `Mis materiales` seleccionado y
   acceso a Cuenta, Favoritos, Mis publicaciones y Mis servicios cuando están
@@ -20,6 +24,8 @@ estado y permite editar los que no están archivados.
 
 ## Verificación
 
-`e2e/my-marketplace-listings.spec.ts` valida estados y política de edición con
-una API simulada, incluido un error inicial seguido de recuperación. La
-propiedad de datos y la persistencia deben verificarse aparte contra Supabase.
+`MyMaterialListingsPage.test.tsx` verifica la interfaz compartida, conteo y
+filtro de publicados. `e2e/my-marketplace-listings.spec.ts` valida estados y
+política de edición con una API simulada, incluido un error inicial seguido de
+recuperación. La propiedad de datos y la persistencia deben verificarse aparte
+contra Supabase.
