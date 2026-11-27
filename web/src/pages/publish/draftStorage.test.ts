@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   getPublicationDraftKey,
+  listPublicationDrafts,
   readPublicationDraft,
   removePublicationDraft,
   savePublicationDraft,
@@ -56,5 +57,25 @@ describe('publication draft storage isolation', () => {
 
     expect(readPublicationDraft('owner-a')).toBeNull()
     expect(readPublicationDraft('owner-b')).toEqual({ title: 'B' })
+  })
+
+  it('keeps multiple drafts for one user and removes only the selected draft', () => {
+    savePublicationDraft('owner-a', { title: 'Primero' }, 'draft-1')
+    savePublicationDraft('owner-a', { title: 'Segundo' }, 'draft-2')
+
+    expect(listPublicationDrafts('owner-a')).toEqual([
+      { id: 'draft-1', formData: { title: 'Primero' } },
+      { id: 'draft-2', formData: { title: 'Segundo' } },
+    ])
+
+    removePublicationDraft('owner-a', 'draft-1')
+
+    expect(listPublicationDrafts('owner-a')).toEqual([{ id: 'draft-2', formData: { title: 'Segundo' } }])
+  })
+
+  it('lists the older account-scoped draft as a resumable legacy entry', () => {
+    savePublicationDraft('owner-a', { title: 'Anterior' })
+
+    expect(listPublicationDrafts('owner-a')).toEqual([{ id: 'legacy', formData: { title: 'Anterior' } }])
   })
 })

@@ -84,3 +84,8 @@ Consulta agregada sin devolver nombres, rutas ni IDs: los 26 objetos actuales de
 - El fallo visual de la cuenta propietaria sigue abierto: no se observó aún la respuesta real de Storage en Chrome. Esta mejora cubre fallos transitorios, no demuestra que sea la causa original. Producción intacta.
 Retest posterior del Worker DEV `36efd098-375e-46d0-b0e7-a38d6f8ff83e`: `my-properties.spec.ts` pasó 2/2 en Chromium. El E2E usa autenticación y Storage interceptados; confirma la interfaz publicada y ausencia de escrituras, no la descarga real con la cuenta del propietario.
 El retest de Chromium se reforzó: la primera descarga de portada responde 503 y la segunda entrega la imagen; naturalWidth confirma que decodificó. 2/2 E2E PASS contra el Worker DEV con respuestas simuladas, sin escrituras. La descarga de Storage con JWT propietario real sigue pendiente.
+
+
+## Borradores locales múltiples — 2026-11-27
+
+Mis publicaciones enumera todos los borradores locales de la cuenta. Cada tarjeta usa un ID propio, reabre su borrador específico y elimina solo ese borrador; las propiedades publicadas siguen usando sus acciones remotas habituales.

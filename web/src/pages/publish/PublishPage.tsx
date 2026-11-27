@@ -272,14 +272,17 @@ type PublishPageProps = {
   onSubmitSuccess: () => void
   editPropertyId?: string // When set, the form loads and updates an existing property
   resumeDraft?: boolean
+  draftId?: string
 }
 
 export function PublishPage(props: PublishPageProps) {
-  const restoreDraft = props.editPropertyId !== undefined || props.resumeDraft !== false
-  return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null, restoreDraft])} {...props} restoreDraft={restoreDraft} />
+  const restoreDraft = props.draftId !== undefined || props.editPropertyId !== undefined || props.resumeDraft !== false
+  const [newDraftId] = useState(() => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const draftId = props.draftId ?? (restoreDraft || props.editPropertyId ? undefined : newDraftId)
+  return <PublishForm key={JSON.stringify([props.userId, props.editPropertyId ?? null, restoreDraft, draftId ?? null])} {...props} draftId={draftId} restoreDraft={restoreDraft} />
 }
 
-function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreDraft }: PublishPageProps & { restoreDraft: boolean }) {
+function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, draftId, restoreDraft }: PublishPageProps & { restoreDraft: boolean }) {
   const isEditMode = Boolean(editPropertyId)
 
   useSEO({
@@ -348,7 +351,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, restoreD
     setImages(saved.images)
     if (saved.existingAmenities.length) setExistingAmenities(saved.existingAmenities)
     setHasUserChanges(saved.edited === true)
-  }, restoreDraft)
+  }, restoreDraft, draftId)
   const progressPercent = Math.round((step / publishStepLabels.length) * 100)
   const currentStepLabel = publishStepLabels[step - 1] ?? 'Publicación'
 

@@ -234,3 +234,8 @@ Playwright local cubre cancelar y aceptar: cancelar conserva el editor y el camb
 ### Botón de salida del editor en DEV — comprobación de bundle — 2026-11-15
 
 El chunk remoto `PublishPage-DJksUfQ3.js` incluye «Salir sin guardar» y la confirmación para descartar los cambios del formulario. El bundle servido coincide por nombre con el generado localmente. Esto verifica que la interfaz actual se publicó; no demuestra el clic con sesión propietaria ni reemplaza la prueba real, que queda pendiente por inaccesibilidad de la pestaña Chrome compartida.
+
+
+## Borradores locales múltiples — 2026-11-27
+
+Cada formulario nuevo recibe un identificador local distinto. El almacenamiento completo de IndexedDB y los metadatos locales comparten esa identidad; publicar o salir sin guardar solo elimina la entrada activa. Mis publicaciones lista cada borrador, permite reabrirlo por ID y elimina solo la tarjeta seleccionada. Las entradas históricas se leen como un borrador legacy para conservar compatibilidad.

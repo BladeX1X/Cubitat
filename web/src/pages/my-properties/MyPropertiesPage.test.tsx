@@ -150,7 +150,7 @@ describe('local publication draft cover', () => {
   it('renders the selected draft cover in the publication card', () => {
     const cover = getLocalDraftCoverImage([{ dataUrl: 'data:image/webp;base64,YQ==' }])
     render(<PropertyCard property={{
-      id: 'local_draft_id', title: 'Borrador QA', location: 'La Habana', price_usd: 0,
+      id: 'local_draft:legacy', title: 'Borrador QA', location: 'La Habana', price_usd: 0,
       cover_image: cover, status: 'local_draft', moderation_message: null,
       created_at: new Date().toISOString(), user_id: 'user-456',
     }} onEdit={vi.fn()} onDelete={vi.fn()} onHide={vi.fn()} onRestore={vi.fn()} actionLoading={false} />)
