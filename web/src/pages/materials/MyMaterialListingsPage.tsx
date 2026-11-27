@@ -15,6 +15,8 @@ type MyMaterialListingsPageProps = {
   onNavigateMyProperties: () => void
   onNavigateMyServices?: () => void
   onNavigateMyMaterials: () => void
+  onNavigateAgentDashboard?: () => void
+  userRole?: string
 }
 
 const statusLabels: Record<OwnedMaterialListing['status'], string> = {
@@ -34,6 +36,8 @@ export function MyMaterialListingsPage({
   onNavigateMyProperties,
   onNavigateMyServices,
   onNavigateMyMaterials,
+  onNavigateAgentDashboard,
+  userRole,
 }: MyMaterialListingsPageProps) {
   const [listings, setListings] = useState<OwnedMaterialListing[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,11 +56,13 @@ export function MyMaterialListingsPage({
   return (
     <AccountLayout
       active="materials"
+      userRole={userRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
       onNavigateMyServices={onNavigateMyServices}
       onNavigateMyMaterials={onNavigateMyMaterials}
+      onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
     <section className="min-h-[70vh] bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-4xl">

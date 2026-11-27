@@ -66,7 +66,6 @@ export function AgentDashboardPage({
       onNavigateMyServices={onNavigateMyServices}
       onNavigateMyMaterials={onNavigateMyMaterials}
       onNavigateAgentDashboard={onNavigateAgentDashboard || (() => {})}
-      canAccessAgentDashboard={dashboard.isVerifiedAgent}
     >
       {!dashboard.loading && dashboard.isVerifiedAgent && AgentGrowthPanel ? <Suspense fallback={<div role="status" className="mt-8 rounded-xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Cargando captación…</div>}><AgentGrowthPanel /></Suspense> : null}
     </AccountLayout>

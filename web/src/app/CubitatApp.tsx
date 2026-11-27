@@ -1278,6 +1278,7 @@ export function CubitatApp() {
         {pageMode === 'my-properties' && user && (
           <MyPropertiesPage
             userId={user.id}
+            userRole={userRole}
             onBack={navigateHome}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
@@ -1338,6 +1339,8 @@ export function CubitatApp() {
             onNavigateMyProperties={navigateMyProperties}
             onNavigateMyServices={navigateMyServiceProfiles}
             onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
+            userRole={userRole}
           />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialsMarketplacePage && pageMode === 'materials' && (
@@ -1359,6 +1362,8 @@ export function CubitatApp() {
             onNavigateMyProperties={navigateMyProperties}
             onNavigateMyServices={PHASE_FOUR_SVC_ENABLED ? navigateMyServiceProfiles : undefined}
             onNavigateMyMaterials={navigateMyMaterialListings}
+            onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
+            userRole={userRole}
           />
         )}
         {PHASE_FOUR_VAL_ENABLED && PropertyValuationPage && pageMode === 'valuation' && (
@@ -1368,6 +1373,7 @@ export function CubitatApp() {
         {pageMode === 'favorites' && (
           <FavoritesPage
             properties={properties}
+            userRole={userRole}
             onNavigateAccount={navigateAccount}
             onNavigateFavorites={navigateFavorites}
             onNavigateMyProperties={navigateMyProperties}

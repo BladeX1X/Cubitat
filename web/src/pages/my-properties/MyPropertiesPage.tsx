@@ -74,6 +74,7 @@ function matchesStatusFilter(property: Property, filter: PropertyStatusFilter): 
 
 export type MyPropertiesPageProps = {
   userId: string
+  userRole?: string
   onBack: () => void
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
@@ -313,6 +314,7 @@ export function MyPropertiesEmptyState({ onPublish }: { onPublish: () => void })
 
 export function MyPropertiesPage({
   userId,
+  userRole,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
@@ -522,6 +524,7 @@ export function MyPropertiesPage({
   return (
     <AccountLayout
       active="contents"
+      userRole={userRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}

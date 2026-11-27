@@ -1,5 +1,8 @@
 # Mis Publicaciones
 
+La navegación compartida conserva el acceso al Panel de Agente para roles
+agente/admin.
+
 La pantalla carga únicamente las publicaciones del usuario autenticado y permite
 administrarlas sin depender de enlaces públicos de Storage para sus fotos
 privadas.

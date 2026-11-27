@@ -16,7 +16,8 @@ de edición que los devuelva a moderación.
 - La pantalla maneja carga, error, vacío y reintento.
 - La gestión se integra en `AccountLayout`, con `Mis servicios` seleccionado y
   acceso a Cuenta, Favoritos, Mis publicaciones y Mis materiales cuando están
-  habilitados.
+  habilitados. Los roles agente/admin conservan también el acceso al Panel de
+  Agente en esta vista.
 
 ## Verificación
 

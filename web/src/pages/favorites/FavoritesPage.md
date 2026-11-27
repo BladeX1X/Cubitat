@@ -1,5 +1,8 @@
 # FavoritesPage
 
+The shared account navigation keeps the agent dashboard available to agent and
+admin roles while browsing favorites.
+
 Private account view that combines saved properties, service providers, and
 material listings. Property and marketplace favorites are loaded through their
 respective shared hooks; service and material records are then fetched by saved

@@ -6,7 +6,8 @@
   contenido (`min-w-0`).
 - La navegación compartida del área privada muestra Cuenta, Favoritos,
   Publicaciones y, cuando están habilitados, Mis servicios y Mis materiales.
-  El Panel de Agente sigue sujeto al rol y verificación requeridos. En móvil,
+  El Panel de Agente permanece en todos los submenús para roles agente/admin;
+  la ruta del panel valida la verificación antes de mostrar sus datos. En móvil,
   los mismos accesos aparecen en una barra horizontal desplazable.
 - Los correos se parten dentro de su contenedor para evitar desbordamiento
   horizontal en móviles estrechos, incluidos viewports de 320 px.

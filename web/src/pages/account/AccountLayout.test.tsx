@@ -17,11 +17,11 @@ const navigationProps = {
 }
 
 describe('AccountLayout agent navigation', () => {
-  it.each(['buyer', 'seller', 'admin', undefined])(
+  it.each(['buyer', 'seller', undefined])(
     'hides the agent dashboard from a non-agent role (%s)',
     (userRole) => {
       render(
-        <AccountLayout {...navigationProps} userRole={userRole} canAccessAgentDashboard={false}>
+        <AccountLayout {...navigationProps} userRole={userRole}>
           Cuenta
         </AccountLayout>,
       )
@@ -32,7 +32,7 @@ describe('AccountLayout agent navigation', () => {
 
   it('shows the agent dashboard to an agent', () => {
     render(
-      <AccountLayout {...navigationProps} userRole="agent" canAccessAgentDashboard>
+      <AccountLayout {...navigationProps} userRole="agent">
         Cuenta
       </AccountLayout>,
     )
@@ -40,8 +40,16 @@ describe('AccountLayout agent navigation', () => {
       expect(within(screen.getByRole('navigation', { name: 'Navegacion de cuenta' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
   })
 
-  it('shows the dashboard to a verified admin as an agent too', () => {
-    render(<AccountLayout {...navigationProps} userRole="admin" canAccessAgentDashboard>Cuenta</AccountLayout>)
+  it.each(['favorites', 'contents', 'services', 'materials'] as const)(
+    'keeps the agent dashboard available in the %s submenu',
+    (active) => {
+      render(<AccountLayout {...navigationProps} active={active} userRole="agent">Cuenta</AccountLayout>)
+      expect(within(screen.getByRole('navigation', { name: 'Navegacion de cuenta' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
+    },
+  )
+
+  it('shows the dashboard to an admin account', () => {
+    render(<AccountLayout {...navigationProps} userRole="admin">Cuenta</AccountLayout>)
     expect(within(screen.getByRole('navigation', { name: 'Navegacion de cuenta' })).getByRole('button', { name: 'Panel de Agente' })).toBeInTheDocument()
   })
 

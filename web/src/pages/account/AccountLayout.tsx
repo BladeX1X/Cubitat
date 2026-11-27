@@ -14,7 +14,6 @@ type AccountLayoutProps = {
   onNavigateMyServices?: () => void
   onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
-  canAccessAgentDashboard?: boolean
 }
 
 export function AccountLayout({
@@ -27,7 +26,6 @@ export function AccountLayout({
   onNavigateMyServices,
   onNavigateMyMaterials,
   onNavigateAgentDashboard,
-  canAccessAgentDashboard = false,
 }: AccountLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
@@ -41,7 +39,7 @@ export function AccountLayout({
           <MobileNavItem active={active === 'contents'} icon={<Home size={17} />} label="Mis publicaciones" onClick={onNavigateMyProperties} />
           {onNavigateMyServices && <MobileNavItem active={active === 'services'} icon={<BriefcaseBusiness size={17} />} label="Mis servicios" onClick={onNavigateMyServices} />}
           {onNavigateMyMaterials && <MobileNavItem active={active === 'materials'} icon={<Boxes size={17} />} label="Mis materiales" onClick={onNavigateMyMaterials} />}
-          {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
+          {PHASE_TWO_ENABLED && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
             <MobileNavItem active={active === 'agent-dashboard'} icon={<BarChart3 size={17} />} label="Panel de Agente" onClick={onNavigateAgentDashboard} />
           )}
         </nav>
@@ -86,7 +84,7 @@ export function AccountLayout({
                   onClick={onNavigateMyMaterials}
                 />
               )}
-              {PHASE_TWO_ENABLED && canAccessAgentDashboard && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
+              {PHASE_TWO_ENABLED && (userRole === 'agent' || userRole === 'admin') && onNavigateAgentDashboard && (
                 <SideItem
                   active={active === 'agent-dashboard'}
                   icon={<BarChart3 size={20} />}

@@ -20,6 +20,7 @@ import { useSEO } from '../../shared/hooks/useSEO'
 
 type FavoritesPageProps = {
   properties: Property[]
+  userRole?: string
   onNavigateAccount: () => void
   onNavigateFavorites: () => void
   onNavigateMyProperties: () => void
@@ -38,6 +39,7 @@ type FavoriteFilter = 'all' | 'properties' | 'services' | 'materials'
 
 export function FavoritesPage({
   properties,
+  userRole,
   onNavigateAccount,
   onNavigateFavorites,
   onNavigateMyProperties,
@@ -131,6 +133,7 @@ export function FavoritesPage({
   return (
     <AccountLayout
       active="favorites"
+      userRole={userRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}

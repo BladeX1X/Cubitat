@@ -15,6 +15,8 @@ type MyServiceProfilesPageProps = {
   onNavigateMyProperties: () => void
   onNavigateMyServices: () => void
   onNavigateMyMaterials?: () => void
+  onNavigateAgentDashboard?: () => void
+  userRole?: string
 }
 
 const STATUS_LABELS: Record<OwnedHomeServiceProvider['status'], string> = {
@@ -33,6 +35,8 @@ export function MyServiceProfilesPage({
   onNavigateMyProperties,
   onNavigateMyServices,
   onNavigateMyMaterials,
+  onNavigateAgentDashboard,
+  userRole,
 }: MyServiceProfilesPageProps) {
   const [profiles, setProfiles] = useState<OwnedHomeServiceProvider[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,11 +61,13 @@ export function MyServiceProfilesPage({
   return (
     <AccountLayout
       active="services"
+      userRole={userRole}
       onNavigateAccount={onNavigateAccount}
       onNavigateFavorites={onNavigateFavorites}
       onNavigateMyProperties={onNavigateMyProperties}
       onNavigateMyServices={onNavigateMyServices}
       onNavigateMyMaterials={onNavigateMyMaterials}
+      onNavigateAgentDashboard={onNavigateAgentDashboard}
     >
     <section className="min-h-[75vh] bg-neutral-50 px-4 py-7 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-4xl">

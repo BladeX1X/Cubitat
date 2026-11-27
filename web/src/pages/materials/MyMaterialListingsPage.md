@@ -15,7 +15,8 @@ estado y permite editar los que no están archivados.
 - La propiedad se determina en el servidor; el cliente no envía `owner_id`.
 - La gestión se integra en `AccountLayout`, con `Mis materiales` seleccionado y
   acceso a Cuenta, Favoritos, Mis publicaciones y Mis servicios cuando están
-  habilitados.
+  habilitados. Los roles agente/admin conservan también el acceso al Panel de
+  Agente en esta vista.
 
 ## Verificación
 
