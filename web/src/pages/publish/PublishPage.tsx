@@ -544,7 +544,7 @@ function PublishForm({ userId, onBack, onSubmitSuccess, editPropertyId, draftId,
   // Guardar borrador manualmente al pulsar el botón
   async function handleSaveDraftManual() {
     try {
-      await draft.save()
+      await draft.save(true)
       setShowSaveFeedback(true)
       setTimeout(() => setShowSaveFeedback(false), 2500)
     } catch (err) {

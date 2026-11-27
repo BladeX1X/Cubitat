@@ -38,6 +38,14 @@ El sistema MUST conservar varios borradores de publicación de un mismo usuario 
 - THEN el sistema MUST restaurar los datos y fotos de ese borrador
 - AND las acciones de ese formulario MUST afectar solo esa identidad
 
+#### Scenario: Salir sin guardar después de guardar el borrador manualmente
+- GIVEN el usuario reanudó un borrador existente o inició una publicación con un borrador local
+- WHEN guarda manualmente los cambios y luego realiza cambios adicionales
+- AND confirma «Salir sin guardar»
+- THEN el borrador MUST conservar la última instantánea guardada manualmente
+- AND los cambios realizados después de ese guardado MUST descartarse
+- AND ningún otro borrador local MUST cambiar
+
 ### Requirement: Acceso autenticado a publicacion
 El sistema MUST requerir una sesion valida para iniciar, continuar o editar una publicacion.
 

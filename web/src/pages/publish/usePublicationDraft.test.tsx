@@ -32,6 +32,28 @@ describe('publication autosave lifecycle', () => {
     expect(saveCompleteDraft).toHaveBeenCalledTimes(calls)
     expect(removeCompleteDraft).toHaveBeenCalledWith('A', undefined)
   })
+  it('restores the latest manually saved snapshot after discarding later changes', async () => {
+    const initial = { ...value, formData: { description: 'Al abrir' } }
+    const explicitlySaved = { ...initial, formData: { description: 'Guardado manualmente' } }
+    const unsavedLater = { ...initial, formData: { description: 'Cambio posterior' } }
+    vi.mocked(readCompleteDraft).mockResolvedValue(initial)
+    const restore = vi.fn()
+    const { result, rerender } = renderHook(({ draft }) => usePublicationDraft('A', undefined, false, draft, restore), {
+      initialProps: { draft: initial },
+    })
+
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    rerender({ draft: explicitlySaved })
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenLastCalledWith('A', explicitlySaved, undefined))
+    await act(async () => result.current.save(true))
+
+    rerender({ draft: unsavedLater })
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenLastCalledWith('A', unsavedLater, undefined))
+    await act(async () => result.current.restoreSavedDraft())
+
+    expect(saveCompleteDraft).toHaveBeenLastCalledWith('A', explicitlySaved, undefined)
+    expect(removeCompleteDraft).not.toHaveBeenCalled()
+  })
   it('waits for an in-flight autosave before removing the draft', async () => {
     let finishSave!: () => void
     vi.mocked(saveCompleteDraft).mockReturnValueOnce(new Promise<void>(resolve => { finishSave = resolve }))

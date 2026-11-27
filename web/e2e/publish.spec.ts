@@ -165,6 +165,24 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     await expect(page).toHaveURL(/draft_id=draft-preserved/)
     await page.getByRole('button', { name: /Dirección y Ubicación/ }).click()
     await expect(page.locator('input[placeholder*="Ej: Calle"]')).toHaveValue('Calle 23 guardada')
+
+    const streetAddress = page.locator('input[placeholder*="Ej: Calle"]')
+    await streetAddress.fill('Calle guardada manualmente')
+    await page.getByRole('button', { name: 'Guardar Borrador' }).click()
+    await expect(page.locator('span:has-text("¡Borrador guardado!")')).toBeVisible()
+    await streetAddress.fill('Cambio posterior sin guardar')
+
+    const exitSavedDraftConfirmation = page.waitForEvent('dialog').then(dialog => dialog.accept())
+    await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+    await exitSavedDraftConfirmation
+    await expect(page).toHaveURL(/\/$/)
+    await page.goto('/mis-propiedades')
+    await expect(page.getByRole('heading', { name: 'Mis publicaciones' })).toBeVisible()
+    const savedDraftCard = page.locator('div.group').filter({ has: page.getByRole('heading', { name: 'Casa en venta en Playa (Borrador)' }) })
+    await savedDraftCard.getByRole('button', { name: 'Editar' }).click()
+    await expect(page).toHaveURL(/draft_id=draft-preserved/)
+    await page.getByRole('button', { name: /Dirección y Ubicación/ }).click()
+    await expect(page.locator('input[placeholder*="Ej: Calle"]')).toHaveValue('Calle guardada manualmente')
   })
 
   test('debería guiar por los pasos de dirección, información, características y guardar borrador', async ({ page }) => {

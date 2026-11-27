@@ -14,11 +14,13 @@ Formulario guiado de publicación y edición con ocho pasos, compresión WebP y 
 - El formulario persiste la estructura en `features.exchangePreferences`, la restaura al editar y la conserva completa en IndexedDB mediante el borrador existente.
 - La ficha pública y el detalle de moderación comparten una lectura defensiva; datos antiguos o malformados se omiten sin bloquear la vista.
 
-## Salir sin guardar desde un borrador reanudado — 2026-11-17
+## Salir sin guardar tras guardar manualmente — 2026-11-27
 
-- Al reanudar un borrador local y cambiar campos, «Salir sin guardar» espera los autoguardados en curso y restaura la instantánea guardada al entrar. El borrador continúa disponible para reanudarlo; no se elimina ni se escribe la propiedad remota.
+- «Guardar Borrador» actualiza la instantánea que se conserva al salir. Si hay cambios posteriores, «Salir sin guardar» espera los autoguardados en curso y restaura esa última instantánea manual, en lugar de la versión que existía al abrir el formulario.
+- Si no hubo un guardado manual durante esta sesión, se conserva la instantánea que existía al entrar. El borrador continúa disponible para reanudarlo; no se elimina ni se escribe la propiedad remota.
 - En modo edición de una propiedad existente, la acción sigue eliminando únicamente el borrador local de edición para que al volver se carguen los valores remotos originales.
 - El formulario iniciado como propiedad nueva sin borrador previo sigue descartando su borrador transitorio al salir. «Borrar Borrador» conserva su significado explícito de eliminación.
+- La regresión E2E guarda un cambio, modifica el campo otra vez, sale sin guardar y confirma que al reabrir solo permanece el valor guardado manualmente.
 
 ## Integridad de fotos y borradores — 2026-09-12
 
