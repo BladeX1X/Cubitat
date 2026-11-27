@@ -59,14 +59,16 @@ export function usePublicationDraft(
     setLoadAttempt(attempt => attempt + 1)
   }, [])
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (markAsSaved = false) => {
     if (!ready || stopped.current) return
+    const snapshot = structuredClone(latest.current)
     const pendingSave = draftId
-      ? saveCompleteDraft(userId, latest.current, propertyId, draftId, generation.current)
-      : saveCompleteDraft(userId, latest.current, propertyId)
+      ? saveCompleteDraft(userId, snapshot, propertyId, draftId, generation.current)
+      : saveCompleteDraft(userId, snapshot, propertyId)
     pendingSaves.current.add(pendingSave)
     try {
       await pendingSave
+      if (markAsSaved) savedAtEntry.current = snapshot
       setError(null)
     } catch (cause) {
       setError('No se pudo guardar el borrador en este dispositivo. Mantén esta página abierta e intenta guardar de nuevo.')
