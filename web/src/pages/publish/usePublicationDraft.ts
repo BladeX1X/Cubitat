@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { readCompleteDraft, saveCompleteDraft, removeCompleteDraft, type CompletePublicationDraft } from './completeDraftStorage'
+import { getCompleteDraftGeneration, readCompleteDraft, saveCompleteDraft, removeCompleteDraft, type CompletePublicationDraft } from './completeDraftStorage'
 import { removeLegacyPublicationDraft } from './draftStorage'
 
 /** The form is keyed by owner/property, so no state crosses an identity change. */
@@ -10,11 +10,13 @@ export function usePublicationDraft(
   value: CompletePublicationDraft,
   restore: (draft: CompletePublicationDraft) => void,
   restoreDraft = true,
+  draftId?: string,
 ) {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loadAttempt, setLoadAttempt] = useState(0)
   const stopped = useRef(false)
+  const generation = useRef(getCompleteDraftGeneration(userId, propertyId, draftId))
   const pendingSaves = useRef(new Set<Promise<void>>())
   const savedAtEntry = useRef<CompletePublicationDraft | null>(null)
   const restoreRef = useRef(restore)
@@ -38,8 +40,8 @@ export function usePublicationDraft(
       setReady(true)
       return
     }
-    let cancelled = false
-    readCompleteDraft(userId, propertyId).then(draft => {
+    let cancelled = false;
+    (draftId ? readCompleteDraft(userId, propertyId, draftId) : readCompleteDraft(userId, propertyId)).then(draft => {
       if (cancelled) return
       savedAtEntry.current = draft
       if (draft) restoreRef.current(draft)
@@ -49,7 +51,7 @@ export function usePublicationDraft(
       if (!cancelled) setError('No se pudo recuperar el borrador. Intenta recuperarlo de nuevo.')
     })
     return () => { cancelled = true }
-  }, [userId, propertyId, waitingForProperty, loadAttempt, restoreDraft])
+  }, [userId, propertyId, waitingForProperty, loadAttempt, restoreDraft, draftId])
 
   const retry = useCallback(() => {
     setError(null)
@@ -59,7 +61,9 @@ export function usePublicationDraft(
 
   const save = useCallback(async () => {
     if (!ready || stopped.current) return
-    const pendingSave = saveCompleteDraft(userId, latest.current, propertyId)
+    const pendingSave = draftId
+      ? saveCompleteDraft(userId, latest.current, propertyId, draftId, generation.current)
+      : saveCompleteDraft(userId, latest.current, propertyId)
     pendingSaves.current.add(pendingSave)
     try {
       await pendingSave
@@ -70,7 +74,7 @@ export function usePublicationDraft(
     } finally {
       pendingSaves.current.delete(pendingSave)
     }
-  }, [userId, propertyId, ready])
+  }, [userId, propertyId, ready, draftId])
 
   useEffect(() => {
     // No debounce: launch persistence as soon as a committed form change is visible.
@@ -82,25 +86,30 @@ export function usePublicationDraft(
     stopped.current = stop
     try {
       await Promise.allSettled([...pendingSaves.current])
-      await removeCompleteDraft(userId, propertyId)
+      if (draftId) await removeCompleteDraft(userId, propertyId, draftId)
+      else await removeCompleteDraft(userId, propertyId)
+      if (!stop) generation.current = getCompleteDraftGeneration(userId, propertyId, draftId)
     } catch (cause) {
       stopped.current = wasStopped
       throw cause
     }
-  }, [userId, propertyId])
+  }, [userId, propertyId, draftId])
 
   const restoreSavedDraft = useCallback(async () => {
     const wasStopped = stopped.current
     stopped.current = true
     try {
       await Promise.allSettled([...pendingSaves.current])
-      if (savedAtEntry.current) await saveCompleteDraft(userId, savedAtEntry.current, propertyId)
+      if (savedAtEntry.current) {
+        if (draftId) await saveCompleteDraft(userId, savedAtEntry.current, propertyId, draftId, generation.current)
+        else await saveCompleteDraft(userId, savedAtEntry.current, propertyId)
+      } else if (draftId) await removeCompleteDraft(userId, propertyId, draftId)
       else await removeCompleteDraft(userId, propertyId)
     } catch (cause) {
       stopped.current = wasStopped
       throw cause
     }
-  }, [userId, propertyId])
+  }, [userId, propertyId, draftId])
 
   return { ready, error, save, discard, restoreSavedDraft, retry }
 }

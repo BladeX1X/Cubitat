@@ -72,6 +72,101 @@ test.describe('Flujo de Publicación de Inmuebles (Asistente 8 Pasos)', () => {
     await expect(page.getByRole('group', { name: 'Foto 1: draft.webp' })).toHaveCount(0)
   })
 
+  test('salir de una publicación nueva conserva otros borradores locales', async ({ page }) => {
+    const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
+    const preservedDraftId = 'draft-preserved'
+    const secondDraftId = 'draft-second'
+    await mockDirectSupabaseReads(page)
+    await page.route('**/auth/v1/user', async route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: ownerId, email: 'test@example.com', role: 'authenticated', aud: 'authenticated' }),
+    }))
+    await page.goto('/')
+    await page.evaluate(async ({ userId, draftId, secondDraftId }) => {
+      localStorage.setItem('cubitat-auth-token', JSON.stringify({
+        access_token: 'dummy-token', token_type: 'bearer', expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'dummy-refresh',
+        user: { id: userId, email: 'test@example.com' },
+      }))
+      localStorage.setItem(`cubitat_publish_draft:${userId}:${draftId}`, JSON.stringify({
+        description: 'Este borrador debe conservarse', contactName: 'QA Draft',
+        propertyType: 'casa', operation: 'venta', municipality: 'Playa', province: 'La Habana',
+      }))
+      localStorage.setItem(`cubitat_publish_draft:${userId}:${secondDraftId}`, JSON.stringify({
+        description: 'Segundo borrador', propertyType: 'apartamento', operation: 'alquiler',
+        municipality: 'Vedado', province: 'La Habana',
+      }))
+      const request = indexedDB.open('cubitat-publication-drafts', 1)
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        request.onupgradeneeded = () => request.result.createObjectStore('drafts')
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const tx = db.transaction('drafts', 'readwrite')
+      tx.objectStore('drafts').put({
+        formData: { description: 'Este borrador debe conservarse', contactName: 'QA Draft',
+          propertyType: 'casa', operation: 'venta', municipality: 'Playa', province: 'La Habana', streetAddress: 'Calle 23 guardada' },
+        images: [], step: 4, existingAmenities: [],
+      }, JSON.stringify([userId, null, draftId]))
+      tx.objectStore('drafts').put({
+        formData: { description: 'Segundo borrador', propertyType: 'apartamento', operation: 'alquiler', municipality: 'Vedado', province: 'La Habana' },
+        images: [], step: 2, existingAmenities: [],
+      }, JSON.stringify([userId, null, secondDraftId]))
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+      })
+      db.close()
+    }, { userId: ownerId, draftId: preservedDraftId, secondDraftId })
+
+    await page.goto('/publicar-inmueble')
+    await expect(page.getByRole('heading', { name: 'Publicar propiedad' })).toBeVisible()
+    await expect(page.locator('input[placeholder*="Ej: Calle"]')).toHaveValue('')
+    await page.locator('input[placeholder*="Ej: Calle"]').fill('Calle del borrador temporal')
+    const exitConfirmation = page.waitForEvent('dialog').then(dialog => dialog.accept())
+    await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+    await exitConfirmation
+    await expect(page).toHaveURL(/\/$/)
+
+    const preservedState = await page.evaluate(async userId => {
+      const draftKeys = Object.keys(localStorage)
+        .filter(key => key.startsWith(`cubitat_publish_draft:${userId}:`))
+        .sort()
+      const request = indexedDB.open('cubitat-publication-drafts', 1)
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const keys = await new Promise<string[]>((resolve, reject) => {
+        const tx = db.transaction('drafts', 'readonly')
+        const getKeys = tx.objectStore('drafts').getAllKeys()
+        getKeys.onsuccess = () => resolve(getKeys.result as string[])
+        getKeys.onerror = () => reject(getKeys.error)
+      })
+      db.close()
+      return { draftKeys, completeKeys: keys.sort() }
+    }, ownerId)
+    expect(preservedState.draftKeys).toEqual([
+      `cubitat_publish_draft:${ownerId}:${preservedDraftId}`,
+      `cubitat_publish_draft:${ownerId}:${secondDraftId}`,
+    ])
+    expect(preservedState.completeKeys).toEqual([
+      JSON.stringify([ownerId, null, preservedDraftId]),
+      JSON.stringify([ownerId, null, secondDraftId]),
+    ])
+
+    await page.goto('/mis-propiedades')
+    await expect(page.getByRole('heading', { name: 'Mis publicaciones' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Casa en venta en Playa (Borrador)' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Departamento en renta en Vedado (Borrador)' })).toBeVisible()
+    const selectedDraftCard = page.locator('div.group').filter({ has: page.getByRole('heading', { name: 'Casa en venta en Playa (Borrador)' }) })
+    await selectedDraftCard.getByRole('button', { name: 'Editar' }).click()
+    await expect(page).toHaveURL(/draft_id=draft-preserved/)
+    await page.getByRole('button', { name: /Dirección y Ubicación/ }).click()
+    await expect(page.locator('input[placeholder*="Ej: Calle"]')).toHaveValue('Calle 23 guardada')
+  })
+
   test('debería guiar por los pasos de dirección, información, características y guardar borrador', async ({ page }) => {
     await mockDirectSupabaseReads(page)
     // Interceptar la llamada de validación del token de Supabase

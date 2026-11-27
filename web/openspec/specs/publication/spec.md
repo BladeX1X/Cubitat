@@ -17,6 +17,27 @@ Define el flujo completo para crear, editar, guardar y publicar anuncios de prop
 
 ## Requirements
 
+### Requirement: Borradores locales independientes
+El sistema MUST conservar varios borradores de publicación de un mismo usuario en el dispositivo. Cada borrador MUST tener una identidad propia para leer, guardar, restaurar y descartar sin alterar los demás.
+
+#### Scenario: Iniciar publicación cuando ya existe un borrador
+- GIVEN un borrador local previamente guardado
+- WHEN el usuario inicia una nueva publicación de inmueble
+- THEN el formulario MUST iniciar vacío
+- AND el borrador previo MUST permanecer disponible en Mis publicaciones
+
+#### Scenario: Descartar una publicación nueva
+- GIVEN uno o más borradores locales guardados
+- WHEN el usuario sale de una publicación nueva y confirma «Salir sin guardar»
+- THEN solo MUST eliminarse el borrador de esa publicación
+- AND los demás borradores MUST seguir disponibles en Mis publicaciones
+
+#### Scenario: Reabrir un borrador específico
+- GIVEN varios borradores locales
+- WHEN el usuario elige editar uno de ellos en Mis publicaciones
+- THEN el sistema MUST restaurar los datos y fotos de ese borrador
+- AND las acciones de ese formulario MUST afectar solo esa identidad
+
 ### Requirement: Acceso autenticado a publicacion
 El sistema MUST requerir una sesion valida para iniciar, continuar o editar una publicacion.
 

@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicationDraft } from './usePublicationDraft'
 import { readCompleteDraft, saveCompleteDraft, removeCompleteDraft } from './completeDraftStorage'
-vi.mock('./completeDraftStorage', () => ({ readCompleteDraft: vi.fn(), saveCompleteDraft: vi.fn().mockResolvedValue(undefined), removeCompleteDraft: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('./completeDraftStorage', () => ({ getCompleteDraftGeneration: vi.fn().mockReturnValue(0), readCompleteDraft: vi.fn(), saveCompleteDraft: vi.fn().mockResolvedValue(undefined), removeCompleteDraft: vi.fn().mockResolvedValue(undefined) }))
 const value = { formData: { description: 'A' }, images: [{ dataUrl: 'data:image/webp;base64,YQ==', size: 1, name: 'a.webp' }], step: 6, existingAmenities: [] }
 beforeEach(() => vi.clearAllMocks())
 describe('publication autosave lifecycle', () => {
@@ -75,5 +75,19 @@ describe('publication autosave lifecycle', () => {
     expect(result.current.error).toBeNull()
     expect(restore).toHaveBeenCalledWith(value)
     expect(readCompleteDraft).toHaveBeenCalledTimes(2)
+  })
+
+  it('saves and discards one of multiple drafts without affecting the other', async () => {
+    vi.mocked(readCompleteDraft).mockResolvedValue(null)
+    const restore = vi.fn()
+    const first = renderHook(() => usePublicationDraft('A', undefined, false, value, restore, false, 'draft-1'))
+    const second = renderHook(() => usePublicationDraft('A', undefined, false, value, restore, false, 'draft-2'))
+    await waitFor(() => expect(saveCompleteDraft).toHaveBeenCalledWith('A', value, undefined, 'draft-2', expect.any(Number)))
+
+    await act(async () => first.result.current.discard())
+
+    expect(removeCompleteDraft).toHaveBeenCalledWith('A', undefined, 'draft-1')
+    expect(removeCompleteDraft).not.toHaveBeenCalledWith('A', undefined, 'draft-2')
+    second.unmount()
   })
 })

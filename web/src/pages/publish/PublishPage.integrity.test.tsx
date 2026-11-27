@@ -5,7 +5,7 @@ import { readCompleteDraft, removeCompleteDraft, saveCompleteDraft } from './com
 import { normalizePropertyImageReference } from '../../modules/properties/utils/images'
 
 const mocks = vi.hoisted(() => ({ upload: vi.fn(), uploadPropertyImage: vi.fn(), remove: vi.fn(), from: vi.fn(), single: vi.fn(), insert: vi.fn(), update: vi.fn(), updateEq: vi.fn(), updateResult: { data: { id: 'property-1' } as { id: string } | null, error: null as unknown }, authGetUser: vi.fn(), compressImage: vi.fn(), getEditableProperty: vi.fn(), createImagePreview: vi.fn() }))
-vi.mock('./completeDraftStorage', () => ({ readCompleteDraft: vi.fn(), saveCompleteDraft: vi.fn().mockResolvedValue(undefined), removeCompleteDraft: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('./completeDraftStorage', () => ({ getCompleteDraftGeneration: vi.fn().mockReturnValue(0), readCompleteDraft: vi.fn(), saveCompleteDraft: vi.fn().mockResolvedValue(undefined), removeCompleteDraft: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../../shared/hooks/useSEO', () => ({ useSEO: vi.fn() }))
 vi.mock('./compressPublicationImage', () => ({ compressPublicationImage: mocks.compressImage }))
 vi.mock('./uploadPropertyImage', () => ({ uploadPropertyImage: mocks.uploadPropertyImage }))
@@ -46,7 +46,7 @@ beforeEach(() => {
 })
 
 describe('publication integrity', () => {
-  it('opens a blank property form directly and replaces any existing local draft', async () => {
+  it('opens a blank property form directly with a fresh independent draft identity', async () => {
     render(<PublishPage {...{ userId: 'A', onBack: vi.fn(), onSubmitSuccess: vi.fn(), resumeDraft: false }} />)
 
     expect(await screen.findByRole('heading', { name: 'Publicar propiedad' })).toBeInTheDocument()
@@ -56,7 +56,7 @@ describe('publication integrity', () => {
       formData: expect.objectContaining({ contactName: '', contactPhone: '', description: '' }),
       images: [],
       step: 1,
-    }), undefined))
+    }), undefined, expect.any(String), expect.any(Number)))
     expect(readCompleteDraft).not.toHaveBeenCalled()
     expect(removeCompleteDraft).not.toHaveBeenCalled()
   })

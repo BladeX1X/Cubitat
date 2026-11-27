@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { AccountLayout } from '../account/AccountLayout'
 import { useSEO } from '../../shared/hooks/useSEO'
-import { readPublicationDraft } from '../publish/draftStorage'
+import { listPublicationDrafts } from '../publish/draftStorage'
 import { readCompleteDraft, removeCompleteDraft } from '../publish/completeDraftStorage'
 import { getPropertyStatusConfig, type PropertyStatus } from '../../modules/properties/propertyStatus'
 import { PropertyVisibilityActions } from './PropertyVisibilityActions'
@@ -82,7 +82,7 @@ export type MyPropertiesPageProps = {
   onNavigateMyMaterials?: () => void
   onNavigateAgentDashboard?: () => void
   onEditProperty: (propertyId: string) => void
-  onNewProperty: (loadDraft?: boolean) => void
+  onNewProperty: (draftId?: string) => void
   onSelectProperty?: (propertyId: string) => void
 }
 
@@ -370,48 +370,50 @@ export function MyPropertiesPage({
           privatePreviewRows.current = finalProperties
         }
 
-        // Cargar borrador local si existe en localStorage
+        // Listar todos los borradores guardados localmente para esta cuenta.
         try {
-          const parsed = readPublicationDraft(userId)
-          if (parsed) {
-              let localDraftCover: string | null = null
-              try {
-                const completeDraft = await readCompleteDraft(userId)
-                localDraftCover = getLocalDraftCoverImage(completeDraft?.images)
-              } catch (error) {
-                logSafeEvent({
-                  module: 'my_properties',
-                  action: 'load_local_draft_cover',
-                  level: 'warn',
-                  code: sanitizeErrorReason(error),
-                })
-              }
-              const municipality = typeof parsed.municipality === 'string' ? parsed.municipality : ''
-              const neighborhood = typeof parsed.neighborhood === 'string' ? parsed.neighborhood : ''
-              const province = typeof parsed.province === 'string' ? parsed.province : 'Cuba'
-              const location = typeof parsed.location === 'string'
-                ? parsed.location
-                : `${municipality}, ${province}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
-              const propertyTypeName = parsed.propertyType === 'apartamento' ? 'Departamento' : parsed.propertyType === 'casa' ? 'Casa' : 'Terreno'
-              const operationName = parsed.operation === 'alquiler' ? 'en renta' : parsed.operation === 'venta' ? 'en venta' : 'en permuta'
-              const draftTitle = `${propertyTypeName} ${operationName} en ${municipality || neighborhood || 'Cuba'} (Borrador)`
-              
-              const localDraftProp: Property = {
-                id: 'local_draft_id',
-                title: draftTitle,
-                location,
-                price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
-                price_currency: parsed.priceCurrency === 'CUP' || parsed.priceCurrency === 'MLC'
-                  ? parsed.priceCurrency
-                  : 'USD',
-                cover_image: localDraftCover,
-                status: 'local_draft',
-                moderation_message: null,
-                created_at: new Date().toISOString(),
-                user_id: user.id,
-              }
-              finalProperties = [localDraftProp, ...finalProperties]
+          const localDraftProperties: Property[] = []
+          for (const draftSummary of listPublicationDrafts(userId)) {
+            const draftId = draftSummary.id === 'legacy' ? undefined : draftSummary.id
+            let localDraftCover: string | null = null
+            try {
+              const completeDraft = draftId
+                ? await readCompleteDraft(userId, undefined, draftId)
+                : await readCompleteDraft(userId)
+              localDraftCover = getLocalDraftCoverImage(completeDraft?.images)
+            } catch (error) {
+              logSafeEvent({
+                module: 'my_properties',
+                action: 'load_local_draft_cover',
+                level: 'warn',
+                code: sanitizeErrorReason(error),
+              })
           }
+            const parsed = draftSummary.formData
+            const municipality = typeof parsed.municipality === 'string' ? parsed.municipality : ''
+            const neighborhood = typeof parsed.neighborhood === 'string' ? parsed.neighborhood : ''
+            const province = typeof parsed.province === 'string' ? parsed.province : 'Cuba'
+            const location = typeof parsed.location === 'string'
+              ? parsed.location
+              : `${municipality}, ${province}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
+            const propertyTypeName = parsed.propertyType === 'apartamento' ? 'Departamento' : parsed.propertyType === 'casa' ? 'Casa' : 'Terreno'
+            const operationName = parsed.operation === 'alquiler' ? 'en renta' : parsed.operation === 'venta' ? 'en venta' : 'en permuta'
+            const draftTitle = `${propertyTypeName} ${operationName} en ${municipality || neighborhood || 'Cuba'} (Borrador)`
+
+            localDraftProperties.push({
+              id: `local_draft:${draftSummary.id}`,
+              title: draftTitle,
+              location,
+              price_usd: parsed.priceUsd ? Number(parsed.priceUsd) : 0,
+              price_currency: parsed.priceCurrency === 'CUP' || parsed.priceCurrency === 'MLC' ? parsed.priceCurrency : 'USD',
+              cover_image: localDraftCover,
+              status: 'local_draft',
+              moderation_message: null,
+              created_at: new Date().toISOString(),
+              user_id: user.id,
+            })
+          }
+          finalProperties = [...localDraftProperties, ...finalProperties]
         } catch (e) {
           logSafeEvent({
             module: 'my_properties',
@@ -436,19 +438,21 @@ export function MyPropertiesPage({
 
   /* ---- delete handler ---- */
   async function handleDelete(propertyId: string) {
-    if (propertyId === 'local_draft_id') {
+    if (propertyId.startsWith('local_draft:')) {
       const confirmed = window.confirm(
         '¿Estás seguro de que deseas eliminar este borrador local? Se perderán todos los datos guardados en tu navegador.',
       )
       if (!confirmed) return
       try {
-        await removeCompleteDraft(userId)
+        const draftId = propertyId.slice('local_draft:'.length)
+        if (draftId === 'legacy') await removeCompleteDraft(userId)
+        else await removeCompleteDraft(userId, undefined, draftId)
       } catch (error) {
         logSafeEvent({ module: 'publish', action: 'delete_local_draft', level: 'warn', code: sanitizeErrorReason(error) })
         alert('No se pudo eliminar el borrador. Inténtalo de nuevo.')
         return
       }
-      setProperties((prev) => prev.filter((p) => p.id !== 'local_draft_id'))
+      setProperties((prev) => prev.filter((p) => p.id !== propertyId))
       return
     }
 
@@ -632,7 +636,7 @@ export function MyPropertiesPage({
                 <PropertyCard
                   key={property.id}
                   property={property}
-                  onEdit={() => property.id === 'local_draft_id' ? onNewProperty(true) : onEditProperty(property.id)}
+                  onEdit={() => property.id.startsWith('local_draft:') ? onNewProperty(property.id.slice('local_draft:'.length)) : onEditProperty(property.id)}
                   onDelete={() => handleDelete(property.id)}
                   onHide={() => void handleVisibility(property, 'owner_hidden')}
                   onRestore={() => void handleVisibility(property, 'published')}

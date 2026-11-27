@@ -158,7 +158,7 @@ function getInitialPageMode(): PageMode {
   }
   const path = window.location.pathname
   if (path === '/publicar-inmueble') return 'publish'
-  if (path === '/publicar' && (new URLSearchParams(window.location.search).get('tipo') === 'propiedad' || new URLSearchParams(window.location.search).get('load_draft') === 'true')) return 'publish'
+  if (path === '/publicar' && (new URLSearchParams(window.location.search).get('tipo') === 'propiedad' || new URLSearchParams(window.location.search).get('load_draft') === 'true' || Boolean(new URLSearchParams(window.location.search).get('draft_id')))) return 'publish'
   if (path === '/publicar') return 'publish-choice'
   if (PHASE_FOUR_VAL_ENABLED && path === '/valorar') return 'valuation'
   if (PHASE_FOUR_SVC_ENABLED && path.startsWith('/publicar-servicio')) return 'service-submit'
@@ -731,8 +731,10 @@ export function CubitatApp() {
     window.scrollTo(0, 0)
   }
 
-  function navigatePropertySubmission(loadDraft = false) {
-    const path = loadDraft ? '/publicar?tipo=propiedad&load_draft=true' : '/publicar-inmueble'
+  function navigatePropertySubmission(loadDraft = false, draftId?: string) {
+    const path = draftId
+      ? `/publicar?tipo=propiedad&draft_id=${encodeURIComponent(draftId)}`
+      : loadDraft ? '/publicar?tipo=propiedad&load_draft=true' : '/publicar-inmueble'
     if (!user) { setPendingAuthPath(path); openLogin(); return }
     window.history.pushState(null, '', path)
     setPageMode('publish')
@@ -1255,6 +1257,7 @@ export function CubitatApp() {
           <PublishPage
             userId={user.id}
             resumeDraft={new URLSearchParams(window.location.search).get('load_draft') === 'true'}
+            draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined}
             onBack={navigateHome}
             onSubmitSuccess={() => {
               setRefreshCounter((prev) => prev + 1)
@@ -1286,7 +1289,7 @@ export function CubitatApp() {
             onNavigateMyMaterials={PHASE_FOUR_MAT_ENABLED ? navigateMyMaterialListings : undefined}
             onNavigateAgentDashboard={PHASE_TWO_ENABLED ? navigateAgentDashboard : undefined}
             onEditProperty={navigateEditProperty}
-            onNewProperty={navigatePropertySubmission}
+            onNewProperty={(draftId) => navigatePropertySubmission(draftId === 'legacy', draftId === 'legacy' ? undefined : draftId)}
             onSelectProperty={handleSelectProperty}
           />
         )}
