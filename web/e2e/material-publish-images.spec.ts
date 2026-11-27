@@ -174,6 +174,45 @@ test('Materiales conserva varias fotos tras un fallo y permite reintentar sin du
   })
 })
 
+test('Materiales guarda varios borradores locales y permite reanudar el guardado', async ({ page }) => {
+  const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
+  await page.route('**/api/supabase/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/auth/v1/user')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: ownerId, email: 'qa@example.com', role: 'authenticated', aud: 'authenticated' }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+  })
+  page.on('dialog', dialog => dialog.accept())
+  await page.goto('/')
+  await page.evaluate(userId => {
+    window.localStorage.setItem('cubitat-auth-token', JSON.stringify({
+      access_token: 'dummy-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600,
+      refresh_token: 'dummy-refresh', user: { id: userId, email: 'qa@example.com' },
+    }))
+  }, ownerId)
+
+  await page.goto('/publicar-material')
+  await page.getByLabel('Nombre del producto').fill('Cemento guardado')
+  await page.getByRole('button', { name: 'Guardar borrador' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Borrador guardado' })).toBeVisible()
+  await page.getByLabel('Nombre del producto').fill('Cambio no guardado')
+  await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await page.goto('/mis-materiales')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByLabel('Nombre del producto')).toHaveValue('Cemento guardado')
+  await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+
+  await page.goto('/publicar-material')
+  await page.getByLabel('Nombre del producto').fill('Segundo borrador de material')
+  await page.getByRole('button', { name: 'Guardar borrador' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Borrador guardado' })).toBeVisible()
+  await page.goto('/mis-materiales')
+  await expect(page.getByRole('heading', { name: 'Cemento guardado' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Segundo borrador de material' })).toBeVisible()
+})
+
 test('Materiales reutiliza el anuncio propio si se pierde la respuesta al crearlo', async ({ page }) => {
   const ownerId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   const listingId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'

@@ -126,3 +126,48 @@ test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil 
   expect(updates).toContainEqual(expect.objectContaining({ p_id: insertPayloads[0]?.id, p_gallery_urls: uploads }))
   expect(cleanups).toEqual([])
 })
+
+test('Servicios conserva múltiples borradores manuales y descarta solo cambios posteriores al guardar', async ({ page }) => {
+  const ownerId = 'bb4455b8-0330-440d-ace3-33d0ba5fc28a'
+  await page.route('**/api/supabase/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/auth/v1/user')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: ownerId, email: 'qa@example.com', role: 'authenticated', aud: 'authenticated' }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+  })
+  page.on('dialog', dialog => dialog.accept())
+  await page.goto('/')
+  await page.evaluate(userId => {
+    window.localStorage.setItem('cubitat-auth-token', JSON.stringify({
+      access_token: 'dummy-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600,
+      refresh_token: 'dummy-refresh', user: { id: userId, email: 'qa@example.com' },
+    }))
+  }, ownerId)
+
+  await page.goto('/publicar-servicio')
+  await page.getByLabel('Nombre del profesional o negocio').fill('Servicio guardado')
+  await page.getByRole('button', { name: 'Guardar borrador' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Borrador guardado' })).toBeVisible()
+  await page.getByLabel('Nombre del profesional o negocio').fill('Cambio sin guardar')
+  await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await page.goto('/mis-servicios')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByLabel('Nombre del profesional o negocio')).toHaveValue('Servicio guardado')
+  await page.getByLabel('Nombre del profesional o negocio').fill('Otro cambio sin guardar')
+  await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await page.goto('/mis-servicios')
+  await expect(page.getByRole('heading', { name: 'Servicio guardado' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByLabel('Nombre del profesional o negocio')).toHaveValue('Servicio guardado')
+  await page.getByRole('button', { name: 'Salir sin guardar' }).click()
+
+  await page.goto('/publicar-servicio')
+  await page.getByLabel('Nombre del profesional o negocio').fill('Segundo borrador de servicio')
+  await page.getByRole('button', { name: 'Guardar borrador' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Borrador guardado' })).toBeVisible()
+  await page.goto('/mis-servicios')
+  await expect(page.getByRole('heading', { name: 'Servicio guardado' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Segundo borrador de servicio' })).toBeVisible()
+})

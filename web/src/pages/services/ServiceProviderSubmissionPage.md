@@ -57,6 +57,15 @@ prematuro para no crear/actualizar el perfil antes de completar la galería.
 El formulario se remonta al cambiar de usuario, descartando datos de contacto,
 galería y campos de la sesión anterior.
 
+## Borradores locales
+
+Los perfiles nuevos ofrecen «Guardar borrador» y «Salir sin guardar». Cada
+borrador se guarda en IndexedDB bajo el usuario y tipo `service`, conserva los
+campos, paso actual y fotos seleccionadas, y se puede reanudar o eliminar desde
+Mis perfiles. Se admiten varios borradores por cuenta. Salir sin guardar no
+modifica ni elimina la última versión guardada; la edición de perfiles remotos
+mantiene su flujo de guardado y no usa estos borradores locales.
+
 ## Verificación
 
 Probar selección múltiple, orden/portada, límite de 10, conversión y miniaturas,
@@ -74,3 +83,8 @@ El marco compartido `PublicationStepLayout` muestra el avance y valida los
 obligatorios del paso activo antes de avanzar. El envío, carga de fotos,
 actualización y reintentos permanecen en este formulario; las coordenadas siguen
 siendo privadas y el directorio no las expone como dirección exacta.
+
+La creación admite varios borradores locales por usuario y la acción de salida
+descarta solo los cambios posteriores al último guardado manual. El ciclo se
+cubre en `service-publish-images.spec.ts`. El perfil de servicio no tiene un
+campo de precio ni moneda en el modelo actual.

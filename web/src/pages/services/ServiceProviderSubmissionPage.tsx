@@ -10,11 +10,14 @@ import { MultiPhotoUploadField, type ExistingUploadPhoto } from '../../shared/ui
 import { PublicationFormShell } from '../publish/PublicationFormShell'
 import { PublicationLocationField } from '../publish/PublicationLocationField'
 import { PublicationStepLayout, type PublicationStep } from '../publish/PublicationStepLayout'
+import { readMarketplaceDraft, removeMarketplaceDraft, saveMarketplaceDraft } from '../publish/marketplaceDraftStorage'
 
 type ServiceProviderSubmissionPageProps = {
   onBack: () => void
   onRequireLogin: () => void
   profileId?: string
+  userId: string
+  draftId?: string
 }
 
 const servicePublicationSteps: PublicationStep[] = [
@@ -24,7 +27,7 @@ const servicePublicationSteps: PublicationStep[] = [
   { label: 'Contacto', description: 'Revisa los datos y envía el perfil a revisión.' },
 ]
 
-export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileId }: ServiceProviderSubmissionPageProps) {
+export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileId, userId, draftId }: ServiceProviderSubmissionPageProps) {
   const [displayName, setDisplayName] = useState('')
   const [category, setCategory] = useState<HomeServiceCategory>('plomeria')
   const [description, setDescription] = useState('')
@@ -46,6 +49,9 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
   const [loadingProfile, setLoadingProfile] = useState(Boolean(profileId))
   const [newProviderId] = useState(() => crypto.randomUUID())
   const [step, setStep] = useState(1)
+  const [activeDraftId] = useState(() => draftId ?? crypto.randomUUID())
+  const [draftReady, setDraftReady] = useState(!draftId || Boolean(profileId))
+  const [draftMessage, setDraftMessage] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
 
   function nextStep() {
@@ -64,6 +70,30 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
     setStep((current) => Math.min(servicePublicationSteps.length, current + 1))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  useEffect(() => {
+    if (!draftId || profileId) return
+    let active = true
+    void readMarketplaceDraft<Record<string, unknown>>('service', userId, draftId).then((draft) => {
+      if (!active || !draft) return
+      const value = draft.value
+      setDisplayName(typeof value.displayName === 'string' ? value.displayName : '')
+      setCategory(typeof value.category === 'string' ? value.category as HomeServiceCategory : 'plomeria')
+      setDescription(typeof value.description === 'string' ? value.description : '')
+      setProvince(typeof value.province === 'string' ? value.province : '')
+      setMunicipality(typeof value.municipality === 'string' ? value.municipality : '')
+      setMunicipalities(typeof value.municipalities === 'string' ? value.municipalities : '')
+      setCoordinates(value.coordinates && typeof value.coordinates === 'object' ? value.coordinates as { latitude: number; longitude: number } : null)
+      setPhone(typeof value.phone === 'string' ? value.phone : '')
+      setWhatsapp(typeof value.whatsapp === 'string' ? value.whatsapp : '')
+      setGalleryReferences(Array.isArray(value.galleryReferences) ? value.galleryReferences as string[] : [])
+      setGalleryUrls(Array.isArray(value.galleryUrls) ? value.galleryUrls as string[] : [])
+      setPhotoFiles(draft.photos)
+      setStep(typeof value.step === 'number' ? Math.min(servicePublicationSteps.length, Math.max(1, value.step)) : 1)
+    }).catch(() => { if (active) setError('No se pudo recuperar el borrador. Puedes reintentarlo desde Mis servicios.') })
+      .finally(() => { if (active) setDraftReady(true) })
+    return () => { active = false }
+  }, [draftId, profileId, userId])
 
   useEffect(() => {
     if (!profileId) return
@@ -156,6 +186,7 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
       const selectedFiles = new Set(photoFiles)
       const nowUnselectedPaths = pendingPhotoUploads.filter(({ file }) => !selectedFiles.has(file)).map(({ path }) => path)
       await removeUnattachedHomeServicePhotos([...removedPhotoPaths, ...nowUnselectedPaths])
+      if (!profileId) await removeMarketplaceDraft('service', userId, activeDraftId)
       setSubmitted(true)
     } catch (submitError) {
       if (submitError instanceof Error && submitError.message === 'AUTH_REQUIRED') {
@@ -178,13 +209,28 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
     }
   }
 
+  async function handleSaveDraft() {
+    try {
+      await saveMarketplaceDraft({ kind: 'service', userId, id: activeDraftId, updatedAt: new Date().toISOString(), photos: photoFiles, value: { displayName, category, description, province, municipality, municipalities, coordinates, phone, whatsapp, galleryReferences, galleryUrls, step } })
+      setDraftMessage('Borrador guardado en este dispositivo.')
+    } catch {
+      setDraftMessage('No se pudo guardar el borrador. Comprueba el espacio disponible en este dispositivo.')
+    }
+  }
+
+  function handleExitWithoutSaving() {
+    if (!window.confirm('Los cambios que no guardaste como borrador se descartarán. ¿Quieres salir sin guardar?')) return
+    onBack()
+  }
+
   if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-800"><BriefcaseBusiness /></div><h1 className="mt-5 text-2xl font-black">Perfil enviado a revisión</h1><p className="mt-2 text-neutral-600">El perfil aparecerá en el directorio después de la revisión. Publicarlo no acredita licencias ni certifica el servicio.</p><Button className="mt-6" onClick={onBack}>Volver al directorio</Button></main>
 
   return (
-    <PublicationFormShell onBack={onBack} icon={<BriefcaseBusiness size={17} />} eyebrow="Directorio profesional" title={profileId ? 'Edita tu perfil' : 'Presenta tus servicios'} description="El perfil queda pendiente de revisión antes de aparecer en público. No lo presentes como licencia o certificación emitida por Cubitat.">
-          {loadingProfile ? <p className="mt-7 py-8 text-sm text-neutral-600">Cargando perfil…</p> : <form ref={formRef} noValidate className="mt-7" onSubmit={(event) => void handleSubmit(event)}>
+    <PublicationFormShell onBack={profileId ? onBack : handleExitWithoutSaving} icon={<BriefcaseBusiness size={17} />} eyebrow="Directorio profesional" title={profileId ? 'Edita tu perfil' : 'Presenta tus servicios'} description="El perfil queda pendiente de revisión antes de aparecer en público. No lo presentes como licencia o certificación emitida por Cubitat.">
+          {!profileId && <div className="mt-5 flex flex-wrap items-center gap-3"><Button type="button" variant="outline" disabled={!draftReady || saving || compressingPhotos} onClick={() => void handleSaveDraft()}>Guardar borrador</Button><Button type="button" variant="outline" disabled={saving || compressingPhotos} onClick={handleExitWithoutSaving}>Salir sin guardar</Button>{draftMessage && <span role="status" className="text-sm text-neutral-600">{draftMessage}</span>}</div>}
+          {loadingProfile || !draftReady ? <p className="mt-7 py-8 text-sm text-neutral-600">Cargando {draftId ? 'borrador' : 'perfil'}…</p> : <form ref={formRef} noValidate className="mt-7" onSubmit={(event) => void handleSubmit(event)}>
             {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-            <PublicationStepLayout steps={servicePublicationSteps} step={step} onNavigate={setStep} onBack={() => step === 1 ? onBack() : setStep((current) => current - 1)} onNext={nextStep} isLastStep={step === servicePublicationSteps.length} busy={saving || compressingPhotos} submitLabel={profileId ? 'Guardar y enviar a revisión' : 'Enviar a revisión'}>
+            <PublicationStepLayout steps={servicePublicationSteps} step={step} onNavigate={setStep} onBack={() => step === 1 ? profileId ? onBack() : handleExitWithoutSaving() : setStep((current) => current - 1)} onNext={nextStep} isLastStep={step === servicePublicationSteps.length} busy={saving || compressingPhotos} submitLabel={profileId ? 'Guardar y enviar a revisión' : 'Enviar a revisión'}>
             <div data-publication-step="1" hidden={step !== 1}>
             <label className="text-sm font-semibold">Nombre del profesional o negocio<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} maxLength={120} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" /></label>
             <label className="text-sm font-semibold">Servicio<select value={category} onChange={(event) => setCategory(event.target.value as HomeServiceCategory)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{HOME_SERVICE_CATEGORIES.map((value) => <option key={value} value={value}>{HOME_SERVICE_CATEGORY_LABELS[value]}</option>)}</select></label>

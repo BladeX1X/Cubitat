@@ -66,6 +66,17 @@ calidad del trabajo.
 Mientras las fotos se preparan, el formulario bloquea el envío y no crea ni
 actualiza el perfil antes de completar el lote.
 
+#### Scenario: Guardar y reanudar borradores de servicio
+- GIVEN un usuario autenticado completa uno o más perfiles sin enviarlos
+- WHEN guarda manualmente un borrador
+- THEN el sistema MUST guardarlo en el dispositivo asociado a su usuario
+- AND MUST conservar los campos, el paso actual y las fotos seleccionadas
+- AND Mis perfiles MUST permitir reanudar y eliminar cada borrador por separado
+- WHEN el usuario elige «Salir sin guardar» después de guardar
+- THEN MUST conservar exactamente la última instantánea guardada
+- AND MUST descartar los cambios posteriores a esa instantánea
+- AND MUST NOT alterar perfiles remotos
+
 ### Moderación
 
 - **WHEN** un administrador con AAL2 aprueba, rechaza o pausa un perfil
