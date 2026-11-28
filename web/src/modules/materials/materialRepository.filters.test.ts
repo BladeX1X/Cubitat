@@ -46,7 +46,7 @@ describe('fetchMaterialListings filters and pagination', () => {
   it('loads every filtered map page with only cover images and public coordinates', async () => {
     const rows = Array.from({ length: 61 }, (_, index) => ({
       id: `material-${index}`, slug: `material-${index}`, title: `Material ${index}`, category: 'cemento',
-      description: 'Material de construcción', price: 12, currency: 'USD', province: 'La Habana',
+      description: 'Material de construcción', price: 12, currency: 'USD', province: 'La Habana', municipality: 'Playa',
       coordinates: { latitude: 23.11, longitude: -82.36 }, availability: 'available', photo_urls: [],
       updated_at: '2026-11-05T00:00:00Z',
     }))
@@ -58,7 +58,7 @@ describe('fetchMaterialListings filters and pagination', () => {
     const items = await fetchMaterialListingsForMap({ province: 'La Habana', category: 'cemento' })
 
     expect(items).toHaveLength(61)
-    expect(items[0]).toMatchObject({ coordinates: { latitude: 23.11, longitude: -82.36 }, photoUrls: [] })
+    expect(items[0]).toMatchObject({ municipality: 'Playa', coordinates: { latitude: 23.11, longitude: -82.36 }, photoUrls: [] })
     expect(query.range.mock.calls).toEqual([[0, 59], [60, 119]])
     expect(query.eq).toHaveBeenCalledWith('province', 'La Habana')
   })

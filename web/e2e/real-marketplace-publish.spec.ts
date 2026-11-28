@@ -28,10 +28,22 @@ async function installSession(page: Page, session: Session) {
   await page.reload()
 }
 
+async function selectProvinceMunicipalityAndPoint(page: Page) {
+  await page.getByRole('combobox', { name: 'Provincia' }).selectOption({ label: 'La Habana' })
+  await page.getByRole('combobox', { name: 'Municipio' }).selectOption({ label: 'Playa' })
+  const map = page.locator('.maplibregl-canvas')
+  await expect(map).toBeVisible({ timeout: 15_000 })
+  const bounds = await map.boundingBox()
+  if (!bounds) throw new Error('El mapa de ubicación no tiene tamaño visible')
+  await map.click({ position: { x: bounds.width / 2, y: bounds.height / 2 } })
+  await expect(page.getByText('Ubicación marcada', { exact: true })).toBeVisible()
+}
+
 async function readOwnedRows(request: APIRequestContext, session: Session, kind: ListingKind) {
   const endpoint = kind === 'service' ? 'get_my_home_service_providers' : 'get_my_material_listings'
   const response = await request.post(`${SUPABASE_URL}/rest/v1/rpc/${endpoint}`, {
     headers: { apikey: ANON_KEY!, Authorization: `Bearer ${session.access_token}` },
+    timeout: 12_000,
   })
   expect(response.ok(), `${endpoint} must return this QA owner's listings`).toBeTruthy()
   const rows: unknown = await response.json()
@@ -54,24 +66,29 @@ async function removeOwnedRows(request: APIRequestContext, session: Session, kin
           p_id: id, p_display_name: row.display_name, p_category: row.category,
           p_description: row.description, p_province: row.province,
           p_municipalities: row.municipalities ?? [], p_phone: row.phone ?? null,
-          p_whatsapp: row.whatsapp ?? null, p_gallery_urls: [],
+          p_whatsapp: row.whatsapp ?? null, p_gallery_urls: [], p_coordinates: row.coordinates ?? null,
         }
       : {
           p_id: id, p_title: row.title, p_category: row.category,
           p_description: row.description, p_price: row.price ?? null,
           p_currency: row.currency, p_province: row.province,
+          p_municipality: row.municipality ?? '',
+          p_coordinates: row.coordinates ?? null,
           p_availability: row.availability, p_phone: row.phone ?? null,
           p_whatsapp: row.whatsapp ?? null, p_photo_urls: [],
         }
     const detached = await request.post(`${SUPABASE_URL}/rest/v1/rpc/${rpc}`, {
       headers: { apikey: ANON_KEY!, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
       data: input,
+      timeout: 12_000,
     })
-    expect(detached.ok(), `owner can detach QA ${kind} photos before account cleanup`).toBeTruthy()
+    const detachError = detached.ok() ? '' : await detached.text().catch(() => '')
+    expect(detached.ok(), `owner can detach QA ${kind} photos before account cleanup (${detached.status()}): ${detachError}`).toBeTruthy()
     if (paths.length) {
       const removed = await request.delete(`${SUPABASE_URL}/storage/v1/object/${bucket}`, {
         headers: { apikey: ANON_KEY!, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         data: { prefixes: paths },
+        timeout: 12_000,
       })
       expect(removed.ok(), `owned ${kind} QA photos must be removable`).toBeTruthy()
     }
@@ -79,7 +96,7 @@ async function removeOwnedRows(request: APIRequestContext, session: Session, kin
 }
 
 async function runPublication(page: Page, request: APIRequestContext, kind: ListingKind) {
-  test.setTimeout(120_000)
+  test.setTimeout(75_000)
   assertLocalMutationTarget(BASE_URL, SUPABASE_URL)
   const session = JSON.parse(SESSION_JSON!) as Session
   expect(session.access_token).toBeTruthy()
@@ -101,25 +118,42 @@ async function runPublication(page: Page, request: APIRequestContext, kind: List
     page.on('console', (message) => { if (message.type() === 'error') browserErrors.push(message.text()) })
   }
 
+  let publicationFlowFailed = false
+  let cleanupFailure: unknown
   try {
     await installSession(page, session)
     await page.goto(kind === 'service' ? '/publicar-servicio' : '/publicar-material')
     if (kind === 'service') {
       await expect(page.getByRole('heading', { name: 'Presenta tus servicios' })).toBeVisible()
       await page.getByLabel('Nombre del profesional o negocio').fill(`Servicio ${marker}`)
-      await page.getByLabel('Provincia').fill('La Habana')
       await page.getByLabel('Descripción').fill(`Perfil QA temporal ${marker}, con dos fotos para verificar carga privada.`)
+      await page.getByRole('button', { name: 'Continuar' }).click()
+      await selectProvinceMunicipalityAndPoint(page)
+      await page.getByRole('button', { name: 'Continuar' }).click()
       await page.getByLabel('Fotos de tus trabajos').setInputFiles(['src/assets/hero.png', 'src/assets/hero.png'])
       await expect(page.getByText('2 de 10 fotos. La primera será la portada del anuncio.')).toBeVisible()
-      await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+      await page.getByRole('button', { name: 'Continuar' }).click()
+      await expect(page.getByRole('heading', { name: 'Contacto', level: 2, exact: true })).toBeVisible()
+      await page.getByLabel('Teléfono').fill('+5351234567')
+      await expect(page.getByRole('heading', { name: 'Contacto', level: 2, exact: true })).toBeVisible()
+      const submitButton = page.getByRole('button', { name: 'Enviar a revisión', exact: true })
+      await expect(submitButton).toBeVisible()
+      await submitButton.click()
       await expect(page.getByRole('heading', { name: 'Perfil enviado a revisión' })).toBeVisible()
     } else {
       await expect(page.getByRole('heading', { name: 'Anuncia materiales' })).toBeVisible()
       await page.getByLabel('Nombre del producto').fill(`Material ${marker}`)
-      await page.getByLabel('Provincia').fill('La Habana')
+      await page.getByRole('button', { name: 'Continuar' }).click()
+      await selectProvinceMunicipalityAndPoint(page)
+      await page.getByRole('button', { name: 'Continuar' }).click()
+      await page.getByRole('spinbutton', { name: 'Precio' }).fill('125')
+      await page.getByLabel('Moneda').selectOption('CUP')
       await page.getByLabel('Descripción').fill(`Anuncio QA temporal ${marker}, con dos fotos para verificar carga privada.`)
+      await page.getByRole('button', { name: 'Continuar' }).click()
       await page.getByLabel('Fotos del producto').setInputFiles(['src/assets/hero.png', 'src/assets/hero.png'])
       await expect(page.getByText('2 de 10 fotos. La primera será la portada del anuncio.')).toBeVisible()
+      await page.getByRole('button', { name: 'Continuar' }).click()
+      await page.getByLabel('Teléfono').fill('+5351234567')
       await page.getByRole('button', { name: 'Enviar a revisión' }).click()
       await expect(page.getByRole('heading', { name: 'Anuncio enviado a revisión' }), `Resultado de carga de fotos: ${materialUploadResults.join(' | ') || 'sin respuesta del gateway'}; errores: ${browserErrors.join(' | ')}`).toBeVisible()
     }
@@ -129,6 +163,8 @@ async function runPublication(page: Page, request: APIRequestContext, kind: List
     expect(created, 'must create exactly one pending listing for the QA marker').toHaveLength(1)
     const listing = created[0]!
     expect(listing.status).toBe('pending_review')
+    expect(listing.coordinates).toMatchObject({ latitude: expect.any(Number), longitude: expect.any(Number) })
+    if (kind === 'material') expect(listing.currency).toBe('CUP')
     const paths = kind === 'service' ? listing.gallery_urls : listing.photo_urls
     expect(paths).toHaveLength(2)
     expect(paths.every((path) => typeof path === 'string' && path.startsWith(`${session.user.id}/`) && path.endsWith('.webp'))).toBe(true)
@@ -142,9 +178,19 @@ async function runPublication(page: Page, request: APIRequestContext, kind: List
       expect(downloaded.headers()['content-type']).toContain('image/webp')
       expect((await downloaded.body()).byteLength).toBeGreaterThan(0)
     }
+  } catch (error) {
+    publicationFlowFailed = true
+    throw error
   } finally {
-    await removeOwnedRows(request, session, kind, marker)
+    try {
+      await removeOwnedRows(request, session, kind, marker)
+    } catch (cleanupError) {
+      if (!publicationFlowFailed) cleanupFailure = cleanupError
+      // Keep the publication assertion as the primary failure. The enclosing
+      // QA runner deletes this isolated local user after Playwright exits.
+    }
   }
+  if (cleanupFailure) throw cleanupFailure
 }
 
 test('Servicios: publicar con varias fotos reales en Supabase local', async ({ page, request }) => {

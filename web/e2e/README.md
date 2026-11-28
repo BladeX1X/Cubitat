@@ -29,9 +29,11 @@ cuenta, porque podría pertenecer a otra ejecución o a un usuario real.
 
 Las pruebas con escrituras validan además que tanto la app como Supabase usen
 loopback. No se habilitan escrituras contra DEV ni producción con variables de
-entorno. Para E2E locales, Playwright inicia Vite en modo `phase2-dev`, habilita
-las rutas de Servicios, Rentar, Materiales y Negocios, y fija Supabase en
-`http://127.0.0.1:54321`. No usa el proyecto alojado. Los recorridos que
+entorno. Para E2E locales, Playwright inicia Vite en modo `phase2-dev` mediante
+`dev:local`. El lanzador obtiene la URL y la clave pública desde `supabase
+status -o env`, exige loopback y habilita las rutas de Servicios y Materiales.
+Las credenciales solo se pasan al proceso local; nunca se escriben en archivos.
+No usa el proyecto alojado. Los recorridos que
 interceptan sus lecturas pueden correr sin Supabase local; `security.spec.ts` y
 los casos que necesitan persistencia sí requieren iniciar la instancia local
 con `npx supabase start`.

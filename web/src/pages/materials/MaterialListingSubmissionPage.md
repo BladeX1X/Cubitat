@@ -10,7 +10,8 @@ protección de Storage y no se usan.
 
 El formulario comparte el marco visual de publicación con Inmuebles y
 Servicios. El paso de ubicación exige provincia y municipio de Cuba y centra
-`AddressMap` en el área seleccionada; el botón «Usar mi ubicación» solicita al
+`AddressMap` en el área seleccionada. Provincia, municipio y punto seleccionado
+se guardan juntos y el editor restaura los tres valores. El botón «Usar mi ubicación» solicita al
 navegador permiso explícito y centra el mapa en las coordenadas recibidas. El
 punto se puede ajustar con un clic o arrastrando el marcador. Al editar se recupera
 desde la RPC del propietario y al guardar se envía junto con los campos del

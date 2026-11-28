@@ -498,3 +498,13 @@ El sistema MUST manejar estados de anuncio de forma consistente entre resultados
 - «Usar mi ubicación» invoca geolocalización solo tras pulsarlo y con permiso del navegador; la política HTTP permite geolocalización únicamente al mismo origen (`geolocation=(self)`), el mapa se centra y permite corregir el marcador. Si el usuario ya bloqueó el permiso, se le indica que lo habilite en la configuración del sitio.
 - El perfil de servicio incorpora el municipio elegido en sus municipios de cobertura, conservando las zonas adicionales.
 - Para Materiales la provincia y las coordenadas siguen guardándose con el contrato existente; el municipio se usa para orientar el mapa y no requiere migración.
+
+### Requirement: Avance explícito entre pasos
+El asistente compartido de Servicios y Materiales MUST avanzar de paso sin enviar el formulario automáticamente.
+
+#### Scenario: Avanzar al paso final
+- GIVEN un anuncio completo en el penúltimo paso
+- WHEN la persona pulsa «Continuar»
+- THEN MUST mostrarse el último paso
+- AND MUST NOT iniciarse el envío, la carga de fotos ni la creación/actualización del anuncio
+- AND MUST requerirse un clic explícito en «Enviar a revisión» para publicar

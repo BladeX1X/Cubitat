@@ -31,7 +31,6 @@ async function chooseServiceLocation(page: import('@playwright/test').Page) {
 
 async function submitService(page: import('@playwright/test').Page) {
   await serviceStep(page, 'Contacto')
-  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
 }
 
 test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil ni subir fotos otra vez', async ({ page }) => {
@@ -116,6 +115,10 @@ test('Servicios reintenta un guardado con respuesta perdida sin duplicar perfil 
   await expect(page.getByText('2 de 10 fotos. La primera será la portada del anuncio.')).toBeVisible()
 
   await submitService(page)
+  const submitButton = page.getByRole('button', { name: 'Enviar a revisión' })
+  await submitButton.click()
+  await expect(page.getByRole('alert')).toHaveText(/No se pudo confirmar el guardado/)
+  await submitButton.click()
   await expect(page.getByRole('heading', { name: 'Perfil enviado a revisión' })).toBeVisible()
 
   expect(uploads).toHaveLength(2)

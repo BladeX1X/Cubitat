@@ -33,6 +33,7 @@ const input = {
   price: 20,
   currency: 'USD' as const,
   province: 'La Habana',
+  municipality: 'Playa',
   coordinates: null,
   availability: 'available' as const,
   phone: null,
@@ -59,6 +60,7 @@ describe('createMaterialListing retry safety', () => {
       owner_id: ownerId,
       slug: stableSlug,
       coordinates: null,
+      municipality: 'Playa',
       photo_urls: [],
     }))
     expect(rpcMock).not.toHaveBeenCalled()

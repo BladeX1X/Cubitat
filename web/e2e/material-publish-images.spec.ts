@@ -31,7 +31,6 @@ async function chooseMaterialLocation(page: import('@playwright/test').Page) {
 
 async function submitMaterial(page: import('@playwright/test').Page) {
   await materialStep(page, 'Contacto')
-  await page.getByRole('button', { name: /(?:Guardar y )?Enviar a revisión/ }).click()
 }
 
 test('Materiales conserva varias fotos tras un fallo y permite reintentar sin duplicar el anuncio', async ({ page }) => {
@@ -155,6 +154,10 @@ test('Materiales conserva varias fotos tras un fallo y permite reintentar sin du
   await expect(page.getByRole('img', { name: 'Fotos del producto, foto 2' })).toBeVisible()
 
   await submitMaterial(page)
+  const submitButton = page.getByRole('button', { name: /(?:Guardar y )?Enviar a revisión/ })
+  await submitButton.click()
+  await expect(page.getByRole('alert')).toHaveText(/El anuncio quedó guardado como pendiente, pero no se pudieron cargar las fotos/)
+  await submitButton.click()
   await expect(page.getByRole('heading', { name: 'Anuncio enviado a revisión' })).toBeVisible()
   expect(createCount).toBe(1)
   expect(createdPayload).toMatchObject({ owner_id: ownerId, title: 'Material QA con varias fotos', photo_urls: [] })
@@ -309,6 +312,10 @@ test('Materiales reutiliza el anuncio propio si se pierde la respuesta al crearl
   await page.getByLabel('Descripción').fill('Anuncio sintético para comprobar el reintento de creación.')
 
   await submitMaterial(page)
+  const submitButton = page.getByRole('button', { name: /(?:Guardar y )?Enviar a revisión/ })
+  await submitButton.click()
+  await expect(page.getByRole('alert')).toHaveText(/No se pudo confirmar el guardado/)
+  await submitButton.click()
   await expect(page.getByRole('heading', { name: 'Anuncio enviado a revisión' })).toBeVisible()
   const stableSlug = createRequests[0]?.slug
   expect(stableSlug).toMatch(/^cemento-para-reparacion-qa-[0-9a-f]{32}$/)
