@@ -4,7 +4,9 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-## Municipio de Materiales junto a coordenadas — candidata de producción — 2026-11-28
+Última revisión documental: 2026-11-28.
+
+## Municipio de Materiales junto a coordenadas — aplicada en producción — 2026-11-28
 
 - `migrations/20261128120000_material_municipality_coordinates_contract.sql`
   conserva provincia y municipio al crear/editar anuncios; la RPC del
@@ -15,17 +17,23 @@ orden y propósito, pero no sustituye la lectura del SQL.
 - La ejecución E2E local autenticada verificó creación y edición con provincia,
   municipio, coordenadas y fotos privadas. El cambio de catálogo conserva el
   municipio cuando está disponible y usa la provincia como fallback histórico.
-- El snapshot de esquema productivo de solo lectura del 2026-11-28 verificó
-  174 versiones registradas hasta `20261126120000`, sin fuentes canónicas
-  ausentes; `20261128120000` es la única versión pendiente. La firma productiva
-  de `update_material_listing()` todavía no contiene municipio.
-- El workflow `Apply publication coordinates migration to production` quedó
-  preparado para aplicar exclusivamente esta migración tras confirmar
-  `APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP`. No crea respaldo,
-  conforme a la instrucción expresa del usuario. Valida proyecto, checksum,
-  ledger completo, esquema previo, dry-run unitario y permisos/RPC posteriores.
-- Estado: integrada en `main`, pero aún no aplicada ni verificada en producción.
-  No usar `db push` global ni ejecutar desde un checkout local.
+- El snapshot previo verificó 174 versiones hasta `20261126120000`, sin fuentes
+  canónicas ausentes, y confirmó que esta era la única versión pendiente.
+- PR #301 quedó integrado a `main` con merge commit
+  `89001ba1198adbfe6d2430e2d5cf0b402af2c3c8`. Los checks requeridos
+  `quality` y `database-security` pasaron; la protección de `main` no exige
+  aprobación de otra persona.
+- El workflow `Apply publication coordinates migration to production` terminó
+  correctamente en [run 46176314587](https://github.com/BladeX1X/Cubitat/actions/runs/46176314587),
+  con la confirmación autorizada `APPLY PUBLICATION COORDINATES TO PRODUCTION
+  WITHOUT BACKUP`. No se creó respaldo. El postcheck confirmó la RPC,
+  `SECURITY DEFINER`, `search_path`, owner checks y grants esperados.
+- Después de verificar la base, el Worker `cubitat1` se desplegó al 100 % con
+  versión `f80cf97d-9159-4e77-ab34-c7df4e070564`. Inicio, resultados, Servicios,
+  Materiales y el formulario de publicación devolvieron HTTP 200; el bundle de
+  Materiales incluyó el contrato de `municipality`.
+- La publicación/edición autenticada completa aún requiere un recorrido QA en
+  Producción. No usar `db push` global ni ejecutar desde un checkout local.
 
 ## Lista administrativa de agentes con plaza de administrador — candidata en PR — 2026-11-26
 
@@ -62,9 +70,9 @@ orden y propósito, pero no sustituye la lectura del SQL.
 - El ledger productivo la registra como aplicada. El snapshot de solo lectura
   del 2026-11-28 confirma las tablas privadas, RPC y triggers esperados; no se
   volvió a ejecutar ni a reparar esta migración.
-- La versión `20261128120000` es la migración correctiva posterior para alinear
-  las RPC activas de Materiales con municipio y coordenadas; su aplicación está
-  pendiente del workflow manual dedicado desde `main`.
+- La versión `20261128120000` alineó las RPC activas de Materiales con municipio
+  y coordenadas; su aplicación productiva quedó verificada el 2026-11-28 según
+  la evidencia del bloque anterior.
 - La rama de conciliación restauró en `migrations/20261120203809_material_listing_municipality.sql`
   la fuente canónica exacta del commit `ba3359065b838dbf4c155b78a6174f80058c5a2f`;
   ese cambio solo recupera una versión que ya está registrada en producción y

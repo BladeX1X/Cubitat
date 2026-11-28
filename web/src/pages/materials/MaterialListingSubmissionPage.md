@@ -108,6 +108,18 @@ contacto. `PublicationStepLayout` es compartido con Servicios e Inmuebles; los
 campos, validación de precio, carga de fotos, guardado/reintento y edición siguen
 siendo propios del anuncio de materiales. Se conservan las coordenadas privadas.
 
+### Municipio en edición — producción — 2026-11-28
+
+La migración `20261128120000_material_municipality_coordinates_contract.sql`
+se aplicó mediante el workflow productivo dedicado tras integrar PR #301.
+El Worker `cubitat1` versión `f80cf97d-9159-4e77-ab34-c7df4e070564` está al
+100 %; el smoke confirmó HTTP 200 para el formulario y el bundle desplegado
+contiene el contrato de `municipality`. La prueba autenticada de Producción
+creó y editó un anuncio QA y confirmó que provincia, municipio y coordenada se
+restauran. También detectó que el CTA de éxito heredaba el retorno de entrada
+«Publicar gratis» y abría el formulario de vivienda; la corrección local separa
+el retorno tras guardar hacia Mis materiales. Falta desplegar y repetir ese CTA.
+
 ## Borradores y moneda
 
 Los anuncios nuevos ofrecen «Guardar borrador» y «Salir sin guardar». Se pueden

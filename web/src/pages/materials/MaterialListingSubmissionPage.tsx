@@ -14,6 +14,7 @@ import { readMarketplaceDraft, removeMarketplaceDraft, saveMarketplaceDraft } fr
 
 type MaterialListingSubmissionPageProps = {
   onBack: () => void
+  onSubmitted?: () => void
   onRequireLogin: () => void
   listingId?: string
   userId: string
@@ -41,7 +42,7 @@ function makeMaterialSlug(title: string, retryToken: string): string {
   return `${base}-${retryToken}`
 }
 
-export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingId, userId, draftId }: MaterialListingSubmissionPageProps) {
+export function MaterialListingSubmissionPage({ onBack, onSubmitted, onRequireLogin, listingId, userId, draftId }: MaterialListingSubmissionPageProps) {
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<MaterialCategory>('cemento')
   const [description, setDescription] = useState('')
@@ -275,7 +276,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   }
 
   if (loadingExisting) return <main className="mx-auto min-h-[60vh] max-w-3xl px-4 py-20" role="status">Cargando anuncio…</main>
-  if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-900"><Boxes /></div><h1 className="mt-5 text-2xl font-black">{listingId ? 'Cambios enviados a revisión' : 'Anuncio enviado a revisión'}</h1><p className="mt-2 text-neutral-600">El anuncio aparecerá en el catálogo después de su revisión. El precio y el inventario no son una reserva ni garantía de venta.</p><Button className="mt-6" onClick={onBack}>Volver a mis anuncios</Button></main>
+  if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-900"><Boxes /></div><h1 className="mt-5 text-2xl font-black">{listingId ? 'Cambios enviados a revisión' : 'Anuncio enviado a revisión'}</h1><p className="mt-2 text-neutral-600">El anuncio aparecerá en el catálogo después de su revisión. El precio y el inventario no son una reserva ni garantía de venta.</p><Button className="mt-6" onClick={onSubmitted ?? onBack}>Volver a mis anuncios</Button></main>
 
   return (
     <PublicationFormShell onBack={listingId ? onBack : handleExitWithoutSaving} icon={<Boxes size={17} />} eyebrow="Catálogo de materiales" title={listingId ? 'Edita tu anuncio' : 'Anuncia materiales'} description="Los anuncios pasan por revisión. Precio y disponibilidad son datos declarados por el vendedor. Cubitat no procesa pagos, pedidos ni reservas.">

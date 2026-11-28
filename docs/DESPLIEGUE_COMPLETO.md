@@ -155,6 +155,14 @@ checksum, el dry-run de una sola versión y los grants/seguridad de las RPC al
 terminar. Ejecutar solo desde `main`; desplegar el Worker después de verificar
 el postcheck de base de datos.
 
+Ejecución del 2026-11-28: PR #301 se integró en `main` (merge
+`89001ba1198adbfe6d2430e2d5cf0b402af2c3c8`); el workflow de migración
+[46176314587](https://github.com/BladeX1X/Cubitat/actions/runs/46176314587)
+aplicó `20261128120000` y pasó sus verificaciones. Luego el Worker `cubitat1`
+versión `f80cf97d-9159-4e77-ab34-c7df4e070564` quedó al 100 %. Smoke público:
+Inicio, resultados, Servicios, Materiales y formulario de Materiales HTTP 200.
+Queda pendiente el recorrido autenticado de creación/edición en Producción.
+
 No crear politicas alternativas de insercion publica para `contacts` ni
 `property_reports`: el flujo vigente exige Turnstile en el Worker y RPC
 exclusivas de `service_role`. El antiguo bloque SQL de esta guia fue retirado

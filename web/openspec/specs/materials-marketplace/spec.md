@@ -268,3 +268,21 @@ provincial declarada por el vendedor.
 - El formulario de alta permite guardar varios borradores locales, aislados por usuario y tipo; Mis materiales permite reanudar o eliminar cada uno.
 - Cada borrador manual conserva los campos, paso y fotos seleccionadas. «Salir sin guardar» descarta únicamente lo posterior al último guardado manual.
 - El selector de publicaciones nuevas ofrece únicamente Dólares (USD) y Pesos cubanos (CUP); `currency` persiste la selección. Los códigos históricos EUR/MIXED se conservan por compatibilidad y solo se muestran al editar o reanudar un anuncio que ya tenga ese código, evitando alterar precios existentes sin decisión del propietario.
+
+### Despliegue municipio/coordenadas — 2026-11-28
+
+La migración `20261128120000_material_municipality_coordinates_contract.sql`
+está aplicada y verificada en Producción por el workflow dedicado. El Worker
+`cubitat1` versión `f80cf97d-9159-4e77-ab34-c7df4e070564` quedó al 100 % y el
+bundle de publicación de Materiales se sirvió correctamente. La creación y
+edición autenticada QA en Producción confirmó que el municipio y el punto se
+conservan. Ese recorrido encontró que el botón de éxito heredaba el destino del
+selector universal y abría el formulario de vivienda; la corrección separa el
+retorno tras guardar hacia Mis materiales. Su despliegue y retest del CTA siguen
+pendientes.
+
+#### Scenario: Volver a Mis materiales tras publicar
+- GIVEN la persona envía o edita un anuncio desde «Publicar gratis»
+- WHEN la aplicación confirma que se envió a revisión
+- THEN «Volver a mis anuncios» abre Mis materiales
+- AND no reabre el selector ni el formulario de publicación de vivienda

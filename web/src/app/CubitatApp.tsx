@@ -1349,10 +1349,10 @@ export function CubitatApp() {
           <MaterialsMarketplacePage onRequireLogin={openLogin} />
         )}
         {PHASE_FOUR_SVC_ENABLED && ServiceProviderSubmissionPage && pageMode === 'service-submit' && user && (
-          <ServiceProviderSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
+          <ServiceProviderSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyServiceProfiles} onSubmitted={navigateMyServiceProfiles} onRequireLogin={openLogin} profileId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MaterialListingSubmissionPage && pageMode === 'material-submit' && user && (
-          <MaterialListingSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
+          <MaterialListingSubmissionPage onBack={new URLSearchParams(window.location.search).get('origen') === 'publicar' ? navigatePublish : navigateMyMaterialListings} onSubmitted={navigateMyMaterialListings} onRequireLogin={openLogin} listingId={new URLSearchParams(window.location.search).get('edit') || undefined} userId={user.id} draftId={new URLSearchParams(window.location.search).get('draft_id') || undefined} />
         )}
         {PHASE_FOUR_MAT_ENABLED && MyMaterialListingsPage && pageMode === 'my-materials' && user && (
           <MyMaterialListingsPage

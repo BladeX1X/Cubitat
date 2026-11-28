@@ -88,3 +88,7 @@ La creación admite varios borradores locales por usuario y la acción de salida
 descarta solo los cambios posteriores al último guardado manual. El ciclo se
 cubre en `service-publish-images.spec.ts`. El perfil de servicio no tiene un
 campo de precio ni moneda en el modelo actual.
+
+Después de enviar o editar, el botón de éxito «Volver a mis perfiles» usa un
+destino separado del botón de salida del formulario: siempre abre Mis servicios,
+incluso cuando la entrada vino de «Publicar gratis».

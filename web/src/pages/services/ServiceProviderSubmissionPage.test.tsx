@@ -75,6 +75,22 @@ describe('ServiceProviderSubmissionPage', () => {
     expect(screen.getByLabelText('Nombre del profesional o negocio')).toBeInvalid()
   })
 
+  it('returns to my profiles after sending a new profile, not to the publish selector', async () => {
+    const onBack = vi.fn()
+    const onSubmitted = vi.fn()
+    render(<ServiceProviderSubmissionPage onBack={onBack} onSubmitted={onSubmitted} onRequireLogin={vi.fn()} userId="test-user" />)
+    fireEvent.change(screen.getByLabelText('Nombre del profesional o negocio'), { target: { value: 'Servicio QA para retorno' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción QA del servicio con detalle suficiente para revisión.' } })
+
+    await submitService()
+    expect(await screen.findByText('Perfil enviado a revisión')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a mis perfiles' }))
+
+    expect(onSubmitted).toHaveBeenCalledOnce()
+    expect(onBack).not.toHaveBeenCalled()
+  })
+
   it('saves independent local drafts and keeps the last saved version when exiting', async () => {
     const back = vi.fn()
     vi.stubGlobal('confirm', vi.fn(() => true))
