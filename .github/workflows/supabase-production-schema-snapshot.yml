@@ -18,12 +18,6 @@ jobs:
       - name: Checkout trusted workflow source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Checkout release SQL sources as data
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: release/phase34-production-20261115
-          path: release-source
-
       - name: Verify production target and capture schema-only snapshot
         shell: bash
         env:
@@ -67,7 +61,7 @@ jobs:
                 -f /snapshot/property-contact-data-shape.sql \
                 > /snapshot/property-contact-data-shape.txt
             '
-          cp release-source/web/supabase/migrations/*.sql \
+          cp web/supabase/migrations/*.sql \
             "$RUNNER_TEMP/cubitat-production-schema/"
           (
             cd "$RUNNER_TEMP/cubitat-production-schema"
