@@ -4,7 +4,7 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
-## Municipio de Materiales junto a coordenadas — candidata local — 2026-11-28
+## Municipio de Materiales junto a coordenadas — candidata de producción — 2026-11-28
 
 - `migrations/20261128120000_material_municipality_coordinates_contract.sql`
   conserva provincia y municipio al crear/editar anuncios; la RPC del
@@ -12,14 +12,20 @@ orden y propósito, pero no sustituye la lectura del SQL.
   Mis anuncios y el formulario de edición los restauren.
 - La lectura pública y las tarjetas incorporan el municipio cuando existe; los
   anuncios históricos sin municipio conservan su provincia como ubicación.
-- La ejecución real autenticada con Supabase/Worker local subió fotos y creó el
-  anuncio, pero la rama auditada estaba desalineada con la firma local de
-  `update_material_listing()` y el guardado final se rechazó. La consulta SQL
-  confirmó que la firma local incluye municipio; la autorización disponible no
-  permite inspeccionar la firma de producción mediante Management API.
-- Estado: fuente candidata local, aún no integrada ni aplicada en producción.
-  Aplicar solo con el flujo operativo de migración de producción después de
-  reconciliar el ledger y validar las postcondiciones; no usar `db push` global.
+- La ejecución E2E local autenticada verificó creación y edición con provincia,
+  municipio, coordenadas y fotos privadas. El cambio de catálogo conserva el
+  municipio cuando está disponible y usa la provincia como fallback histórico.
+- El snapshot de esquema productivo de solo lectura del 2026-11-28 verificó
+  174 versiones registradas hasta `20261126120000`, sin fuentes canónicas
+  ausentes; `20261128120000` es la única versión pendiente. La firma productiva
+  de `update_material_listing()` todavía no contiene municipio.
+- El workflow `Apply publication coordinates migration to production` quedó
+  preparado para aplicar exclusivamente esta migración tras confirmar
+  `APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP`. No crea respaldo,
+  conforme a la instrucción expresa del usuario. Valida proyecto, checksum,
+  ledger completo, esquema previo, dry-run unitario y permisos/RPC posteriores.
+- Estado: integrada en `main`, pero aún no aplicada ni verificada en producción.
+  No usar `db push` global ni ejecutar desde un checkout local.
 
 ## Lista administrativa de agentes con plaza de administrador — candidata en PR — 2026-11-26
 
@@ -41,7 +47,7 @@ orden y propósito, pero no sustituye la lectura del SQL.
   la firma, seguridad y permisos posteriores. No crea respaldo por instrucción
   expresa del usuario. No aplicar desde el Dashboard ni con `db push` global.
 
-## Coordenadas opcionales de Servicios y Materiales — candidata local — 2026-11-24
+## Coordenadas opcionales de Servicios y Materiales — registrada en producción — 2026-11-24
 
 - `migrations/20261124100000_marketplace_publication_coordinates.sql` añade un
   punto opcional a ambas categorías. Un trigger separa el punto exacto a
@@ -53,13 +59,12 @@ orden y propósito, pero no sustituye la lectura del SQL.
   de propietario y actualización.
 - `tests/marketplace_publication_coordinates_local.sql` valida la privacidad,
   el redondeo y la lectura exacta por propietario en Supabase local aislado.
-- Estado de esta rama: migración aún no aplicada en producción. Tras integrar,
-  usar exclusivamente `Apply publication coordinates migration to production`
-  desde `main`. Ese flujo exige confirmación explícita y respaldo exitoso de
-  menos de 24 h; verifica target, ledger, esquema inicial, checksum de fuente,
-  dry-run de una sola versión y postcondiciones de RLS/grants/RPC/triggers. No
-  usar `db push` global ni el allowlist antiguo Phase 3/4, que no incluye esta
-  candidata.
+- El ledger productivo la registra como aplicada. El snapshot de solo lectura
+  del 2026-11-28 confirma las tablas privadas, RPC y triggers esperados; no se
+  volvió a ejecutar ni a reparar esta migración.
+- La versión `20261128120000` es la migración correctiva posterior para alinear
+  las RPC activas de Materiales con municipio y coordenadas; su aplicación está
+  pendiente del workflow manual dedicado desde `main`.
 - La rama de conciliación restauró en `migrations/20261120203809_material_listing_municipality.sql`
   la fuente canónica exacta del commit `ba3359065b838dbf4c155b78a6174f80058c5a2f`;
   ese cambio solo recupera una versión que ya está registrada en producción y

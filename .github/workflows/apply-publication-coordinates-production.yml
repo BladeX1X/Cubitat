@@ -4,17 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Type APPLY PUBLICATION COORDINATES TO PRODUCTION to confirm
-        required: true
-        type: string
-      backup_run_id:
-        description: Successful production backup workflow run ID from the last 24 hours
+        description: Type APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP to confirm
         required: true
         type: string
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: cubitat-production-database-migrations
@@ -37,44 +32,19 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install --yes postgresql-client
 
-      - name: Confirm explicit request and recent recoverable backup
+      - name: Confirm the explicit no-backup request
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
-          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
-          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$CONFIRMATION" != 'APPLY PUBLICATION COORDINATES TO PRODUCTION' ]]; then
+          if [[ "$CONFIRMATION" != 'APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP' ]]; then
             echo 'Confirmation phrase mismatch; production was not changed.'
             exit 1
           fi
-          if [[ ! "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
-            echo 'Backup run ID must contain digits only.'
-            exit 1
-          fi
-          run_json=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID")
-          conclusion=$(jq -r '.conclusion' <<<"$run_json")
-          created=$(jq -r '.created_at' <<<"$run_json")
-          workflow=$(jq -r '.name' <<<"$run_json")
-          if [[ "$conclusion" != success || "$workflow" != 'Supabase Backup' ]]; then
-            echo 'The selected run is not a successful Supabase production backup.'
-            exit 1
-          fi
-          age_seconds=$(( $(date -u +%s) - $(date -u -d "$created" +%s) ))
-          if (( age_seconds < 0 || age_seconds > 86400 )); then
-            echo 'The verified backup must be less than 24 hours old.'
-            exit 1
-          fi
-          artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID/artifacts" \
-            --jq '.artifacts[] | select(.name == "supabase-database-backup" and .expired == false) | .id' | head -n 1)
-          if [[ -z "$artifact" ]]; then
-            echo 'The selected backup artifact is missing or expired.'
-            exit 1
-          fi
-          echo 'Recent successful production backup artifact confirmed.'
+          echo 'Explicit production migration request without backup confirmed.'
 
-      - name: Stage canonical recorded migrations and the pinned candidate
+      - name: Stage the pinned candidate migration
         shell: bash
         run: |
           set -euo pipefail
@@ -85,9 +55,9 @@ jobs:
             web/supabase/templates/recovery.html \
             web/supabase/templates/password_changed_notification.html \
             "$root/supabase/templates/"
-          candidate='20261124100000_marketplace_publication_coordinates.sql'
+          candidate='20261128120000_material_municipality_coordinates_contract.sql'
           actual_hash=$(sha256sum "web/supabase/migrations/$candidate" | cut -d' ' -f1)
-          [[ "$actual_hash" == 'fe2f6ad0c67b5dd71a0ee14ca50020b6223cda63d61293dc990a5858281f7bf2' ]] || {
+          [[ "$actual_hash" == 'b8aa8b266b9524c2fac2a52c29f656b0f74a81a5c2e132ea7e5bc5a855179747' ]] || {
             echo 'Candidate migration differs from the reviewed source; stopping.'; exit 1;
           }
           cp "web/supabase/migrations/$candidate" "$root/supabase/migrations/"
@@ -95,23 +65,30 @@ jobs:
           echo "COORDINATE_MIGRATION=$candidate" >> "$GITHUB_ENV"
           echo 'Pinned migration checksum confirmed.'
 
-      - name: Verify production target, exact ledger, and safe pre-migration state
+      - name: Verify target, full ledger reconciliation, and schema preconditions
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         shell: bash
         run: |
           set -euo pipefail
           set +x
+          candidate='20261128120000'
           if [[ -z "$SUPABASE_DB_URL" || "$SUPABASE_DB_URL" != *'postgres.tohjzoncoosvjbjcakdl'* ]]; then
             echo 'Database URL does not identify the intended Cubitat production project.'
             exit 1
           fi
           remote_versions=$(psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 \
             -c 'select version from supabase_migrations.schema_migrations order by version')
-          if grep -Fxq '20261124100000' <<<"$remote_versions"; then
+          if grep -Fxq "$candidate" <<<"$remote_versions"; then
             echo 'Candidate migration is already registered; stopping for reconciliation.'
             exit 1
           fi
+          [[ "$(wc -l <<<"$remote_versions" | tr -d ' ')" == '174' ]] || {
+            echo 'Production migration ledger count changed; reconcile before applying.'; exit 1;
+          }
+          [[ "$(tail -n 1 <<<"$remote_versions")" == '20261126120000' ]] || {
+            echo 'Production migration head changed; reconcile before applying.'; exit 1;
+          }
           shopt -s nullglob
           while IFS= read -r version; do
             [[ -z "$version" ]] && continue
@@ -129,25 +106,26 @@ jobs:
           local_versions=$(find "$MIGRATION_WORKDIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
             | sed -E 's/^([0-9]+)_.*/\1/' | sort -u)
           pending=$(comm -23 <(printf '%s\n' "$local_versions") <(printf '%s\n' "$remote_versions" | sort -u))
-          [[ "$pending" == '20261124100000' ]] || { echo 'Pending migrations are not exactly the reviewed coordinate candidate.'; exit 1; }
+          [[ "$pending" == "$candidate" ]] || { echo 'Pending migrations are not exactly the reviewed candidate; stopping.'; exit 1; }
           schema_state=$(psql "$SUPABASE_DB_URL" -X -qAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
           SELECT
-            (to_regclass('public.home_service_providers') IS NOT NULL)::text,
             (to_regclass('public.material_listings') IS NOT NULL)::text,
+            (to_regclass('public.material_private_coordinates') IS NOT NULL)::text,
             (to_regprocedure('public.normalize_property_coordinates_json(jsonb)') IS NOT NULL)::text,
-            (to_regclass('public.home_service_private_coordinates') IS NULL)::text,
-            (to_regclass('public.material_private_coordinates') IS NULL)::text,
-            (NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='home_service_providers' AND column_name='coordinates'))::text,
-            (NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='material_listings' AND column_name='coordinates'))::text,
-            (NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname IN ('protect_home_service_coordinates','protect_material_coordinates') AND NOT tgisinternal))::text;
+            (to_regprocedure('public.approximate_marketplace_coordinates(jsonb)') IS NOT NULL)::text,
+            (SELECT count(*) = 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='material_listings' AND column_name='municipality')::text,
+            (to_regprocedure('public.get_my_material_listings()') IS NOT NULL)::text,
+            (to_regprocedure('public.update_material_listing(uuid,text,text,text,numeric,text,text,text,text,text,text[],jsonb)') IS NOT NULL)::text,
+            (to_regprocedure('public.update_material_listing(uuid,text,text,text,numeric,text,text,text,text,text,text,text[],jsonb)') IS NULL)::text,
+            (SELECT count(*) = 1 FROM pg_trigger WHERE tgname='protect_material_coordinates' AND NOT tgisinternal)::text;
           SQL
           )
-          [[ "$schema_state" == 'true|true|true|true|true|true|true|true' ]] || {
+          [[ "$schema_state" == 'true|true|true|true|true|true|true|true|true' ]] || {
             echo 'Production schema is not in the reviewed pre-migration state; stopping.'; exit 1;
           }
-          echo 'Production target, ledger, and schema preconditions verified.'
+          echo 'Production target, migration sources, ledger, and schema preconditions verified.'
 
-      - name: Dry-run exactly the reviewed coordinate migration
+      - name: Dry-run exactly the reviewed municipality migration
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         shell: bash
@@ -162,9 +140,9 @@ jobs:
           printf '%s\n' "$safe"
           [[ "$status" -eq 0 ]] || { echo 'Dry-run failed; production was not changed.'; exit "$status"; }
           versions=$(grep -Eo '202[0-9]{11}' <<<"$output" | sort -u || true)
-          [[ "$versions" == '20261124100000' ]] || { echo 'Dry-run did not select exactly the reviewed migration.'; exit 1; }
+          [[ "$versions" == '20261128120000' ]] || { echo 'Dry-run did not select exactly the reviewed migration.'; exit 1; }
 
-      - name: Apply the reviewed coordinate migration
+      - name: Apply the reviewed municipality migration
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         shell: bash
@@ -173,7 +151,7 @@ jobs:
           set +x
           supabase db push --workdir "$MIGRATION_WORKDIR" --db-url "$SUPABASE_DB_URL" --include-all --yes
 
-      - name: Verify production migration history, RLS, grants, RPCs, and triggers
+      - name: Verify production migration, RPC security, and grants
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         shell: bash
@@ -182,31 +160,32 @@ jobs:
           set +x
           psql "$SUPABASE_DB_URL" -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
+          DECLARE
+            owner_read oid := to_regprocedure('public.get_my_material_listings()');
+            owner_update oid := to_regprocedure('public.update_material_listing(uuid,text,text,text,numeric,text,text,text,text,text,text,text[],jsonb)');
           BEGIN
-            IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261124100000')
-              OR to_regclass('public.home_service_private_coordinates') IS NULL
-              OR to_regclass('public.material_private_coordinates') IS NULL
-              OR to_regprocedure('public.approximate_marketplace_coordinates(jsonb)') IS NULL
-              OR to_regprocedure('public.protect_marketplace_coordinates()') IS NULL
-              OR to_regprocedure('public.get_my_home_service_providers()') IS NULL
-              OR to_regprocedure('public.get_my_material_listings()') IS NULL THEN
-              RAISE EXCEPTION 'publication_coordinates_schema_incomplete';
+            IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261128120000')
+              OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='material_listings' AND column_name='municipality')
+              OR NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.material_listings'::regclass AND conname='material_listings_municipality_length_check')
+              OR NOT EXISTS (SELECT 1 FROM pg_index WHERE indexrelid='public.material_listings_public_municipality_idx'::regclass AND indisvalid)
+              OR owner_read IS NULL OR owner_update IS NULL
+              OR to_regprocedure('public.update_material_listing(uuid,text,text,text,numeric,text,text,text,text,text,text[],jsonb)') IS NOT NULL THEN
+              RAISE EXCEPTION 'material_municipality_schema_incomplete';
             END IF;
-            IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.home_service_private_coordinates'::regclass)
-              OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.material_private_coordinates'::regclass)
-              OR has_table_privilege('anon','public.home_service_private_coordinates','SELECT')
-              OR has_table_privilege('anon','public.material_private_coordinates','SELECT')
-              OR NOT has_table_privilege('authenticated','public.home_service_private_coordinates','SELECT')
-              OR NOT has_table_privilege('authenticated','public.material_private_coordinates','SELECT')
-              OR has_column_privilege('anon','public.home_service_providers','coordinates','SELECT') IS NOT TRUE
-              OR has_column_privilege('anon','public.material_listings','coordinates','SELECT') IS NOT TRUE THEN
-              RAISE EXCEPTION 'publication_coordinates_privileges_invalid';
-            END IF;
-            IF (SELECT count(*) FROM pg_trigger WHERE tgname IN ('protect_home_service_coordinates','protect_material_coordinates') AND NOT tgisinternal) <> 2
-              OR (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND policyname IN ('home_service_private_coordinates_owner_read','material_private_coordinates_owner_read')) <> 2 THEN
-              RAISE EXCEPTION 'publication_coordinates_triggers_or_policies_incomplete';
+            IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog'] FROM pg_proc WHERE oid=owner_read)
+              OR (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog'] FROM pg_proc WHERE oid=owner_update)
+              OR position('listing.owner_id = (SELECT auth.uid())' IN (SELECT prosrc FROM pg_proc WHERE oid=owner_read)) = 0
+              OR position('listing.owner_id = (SELECT auth.uid())' IN (SELECT prosrc FROM pg_proc WHERE oid=owner_update)) = 0
+              OR has_function_privilege('anon',owner_read,'EXECUTE')
+              OR has_function_privilege('anon',owner_update,'EXECUTE')
+              OR has_function_privilege('authenticated',owner_read,'EXECUTE') IS NOT TRUE
+              OR has_function_privilege('authenticated',owner_update,'EXECUTE') IS NOT TRUE
+              OR has_column_privilege('anon','public.material_listings','municipality','SELECT') IS NOT TRUE
+              OR has_column_privilege('authenticated','public.material_listings','municipality','SELECT') IS NOT TRUE
+              OR has_column_privilege('authenticated','public.material_listings','municipality','INSERT') IS NOT TRUE THEN
+              RAISE EXCEPTION 'material_municipality_security_or_grants_invalid';
             END IF;
           END;
           $$;
-          SELECT 'Cubitat production publication coordinates migration verified';
+          SELECT 'Cubitat production material municipality migration verified';
           SQL

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import migrationSql from '../supabase/dev-migrations/20261013140000_phase4_materials_marketplace.sql?raw'
 import municipalityMigrationSql from '../supabase/migrations/20261128120000_material_municipality_coordinates_contract.sql?raw'
+
+const productionMigrationWorkflow = readFileSync(
+  resolve(process.cwd(), '../.github/workflows/apply-publication-coordinates-production.yml'),
+  'utf8',
+)
 
 describe('F4-MAT migration security contract', () => {
   it('keeps the selected municipality in owner reads, edits and map coordinates', () => {
@@ -9,6 +16,20 @@ describe('F4-MAT migration security contract', () => {
     expect(municipalityMigrationSql).toMatch(/municipality = nullif\(btrim\(p_municipality\), ''\)/i)
     expect(municipalityMigrationSql).toMatch(/REVOKE ALL ON FUNCTION public\.update_material_listing\([\s\S]*FROM PUBLIC, anon/i)
     expect(municipalityMigrationSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.update_material_listing\([\s\S]*TO authenticated/i)
+  })
+
+  it('only applies the pinned municipality migration after exact production preflight, without a backup', () => {
+    expect(productionMigrationWorkflow).toContain('APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP')
+    expect(productionMigrationWorkflow).toContain('20261128120000_material_municipality_coordinates_contract.sql')
+    expect(productionMigrationWorkflow).toContain('b8aa8b266b9524c2fac2a52c29f656b0f74a81a5c2e132ea7e5bc5a855179747')
+    expect(productionMigrationWorkflow).toContain("[[ \"$(wc -l <<<\"$remote_versions\" | tr -d ' ')\" == '174' ]]")
+    expect(productionMigrationWorkflow).toContain("[[ \"$(tail -n 1 <<<\"$remote_versions\")\" == '20261126120000' ]]")
+    expect(productionMigrationWorkflow).toContain('[[ "$pending" == "$candidate" ]]')
+    expect(productionMigrationWorkflow).toContain("[[ \"$versions\" == '20261128120000' ]]")
+    expect(productionMigrationWorkflow).toContain("proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']")
+    expect(productionMigrationWorkflow).toContain("has_function_privilege('anon',owner_update,'EXECUTE')")
+    expect(productionMigrationWorkflow).not.toContain('backup_run_id')
+    expect(productionMigrationWorkflow).not.toContain('Supabase Backup')
   })
 
   it('limits public access to published in-stock listings and keeps inquiries private', () => {

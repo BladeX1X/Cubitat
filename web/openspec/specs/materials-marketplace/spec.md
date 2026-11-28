@@ -33,6 +33,14 @@ mediante anuncios, disponibilidad declarada y consultas directas.
   y puede moverlo o quitarlo al editar. Una ficha pública usa la referencia
   redondeada y un círculo de 1 km de diámetro; si no hay punto, conserva el mapa
   provincial existente.
+- La RPC propietaria incluye `municipality` junto con la provincia y las
+  coordenadas exactas; la actualización recibe esos campos y solo modifica
+  anuncios propios no archivados. Ambas RPC son `SECURITY DEFINER` con
+  `search_path=pg_catalog`; su ejecución queda limitada a `authenticated`.
+- La migración productiva de este contrato se ejecuta con el workflow
+  `Apply publication coordinates migration to production`, después de revisar
+  checksum, ledger y estado previo. El workflow detiene la ejecución si la
+  migración no es la única pendiente o si cambian las precondiciones.
 
 ### Catálogo
 
