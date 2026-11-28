@@ -147,10 +147,13 @@ Las migraciones productivas con allowlist propia se ejecutan únicamente desde
 su workflow `workflow_dispatch` en `main`, nunca desde una copia local del
 repositorio. Para coordenadas privadas de Servicios y Materiales, usar
 `Apply publication coordinates migration to production` después de integrar
-la migración revisada. El workflow exige la frase de confirmación y un artefacto
-de respaldo de producción exitoso de menos de 24 horas; valida el proyecto, el
-ledger exacto, el estado previo, el dry-run de una sola versión y los grants/RLS
-posteriores.
+la migración revisada. Para el ajuste de municipio `20261128120000`, el workflow
+exige la frase `APPLY PUBLICATION COORDINATES TO PRODUCTION WITHOUT BACKUP`,
+conforme a la autorización expresa del propietario. No genera respaldo; valida
+el proyecto, las 174 versiones registradas y sus fuentes, el estado previo, el
+checksum, el dry-run de una sola versión y los grants/seguridad de las RPC al
+terminar. Ejecutar solo desde `main`; desplegar el Worker después de verificar
+el postcheck de base de datos.
 
 No crear politicas alternativas de insercion publica para `contacts` ni
 `property_reports`: el flujo vigente exige Turnstile en el Worker y RPC
