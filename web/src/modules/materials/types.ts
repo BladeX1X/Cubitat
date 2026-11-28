@@ -43,6 +43,7 @@ export type MaterialListing = {
   price: number | null
   currency: MaterialCurrency
   province: string
+  municipality: string | null
   coordinates?: MarketplaceCoordinates | null
   availability: 'available' | 'limited' | 'out_of_stock' | 'made_to_order'
   phone: string | null

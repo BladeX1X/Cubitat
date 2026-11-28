@@ -46,8 +46,8 @@ export function PublicationStepLayout({ steps, step, onNavigate, onBack, onNext,
           <div className="publication-step-actions">
             <Button type="button" variant="outline" onClick={onBack} disabled={busy} className="min-h-11" aria-label={step === 1 ? 'Volver al catálogo' : 'Paso anterior'}><ArrowLeft size={16} />{step === 1 ? 'Volver' : 'Anterior'}</Button>
             {isLastStep
-              ? <Button type="submit" className="min-h-11" disabled={busy}>{busy ? 'Enviando…' : submitLabel}</Button>
-              : <Button type="button" className="min-h-11" disabled={busy} onClick={onNext}>Continuar<ArrowRight size={16} /></Button>}
+              ? <Button key="submit-publication" type="submit" className="min-h-11" disabled={busy}>{busy ? 'Enviando…' : submitLabel}</Button>
+              : <Button key="next-publication-step" type="button" className="min-h-11" disabled={busy} onClick={onNext}>Continuar<ArrowRight size={16} /></Button>}
           </div>
         </section>
       </div>

@@ -52,7 +52,7 @@ export default defineConfig({
   ],
   ...(useExternalServer ? {} : {
     webServer: {
-      command: `npm run dev -- --mode phase2-dev --port ${e2ePort} --strictPort`,
+      command: `npm run dev:local -- --port ${e2ePort} --strictPort`,
       url: localE2EBaseUrl,
       reuseExistingServer: process.env.CUBITAT_E2E_REUSE_SERVER === 'true',
       env: {

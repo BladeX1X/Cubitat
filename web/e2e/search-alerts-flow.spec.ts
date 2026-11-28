@@ -27,7 +27,7 @@ test.describe('search alerts with an isolated QA account', () => {
 
     try {
       await page.goto(`${BASE_URL}/resultados?q=${encodeURIComponent(uniqueQuery)}`)
-      await page.locator('.results-floating-alert, .map-bottom-primary').first().click()
+      await page.getByRole('button', { name: 'Crear alerta' }).first().click()
 
       const loginDialog = page.getByRole('dialog', { name: /inicio de sesion/i })
       await expect(loginDialog).toBeVisible()

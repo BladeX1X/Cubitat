@@ -35,6 +35,7 @@ const listing = {
   price: 12,
   currency: 'USD' as const,
   province: 'La Habana',
+  municipality: null,
   coordinates: { latitude: 23.135, longitude: -82.383 },
   availability: 'available' as const,
   phone: null,

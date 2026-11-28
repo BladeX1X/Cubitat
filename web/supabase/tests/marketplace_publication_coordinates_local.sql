@@ -18,10 +18,10 @@ VALUES ('f1091200-0000-0000-0000-000000000102', 'f1091200-0000-0000-0000-0000000
   'Local QA service profile with a sufficiently long description.', 'La Habana',
   '{"latitude":23.1136,"longitude":-82.3666}');
 INSERT INTO public.material_listings(id, owner_id, slug, title, category, description,
-  province, coordinates)
+  province, municipality, coordinates)
 VALUES ('f1091200-0000-0000-0000-000000000103', 'f1091200-0000-0000-0000-000000000002',
   'coordinate-material-local', 'Coordinate material', 'cemento',
-  'Local QA material listing with a sufficiently long description.', 'Santiago de Cuba',
+  'Local QA material listing with a sufficiently long description.', 'Santiago de Cuba', 'Santiago de Cuba',
   '{"latitude":20.01234,"longitude":-75.81234}');
 
 SELECT pg_temp.assert_true((SELECT coordinates = '{"latitude":23.115,"longitude":-82.365}'::jsonb
@@ -54,8 +54,11 @@ SELECT pg_temp.assert_true(
     WHERE id = 'f1091200-0000-0000-0000-000000000102')
   AND (SELECT coordinates = '{"latitude":20.01234,"longitude":-75.81234}'::jsonb
     FROM public.get_my_material_listings()
+    WHERE id = 'f1091200-0000-0000-0000-000000000103')
+  AND (SELECT municipality = 'Santiago de Cuba'
+    FROM public.get_my_material_listings()
     WHERE id = 'f1091200-0000-0000-0000-000000000103'),
-  'Owner RPCs did not return exact coordinates');
+  'Owner RPC did not return exact coordinates and municipality');
 RESET ROLE;
 
 ROLLBACK;

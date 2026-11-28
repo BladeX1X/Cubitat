@@ -19,7 +19,13 @@ mediante anuncios, disponibilidad declarada y consultas directas.
 ### Ubicación con privacidad para publicar materiales
 
 - El formulario de alta/edición comparte el marco de publicación con Comprar y
-  Servicios, y permite marcar opcionalmente un punto en el mapa.
+  Servicios, exige provincia y municipio, y permite marcar opcionalmente un
+  punto en el mapa.
+- La publicación y edición guardan el municipio seleccionado junto con la
+  provincia; el formulario de edición lo restaura desde la RPC del propietario.
+- El catálogo, el detalle, los accesos de mapa/contacto y Mis anuncios muestran
+  el municipio cuando está disponible, y conservan la provincia para anuncios
+  históricos sin municipio.
 - La base guarda la coordenada exacta en una tabla privada accesible únicamente
   al propietario autenticado; el catálogo solo recibe una coordenada pública
   redondeada a una cuadrícula de 0.005 grados.

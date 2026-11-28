@@ -55,6 +55,10 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
 }
 
+function formatLocation(listing: Pick<MaterialListing, 'municipality' | 'province'>) {
+  return listing.municipality ? `${listing.municipality}, ${listing.province}` : listing.province
+}
+
 export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplacePageProps) {
   const [slug, setSlug] = useState<string | null>(getSlugFromPath)
   const [category, setCategory] = useState<MaterialCategory | ''>('')
@@ -152,7 +156,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
   const mapListings = useMemo<CatalogMapListing[]>(() => mapListingsData.map((item) => ({
     id: item.id,
     title: item.title,
-    location: item.province,
+    location: formatLocation(item),
     coordinates: item.coordinates,
     label: formatPrice(item),
   })), [mapListingsData])
@@ -210,7 +214,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
         breadcrumb="Materiales"
         category={MATERIAL_CATEGORY_LABELS[listing.category]}
         title={listing.title}
-        location={listing.province}
+        location={formatLocation(listing)}
         price={formatPrice(listing)}
         summary={availabilityLabel(listing.availability)}
         images={listing.photoUrls}
@@ -219,9 +223,9 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
         imageFallback={<div className="marketplace-detail-image-fallback"><Boxes size={54} /><span>{listing.photoUnavailable ? 'Fotos no disponibles temporalmente' : 'Fotos del material'}</span></div>}
         renderImage={(src, index, eager) => <MarketplaceCardImage src={src} alt={`${listing.title}, foto ${index + 1}`} eager={eager} className="property-photo-slide" fallback={<div className="marketplace-detail-image-fallback"><Boxes size={54} /><span>Foto no disponible</span></div>} />}
         favoriteAction={PHASE_FOUR_MAT_ENABLED && <SaveMarketplaceListingButton listingType="material" listingId={listing.id} listingTitle={listing.title} className="marketplace-detail-favorite" showLabel iconSize={19} />}
-        mapLabel={`Mapa del material en ${listing.province}`}
-        mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} listingId={listing.id} locationLabel={listing.province} showApproximateArea={Boolean(listing.coordinates)} />}
-        contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={listing.province} onMissing={() => openListing(listing, 'inquiry')} /></div>}
+        mapLabel={`Mapa del material en ${formatLocation(listing)}`}
+        mapContent={<MarketplaceDetailMap center={listing.coordinates ? [listing.coordinates.longitude, listing.coordinates.latitude] : getCubanProvinceMapCenter(listing.province)} listingId={listing.id} locationLabel={formatLocation(listing)} showApproximateArea={Boolean(listing.coordinates)} />}
+        contactActions={<div id="marketplace-contact"><MarketplaceContactActions listingType="material" listingId={listing.id} listingTitle={listing.title} listingLocation={formatLocation(listing)} onMissing={() => openListing(listing, 'inquiry')} /></div>}
         contactPanel={(
           <>
             <h2>Contactar al vendedor</h2>
@@ -243,7 +247,7 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
           <div className="marketplace-detail-facts">
             <div className="marketplace-detail-fact"><strong>{MATERIAL_CATEGORY_LABELS[listing.category]}</strong><span>Categoría</span></div>
             <div className="marketplace-detail-fact"><strong>{availabilityLabel(listing.availability)}</strong><span>Disponibilidad</span></div>
-            <div className="marketplace-detail-fact"><strong>{listing.province}</strong><span>Ubicación</span></div>
+            <div className="marketplace-detail-fact"><strong>{formatLocation(listing)}</strong><span>Ubicación</span></div>
             <div className="marketplace-detail-fact"><strong>{new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(listing.updatedAt))}</strong><span>Actualizado</span></div>
           </div>
         </section>
@@ -291,13 +295,13 @@ export function MaterialsMarketplacePage({ onRequireLogin }: MaterialsMarketplac
             <div className="catalog-card__content">
               <p className="catalog-card__category">{MATERIAL_CATEGORY_LABELS[item.category]}</p>
               <h2 className="catalog-card__title">{item.title}</h2>
-              <p className="catalog-card__location"><MapPin size={15} />{item.province}</p>
+              <p className="catalog-card__location"><MapPin size={15} />{formatLocation(item)}</p>
               <p className="catalog-card__price mt-3">{formatPrice(item)}</p>
               <p className="mt-1 text-xs text-neutral-500">{availabilityLabel(item.availability)}</p>
               <span className="catalog-card__more">Ver anuncio →</span>
             </div>
           </button>
-          <MarketplaceCardActions listingType="material" listingId={item.id} listingTitle={item.title} listingLocation={item.province} onMissing={() => openListing(item, 'inquiry')} />
+          <MarketplaceCardActions listingType="material" listingId={item.id} listingTitle={item.title} listingLocation={formatLocation(item)} onMissing={() => openListing(item, 'inquiry')} />
         </CatalogCardFrame>
       ))}
     </section>

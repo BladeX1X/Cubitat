@@ -182,8 +182,8 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Marcar punto' }))
     await submitMaterial()
 
-    await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } }), expect.any(String)))
-    await waitFor(() => expect(materialMocks.update).toHaveBeenCalledWith('listing-qa', expect.objectContaining({ coordinates: { latitude: 20.01234, longitude: -75.81234 } })))
+    await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ municipality: 'Santiago de Cuba', coordinates: { latitude: 20.01234, longitude: -75.81234 } }), expect.any(String)))
+    await waitFor(() => expect(materialMocks.update).toHaveBeenCalledWith('listing-qa', expect.objectContaining({ municipality: 'Santiago de Cuba', coordinates: { latitude: 20.01234, longitude: -75.81234 } })))
   })
 
   it('shows signed previews for the owner photos already saved on the listing', async () => {
@@ -193,7 +193,7 @@ describe('MaterialListingSubmissionPage', () => {
     materialMocks.fetchMine.mockResolvedValue([{
       id: listingId, title: 'Anuncio con fotos guardadas', category: 'cemento',
       description: 'Descripción suficientemente larga para editar este anuncio.',
-      province: 'La Habana', availability: 'available', price: null, currency: 'USD',
+      province: 'La Habana', municipality: 'Playa', availability: 'available', price: null, currency: 'USD',
       phone: null, whatsapp: null, photoPaths: [photoPath], status: 'pending_review',
     }])
     materialMocks.createPreviews.mockResolvedValue({ photos: [{ path: photoPath, url: signedUrl }], unavailableCount: 0 })
@@ -201,6 +201,7 @@ describe('MaterialListingSubmissionPage', () => {
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="test-user" listingId={listingId} />)
 
     await screen.findByRole('heading', { name: 'Edita tu anuncio' })
+    expect(screen.getByLabelText('Municipio')).toHaveValue('Playa')
     await advanceMaterialTo(4)
     const image = await screen.findByRole('img', { name: 'Fotos del producto, foto 1' })
     expect(image).toHaveAttribute('src', signedUrl)

@@ -4,6 +4,23 @@ Registro operativo de las migraciones de Cubitat. La fuente de verdad son los
 archivos SQL versionados en `supabase/migrations/`; este documento resume su
 orden y propósito, pero no sustituye la lectura del SQL.
 
+## Municipio de Materiales junto a coordenadas — candidata local — 2026-11-28
+
+- `migrations/20261128120000_material_municipality_coordinates_contract.sql`
+  conserva provincia y municipio al crear/editar anuncios; la RPC del
+  propietario también devuelve municipio junto con coordenadas exactas para que
+  Mis anuncios y el formulario de edición los restauren.
+- La lectura pública y las tarjetas incorporan el municipio cuando existe; los
+  anuncios históricos sin municipio conservan su provincia como ubicación.
+- La ejecución real autenticada con Supabase/Worker local subió fotos y creó el
+  anuncio, pero la rama auditada estaba desalineada con la firma local de
+  `update_material_listing()` y el guardado final se rechazó. La consulta SQL
+  confirmó que la firma local incluye municipio; la autorización disponible no
+  permite inspeccionar la firma de producción mediante Management API.
+- Estado: fuente candidata local, aún no integrada ni aplicada en producción.
+  Aplicar solo con el flujo operativo de migración de producción después de
+  reconciliar el ledger y validar las postcondiciones; no usar `db push` global.
+
 ## Lista administrativa de agentes con plaza de administrador — candidata en PR — 2026-11-26
 
 - `migrations/20261126120000_agent_admin_assignment_moderation_list.sql`

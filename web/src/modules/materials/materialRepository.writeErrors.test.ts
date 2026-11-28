@@ -13,7 +13,7 @@ import { removeUnattachedMaterialPhotos, updateMaterialListing } from './materia
 
 const listingInput = {
   title: 'Material de prueba', category: 'cemento' as const, description: 'Descripción de material para la prueba.',
-  price: null, currency: 'USD' as const, province: 'La Habana', coordinates: null, availability: 'available' as const,
+  price: null, currency: 'USD' as const, province: 'La Habana', municipality: 'Playa', coordinates: null, availability: 'available' as const,
   phone: null, whatsapp: null, photoPaths: [],
 }
 const photoPath = '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/33333333-3333-4333-8333-333333333333.webp'
@@ -27,6 +27,11 @@ describe('material write failure handling', () => {
 
   it('marks a definitive update permission denial for safe photo cleanup', async () => {
     await expect(updateMaterialListing('listing-1', listingInput)).rejects.toThrow('MATERIAL_LISTING_PERMISSION_DENIED')
+    expect(rpc).toHaveBeenCalledWith('update_material_listing', expect.objectContaining({
+      p_province: 'La Habana',
+      p_municipality: 'Playa',
+      p_coordinates: null,
+    }))
   })
 
   it('does not let a network error while removing an old photo turn a saved listing into a failed save', async () => {

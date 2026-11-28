@@ -132,7 +132,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
       setCategory(listing.category)
       setDescription(listing.description)
       setProvince(listing.province)
-      setMunicipality('')
+      setMunicipality(listing.municipality ?? '')
       setCoordinates(listing.coordinates ?? null)
       setPrice(listing.price == null ? '' : String(listing.price))
       setCurrency(listing.currency)
@@ -204,6 +204,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
         price: parsedPrice,
         currency,
         province,
+        municipality,
         coordinates,
         availability,
         phone: phone.trim() || null,
