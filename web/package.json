@@ -69,7 +69,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.2",
     "happy-dom": "^21.0.4",
-    "oxlint": "^1.69.0",
+    "oxlint": "^1.95.0",
     "postcss": "^8.5.28",
     "sharp": "^0.35.5",
     "supabase": "^2.108.0",
