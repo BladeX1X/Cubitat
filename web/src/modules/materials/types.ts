@@ -31,6 +31,7 @@ export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategory, string> = {
 }
 
 export const MATERIAL_CURRENCIES: readonly MaterialCurrency[] = ['USD', 'CUP', 'EUR', 'MIXED']
+export const MATERIAL_PUBLICATION_CURRENCIES = ['USD', 'CUP'] as const
 export const MATERIAL_AVAILABILITIES = ['available', 'limited', 'out_of_stock', 'made_to_order'] as const
 
 export type MaterialListing = {
