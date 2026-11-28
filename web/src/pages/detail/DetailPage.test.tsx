@@ -607,7 +607,33 @@ describe('DetailPage - Reportes y Visor', () => {
     const reportButton = screen.getByRole('button', { name: /reportar propiedad sospechosa/i })
     fireEvent.click(reportButton)
 
+    expect(screen.getByRole('dialog', { name: /informar sobre un problema/i })).toHaveAttribute('aria-modal', 'true')
     expect(screen.getByRole('heading', { name: /informar sobre un problema/i })).toBeInTheDocument()
+  })
+
+  it('bloquea el envío hasta elegir un motivo, deja opcionales los detalles y cierra con Escape', () => {
+    render(
+      <DetailPage
+        property={mockProperty}
+        onBack={vi.fn()}
+        onChangeFilters={vi.fn()}
+        filters={mockFilters}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /reportar propiedad sospechosa/i }))
+
+    const dialog = screen.getByRole('dialog', { name: /informar sobre un problema/i })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    const submitButton = screen.getByRole('button', { name: /enviar reporte/i })
+    expect(submitButton).toBeDisabled()
+    expect(screen.getByLabelText(/detalles adicionales/i)).not.toBeRequired()
+
+    fireEvent.change(screen.getByLabelText(/motivo del reporte/i), { target: { value: 'FRAUD' } })
+    expect(submitButton).toBeEnabled()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: /informar sobre un problema/i })).not.toBeInTheDocument()
   })
 
   it('debería enviar el reporte mediante el endpoint protegido al rellenar el formulario', async () => {

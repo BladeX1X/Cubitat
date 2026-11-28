@@ -137,8 +137,11 @@ El sistema MUST permitir a cualquier usuario (autenticado o anónimo) reportar u
 - GIVEN un usuario visualizando la ficha detallada de una propiedad
 - WHEN hace clic en el botón "Reportar propiedad sospechosa"
 - THEN el sistema MUST desplegar un modal que contenga motivos predefinidos de reporte y un área de texto para comentarios adicionales
+- AND MUST exponerlo como diálogo modal accesible, cerrable con Escape, el botón Cerrar o el fondo
+- AND MUST mantener deshabilitado Enviar reporte hasta elegir un motivo y completar Turnstile
+- AND MUST permitir enviar el motivo con los detalles adicionales vacíos
 - AND al enviar el formulario de reporte, el sistema MUST registrar el incidente en la base de datos de Supabase (`public.property_reports`)
-- AND el sistema MUST mostrar un mensaje de confirmación al usuario y cerrar el modal.
+- AND el sistema MUST mostrar un mensaje de confirmación accesible y permitir cerrar el modal.
 
 #### Scenario: Reporte anonimo con datos minimos
 - GIVEN un usuario anonimo reporta una propiedad

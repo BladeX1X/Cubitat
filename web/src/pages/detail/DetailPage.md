@@ -112,3 +112,12 @@ La ficha registra vistas mediante `POST /api/property-view`; el Worker valida el
 
 ## Galería y mapa de ficha móvil — QA DEV — 2026-11-14
 En ficha pública DEV, el clic físico en el título de una tarjeta de resultados abrió el detalle. En viewport 390×844, las dos fotos visibles se cargaron; abrir la primera mostró el visor. La pestaña Mapa cargó MapLibre y sus teselas sin errores, con nota de ubicación aproximada. Sin acciones de contacto/favorito ni escrituras.
+
+## Reportar una propiedad — 2026-11-28
+
+El formulario de reporte es un diálogo modal accesible con cierre por Escape,
+botón Cerrar, Cancelar o clic en el fondo. Solo el motivo y la verificación
+Turnstile son obligatorios; los detalles son opcionales. El envío permanece
+deshabilitado hasta que haya motivo y token válidos. Cada apertura inicia un
+formulario limpio y una verificación nueva; durante el envío no se permite
+cerrar accidentalmente el diálogo.

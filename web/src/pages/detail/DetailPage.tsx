@@ -128,6 +128,26 @@ export function DetailPage({
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const [detailActionDialog, setDetailActionDialog] = useState<'hide' | null>(null)
 
+  const openReportModal = useCallback(() => {
+    setReportReason('')
+    setReportDescription('')
+    setReportError(null)
+    setReportSuccess(false)
+    setReportTurnstileToken(null)
+    setReportTurnstileKey((key) => key + 1)
+    setIsReportModalOpen(true)
+  }, [])
+
+  const closeReportModal = useCallback(() => {
+    if (reportLoading) return
+    setIsReportModalOpen(false)
+    setReportReason('')
+    setReportDescription('')
+    setReportError(null)
+    setReportSuccess(false)
+    setReportTurnstileToken(null)
+  }, [reportLoading])
+
   const isAdmin = userRole === 'admin'
   const isPublished = property.status === 'published'
   const floorLevel = getNumericFeature(property, 'floorLevel')
@@ -136,6 +156,15 @@ export function DetailPage({
   useEffect(() => {
     setDescriptionExpanded(false)
   }, [property.id])
+
+  useEffect(() => {
+    if (!isReportModalOpen) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !reportLoading) closeReportModal()
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isReportModalOpen, reportLoading, closeReportModal])
 
   useEffect(() => {
     if (window.location.hash === '#contactar-anunciante') {
@@ -180,7 +209,7 @@ export function DetailPage({
 
   async function handleReportSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (reportLoading) return
+    if (reportLoading || !reportReason || !reportTurnstileToken) return
     setReportLoading(true)
     setReportError(null)
 
@@ -769,7 +798,7 @@ export function DetailPage({
               </div>
               <button
                 type="button"
-                onClick={() => setIsReportModalOpen(true)}
+                onClick={openReportModal}
                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#fcead0] hover:bg-[#ebd5b8] text-xs font-bold text-neutral-700 transition-all duration-200 border-none cursor-pointer focus:outline-none shrink-0"
               >
                 <AlertTriangle size={14} className="text-amber-600" />
@@ -795,7 +824,7 @@ export function DetailPage({
           {/* Columna Derecha: Tarjeta de Contacto (Sticky) */}
           <div className="space-y-6">
             {isPublished ? (
-              <ContactCard property={property} onReport={() => setIsReportModalOpen(true)} onSelectAgent={onSelectAgent} />
+              <ContactCard property={property} onReport={openReportModal} onSelectAgent={onSelectAgent} />
             ) : (
               <Card id="contactar-anunciante" className="border border-amber-200 rounded-xl shadow-sm p-6 bg-amber-50">
                 <CardContent className="p-0 space-y-2">
@@ -836,19 +865,24 @@ export function DetailPage({
 
       {isPublished && isReportModalOpen && (
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="property-report-title"
           className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 animate-fadeIn"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsReportModalOpen(false) }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeReportModal() }}
         >
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp">
             <button
-              onClick={() => setIsReportModalOpen(false)}
+              type="button"
+              onClick={closeReportModal}
+              disabled={reportLoading}
               className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 focus:outline-none"
               aria-label="Cerrar"
             >
               <X size={20} />
             </button>
 
-            <h3 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+            <h3 id="property-report-title" className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={18} />
               Informar sobre un problema
             </h3>
@@ -866,8 +900,7 @@ export function DetailPage({
                 </div>
                 <Button 
                   onClick={() => {
-                    setIsReportModalOpen(false)
-                    setReportSuccess(false)
+                    closeReportModal()
                   }}
                   className="w-full bg-[#035f53] hover:bg-[#024a41] text-white rounded-full mt-2"
                 >
@@ -905,7 +938,6 @@ export function DetailPage({
                     value={reportDescription}
                     onChange={(e) => setReportDescription(e.target.value)}
                     className="min-h-[80px] text-xs"
-                    required
                   />
                 </div>
 
@@ -925,7 +957,7 @@ export function DetailPage({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsReportModalOpen(false)}
+                    onClick={closeReportModal}
                     className="flex-1 rounded-full h-10 text-xs font-bold"
                     disabled={reportLoading}
                   >
@@ -934,7 +966,7 @@ export function DetailPage({
                   <Button
                     type="submit"
                     className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-full h-10 text-xs font-bold"
-                    disabled={reportLoading}
+                    disabled={reportLoading || !reportReason || !reportTurnstileToken}
                   >
                     {reportLoading ? (
                       <Loader2 size={14} className="animate-spin" />

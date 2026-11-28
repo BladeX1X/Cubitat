@@ -31,6 +31,16 @@ test.describe('Cloudflare Turnstile Verification', () => {
     // 3. Abrir modal de reportar y verificar widget de Turnstile
     const reportBtn = page.locator('button:has-text("Reportar propiedad sospechosa")')
     await reportBtn.click()
+
+    const reportDialog = page.getByRole('dialog', { name: 'Informar sobre un problema' })
+    await expect(reportDialog).toHaveAttribute('aria-modal', 'true')
+    await expect(page.getByLabel('Motivo del reporte')).toHaveAttribute('required', '')
+    await expect(page.getByLabel('Detalles adicionales')).not.toHaveAttribute('required', '')
+    await expect(page.getByRole('button', { name: 'Enviar reporte' })).toBeDisabled()
+
+    await page.keyboard.press('Escape')
+    await expect(reportDialog).toBeHidden()
+    await reportBtn.click()
     
     const reportTurnstile = page.locator('.turnstile-container[data-action="report-property"]')
     await expect(reportTurnstile).toBeVisible()
