@@ -104,7 +104,7 @@ function ResponsiveCatalogListingMap(props: ListingCatalogMapProps) {
 
   const panel = (
     <section
-      className={`marketplace-catalog-points-map relative z-[9999] flex min-h-0 flex-col overflow-hidden border border-neutral-200 bg-white ${isDesktopMap ? 'sticky top-4 h-[calc(100dvh-2rem)] rounded-2xl' : 'fixed inset-0 h-[100dvh] w-full border-0 pt-[env(safe-area-inset-top)]'}`}
+      className={`marketplace-catalog-points-map z-[9999] flex min-h-0 flex-col overflow-hidden border border-neutral-200 bg-white ${isDesktopMap ? 'sticky top-4 h-[calc(100dvh-2rem)] rounded-2xl' : 'fixed inset-0 h-[100dvh] w-full border-0 pt-[env(safe-area-inset-top)]'}`}
       role={isDesktopMap ? undefined : 'dialog'}
       aria-modal={isDesktopMap ? undefined : true}
       aria-label={`Mapa de ${props.listingLabel}`}
