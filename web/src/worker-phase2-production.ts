@@ -21,6 +21,7 @@ import {
   loadOwnedPropertyForImageHashing,
   refreshPropertyImageDuplicates,
 } from './worker/image-phash';
+import { handleMaterialPhotoUpload } from './worker/material-photo-uploads';
 
 export { RateLimiter } from './rate-limiter';
 
@@ -99,6 +100,21 @@ export function runProductionScheduledTasks(
 export default {
   async fetch(request: Request, env: ProductionPhaseTwoEnv, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const materialPhotoUploadMatch = url.pathname.match(/^\/api\/material-photos\/([^/]+)\/upload$/);
+    if (materialPhotoUploadMatch) {
+      if (request.method !== 'POST') return new Response('{"error":"Method not allowed"}', {
+        status: 405,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+      const ownerId = await authenticateImageHashRequest(request, env);
+      if (!ownerId) return new Response('{"error":"Unauthorized"}', {
+        status: 401,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+      const limit = await checkRateLimit(env, `user:${ownerId}:material-photo-upload:v1`, 40, 10 * 60 * 1000);
+      if (!limit.allowed) return rateLimitResponse(limit.resetAt);
+      return handleMaterialPhotoUpload(request, env, ownerId, materialPhotoUploadMatch[1]!);
+    }
     if (url.pathname === '/api/public/marketplace-contact') {
       const headers = {
         'Content-Type': 'application/json; charset=utf-8',

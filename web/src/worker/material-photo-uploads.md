@@ -1,7 +1,7 @@
 # Gateway de fotos de Materiales
 
 `POST /api/material-photos/<listing_uuid>/upload` es la única ruta de carga de
-fotos nuevas de Materiales en DEV. Recibe un cuerpo binario `image/webp` de
+fotos nuevas de Materiales en DEV y producción. Recibe un cuerpo binario `image/webp` de
 hasta 5 MiB y un token de sesión. El Worker valida el token y consulta
 `can_upload_material_photo` con el JWT del vendedor. La base verifica propiedad
 y estado sin exponer `owner_id` por el Data API. Después, el Worker crea un

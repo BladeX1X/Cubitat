@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { createClient } from '@supabase/supabase-js'
+import { createSitemapClient } from './sitemap-client.mjs'
 import { buildSitemapDocument } from './sitemap-document.mjs'
 import { buildInventorySeoRoutes } from './sitemap-routes.mjs'
 import { resolveSitemapMode, shouldWriteSourceSitemap } from './sitemap-mode.mjs'
@@ -83,7 +83,7 @@ async function readPublishedProperties(mode) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  const supabase = createSitemapClient(supabaseUrl, supabaseAnonKey, SITE_URL)
   const { data, error } = await supabase
     .from('properties')
     .select('id, location, operation, property_type, status, updated_at')

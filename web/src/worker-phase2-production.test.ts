@@ -8,15 +8,18 @@ const mocks = vi.hoisted(() => ({
   dispatchPendingAgentApplicationEmails: vi.fn().mockResolvedValue({ claimed: 0, sent: 0, failed: 0 }),
   handleAgentApplicationSubmission: vi.fn().mockResolvedValue(new Response('{"id":"application-id"}', { status: 201 })),
   handleAgentApplicationDocumentLinks: vi.fn().mockResolvedValue(new Response('{"cv_url":"signed"}', { status: 200 })),
+  handleMaterialPhotoUpload: vi.fn().mockResolvedValue(new Response('{"path":"owner/listing/photo.webp"}', { status: 201 })),
   loadOwnedPropertyForImageHashing: vi.fn(),
   purgeApprovedKycEvidence: vi.fn().mockResolvedValue({ scanned: 0, deleted: 0, failed: 0 }),
   purgeFinalAgentApplicationEvidence: vi.fn().mockResolvedValue({ claimed: 0, purged: 0, failed: 0 }),
   refreshPropertyImageDuplicates: vi.fn().mockResolvedValue(undefined),
+  rateLimitResponse: vi.fn(() => new Response('{"error":"Rate limited"}', { status: 429 })),
   createWorkerOptions: vi.fn(),
 }))
 
 vi.mock('./worker', () => ({
   checkRateLimit: mocks.checkRateLimit,
+  rateLimitResponse: mocks.rateLimitResponse,
   createWorker: vi.fn((options) => {
     mocks.createWorkerOptions(options)
     return { fetch: vi.fn() }
@@ -25,6 +28,7 @@ vi.mock('./worker', () => ({
 vi.mock('./worker/push-notifications', () => ({ dispatchPendingPushNotifications: mocks.dispatchPendingPushNotifications }))
 vi.mock('./worker/agent-applications', () => ({ handleAgentApplicationSubmission: mocks.handleAgentApplicationSubmission }))
 vi.mock('./worker/agent-application-documents', () => ({ handleAgentApplicationDocumentLinks: mocks.handleAgentApplicationDocumentLinks }))
+vi.mock('./worker/material-photo-uploads', () => ({ handleMaterialPhotoUpload: mocks.handleMaterialPhotoUpload }))
 vi.mock('./worker/agent-application-email-dispatcher', () => ({ dispatchPendingAgentApplicationEmails: mocks.dispatchPendingAgentApplicationEmails }))
 vi.mock('./worker/agent-application-evidence-retention', () => ({ purgeFinalAgentApplicationEvidence: mocks.purgeFinalAgentApplicationEvidence }))
 vi.mock('./worker/kyc-evidence-retention', () => ({ purgeApprovedKycEvidence: mocks.purgeApprovedKycEvidence }))
@@ -45,13 +49,62 @@ const env = {
 
 describe('Phase 2 production Worker', () => {
   beforeEach(() => {
+    vi.resetModules()
     vi.clearAllMocks()
     mocks.checkRateLimit.mockResolvedValue({ allowed: true })
     mocks.authenticateImageHashRequest.mockReset()
     mocks.handleAgentApplicationSubmission.mockClear()
     mocks.handleAgentApplicationDocumentLinks.mockClear()
+    mocks.handleMaterialPhotoUpload.mockClear()
     mocks.dispatchPendingAgentApplicationEmails.mockClear()
     mocks.purgeFinalAgentApplicationEvidence.mockClear()
+  })
+
+  it('authenticates and rate limits production material photo uploads', async () => {
+    const { default: worker } = await import('./worker-phase2-production')
+    const url = 'https://cubitathome.com/api/material-photos/123e4567-e89b-12d3-a456-426614174000/upload'
+    const unauthorized = await worker.fetch(
+      new Request(url, { method: 'POST' }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    expect(unauthorized.status).toBe(401)
+    expect(mocks.handleMaterialPhotoUpload).not.toHaveBeenCalled()
+
+    mocks.authenticateImageHashRequest.mockResolvedValue('seller-id')
+    const uploaded = await worker.fetch(
+      new Request(url, { method: 'POST', headers: { authorization: 'Bearer seller-session' } }),
+      env as never,
+      { waitUntil: vi.fn() } as never,
+    )
+    expect(uploaded.status).toBe(201)
+    expect(mocks.checkRateLimit).toHaveBeenCalledWith(
+      env,
+      'user:seller-id:material-photo-upload:v1',
+      40,
+      10 * 60 * 1000,
+    )
+    expect(mocks.handleMaterialPhotoUpload).toHaveBeenCalledWith(
+      expect.any(Request), env, 'seller-id', '123e4567-e89b-12d3-a456-426614174000',
+    )
+  })
+
+  it('rejects other methods and stops material photo uploads at the rate limit', async () => {
+    const { default: worker } = await import('./worker-phase2-production')
+    const url = 'https://cubitathome.com/api/material-photos/123e4567-e89b-12d3-a456-426614174000/upload'
+    const method = await worker.fetch(
+      new Request(url, { method: 'GET' }), env as never, { waitUntil: vi.fn() } as never,
+    )
+    expect(method.status).toBe(405)
+    expect(mocks.authenticateImageHashRequest).not.toHaveBeenCalled()
+
+    mocks.authenticateImageHashRequest.mockResolvedValue('seller-id')
+    mocks.checkRateLimit.mockResolvedValueOnce({ allowed: false, resetAt: Date.now() + 60_000 })
+    const limited = await worker.fetch(
+      new Request(url, { method: 'POST' }), env as never, { waitUntil: vi.fn() } as never,
+    )
+    expect(limited.status).toBe(429)
+    expect(mocks.handleMaterialPhotoUpload).not.toHaveBeenCalled()
   })
 
   it('allows the audited agent moderation RPCs through the authenticated proxy', async () => {
