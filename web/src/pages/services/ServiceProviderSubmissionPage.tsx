@@ -14,6 +14,7 @@ import { readMarketplaceDraft, removeMarketplaceDraft, saveMarketplaceDraft } fr
 
 type ServiceProviderSubmissionPageProps = {
   onBack: () => void
+  onSubmitted?: () => void
   onRequireLogin: () => void
   profileId?: string
   userId: string
@@ -27,7 +28,7 @@ const servicePublicationSteps: PublicationStep[] = [
   { label: 'Contacto', description: 'Revisa los datos y envía el perfil a revisión.' },
 ]
 
-export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileId, userId, draftId }: ServiceProviderSubmissionPageProps) {
+export function ServiceProviderSubmissionPage({ onBack, onSubmitted, onRequireLogin, profileId, userId, draftId }: ServiceProviderSubmissionPageProps) {
   const [displayName, setDisplayName] = useState('')
   const [category, setCategory] = useState<HomeServiceCategory>('plomeria')
   const [description, setDescription] = useState('')
@@ -223,7 +224,7 @@ export function ServiceProviderSubmissionPage({ onBack, onRequireLogin, profileI
     onBack()
   }
 
-  if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-800"><BriefcaseBusiness /></div><h1 className="mt-5 text-2xl font-black">Perfil enviado a revisión</h1><p className="mt-2 text-neutral-600">El perfil aparecerá en el directorio después de la revisión. Publicarlo no acredita licencias ni certifica el servicio.</p><Button className="mt-6" onClick={onBack}>Volver al directorio</Button></main>
+  if (submitted) return <main className="mx-auto min-h-[70vh] max-w-xl px-4 py-24 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-800"><BriefcaseBusiness /></div><h1 className="mt-5 text-2xl font-black">Perfil enviado a revisión</h1><p className="mt-2 text-neutral-600">El perfil aparecerá en el directorio después de la revisión. Publicarlo no acredita licencias ni certifica el servicio.</p><Button className="mt-6" onClick={onSubmitted ?? onBack}>Volver a mis perfiles</Button></main>
 
   return (
     <PublicationFormShell onBack={profileId ? onBack : handleExitWithoutSaving} icon={<BriefcaseBusiness size={17} />} eyebrow="Directorio profesional" title={profileId ? 'Edita tu perfil' : 'Presenta tus servicios'} description="El perfil queda pendiente de revisión antes de aparecer en público. No lo presentes como licencia o certificación emitida por Cubitat.">

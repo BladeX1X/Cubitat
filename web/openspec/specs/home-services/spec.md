@@ -249,3 +249,8 @@ los datos de cobertura del perfil.
 - WHEN el visitante abre Mapa
 - THEN el visor muestra una referencia geográfica de la provincia declarada
 - AND informa que el mapa no es el domicilio ni un punto exacto de atención
+
+### Requirement: Retorno tras enviar un perfil
+- **WHEN** la persona termina de enviar un perfil desde «Publicar gratis»
+- **THEN** el botón de éxito «Volver a mis perfiles» abre Mis servicios
+- **AND** conserva el retorno al selector universal solo para salir del formulario sin publicar

@@ -82,6 +82,22 @@ describe('MaterialListingSubmissionPage', () => {
     expect(screen.getByLabelText('Nombre del producto')).toBeInvalid()
   })
 
+  it('returns to my material listings after sending a new ad, even when the form back action points to the publish selector', async () => {
+    const onBack = vi.fn()
+    const onSubmitted = vi.fn()
+    render(<MaterialListingSubmissionPage onBack={onBack} onSubmitted={onSubmitted} onRequireLogin={vi.fn()} userId="test-user" />)
+    fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Material QA para retorno' } })
+    fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción de prueba suficientemente larga para enviar el anuncio.' } })
+
+    await submitMaterial()
+    expect(await screen.findByRole('heading', { name: 'Anuncio enviado a revisión' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a mis anuncios' }))
+
+    expect(onSubmitted).toHaveBeenCalledOnce()
+    expect(onBack).not.toHaveBeenCalled()
+  })
+
   it('offers CUP and saves the chosen currency with the material listing', async () => {
     render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="owner-1" />)
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Cemento de prueba' } })
