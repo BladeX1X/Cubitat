@@ -161,7 +161,25 @@ Ejecución del 2026-11-28: PR #301 se integró en `main` (merge
 aplicó `20261128120000` y pasó sus verificaciones. Luego el Worker `cubitat1`
 versión `f80cf97d-9159-4e77-ab34-c7df4e070564` quedó al 100 %. Smoke público:
 Inicio, resultados, Servicios, Materiales y formulario de Materiales HTTP 200.
-Queda pendiente el recorrido autenticado de creación/edición en Producción.
+El recorrido autenticado de creación/edición se completó más tarde el mismo día:
+un anuncio QA de Materiales conservó municipio, punto aproximado, moneda USD,
+precio y descripción al editar y reenviar; se mantuvo en revisión. El botón de
+éxito apuntaba por error al formulario de Vivienda. PR #302 corrigió ese destino
+para que Materiales vuelva a `/mis-materiales` y Servicios a `/mis-servicios`.
+
+PR #302 quedó integrado en `main` como `5c0f9bd1869180056e9d5aac8b298d296bf4cf6a`;
+`quality` y `database-security` pasaron. El Worker `cubitat1` versión
+`4ac5f082-c641-4e4b-b4d8-db2aedab1d76` quedó al 100 %. La publicación repitió
+lint, 267 archivos de pruebas (1,229 PASS, 1 omitida), build `phase4-production`,
+sitemap dinámico de 446 URLs y todos los verificadores. Smoke HTTP: Inicio,
+resultados, Servicios, Materiales y formulario de Materiales = 200.
+
+QA autenticado posterior: la edición de Materiales volvió a Mis materiales y
+mostró el anuncio QA en revisión con municipio `Plaza de la Revolución`.
+Un perfil QA de Servicios seleccionó Cienfuegos, centró el mapa, aceptó un punto
+aproximado, se envió a revisión y volvió a Mis perfiles en `/mis-servicios`.
+Ningún anuncio QA fue aprobado. El preview no requerido de Cloudflare DEV falló;
+no bloqueó los gates obligatorios ni el despliegue a Producción.
 
 No crear politicas alternativas de insercion publica para `contacts` ni
 `property_reports`: el flujo vigente exige Turnstile en el Worker y RPC
