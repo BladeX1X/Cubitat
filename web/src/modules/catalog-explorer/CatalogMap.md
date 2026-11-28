@@ -28,6 +28,8 @@ viewport igual que Comprar.
   desde el catálogo y el retorno móvil usan controles flotantes inferiores.
 - Los controles flotantes y el diálogo móvil se montan sobre `document.body` para
   permanecer anclados al viewport incluso dentro de layouts con transformaciones.
+  El diálogo móvil usa `position: fixed`; no debe heredar una posición relativa
+  que lo deje después de las tarjetas en el flujo del documento.
 - Los mapas de catálogo solo consumen coordenadas públicas aproximadas; nunca
   consultan las coordenadas privadas.
 

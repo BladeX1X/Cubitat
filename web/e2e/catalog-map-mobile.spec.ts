@@ -43,6 +43,8 @@ for (const { path, name } of [
 
     const mapDialog = page.getByRole('dialog')
     await expect(mapDialog).toBeVisible({ timeout: 30_000 })
+    await expect(mapDialog).toHaveCSS('position', 'fixed')
+    await expect.poll(() => mapDialog.evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0)
     await expect(mapDialog.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 })
     await expect(mapDialog.getByText('Cargando mapa…')).toBeHidden({ timeout: 20_000 })
     await expect(mapDialog.getByText('No se pudo cargar el mapa')).toBeHidden()
