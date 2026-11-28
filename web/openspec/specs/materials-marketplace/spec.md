@@ -5,6 +5,15 @@
 Conectar compradores con comercios y vendedores de materiales para vivienda
 mediante anuncios, disponibilidad declarada y consultas directas.
 
+### Carga privada de fotos
+
+- La carga de fotos nuevas usa `POST /api/material-photos/<listing_uuid>/upload`
+  tanto en DEV como en producción. El Worker autentica al propietario, aplica un
+  límite de 40 cargas por usuario cada 10 minutos y delega la validación de
+  propiedad/estado y el almacenamiento privado al gateway confiable.
+- Métodos distintos de POST se rechazan; una sesión ausente o un límite agotado
+  no deben invocar el almacenamiento. Las URLs firmadas solo se usan para leer.
+
 ## Requisitos
 
 ### Ubicación con privacidad para publicar materiales
