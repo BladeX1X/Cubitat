@@ -87,10 +87,37 @@ describe('MaterialListingSubmissionPage', () => {
     fireEvent.change(screen.getByLabelText('Nombre del producto'), { target: { value: 'Cemento de prueba' } })
     fireEvent.change(screen.getByLabelText('Provincia'), { target: { value: 'La Habana' } })
     await advanceMaterialTo(3)
+    expect(Array.from((screen.getByLabelText('Moneda') as HTMLSelectElement).options).map((option) => option.value)).toEqual(['USD', 'CUP'])
     fireEvent.change(screen.getByLabelText('Moneda'), { target: { value: 'CUP' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción válida para probar precio en pesos cubanos.' } })
     await submitMaterial()
     await waitFor(() => expect(materialMocks.create).toHaveBeenCalledWith(expect.objectContaining({ currency: 'CUP' }), expect.any(String)))
+  })
+
+  it.each(['EUR', 'MIXED'] as const)('preserves historical %s currency while editing an existing material listing', async (currency) => {
+    materialMocks.fetchMine.mockResolvedValue([{
+      id: 'listing-legacy',
+      slug: 'legacy-material',
+      title: 'Material histórico',
+      category: 'cemento',
+      description: 'Anuncio antiguo que conserva la moneda original.',
+      price: 20,
+      currency,
+      province: 'La Habana',
+      availability: 'available',
+      phone: null,
+      whatsapp: null,
+      photoUrls: [],
+      photoPaths: [],
+      status: 'published',
+      updatedAt: '2026-11-27T00:00:00.000Z',
+    }])
+    render(<MaterialListingSubmissionPage onBack={vi.fn()} onRequireLogin={vi.fn()} userId="owner-1" listingId="listing-legacy" />)
+
+    await waitFor(() => expect(screen.getByLabelText('Moneda')).toHaveValue(currency))
+    expect(Array.from((screen.getByLabelText('Moneda') as HTMLSelectElement).options).map((option) => option.value)).toEqual(['USD', 'CUP', currency])
+    const historicalOption = (screen.getByLabelText('Moneda') as HTMLSelectElement).selectedOptions[0]
+    expect(historicalOption.textContent).toBe(currency === 'EUR' ? 'EUR (anuncio existente)' : 'Variable / acordar (anuncio existente)')
   })
 
   it('keeps the last manually saved material draft when exiting unsaved changes', async () => {

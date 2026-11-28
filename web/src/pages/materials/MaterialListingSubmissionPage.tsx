@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Boxes } from 'lucide-react'
 import { createMaterialListing, createOwnedMaterialPhotoPreviews, fetchMyMaterialListings, removeUnattachedMaterialPhotos, updateMaterialListing, uploadMaterialPhotos } from '../../modules/materials/materialRepository'
 import { MATERIAL_PHOTO_MAX_BYTES, MATERIAL_PHOTO_MAX_COUNT, validateMaterialPhotoFiles } from '../../modules/materials/materialPhotos'
-import { MATERIAL_AVAILABILITIES, MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, MATERIAL_CURRENCIES, type MaterialCategory, type MaterialCurrency, type MaterialListing } from '../../modules/materials/types'
+import { MATERIAL_AVAILABILITIES, MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS, MATERIAL_PUBLICATION_CURRENCIES, type MaterialCategory, type MaterialCurrency, type MaterialListing } from '../../modules/materials/types'
 import { compressCatalogPhoto } from '../../shared/lib/catalogPhotos'
 import { useSEO } from '../../shared/hooks/useSEO'
 import { Button } from '../../shared/ui/button'
@@ -71,6 +71,8 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
   const [draftReady, setDraftReady] = useState(!draftId || Boolean(listingId))
   const [draftMessage, setDraftMessage] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
+  const currencyOptions: MaterialCurrency[] = [...MATERIAL_PUBLICATION_CURRENCIES]
+  if (currency !== 'USD' && currency !== 'CUP') currencyOptions.push(currency)
 
   function nextStep() {
     const activePanel = formRef.current?.querySelector<HTMLElement>(`[data-publication-step="${step}"]`)
@@ -290,7 +292,7 @@ export function MaterialListingSubmissionPage({ onBack, onRequireLogin, listingI
             <div data-publication-step="3" hidden={step !== 3}>
             <label className="text-sm font-semibold">Disponibilidad<select value={availability} onChange={(event) => setAvailability(event.target.value as MaterialListing['availability'])} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{MATERIAL_AVAILABILITIES.map((value) => <option key={value} value={value}>{AVAILABILITY_LABELS[value]}</option>)}</select></label>
             <label className="text-sm font-semibold">Precio<input type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 px-3" placeholder="Deja vacío si no deseas publicarlo" /></label>
-            <label className="text-sm font-semibold">Moneda<select value={currency} onChange={(event) => setCurrency(event.target.value as MaterialCurrency)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{MATERIAL_CURRENCIES.map((value) => <option key={value} value={value}>{value === 'USD' ? 'Dólares (USD)' : value === 'CUP' ? 'Pesos cubanos (CUP)' : value === 'MIXED' ? 'Variable / acordar' : value}</option>)}</select></label>
+            <label className="text-sm font-semibold">Moneda<select value={currency} onChange={(event) => setCurrency(event.target.value as MaterialCurrency)} className="mt-1 block min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3">{currencyOptions.map((value) => <option key={value} value={value}>{value === 'USD' ? 'Dólares (USD)' : value === 'CUP' ? 'Pesos cubanos (CUP)' : value === 'MIXED' ? 'Variable / acordar (anuncio existente)' : 'EUR (anuncio existente)'}</option>)}</select></label>
             <label className="text-sm font-semibold">Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} required minLength={20} maxLength={5000} rows={5} className="mt-1 block w-full rounded-xl border border-neutral-300 px-3 py-2" /></label>
             </div>
             <div data-publication-step="4" hidden={step !== 4} data-publication-wide="true"><MultiPhotoUploadField label="Fotos del producto" files={photoFiles} existingPhotos={photoPaths.map((path) => ({ id: path, src: photoPreviews.find((preview) => preview.path === path)?.url }))} maxCount={MATERIAL_PHOTO_MAX_COUNT} maxSizeLabel={`${Math.floor(MATERIAL_PHOTO_MAX_BYTES / 1024 / 1024)} MiB`} isCompressing={compressingPhotos || saving} onSelectFiles={(files) => void handlePhotoSelection(files)} onRemoveFile={(index) => setPhotoFiles((previous) => previous.filter((_, current) => current !== index))} onRemoveExisting={(photo) => { setPhotoPaths((previous) => previous.filter((path) => path !== photo.id)); setPhotoPreviews((previous) => previous.filter((preview) => preview.path !== photo.id)); setRemovedPhotoPaths((previous) => [...previous, photo.id]) }} /></div>

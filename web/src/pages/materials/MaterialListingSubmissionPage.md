@@ -115,4 +115,6 @@ campos, el paso y las fotos seleccionadas; Mis materiales permite reanudarlos o
 eliminarlos. Salir sin guardar conserva intacto el último borrador manual.
 Materiales admite USD y CUP en el selector y persiste el código en el campo
 `currency`; se muestran con las etiquetas «Dólares (USD)» y «Pesos cubanos
-(CUP)». Se mantienen códigos históricos adicionales que ya acepta la base.
+(CUP)». EUR y MIXED se conservan para compatibilidad y solo se vuelven a mostrar
+cuando el anuncio o borrador abierto ya usa ese código; no se convierten monedas
+ni se ofrecen como opciones para publicaciones nuevas.
